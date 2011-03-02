@@ -1,14 +1,14 @@
 /*
- * types.h
+ * types.hh
  *
  *  Created on: Feb 14, 2011
  *      Author: max
  */
 
-#ifndef FSTRANSLATE_TYPES_H
-#define FSTRANSLATE_TYPES_H
+#ifndef FSTRANSLATE_TYPES_HH
+#define FSTRANSLATE_TYPES_HH
 
-#include "check.h"
+#include "check.hh"
 
 #include <stddef.h>    /* for size_t */
 #include <sys/types.h> /* for off_t */
@@ -21,4 +21,4 @@ typedef dev_t  ft_dev;
 
 typedef struct stat ft_stat;
 
-#endif /* FSTRANSLATE_TYPES_H */
+#endif /* FSTRANSLATE_TYPES_HH */

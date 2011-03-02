@@ -3,36 +3,42 @@
 ################################################################################
 
 # Add inputs and outputs from these tool invocations to the build variables 
-C_SRCS += \
-../src/fail.c \
-../src/filemap.c \
-../src/fileutil.c \
-../src/main.c \
-../src/map.c \
-../src/translate.c 
+CC_SRCS += \
+../src/ctx.cc \
+../src/fail.cc \
+../src/file_extent.cc \
+../src/file_util.cc \
+../src/main.cc \
+../src/map.cc \
+../src/vector.cc \
+../src/work.cc 
 
 OBJS += \
+./src/ctx.o \
 ./src/fail.o \
-./src/filemap.o \
-./src/fileutil.o \
+./src/file_extent.o \
+./src/file_util.o \
 ./src/main.o \
 ./src/map.o \
-./src/translate.o 
+./src/vector.o \
+./src/work.o 
 
-C_DEPS += \
+CC_DEPS += \
+./src/ctx.d \
 ./src/fail.d \
-./src/filemap.d \
-./src/fileutil.d \
+./src/file_extent.d \
+./src/file_util.d \
 ./src/main.d \
 ./src/map.d \
-./src/translate.d 
+./src/vector.d \
+./src/work.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
-src/%.o: ../src/%.c
+src/%.o: ../src/%.cc
 	@echo 'Building file: $<'
-	@echo 'Invoking: GCC C Compiler'
-	gcc -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o"$@" "$<"
+	@echo 'Invoking: GCC C++ Compiler'
+	g++ -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o"$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 

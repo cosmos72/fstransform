@@ -4,16 +4,16 @@
  *  Created on: Feb 24, 2011
  *      Author: max
  */
-#include "first.h"
+#include "first.hh"
 
-#include <errno.h>       /* for errno       */
+#include <cerrno>        /* for errno       */
 
 #include <sys/ioctl.h>   /* for ioctl() */
 
 #include <linux/fs.h>   /* for BLKGETSIZE64 */
 #include <linux/types.h>/* for __u64        */
 
-#include "fileutil.h"  /* for ft_stat, ff_ioctl(), ff_stat(), ff_size(), ff_filedev() */
+#include "file_util.hh"  /* for ft_stat, ff_ioctl(), ff_stat(), ff_size(), ff_filedev() */
 
 
 typedef __u64 ft_u64;
@@ -66,7 +66,7 @@ int ff_blkdev(int fd, ft_dev * ret_dev) {
 	return err;
 }
 
-/** if file is special block device, return its length in (*ret_dev) */
+/** if file is special block device, return its length in (*ret_size) */
 int ff_blkdev_size(int fd, ft_off * ret_size) {
 	ft_u64 dev_size;
 	int err = ff_ioctl(fd, BLKGETSIZE64, & dev_size);

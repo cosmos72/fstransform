@@ -1,14 +1,15 @@
 /*
- * fileutil.h
+ * file_util.hh
  *
  *  Created on: Feb 24, 2011
  *      Author: max
  */
-#ifndef FSTRANSLATE_FILEUTIL_H
-#define FSTRANSLATE_FILEUTIL_H
+#ifndef FSTRANSLATE_FILEUTIL_HH
+#define FSTRANSLATE_FILEUTIL_HH
 
-#include "types.h" /* for ff_ioctl(), ff_size(), ff_filedev() */
+#include "types.hh" /* for ff_ioctl(), ff_size(), ff_filedev() */
 
+FT_EXTERN_C_BEGIN
 
 /** invoke ioctl() */
 int ff_ioctl(int fd, int request, void * arg);
@@ -28,4 +29,6 @@ int ff_blkdev(int fd, ft_dev * ret_dev);
 /** if file is special block device, return its length in (*ret_dev) */
 int ff_blkdev_size(int fd, ft_off * ret_size);
 
-#endif /* FSTRANSLATE_FILEUTIL_H */
+FT_EXTERN_C_END
+
+#endif /* FSTRANSLATE_FILEUTIL_HH */

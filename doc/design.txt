@@ -1,0 +1,338 @@
+fstransform idea comes from convertfs (http://tzukanov.narod.ru/convertfs)
+and from my desire to start programming again in C/C++.
+
+It is designed from scratch with safety in mind:
+every reasonable precaution is taken in order not to lose/corrupt data.
+
+############################### Requirements ##################################
+
+1) be SAFE.
+
+   If relevant hardware and drivers are working correctly,
+   data must NEVER be lost or corrupted, not even in case of program crash
+   or sudden power loss.
+
+   Additionally, relevant hardware and drivers must be checked for known defects
+   at program start, I/O problems must be detected as soon as possible,
+   both using S.M.A.R.T. and by detecting I/O errors,
+   and every reasonable effort must be made not to lose or corrupt data
+   even in case of defective/failing disks or other relevant hardware
+   and their drivers.
+
+2) store work progress status on disk,
+   and be able to resume work or completely undo it when program is started again.
+   
+3) be able function with very limited free disk space
+
+4) be able to transform in-place a block device from any filesystem to any other,
+   preserving file, directories, soft links, hard links, special devices,
+   timestamps and owner/group permissions if the following prerequisites
+   are satisfied:
+   
+   a) source filesystem supports sparse files (holes) and ioctl(FIEMAP or FIBMAP)
+   
+   b) both source and target filesystems are POSIX-like,
+      i.e. they support links, special devices, timestamps and UNIX-like permissions
+
+5) be reasonably fast
+
+   operations on disk must be O(N), i.e. linear with device size,
+   and perform large contiguous reads and writes as much as possible.
+
+
+################################# Reminders ###################################
+
+* fstatfs(loop_fd) to stat device filesystem, including used space (=S) and total inodes (=I)
+ 
+* create loop filesystem with number of inodes >= I
+
+* Immediately check on created loop filesystem that available space >= S
+
+
+
+################################## Design #####################################
+
+================== Initial situation =================
+
+device (physical blocks)
++-----------------------------------------------------------------------------+
+|01|02|  |04|  |  |07|08|  |  |  |  |  |  |15|  |  |  |19|20|21|  |  |  |  |26|
++-----------------------------------------------------------------------------+
+loop file inside device (physical blocks)
++-----------------------------------------------------------------------------+
+|  |  |  |  |21|26|  |  |19|17|10|15|08|11|  |07|09|  |  |  |  |02|01|  |06|  |
++-----------------------------------------------------------------------------+
+
+
+============== Final situation (target) ==============
+
+loop-file (physical blocks)
++-----------------------------------------------------------------------------+
+|01|02|  |  |  |06|07|08|09|10|11|  |  |  |15|  |17|  |19|  |21|  |  |  |  |26|
++-----------------------------------------------------------------------------+
+device backup inside loop-file (physical blocks) - somewhere in these blocks
++-----------------------------------------------------------------------------+
+|  |  |**|**|**|  |  |  |  |  |  |**|**|**|  |**|  |**|  |**|  |**|**|**|**|  |
++-----------------------------------------------------------------------------+
+
+
+============== Algorithm (1) simulation ==============
+
+1) find loop-file holes
++-----------------------------------------------------------------------------+
+|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
++------03-04-05-------------------12-13-14----16----18----20----22-23-24-25---+
+
+3) renumber used device blocks with numbers from loop-file holes.
+   do not greedily use low hole numbers:
+   a) prefer hole numbers equal to device block number: they produce a block
+      already in its final destination (marked with @@)
+   b) spread the remaining numbers uniformly across rest of holes  
+    
+device renumbered blocks - original numbers are above
++01-02----04-------07-08-------------------15----------19-20-21-------------26+
+|03|05|  |04|  |  |12|13|  |  |  |  |  |  |16|  |  |  |18|20|23|  |  |  |  |25|
++---------@@----------------------------------------------@@------------------+
+
+4) merge renumbered device blocks with loop-file blocks (remember who's who)
+   and mark (with @@) loop-file blocks already in their final destination
+   (none in this case)
+   
+merged blocks
++01-02----04-------07-08-------------------15----------19-20-21-------------26+
+|03|05|  |04|21|26|12|13|19|17|10|15|08|11|16|07|09|  |18|20|23|02|01|  |06|25|
++---------@@----------------------------------------------@@------------------+
+
+4.1) mark with !! loop-file holes that are still not used after device blocks
+     renumbering (in this case 14 22 24)
+     
++01-02----04-------07-08-------------------15----------19-20-21-------------26+
+|03|05|  |04|21|26|12|13|19|17|10|15|08|11|16|07|09|  |18|20|23|02|01|  |06|25|
++---------@@----------------------------!!----------------@@----!!----!!------+
+     
+     
+
+5) sort
+
+   Favor in-order disk reads, even if they cause out-of-order disk writes
+   Reason: exploit read-ahead and write-back to speed up execution
+   
+   Reads and writes will happen in moderately large in-order chunks, such that:
+   a) chunk size must fit into RAM
+   b) secondary storage must not overflow
+   
+   secondary storage is usually the same as job persistence,
+   in $HOME/.fstransform/job.$$ but must be configurable.
++==============+
+|  |  |  |  |  |  secondary storage (SMALL!)
++==============+
+
+5.0) start with position P=1
+   
+5.1) if secondary storage has N free blocks (in this case N=5),
+     lookup the contents of the consecutive positions P..P+N-1 
+     on disk (in this case 01..05).
+
+5.2) note the blocks in such positions (in this case 03|05|  |04|21).
+     ignore both free blocks and blocks already in their final destination:
+     in case we find either kind, go back to 5.1 and increase N accordingly
+     (in some cases we could loop between 5.1 and 5.2 many times)
+     
+     (in this case, one block is free and another - 04 - is in its final
+     destination so we set N=7, extend the lookup to 01..07 and find
+     03|05|  |@@|21|26|12 - again, remember to ignore 04, it's marked @@)
+
+5.3) order the found blocks by their number (in this case 03 05 12 21 26)
+
+5.4) for each block, check the contents of its final destination (in this case,
+     pos[03]=free, pos[05]=21, pos[12]=15, pos[21]=23, pos[26]=25)
+     
+5.5) check the contents of the final destinations (in this case, 21 15 23 25)
+     for each such block, in case its own final destination is free move it there,
+     else move it into secondary storage
+     (in this case, none of them can be moved to their destination)
++======21=26===+
+|21|15|23|25|  |  secondary storage
++==============+
+
+5.6) mark the blocks moved away from final destinations as free
+
++01-02----04-------07-08-------------------15----------19-20------------------+
+|03|05|  |04|  |26|12|13|19|17|10|  |08|11|16|07|09|  |18|20|  |02|01|  |06|  |
++---------@@----------------------------!!----------------@@----!!----!!------+
+
+5.7) move the blocks selected at step 5.2 into their final destinations,
+     if they were not moved already in their final destination by step 5.5
+     (note: step 5.5 could have moved them to secondary storage)
+     
+     remember to read and write them in disk order, and to mark their initial
+     position as free AFTER they have been written in their final destination,
+     and recorded as such.
+     (in this case: read 03|05  21|26|12, write 03 05 12 21 26)
+     and to mark them with @@
++------01-04-02-------08----------07-------15----------19-20------------------+
+|  |  |03|04|05|  |  |13|19|17|10|12|08|11|16|07|09|  |18|20|21|02|01|  |06|26|
++------@@-@@-@@-------------------@@----!!----------------@@-@@-!!----!!----@@+
+
+5.8) in secondary storage, mark as free any block that was just written (to its
+     final destination) during previous step (in this case, 21).
++======21=26===+
+|  |15|23|25|  |  secondary storage
++==============+
+       
+5.9) scan secondary storage for blocks that can be directly written to their
+     final destination (i.e. if it's free) and move them
+     (in this case none)
+
+5.10) if secondary storage is more than 50% full then perform extra pass 6,
+     else set P = P+N and restart from 5.1 if new P is less than device size 
+     
+
+6) extra pass if secondary storage is more than 50% full
+
+6.1) find up to N blocks that can be directly moved to their final destination
+     how to find: get the position number of free blocks not marked '!!'
+     note: the blocks cound be in secondary storage
+     (in this case 01 02 06 07 18)
+     
+     read them in-order (in this case 07 18 02 01 06)
+     and move them into their final destination in-order (in this case
+     01 02 07 07 18)
++------01-04-02-------08----------07-------15-------19----20------------------+
+|01|02|03|04|05|06|07|13|19|17|10|12|08|11|16|  |09|18|  |20|21|  |  |  |  |26|
++@@-@@-@@-@@-@@-@@-@@-------------@@----!!----------@@----@@-@@-!!----!!----@@+
+     
+6.2) repeat 6.1) until secondary storage is 25% full or less,
+     or until work is finished,
+     or until less than N/2 blocks can be moved (whatever comes first)
+     (in this case move 16 19 23 25)
++------01-04-02-------08----------07----------15----19----20-------21----26---+
+|01|02|03|04|05|06|07|13|  |17|10|12|08|11|  |16|09|18|19|20|21|  |23|  |25|26|
++@@-@@-@@-@@-@@-@@-@@-------------@@----!!----@@----@@-@@-@@-@@-!!-@@-!!-@@-@@+
++==============+
+|  |15|  |  |  |  secondary storage
++==============+
+      
+6.3) move as many blocks as possible from secondary storage to free positions
+     marked '!!'
+     (in this case 15)
++------01-04-02-------08----------07----------15----19----20-------21----26---+
+|01|02|03|04|05|06|07|13|  |17|10|12|08|11|  |16|09|18|19|20|21|15|23|  |25|26|
++@@-@@-@@-@@-@@-@@-@@-------------@@----!!----@@----@@-@@-@@-@@-!!-@@-!!-@@-@@+
++==============+
+|  |  |  |  |  |  secondary storage
++==============+
+
+6.4) set P = P + N and restart from 5.1 if new P is less than device size
+     (in this case N = 7 and new P = 8)
+
+[continued]
+
+[5.1] N=5, lookup positions 08..12
+
+[5.2] pos[09]=free, pos[12]=@@, so increase N=7 and try again
+
+[5.1] N=7, lookup positions 08..14, found blocks 13 17 10 08 11 (ignore 12,
+      is marked '@@')
+
+[5.2] 5 positions are used (= secondary storage size), continue with [5.3] 
+
+[5.3] order blocks by their number, 08 10 11 13 17
+
+[5.4] for each block, check the contents of its final destination
+     pos[08]=13, pos[10]=17, pos[11]=10, pos[13]=08, pos[17]=09
+     
+     read blocks in final destinations, 13 17 10 08 09
+
+[5.5] check the contents of such blocks (13 17 10 08 09) final destinations.
+     for each such block, in case its own final destination is free move it there,
+     else move it into secondary storage
+     only 09 can be moved directly (17 requires 09 to be moved first,
+     13 requires 08 to be moved first),
+     so put 13 17 10 08 to secondary storage.
+     
++08============+
+|13|17|10|08|  |  secondary storage
++==============+
+
+[5.6] mark the blocks moved away from final destinations as free
+
++------01-04-02-------------------07----------15----19----20-------21----26---+
+|01|02|03|04|05|06|07|  |09|  |  |12|  |11|  |16|  |18|19|20|21|15|23|  |25|26|
++@@-@@-@@-@@-@@-@@-@@----@@-------@@----!!----@@----@@-@@-@@-@@-!!-@@-!!-@@-@@+
+     
+[5.7] move the blocks selected at step [5.2] into their final destinations,
+     if they were not moved already in their final destination by step 5.5
+     (note: step 5.5 could have moved them to secondary storage)
+     read/write in disk order, update marks.
+     
+     read 13 17 10 08 11 (11 from main device, others from secondary storage)
+     write 08 10 11 13 17 to their final destinations
+     
++------01-04-02-------------------07-08-------15----19----20-------21----26---+
+|01|02|03|04|05|06|07|08|09|10|11|12|13|  |  |16|17|18|19|20|21|15|23|  |25|26|
++@@-@@-@@-@@-@@-@@-@@-@@-@@-@@-@@-@@-@@-!!----@@-@@-@@-@@-@@-@@-!!-@@-!!-@@-@@+
+
+[5.8] in secondary storage, mark as free any block that was just written (to its
+     final destination) during previous step (in this case, all).
++==============+
+|  |  |  |  |  |  secondary storage
++==============+
+
+[5.9] scan secondary storage for blocks that can be directly written to their
+     final destination (i.e. if it's free) and move them
+     (in this case none)
+
+[5.10] if secondary storage is more than 50% full then perform extra pass 6,
+     else set P = P+N and restart from 5.1 if new P is less than device size 
+     (in this case secondary storage is empty, so since N=7, set new P=15 and
+     restart from 5.1)
+
+[5.1] N=5, lookup positions 15..19
+
+[5.2] pos[15]=free, all other = @@, so increase N=10 and try again
+
+[5.1] N=10, lookup positions 15..24
+
+[5.2] ignoring free and @@ positions, we find pos[22] = 15
+      so increase N=14 and try again
+
+[5.1] N=14, lookup positions 15..28 -> truncate to device length (26)
+      so N=12, lookup 15..26
+
+[5.2] ignoring free and @@ positions, we still find only pos[22] = 15
+      and cannot increase N more, we are at end of device
+
+[5.3] order found blocks by their number, 15 
+
+[5.4] for each block, check the contents of its final destination
+     pos[15]=free
+     
+     read blocks in final destinations, none
+
+[5.5] check the contents of such blocks (none) final destinations
+     and for each such block -> empty loop
+
+[5.6] mark the blocks moved away from final destinations (none) as free
+
+[5.7] move the blocks selected at step [5.2] into their final destinations,
+     if they were not moved already in their final destination by step 5.5
+     (note: step 5.5 could have moved them to secondary storage)
+     read/write in disk order, update marks.
+     
+     we move block 15 to its destination
++------01-04-02-------------------07-08-------15----19----20-------21----26---+
+|01|02|03|04|05|06|07|08|09|10|11|12|13|  |15|16|17|18|19|20|21|  |23|  |25|26|
++@@-@@-@@-@@-@@-@@-@@-@@-@@-@@-@@-@@-@@-!!-@@-@@-@@-@@-@@-@@-@@-!!-@@-!!-@@-@@+
+
+[5.8] in secondary storage, mark as free any block that was just written (to its
+     final destination) during previous step (in this case, none).
+
+[5.9] scan secondary storage for blocks that can be directly written to their
+     final destination (i.e. if it's free) and move them
+     (in this case none)
+
+[5.10] if secondary storage is more than 50% full then perform extra pass 6,
+     else set P = P+N and restart from 5.1 if new P is less than device size 
+     (in this case secondary storage is empty, so since N=12, set new P=26,
+     is not less than device size -> we finished)
