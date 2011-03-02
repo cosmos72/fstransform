@@ -4,11 +4,11 @@
  *  Created on: Feb 27, 2011
  *      Author: max
  */
-#include <stddef.h>    /* for size_t */
-#include <sys/types.h> /* for off_t */
+#include <stddef.h>    // for size_t */
+#include <sys/types.h> // for off_t */
 
-#include <cstdio>              /* for fprintf() */
-#include <map>                /* for std::map<K,V> */
+#include <cstdio>              // for fprintf() */
+#include <map>                // for std::map<K,V> */
 
 typedef size_t ft_size; /* type used to represent number of items in memory */
 typedef off_t  ft_off; /* type used to represent length of a file */

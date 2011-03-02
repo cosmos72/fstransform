@@ -11,6 +11,9 @@
 #ifndef FSTRANSFORM_AUTOCONF_HH
 #define FSTRANSFORM_AUTOCONF_HH
 
+#include "check.hh"
+
+
 /** define if compiler supports the types (long long) and (unsigned long long) */
 #ifndef FT_HAVE_LONG_LONG
 #  if defined(__GNUC__)
@@ -45,6 +48,16 @@
 #  endif
 #endif /* FT_HAVE_EXTERN_C */
 
+
+/**
+ * define if namespace Foo { ... } is understood by the compiler.
+ * should be defined in C++, and undefined in C.
+ */
+#ifndef FT_HAVE_NAMESPACE
+#  if defined(__cplusplus)
+#    define FT_HAVE_NAMESPACE
+#  endif
+#endif /* FT_HAVE_NAMESPACE */
 
 
 /**

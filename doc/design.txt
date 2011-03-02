@@ -42,6 +42,10 @@ every reasonable precaution is taken in order not to lose/corrupt data.
 
 ################################# Reminders ###################################
 
+* instantiate template classes only T = ft_u32 and T = ft_u64
+
+* components must be emulable, especially OS I/O
+
 * fstatfs(loop_fd) to stat device filesystem, including used space (=S) and total inodes (=I)
  
 * create loop filesystem with number of inodes >= I

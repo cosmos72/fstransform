@@ -8,50 +8,50 @@
 #ifndef FSTRANSFORM_WORK_HH
 #define FSTRANSFORM_WORK_HH
 
-#include "types.hh"   /* for ft_off                     */
-#include "ctx.hh"     /* for ft_ctx                     */
-#include "map.hh"     /* for ft_map<T>                  */
+#include "types.hh"   // for ft_off
+#include "io/io.hh"   // for ft_io
+#include "map.hh"     // for ft_map<T>
+
+
+FT_NAMESPACE_BEGIN
 
 /**
- * instantiate and run ft_work<T>::work() with the smallest T that can represent device length.
+ * instantiate and run ft_work<T>::work(io) with the smallest T that can represent device length.
  * return 0 if success, else error.
  *
  * implementation:
  * iterates on all known types T and, if ff_check<T>() succeeds,
  * calls ff_work<T>() passing to it device length and file descriptors
  */
-int ff_work_dispatch(const ft_ctx & ctx);
+int ff_work_dispatch(FT_IO_NS ft_io & io);
 
 
 
 template<typename T>
 class ft_work_ctx
 {
-public:
-    enum { FC_FILE_COUNT = ft_ctx::FC_FILE_COUNT };
-
-protected:
+private:
     T fm_dev_length;
-    const int * fm_file_fd;
+    FT_IO_NS ft_io & fm_io;
 
 public:
-    /* constructor. takes a reference to ctx.file_fds(), does NOT copy them! */
-    ft_work_ctx(T dev_length, const ft_ctx & ctx);
+    /** constructor. stores a reference to ft_io in this ft_work_ctx */
+    ft_work_ctx(T dev_length, FT_IO_NS ft_io & io);
 
-    /** destructor. does nothing */
-    ~ft_work_ctx();
+    /** destructor does nothing */
+    // ~ft_work_ctx();
 
-    /** return true if this ft_ctx is currently (and correctly) open */
-    bool is_open() const;
+    /** return true if this ft_work_ctx is currently (and correctly) open */
+    FT_INLINE bool is_open() const { return fm_dev_length != 0 && fm_io.is_open(); }
 
     /** close file descriptors */
     void close();
 
     /** return device length */
-    FT_INLINE const T dev_length() const { return fm_dev_length; }
+    FT_INLINE T dev_length() const { return fm_dev_length; }
 
-    /** return file descriptors */
-    FT_INLINE const int * file_fds() const { return fm_file_fd; }
+    /** return I/O implementation */
+    FT_INLINE FT_IO_NS ft_io & io() const { return fm_io; }
 };
 
 
@@ -60,7 +60,7 @@ public:
 
 
 /**
- * class doing the bulk of transformation work.
+ * class doing the core of transformation work.
  *
  * contains the algorithm to move LOOP-FILE around
  * until its physical layout matches its logical layout.
@@ -70,55 +70,53 @@ template<typename T>
 class ft_work
 {
 private:
-    ft_map<T> loop_map, loop_holes_map, dev_map;
+    ft_map<T> dev_map, loop_map;
+    ft_work_ctx<T> * ctx;
 
     /** cannot call copy constructor */
-    ft_work(const ft_work &);
+    ft_work(const ft_work<T> &);
 
     /** cannot call assignment operator */
-    const ft_work & operator=(const ft_work &);
+    const ft_work<T> & operator=(const ft_work<T> &);
+
+public:
+    /** default constructor */
+    ft_work();
+
+    /** destructor. calls quit() */
+    ~ft_work();
+
+    /**
+     * high-level do-everything method. calls in sequence init(), run() and quit().
+     * return 0 if success, else error.
+     */
+    static int main(ft_work_ctx<T> & work_ctx);
+
+
+    /** return true if this ft_work is currently (and correctly) initialized */
+    bool is_initialized();
 
     /**
      * read extents from LOOP-FILE and ZERO-FILE and use them to fill ft_work<T>
      * return 0 if success, else error
      */
-    int init(const ft_work_ctx<T> & ctx);
+    int init(ft_work_ctx<T> & work_ctx);
 
     /** core of transformation algorithm */
     int run();
 
-public:
-    /**
-     * default constructor.
-     *
-     * implementation note: compiler-generated default constructor would be OK,
-     * but our (intentionally uncallable) copy constructor declaration inhibits its generation
-     */
-    ft_work();
-
-    /**
-     * destructor
-     *
-     * implementation note: compiler-generated destructor would be OK,
-     * we implement it only for symmetry with default constructor
-     */
-    ~ft_work();
-
-
-    /**
-     * call in sequence init() and run().
-     * return 0 if success, else error.
-     *
-     * in case of error in init() it does not call run()
-     */
-    int work(const ft_work_ctx<T> & ctx);
+    /** performs cleanup. called by destructor, you can also call it explicitly after (or instead of) run()  */
+    void quit();
 };
+
+
+FT_NAMESPACE_END
 
 
 #ifdef FT_HAVE_EXTERN_TEMPLATE
 
-#  define FT_EXTERN_TEMPLATE_work_ctx(T) class ft_work_ctx<T>;
-#  define FT_EXTERN_TEMPLATE_work(T)     class ft_work<T>;
+#  define FT_EXTERN_TEMPLATE_work_ctx(T) class FT_NS ft_work_ctx<T>;
+#  define FT_EXTERN_TEMPLATE_work(T)     class FT_NS ft_work<T>;
 
 #  define FT_EXTERN_TEMPLATE_work_hh(ft_prefix, ft_list_t) \
         ft_list_t(ft_prefix, FT_EXTERN_TEMPLATE_work_ctx) \
@@ -128,6 +126,7 @@ public:
 #else
 #  include "work.template.hh"
 #endif /* FT_EXTERN_TEMPLATE */
+
 
 
 #endif /* FSTRANSFORM_WORK_HH */

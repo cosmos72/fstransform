@@ -7,11 +7,13 @@
 
 #include "first.hh"
 
-#include <algorithm>     /* for std::sort */
+#include <algorithm>     // for std::sort()
 
-#include "assert.hh"     /* for ff_assert() */
-#include "vector.hh"     /* for ft_vector<T> */
+#include "assert.hh"     // for ff_assert()
+#include "map.hh"        // for ft_map<T>
+#include "vector.hh"     // for ft_vector<T>
 
+FT_NAMESPACE_BEGIN
 
 /**
  * append a single extent to this vector.
@@ -62,7 +64,16 @@ void ft_vector<T>::append(const ft_vector<T> & other)
 }
 
 
-
+/**
+ * append an extent map to this vector.
+ *
+ * this method does not merge extents: the two lists of extents will be simply concatenated
+ */
+template<typename T>
+void ft_vector<T>::append(const ft_map<T> & other)
+{
+    this->insert(this->end(), other.begin(), other.end());
+}
 
 /**
  * reorder this vector in-place, sorting by fm_physical
@@ -76,6 +87,20 @@ void ft_vector<T>::sort_by_physical()
 
 
 
+/**
+ * append a new extent to this container.
+ * container must check if new extent touches the last extent already in the container
+ * but is assured (and can assume) than new extent will NEVER touch or intersect other extents.
+ *
+ * container is required to merge the new extent with the last one it contains, if they touch.
+ */
+template<typename T>
+void ft_vector<T>::extent_append(ft_uoff physical, ft_uoff logical, ft_uoff length)
+{
+    // we know from ff_io::*_extents_list<T>(ft_map<T> &) that conversion ft_uoff -> T will not overflow
+    append((T) physical, (T) logical, (T) length);
+}
 
 
 
+FT_NAMESPACE_END

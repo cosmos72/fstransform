@@ -10,12 +10,13 @@
 
 #include "check.hh"
 
-#include <map>       /* for std::map<K,V> */
+#include <map>       // for std::map<K,V> */
 
-#include "types.hh"  /* for ft_off */
-#include "fwd.hh"    /* for ft_map<T> and ft_vector<T> forward declarations */
-#include "extent.hh" /* for ft_extent_key<T>, ft_extent_payload<T> */
+#include "types.hh"  // for ft_off */
+#include "fwd.hh"    // for ft_map<T> and ft_vector<T> forward declarations */
+#include "extent.hh" // for ft_extent_key<T>, ft_extent_payload<T> */
 
+FT_NAMESPACE_BEGIN
 
 template<typename T>
 class ft_map : private std::map<ft_extent_key<T>, ft_extent_payload<T> >
@@ -129,6 +130,9 @@ public:
     // return number of elements in this map
     super_type::size;
 
+    // clear this map, i.e. erase all elements
+    super_type::clear;
+
     /**
      * insert a single extent to the ft_map,
      * merging with existing extents where possible,
@@ -169,15 +173,15 @@ public:
     void complement0(const ft_vector<T> & other, T device_length);
 };
 
+FT_NAMESPACE_END
 
 #ifdef FT_HAVE_EXTERN_TEMPLATE
-#  define FT_EXTERN_TEMPLATE_map(T) class ft_map<T>;
+#  define FT_EXTERN_TEMPLATE_map(T)                       class FT_NS ft_map<T>;
 #  define FT_EXTERN_TEMPLATE_map_hh(ft_prefix, ft_list_t) ft_list_t(ft_prefix, FT_EXTERN_TEMPLATE_map)
    FT_EXTERN_TEMPLATE_DECLARE(FT_EXTERN_TEMPLATE_map_hh)
 #else
 #  include "map.template.hh"
 #endif /* FT_EXTERN_TEMPLATE */
-
 
 
 #endif /* FSTRANSLATE_MAP_HH */

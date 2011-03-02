@@ -10,6 +10,8 @@
 
 #include "check.hh"
 
+FT_NAMESPACE_BEGIN
+
 template<typename T> struct ft_type_traits;
 /**
  * whether char is signed or unsigned is implementation dependent.
@@ -30,7 +32,9 @@ template<> struct ft_type_traits<long long>          { typedef unsigned long lon
 template<> struct ft_type_traits<unsigned long long> { typedef unsigned long long unsigned_type; typedef long long   signed_type; };
 #endif /* FT_HAVE_LONG_LONG */
 
-#define FT_TYPE_TO_UNSIGNED(T) ft_type_traits< T >::unsigned_type
-#define FT_TYPE_TO_SIGNED(T)   ft_type_traits< T >::signed_type
+#define FT_TYPE_TO_UNSIGNED(T) FT_NS ft_type_traits< T >::unsigned_type
+#define FT_TYPE_TO_SIGNED(T)   FT_NS ft_type_traits< T >::signed_type
+
+FT_NAMESPACE_END
 
 #endif /* FSTRANSLATE_TRAITS_HH */

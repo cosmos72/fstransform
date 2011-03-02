@@ -20,6 +20,30 @@
 #endif /* FT_HAVE_EXTERN_C */
 
 
+#ifdef FT_HAVE_NAMESPACE
+   /** in C++, define to namespace ft { ... }. in C, define as empty  */
+#  define FT_NAMESPACE_BEGIN namespace ft {
+#  define FT_NAMESPACE_END   }
+
+#  define FT_IO_NAMESPACE_BEGIN FT_NAMESPACE_BEGIN namespace io {
+#  define FT_IO_NAMESPACE_END   } FT_NAMESPACE_END
+
+#  define FT_NS              ft::
+#  define FT_IO_NS           io::
+#else
+
+#  define FT_NAMESPACE_BEGIN
+#  define FT_NAMESPACE_END
+
+#  define FT_IO_NAMESPACE_BEGIN
+#  define FT_IO_NAMESPACE_END
+
+#  define FT_IO_NS
+#  define FT_NS
+
+#endif /* FT_HAVE_NAMESPACE */
+
+
 /*
  * does compiler supports
  *   extern template class Foo<T>;
@@ -31,18 +55,9 @@
  */
 #ifdef FT_HAVE_EXTERN_TEMPLATE
 
-#  ifdef FT_HAVE_LONG_LONG
-#    define FT_EXTERN_TEMPLATE_LIST(ft_extern_template_prefix, ft_class_or_function_macro) \
-       ft_extern_template_prefix ft_class_or_function_macro(unsigned short) \
-       ft_extern_template_prefix ft_class_or_function_macro(unsigned int) \
-       ft_extern_template_prefix ft_class_or_function_macro(unsigned long) \
-       ft_extern_template_prefix ft_class_or_function_macro(unsigned long long)
-#  else
-#    define FT_EXTERN_TEMPLATE_LIST(ft_extern_template_prefix, ft_class_or_function_macro) \
-       ft_extern_template_prefix ft_class_or_function_macro(unsigned short) \
-       ft_extern_template_prefix ft_class_or_function_macro(unsigned int) \
-       ft_extern_template_prefix ft_class_or_function_macro(unsigned long)
-#  endif
+#  define FT_EXTERN_TEMPLATE_LIST(ft_extern_template_prefix, ft_class_or_function_macro) \
+     ft_extern_template_prefix ft_class_or_function_macro(ft_u32) \
+     ft_extern_template_prefix ft_class_or_function_macro(ft_u64)
 
 #  define FT_EXTERN_TEMPLATE_DECLARE(ft_class_or_function_macro_list)     ft_class_or_function_macro_list(extern template, FT_EXTERN_TEMPLATE_LIST)
 #  define FT_EXTERN_TEMPLATE_INSTANTIATE(ft_class_or_function_macro_list) ft_class_or_function_macro_list(       template, FT_EXTERN_TEMPLATE_LIST)

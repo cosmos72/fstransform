@@ -7,11 +7,13 @@
 
 #include "first.hh"
 
-#include <cstdio>  /* for stderr     */
-#include <cstdarg> /* for vfprintf() */
-#include <cstring> /* for strerror() */
+#include <cstdio>  // for stderr     */
+#include <cstdarg> // for vfprintf() */
+#include <cstring> // for strerror() */
 
-#include "fail.hh"   /* for ff_fail()  */
+#include "fail.hh"   // for ff_fail()  */
+
+FT_NAMESPACE_BEGIN
 
 /**
  * print fmt and subsequent printf-style args to stderr,
@@ -47,3 +49,4 @@ int ff_fail(int err, const char * fmt, ...)
     return 1;
 }
 
+FT_NAMESPACE_END

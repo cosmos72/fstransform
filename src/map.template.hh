@@ -7,11 +7,13 @@
 
 #include "first.hh"
 
-#include <utility>       /* for std::make_pair() */
+#include <utility>       // for std::make_pair() */
 
-#include "assert.hh"     /* for ff_assert macro */
-#include "map.hh"        /* for ft_map<T> */
-#include "vector.hh"     /* for ft_vector<T> */
+#include "assert.hh"     // for ff_assert macro */
+#include "map.hh"        // for ft_map<T> */
+#include "vector.hh"     // for ft_vector<T> */
+
+FT_NAMESPACE_BEGIN
 
 #define ff_map_assert ff_assert
 
@@ -353,3 +355,5 @@ void ft_map<T>::complement0(const ft_vector<T> & other, T device_length)
         append0(last, last, device_length - last);
     }
 }
+
+FT_NAMESPACE_END

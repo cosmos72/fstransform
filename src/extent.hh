@@ -10,7 +10,9 @@
 
 #include "check.hh"
 
-#include <utility>  /* for std_pair<T1,T2> */
+#include <utility>  // for std_pair<T1,T2> */
+
+FT_NAMESPACE_BEGIN
 
 template<typename T>
 struct ft_extent_key
@@ -39,7 +41,35 @@ struct ft_extent_payload
 template<typename T>
 class ft_extent : public std::pair<ft_extent_key<T>, ft_extent_payload<T> >
 {
+private:
+    typedef ft_extent_key<T>                   key_type;
+    typedef ft_extent_payload<T>               mapped_type;
+    typedef std::pair<key_type, mapped_type>   super_type;
+
 public:
+    /* default constructor */
+    ft_extent() : super_type() { }
+
+    /* copy constructor */
+    ft_extent(const ft_extent<T> & other) : super_type(other) { }
+
+    /* copy constructor accepting base class */
+    ft_extent(const super_type & other) : super_type(other) { }
+
+    /* assignment operator */
+    const super_type & operator=(const ft_extent<T> & other)
+    {
+        super_type::operator=(other);
+        return *this;
+    }
+
+    /* assignment operator accepting base class */
+    const super_type & operator=(const super_type & other)
+    {
+        super_type::operator=(other);
+        return *this;
+    }
+
     FT_INLINE T & physical() { return this->first.fm_physical; }
     FT_INLINE T & logical()  { return this->second.fm_logical; }
     FT_INLINE T & length()   { return this->second.fm_length;  }
@@ -77,5 +107,7 @@ enum ft_extent_relation {
     FC_EXTENT_AFTER,       /**< first key+extent is after  second, either they do not touch or they touch but their fm_logical does not match */
 };
 
+
+FT_NAMESPACE_END
 
 #endif /* FSTRANSLATE_EXTENT_HH */
