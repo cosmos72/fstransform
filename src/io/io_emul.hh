@@ -21,8 +21,6 @@ protected:
     /**
      * retrieve LOOP-FILE extents and insert them into ret_list.
      * return 0 for success, else error (and ret_list contents will be UNDEFINED).
-     *
-     * must be overridden by sub-classes
      */
     virtual int loop_file_extents_list(ft_extent_list & ret_list);
 

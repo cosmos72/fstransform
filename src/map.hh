@@ -175,13 +175,14 @@ public:
 
 FT_NAMESPACE_END
 
+
 #ifdef FT_HAVE_EXTERN_TEMPLATE
-#  define FT_EXTERN_TEMPLATE_map(T)                       class FT_NS ft_map<T>;
-#  define FT_EXTERN_TEMPLATE_map_hh(ft_prefix, ft_list_t) ft_list_t(ft_prefix, FT_EXTERN_TEMPLATE_map)
-   FT_EXTERN_TEMPLATE_DECLARE(FT_EXTERN_TEMPLATE_map_hh)
+#  define FT_TEMPLATE_map_hh(ft_prefix, T) ft_prefix class FT_NS ft_map< T >;
+   FT_TEMPLATE_DECLARE(FT_TEMPLATE_map_hh)
 #else
 #  include "map.template.hh"
-#endif /* FT_EXTERN_TEMPLATE */
+#endif /* FT_HAVE_EXTERN_TEMPLATE */
+
 
 
 #endif /* FSTRANSLATE_MAP_HH */

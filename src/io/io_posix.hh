@@ -34,7 +34,8 @@ protected:
      * retrieve LOOP-FILE extents and insert them into ret_list.
      * return 0 for success, else error (and ret_list contents will be UNDEFINED).
      *
-     * must be overridden by sub-classes
+     * must (and will) also check that device blocks count can be represented by ret_list,
+     * by calling ret_list.extent_set_range(block_size, block_count)
      */
     virtual int loop_file_extents_list(ft_extent_list & ret_list);
 

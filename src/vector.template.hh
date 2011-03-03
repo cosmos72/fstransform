@@ -8,12 +8,20 @@
 #include "first.hh"
 
 #include <algorithm>     // for std::sort()
+#include <cerrno>        // for EFBIG
 
 #include "assert.hh"     // for ff_assert()
 #include "map.hh"        // for ft_map<T>
 #include "vector.hh"     // for ft_vector<T>
 
 FT_NAMESPACE_BEGIN
+
+
+/** default constructor. sets block_size = 0 */
+template<typename T>
+ft_vector<T>::ft_vector() : super_type(), block_size(0)
+{ }
+
 
 /**
  * append a single extent to this vector.
@@ -85,6 +93,26 @@ void ft_vector<T>::sort_by_physical()
 }
 
 
+/**
+ * store block_size into this container, and check that container is able
+ * to store physical, logical and length values up to block_count.
+ *
+ * since container stores them in type T, it must (and will) check
+ * that block_count does not overflow T, and immediately return EFBIG if it overflows.
+ *
+ * return 0 if success, else error
+ */
+template<typename T>
+int ft_vector<T>::extent_set_range(ft_uoff block_size, ft_uoff block_count)
+{
+    T n = (T) block_count;
+    int err = 0;
+    if (n < 0 || block_count != (ft_uoff) n)
+        err = EFBIG;
+    else
+        this->block_size = block_size;
+    return err;
+}
 
 
 /**

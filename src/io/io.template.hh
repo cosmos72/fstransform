@@ -17,13 +17,12 @@ FT_IO_NAMESPACE_BEGIN
 /**
  * retrieve LOOP-FILE extents and insert them into ret_map.
  * return 0 for success, else error (and ret_map contents will be unchanged).
+ *
+ * also checks that device blocks count can be represented by T
  */
 template<class T>
 int ft_io::loop_file_extents(ft_map<T> & ret_map)
 {
-    if ((T) dev_len < 0 || dev_len != (ft_uoff)(T) dev_len)
-        return EFBIG; // loop_file_extents_list() would overflow, bail out!
-
     ft_vector<T> extents_list;
     int err = loop_file_extents_list(extents_list);
     if (err == 0) {
@@ -49,9 +48,6 @@ int ft_io::loop_file_extents(ft_map<T> & ret_map)
 template<class T>
 int ft_io::device_extents(const ft_map<T> & loop_file_map, ft_map<T> & ret_map)
 {
-    if ((T) dev_len < 0 || dev_len != (ft_uoff)(T) dev_len)
-        return EFBIG; // free_space_extents_list() would overflow, bail out!
-
     ft_vector<T> extents_list;
     int err = free_space_extents_list(extents_list);
     if (err == 0) {

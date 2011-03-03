@@ -27,6 +27,9 @@ typedef dev_t  ft_dev;   // type used for ID of block devices
 
 typedef FT_TYPE_TO_UNSIGNED(ft_off) ft_uoff; // unsigned variant of ft_off, in case ft_off is signed
 
+// a medium-size unsigned integer: smaller than ft_off, but large enough to represent blocks count for many devices
+typedef unsigned int ft_uint;
+
 
 typedef struct stat ft_stat;
 

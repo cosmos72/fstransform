@@ -74,7 +74,7 @@ int ft_io_posix::open(char const* const path[FC_FILE_COUNT])
                 break;
             }
 
-            if (i == 0)
+            if (i == FC_DEVICE)
                 /* for DEVICE, we want to know its dev_t */
                 err = ff_posix_blkdev_dev(fd[i], & dev[i]);
             else
@@ -86,9 +86,9 @@ int ft_io_posix::open(char const* const path[FC_FILE_COUNT])
                 break;
             }
 
-            if (i == 0) {
+            if (i == FC_DEVICE) {
                 /* for DEVICE, we also want to know its length */
-                if ((err = ff_posix_blkdev_size(fd[0], & dev_len)) != 0) {
+                if ((err = ff_posix_blkdev_size(fd[FC_DEVICE], & dev_len)) != 0) {
                     err = ff_fail(err, "error in %s ioctl('%s', BLKGETSIZE64)", label[0], path[0]);
                     break;
                 }
@@ -96,9 +96,9 @@ int ft_io_posix::open(char const* const path[FC_FILE_COUNT])
                 dev_length(dev_len);
             } else {
                 /* for LOOP-FILE and ZERO-FILE, we check they are actually contained in DEVICE */
-                if (dev[0] != dev[i]) {
-                    err = ff_fail(EINVAL, "invalid arguments: '%s' is device 0x%04x, but %s '%s' is contained in device 0x%04x\n",
-                                  path[0], (unsigned)dev[0], path[i], (unsigned)dev[i]);
+                if (dev[FC_DEVICE] != dev[i]) {
+                    err = ff_fail(0, "invalid arguments: '%s' is device 0x%04x, but %s '%s' is contained in device 0x%04x\n",
+                                  path[FC_DEVICE], (unsigned)dev[FC_DEVICE], label[i], path[i], (unsigned)dev[i]);
                     break;
                 }
             }
@@ -129,8 +129,11 @@ void ft_io_posix::close()
 
 
 /**
- * retrieve LOOP-FILE extents and insert them into ret_vector.
- * return 0 for success, else error (and ret_vector contents will be unchanged).
+ * retrieve LOOP-FILE extents and insert them into ret_list.
+ * return 0 for success, else error (and ret_list contents will be UNDEFINED).
+ *
+ * must (and will) also check that device blocks count can be represented by ret_list,
+ * by calling ret_list.extent_set_range(block_size, block_count)
  */
 int ft_io_posix::loop_file_extents_list(ft_extent_list & ret_list)
 {
@@ -138,7 +141,7 @@ int ft_io_posix::loop_file_extents_list(ft_extent_list & ret_list)
         return ENOTCONN; // not open!
 
     /* ff_posix_extents() appends into ret_list, does NOT overwrite it */
-    return ff_posix_extents(fd[FC_LOOP_FILE], ret_list);
+    return ff_posix_extents(fd[FC_LOOP_FILE], dev_length(), ret_list);
 }
 
 /**
@@ -154,7 +157,7 @@ int ft_io_posix::free_space_extents_list(ft_extent_list & ret_list)
         return ENOTCONN; // not open!
 
     /* ff_posix_extents() appends into ret_list, does NOT overwrite it */
-    return ff_posix_extents(fd[FC_ZERO_FILE], ret_list);
+    return ff_posix_extents(fd[FC_ZERO_FILE], dev_length(), ret_list);
 }
 
 

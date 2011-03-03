@@ -15,17 +15,9 @@
 #include "map.hh"         // for ft_map<T>
 #include "fail.hh"        // for ff_fail()
 #include "io/io.hh"       // for ft_io
-#include "work.hh"        // for ff_work_dispatch(), ft_work_ctx<T>, ft_work<T>
+#include "work.hh"        // for ff_work_dispatch(), ft_work<T>
 
 FT_NAMESPACE_BEGIN
-
-/** constructor. stores a reference to ft_io in this ft_work_ctx */
-template<typename T>
-ft_work_ctx<T>::ft_work_ctx(T dev_length, FT_IO_NS ft_io & io)
-    : fm_dev_length(dev_length), fm_io(io)
-{ }
-
-
 
 
 template<typename const_iter>
@@ -70,7 +62,7 @@ static void ff_map_show(const char * label, const ft_map<T> & map)
 /** default constructor */
 template<typename T>
 ft_work<T>::ft_work()
-    : dev_map(), loop_map(), ctx(NULL)
+    : dev_map(), loop_map(), io(NULL)
 { }
 
 
@@ -87,10 +79,10 @@ ft_work<T>::~ft_work()
  * return 0 if success, else error.
  */
 template<typename T>
-int ft_work<T>::main(ft_work_ctx<T> & work_ctx)
+int ft_work<T>::main(FT_IO_NS ft_io & io)
 {
     ft_work<T> worker;
-    int err = worker.init(work_ctx);
+    int err = worker.init(io);
     if (err == 0)
         err = worker.run();
 
@@ -103,7 +95,7 @@ int ft_work<T>::main(ft_work_ctx<T> & work_ctx)
 template<typename T>
 bool ft_work<T>::is_initialized()
 {
-    return ctx != NULL && ctx->is_open();
+    return io != NULL && io->is_open();
 }
 
 
@@ -112,16 +104,14 @@ bool ft_work<T>::is_initialized()
  * return 0 if success, else error
  */
 template<typename T>
-int ft_work<T>::init(ft_work_ctx<T> & work_ctx)
+int ft_work<T>::init(FT_IO_NS ft_io & io)
 {
     if (is_initialized()) {
         ff_fail(0, "I/O already initialized");
         return EISCONN;
     }
-    // cleanup in case ctx != NULL or dev_map, loop_map are not empty
+    // cleanup in case io != NULL or dev_map, loop_map are not empty
     quit();
-
-    FT_IO_NS ft_io & io = work_ctx.io();
 
     int err = 0;
 
@@ -140,12 +130,22 @@ int ft_work<T>::init(ft_work_ctx<T> & work_ctx)
     } while(0);
 
     if (err == 0)
-        ctx = & work_ctx;
+        this->io = & io;
     else
         quit(); // clear dev_map and loop_map
 
     return err;
 }
+
+/** performs cleanup. called by destructor, you can also call it explicitly after (or instead of) run()  */
+template<typename T>
+void ft_work<T>::quit()
+{
+    dev_map.clear();
+    loop_map.clear();
+    io = NULL; // do not delete or close ft_io, we did not create it!
+}
+
 
 /** core of transformation algorithm */
 template<typename T>
@@ -155,66 +155,36 @@ int ft_work<T>::run()
 }
 
 
-/** performs cleanup. called by destructor, you can also call it explicitly after (or instead of) run()  */
-template<typename T>
-void ft_work<T>::quit()
-{
-    dev_map.clear();
-    loop_map.clear();
-    ctx = NULL; // do not delete work_ctx<T>, we did not create it!
-}
+
+
+
 
 
 /**
- * create ft_work_ctx<T>
- * and call ft_work<T>::main()
- * passing created ft_work_ctx
- */
-template<typename T>
-static int ff_work(T dev_length, FT_IO_NS ft_io & io)
-{
-    ft_work_ctx<T> work_ctx(dev_length, io);
-
-    return ft_work<T>::main(work_ctx);
-}
-
-
-/** return true if dev_length can be stored in type T, else false */
-template<typename T>
-static bool ff_check(ft_uoff dev_length)
-{
-    if ((T) dev_length < 0 || dev_length != (ft_uoff)(T) dev_length) {
-        /* overflow! we cannot represent device length - and extents! - with current choice of 'T' */
-        return false;
-    }
-    return true;
-}
-
-/**
- * instantiate and run ft_work<T>::work() with the smallest T that can represent device length.
+ * instantiate and run ft_work<T>::main(io) with the smallest T that can represent device blocks count.
  * return 0 if success, else error.
  *
  * implementation:
- * iterates on all known types T and, if ff_check<T>() succeeds,
- * calls ff_work<T>() passing to it device length and file descriptors
+ * iterates on all known types T and, if ft_work<T>::init(io) succeeds,
+ * calls ff_work<T>::run(), then ff_work<T>::quit()
  */
 int ff_work_dispatch(FT_IO_NS ft_io & io)
 {
-    ft_off dev_length = io.dev_length();
-    int err;
+    int err = 0;
 
-    /** use the smallest type that can represent device length */
+    {
+        ft_work<ft_uint> worker;
+        if ((err = worker.init(io)) == 0)
+            // if worker.init(io) above succeeded, do not try any other ft_work<T>
+            return worker.run();
+        // worker.quit() will be called automatically by the destructor
+    }
 
-    if (ff_check<ft_u32>(dev_length))
-        // possibly narrowing cast is safe here: we just checked for overflow
-        err = ff_work<ft_u32>((ft_u32) dev_length, io);
+    ft_work<ft_uoff> worker;
+    if ((err = worker.init(io)) == 0)
+        return worker.run();
 
-    else if (ff_check<ft_u64>(dev_length))
-        // possibly narrowing cast is safe here: we just checked for overflow
-        err = ff_work<ft_u64>((ft_u64) dev_length, io);
-
-    else
-        err = ff_fail(EFBIG, "device length is too large! cannot represent it with any known type");
+    // worker.quit() will be called automatically by the destructor
 
     return err;
 }

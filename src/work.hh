@@ -16,46 +16,14 @@
 FT_NAMESPACE_BEGIN
 
 /**
- * instantiate and run ft_work<T>::work(io) with the smallest T that can represent device length.
+ * instantiate and run ft_work<T>::main(io) with the smallest T that can represent device blocks count.
  * return 0 if success, else error.
  *
  * implementation:
- * iterates on all known types T and, if ff_check<T>() succeeds,
- * calls ff_work<T>() passing to it device length and file descriptors
+ * iterates on all known types T and, if ft_work<T>::init(io) succeeds,
+ * calls ff_work<T>::run(), then ff_work<T>::quit()
  */
 int ff_work_dispatch(FT_IO_NS ft_io & io);
-
-
-
-template<typename T>
-class ft_work_ctx
-{
-private:
-    T fm_dev_length;
-    FT_IO_NS ft_io & fm_io;
-
-public:
-    /** constructor. stores a reference to ft_io in this ft_work_ctx */
-    ft_work_ctx(T dev_length, FT_IO_NS ft_io & io);
-
-    /** destructor does nothing */
-    // ~ft_work_ctx();
-
-    /** return true if this ft_work_ctx is currently (and correctly) open */
-    FT_INLINE bool is_open() const { return fm_dev_length != 0 && fm_io.is_open(); }
-
-    /** close file descriptors */
-    void close();
-
-    /** return device length */
-    FT_INLINE T dev_length() const { return fm_dev_length; }
-
-    /** return I/O implementation */
-    FT_INLINE FT_IO_NS ft_io & io() const { return fm_io; }
-};
-
-
-
 
 
 
@@ -71,7 +39,7 @@ class ft_work
 {
 private:
     ft_map<T> dev_map, loop_map;
-    ft_work_ctx<T> * ctx;
+    FT_IO_NS ft_io * io;
 
     /** cannot call copy constructor */
     ft_work(const ft_work<T> &);
@@ -90,17 +58,18 @@ public:
      * high-level do-everything method. calls in sequence init(), run() and quit().
      * return 0 if success, else error.
      */
-    static int main(ft_work_ctx<T> & work_ctx);
+    static int main(FT_IO_NS ft_io & io);
 
 
     /** return true if this ft_work is currently (and correctly) initialized */
     bool is_initialized();
 
     /**
-     * read extents from LOOP-FILE and ZERO-FILE and use them to fill ft_work<T>
+     * checks if device blocks count can be represented by T (else immediately returns EFBIG),
+     * then read extents from LOOP-FILE and ZERO-FILE and use them to fill ft_work<T>
      * return 0 if success, else error
      */
-    int init(ft_work_ctx<T> & work_ctx);
+    int init(FT_IO_NS ft_io & io);
 
     /** core of transformation algorithm */
     int run();
@@ -115,17 +84,12 @@ FT_NAMESPACE_END
 
 #ifdef FT_HAVE_EXTERN_TEMPLATE
 
-#  define FT_EXTERN_TEMPLATE_work_ctx(T) class FT_NS ft_work_ctx<T>;
-#  define FT_EXTERN_TEMPLATE_work(T)     class FT_NS ft_work<T>;
+#  define FT_TEMPLATE_work_hh(ft_prefix, T)     ft_prefix class FT_NS ft_work< T >;
 
-#  define FT_EXTERN_TEMPLATE_work_hh(ft_prefix, ft_list_t) \
-        ft_list_t(ft_prefix, FT_EXTERN_TEMPLATE_work_ctx) \
-        ft_list_t(ft_prefix, FT_EXTERN_TEMPLATE_work)
-
-   FT_EXTERN_TEMPLATE_DECLARE(FT_EXTERN_TEMPLATE_work_hh)
+   FT_TEMPLATE_DECLARE(FT_TEMPLATE_work_hh)
 #else
 #  include "work.template.hh"
-#endif /* FT_EXTERN_TEMPLATE */
+#endif /* FT_HAVE_EXTERN_TEMPLATE */
 
 
 
