@@ -59,9 +59,10 @@ public:
     int init(int argc, char const* const* argv);
 
     /**
-     * initialize transformer to use specified I/O. stores a pointer to I/O object
+     * initialize transformer to use specified I/O. if success, stores a pointer to I/O object
      * WARNING: destructor and quit() will delete ft_io object,
-     *          so only pass I/O object created with new() and do not try to delete them yourself
+     *          so only pass I/O object created with new()
+     *          and delete them yourself ONLY if this call returned error!
      *
      * return 0 if success, else error.
      */

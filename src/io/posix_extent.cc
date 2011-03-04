@@ -47,24 +47,46 @@ FT_IO_NAMESPACE_BEGIN
  *
  * implementation: calls ioctl(FIBMAP)
  */
-static int ff_posix_fibmap(int fd, ft_uoff block_size_log2, ft_extent_list & ret_list)
+static int ff_posix_fibmap(int fd, ft_uoff dev_length, ft_vector<ft_uoff> & ret_list, ft_uoff & ret_block_size_bitmask)
 {
-    ft_uoff file_length, file_block_count, block_size = (ft_uoff)1 << block_size_log2;
+    ft_uoff file_length, file_block_count, dev_block_count;
+    ft_uoff block_size, logical_uoff, physical_uoff, block_size_bitmask = ret_block_size_bitmask;
 
     /* lower-level API ff_posix_ioctl(FIGETBSZ) and ff_posix_ioctl(FIBMAP) need these to be int */
-    int err = 0, logical, physical;
+    int err = 0, block_size_int, logical, physical;
 
     do {
+        if ((err = ff_posix_ioctl(fd, FIGETBSZ, & block_size_int)))
+            break;
+
+        block_size = (ft_uoff) block_size_int;
+        // ft_uoff is expected to be unsigned and wider than int,
+        // but explicitly checking for overflow is always safer than "expecting"
+        if (block_size < 0 || block_size_int != (int) block_size) {
+            /* overflow! give up. */
+            err = EFBIG;
+            break;
+        }
+        /* keep track of bits used by extents. needed to compute effective block size */
+        block_size_bitmask |= block_size;
+
         if ((err = ff_posix_size(fd, & file_length)))
             break;
+
+        // number of blocks in the device
+        dev_block_count = (dev_length + block_size - 1) / block_size;
 
         // number of blocks in the file
         file_block_count = (file_length + block_size - 1) / block_size;
 
-        // ioctl(FIBMAP) wants an (int) as block number,
-        // so we must check for overflow!
+        // ioctl(FIBMAP) wants an (int logical) and returns an (int physical)
+        // in units of one block, so we must check for overflow!
+        int m = (int) dev_block_count;
         int n = (int) file_block_count;
-        if (n < 0 || file_block_count != (ft_uoff) n) {
+
+        if (n < 0 || file_block_count != (ft_uoff) n
+                || m < 0 || dev_block_count != (ft_uoff) m)
+        {
             /* overflow! give up. */
             err = EFBIG;
             break;
@@ -74,33 +96,25 @@ static int ff_posix_fibmap(int fd, ft_uoff block_size_log2, ft_extent_list & ret
             physical = logical;
             if ((err = ff_posix_ioctl(fd, FIBMAP, & physical)))
                 break;
-            /* FIBMAP reports holes (i.e. unallocated blocks in the file) as physical == 0 */
-            if (physical != 0)
+            /* FIBMAP reports holes (i.e. unallocated blocks in the file) as physical == 0. ugly */
+            if (physical != 0) {
+                physical_uoff = (ft_uoff) physical * block_size;
+                logical_uoff = (ft_uoff) logical * block_size;
+
+                /* keep track of bits used by extents. needed to compute effective block size */
+                ret_block_size_bitmask |= physical_uoff | logical_uoff;
+
                 /* this is painful... FIBMAP reports one block per call */
-                ret_list.extent_append((ft_uoff) physical, (ft_uoff) logical, (ft_uoff) 1);
+                ret_list.append(physical_uoff, logical_uoff, block_size);
+            }
         }
     } while (0);
 
+    if (err == 0)
+        ret_block_size_bitmask = block_size_bitmask;
+
     return err;
 }
-
-/** report an extent incompatible with block size */
-static int ff_linux_fiemap_inconsistency(const struct fiemap_extent * extent, ft_uoff block_size)
-{
-#ifdef FT_HAVE_LONG_LONG
-    ff_fail(0, "error in ff_linux_fiemap(): ioctl(FS_IOC_FIEMAP) extent "
-            "physical = %llu, logical = %llu, length = %llu is not multiple of block size (%llu)",
-            (unsigned long long) extent->fe_physical, (unsigned long long) extent->fe_logical,
-            (unsigned long long) extent->fe_length, (unsigned long long) block_size);
-#else
-    ff_fail(0, "error in ff_linux_fiemap(): ioctl(FS_IOC_FIEMAP) extent "
-            "physical = %lu, logical = %lu, length = %lu is not multiple of block size (%lu)",
-            (unsigned long) extent->fe_physical, (unsigned long) extent->fe_logical,
-            (unsigned long) extent->fe_length, (unsigned long) block_size);
-#endif
-    return EINVAL;
-}
-
 
 static int ff_linux_fiemap_allocate_and_ioctl(int fd, ft_uoff file_length, ft_size extent_n, struct fiemap ** ret_k_map) {
     struct fiemap * k_map;
@@ -135,15 +149,15 @@ static int ff_linux_fiemap_allocate_and_ioctl(int fd, ft_uoff file_length, ft_si
  *
  * implementation: calls ioctl(FS_IOC_FIEMAP)
  */
-static int ff_linux_fiemap(int fd, ft_uoff block_size_log2, ft_extent_list & ret_list) {
+static int ff_linux_fiemap(int fd, ft_vector<ft_uoff> & ret_list, ft_uoff & ret_block_size_bitmask)
+{
     struct fiemap * k_map = NULL;
     struct fiemap_extent * k_extent;
-    ft_uoff file_length, block_size_mask, block_size = (ft_uoff) 1 << block_size_log2;
+    ft_uoff file_length, block_size_bitmask = ret_block_size_bitmask;
     ft_size i, extent_n = 0;
     int err;
 
     do {
-        /* make sure we can represent file extents with current choice of 'T' */
         if ((err = ff_posix_size(fd, & file_length)))
             break;
 
@@ -173,56 +187,32 @@ static int ff_linux_fiemap(int fd, ft_uoff block_size_log2, ft_extent_list & ret
             }
             /* keep track of bits used by all physical, logical and lengths.
              * needed to check against block size */
-            block_size_mask = k_extent[i].fe_physical | k_extent[i].fe_logical | k_extent[i].fe_length;
-
-            /* check that received block size is compatible with extents (it could be sub-optimal though) */
-            if (block_size_mask & (block_size - 1)) {
-                err = ff_linux_fiemap_inconsistency(& k_extent[i], block_size);
-                break;
-            }
+            block_size_bitmask |= k_extent[i].fe_physical | k_extent[i].fe_logical | k_extent[i].fe_length;
         }
         if (err != 0)
             break;
-
-
+        ret_list.reserve(ret_list.size() + extent_n);
 
         /* ok, no strange extents: we can now add them to ret_list */
         for (i = 0; i < extent_n; i++) {
             if (k_extent[i].fe_flags & FIEMAP_EXTENT_UNWRITTEN)
                 continue;
 
-            ret_list.extent_append((ft_uoff) k_extent[i].fe_physical >> block_size_log2,
-                                   (ft_uoff) k_extent[i].fe_logical  >> block_size_log2,
-                                   (ft_uoff) k_extent[i].fe_length   >> block_size_log2);
+            ret_list.append((ft_uoff) k_extent[i].fe_physical,
+                            (ft_uoff) k_extent[i].fe_logical,
+                            (ft_uoff) k_extent[i].fe_length);
         }
     } while (0);
 
     if (k_map != NULL)
         free(k_map);
+
+    if (err == 0)
+        ret_block_size_bitmask = block_size_bitmask;
+
     return err;
 }
 
-/** compute log2(block size) */
-int ff_util_log2(ft_uoff n, ft_uoff * ret_log2) {
-    if (n & (n - 1)) {
-#ifdef FT_HAVE_LONG_LONG
-        ff_fail(0, "error in ff_posix_extents(): block size (%llu) returned by ioctl(FIGETBSZ) is not a power of 2",
-                (unsigned long long) n);
-#else
-        ff_fail(0, "error in ff_posix_extents(): block size (%lu) returned by ioctl(FIGETBSZ) is not a power of 2",
-                (unsigned long) n);
-#endif
-        return EINVAL;
-    }
-
-    ft_uoff log2 = 0;
-    while ((n >>= 1) != 0)
-        log2++;
-
-    * ret_log2 = log2;
-
-    return 0;
-}
 
 
 /**
@@ -231,41 +221,15 @@ int ff_util_log2(ft_uoff n, ft_uoff * ret_log2) {
  * in case of failure returns errno-compatible error code, and ret_vector contents will be UNDEFINED.
  *
  * implementation: calls ioctl(FS_IOC_FIEMAP) and if it fails, tries with ioctl(FIBMAP)
- *
- * must (and will) also check that device blocks count can be represented by ret_list,
- * by calling ret_list.extent_set_range(block_size, block_count)
  */
-int ff_posix_extents(int fd, ft_uoff dev_length, ft_extent_list & ret_list) {
-    ft_uoff block_size, block_size_log2, dev_block_count;
-    int block_size_int;
+int ff_posix_extents(int fd, ft_uoff dev_length, ft_vector<ft_uoff> & ret_list, ft_uoff & ret_block_size_bitmask)
+{
     int err;
 
     do {
-        if ((err = ff_posix_ioctl(fd, FIGETBSZ, & block_size_int)))
-            break;
-        block_size = (ft_uoff) block_size_int;
-        // ft_uoff is expected to be unsigned and wider than int,
-        // but explicitly checking for overflow is always safer than expecting
-        if (block_size < 0 || block_size_int != (int) block_size) {
-            /* overflow! give up. */
-            err = EFBIG;
-            break;
-        }
-        /* compute log2(block_size) */
-        if ((err = ff_util_log2(block_size, & block_size_log2)))
-            break;
-
-        // number of blocks in the device
-        dev_block_count = (dev_length + block_size - 1) / block_size;
-
-        // check that device blocks count can be represented by ret_list,
-        // by calling ret_list.extent_set_range(block_size, block_count)
-        if ((err = ret_list.extent_set_range(block_size, dev_block_count)))
-            break;
-
-        err = ff_linux_fiemap(fd, block_size_log2, ret_list);
+        err = ff_linux_fiemap(fd, ret_list, ret_block_size_bitmask);
         if (err != 0) {
-            int err2 = ff_posix_fibmap(fd, block_size_log2, ret_list);
+            int err2 = ff_posix_fibmap(fd, dev_length, ret_list, ret_block_size_bitmask);
             if (err2 == 0)
                 err = err2;
             else {

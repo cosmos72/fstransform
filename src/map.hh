@@ -12,7 +12,7 @@
 
 #include <map>       // for std::map<K,V> */
 
-#include "types.hh"  // for ft_off */
+#include "types.hh"  // for ft_uoff */
 #include "fwd.hh"    // for ft_map<T> and ft_vector<T> forward declarations */
 #include "extent.hh" // for ft_extent_key<T>, ft_extent_payload<T> */
 
@@ -152,16 +152,20 @@ public:
     void insert(const ft_vector<T> & other);
 
     /**
-     * insert the whole other vector into this map, hinting that insertion is at map end.
+     * insert the whole other vector into this map,
+     * shifting extents by effective_block_size_log2,
+     * and hinting that insertion is at map end.
      * optimized assuming that 'other' is sorted by physical.
      *
      * WARNING: does not merge and does not check for merges
+     * WARNING: does not check for overflows
      */
-    void append0(const ft_vector<T> & other);
+    void append0_shift(const ft_vector<ft_uoff> & other, ft_uoff effective_block_size_log2);
 
     /**
      * makes the complement of 'other' vector,
-     * i.e. calculates the extents NOT used by the extents in 'other' vector
+     * i.e. calculates the extents NOT used in 'other' vector,
+     * shifts them by effective_block_size_log2,
      * and inserts it in this map.
      *
      * since the file(s) contained in such complementary extents are not known,
@@ -169,8 +173,9 @@ public:
      *
      * WARNING: 'other' must be already sorted by physical!
      * WARNING: does not merge and does not check for merges
+     * WARNING: does not check for overflows
      */
-    void complement0(const ft_vector<T> & other, T device_length);
+    void complement0_shift(const ft_vector<ft_uoff> & other, ft_uoff effective_block_size_log2, ft_uoff device_length);
 };
 
 FT_NAMESPACE_END

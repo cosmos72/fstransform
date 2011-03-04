@@ -12,7 +12,6 @@
 
 #include "../types.hh"       // for ft_uoff
 #include "../map.hh"         // for ft_map<T>
-#include "../extent_list.hh" // for ft_extent_list
 
 
 FT_IO_NAMESPACE_BEGIN
@@ -24,7 +23,7 @@ FT_IO_NAMESPACE_BEGIN
 class ft_io
 {
 private:
-    ft_uoff dev_len;
+    ft_uoff dev_len, eff_block_size_log2;
 
     /* cannot call copy constructor */
     ft_io(const ft_io &);
@@ -36,25 +35,32 @@ protected:
     /** remember device length */
     FT_INLINE void dev_length(ft_uoff dev_length) { dev_len = dev_length; }
 
-    /**
-     * retrieve LOOP-FILE extents and insert them into ret_list.
-     * return 0 for success, else error (and ret_list contents will be UNDEFINED).
-     *
-     * must be overridden by sub-classes.
-     * implementations must also check that device blocks count can be represented by ret_list,
-     * by calling ret_list.extent_set_range(block_size, block_count)
-     */
-    virtual int loop_file_extents_list(ft_extent_list & ret_list) = 0;
+    /** compute log2() of effective block size and remember it */
+    ft_uoff effective_block_size_log2(ft_uoff block_size_bitmask);
 
     /**
-     * retrieve FREE SPACE extents and insert them into ret_list.
-     * a possible trick subclasses may use to implement this method
-     * is to fill the device free space with a ZERO-FILE,
-     * and actually retrieve the extents used by ZERO-FILE.
+     * retrieve LOOP-FILE extents and FREE-SPACE extents and insert them into
+     * the vectors loop_file_extents and free_space_extents.
+     * the vectors will be ordered by extent ->logical.
      *
-     * return 0 for success, else error (and ret_list contents will be UNDEFINED).
+     * return 0 for success, else error (and vectors contents will be UNDEFINED).
+     *
+     * if success, also returns in ret_effective_block_size_log2 the log2()
+     * of device effective block size.
+     * the device effective block size is defined as follows:
+     * it is the largest power of 2 that exactly divides all physical,
+     * logical and lengths in all returned extents (both for LOOP-FILE
+     * and for FREE-SPACE) and that also exactly exactly divides device length.
+     *
+     * must be overridden by sub-classes.
+     *
+     * a common trick subclasses may use to implement this method
+     * is to fill the device's free space with a ZERO-FILE,
+     * and actually retrieve the extents used by ZERO-FILE.
      */
-    virtual int free_space_extents_list(ft_extent_list & ret_list) = 0;
+    virtual int read_extents(ft_vector<ft_uoff> & loop_file_extents,
+                             ft_vector<ft_uoff> & free_space_extents,
+                             ft_uoff & ret_effective_block_size_log2) = 0;
 
 public:
     enum {
@@ -84,30 +90,18 @@ public:
     /** return device length, or 0 if not open */
     FT_INLINE ft_uoff dev_length() const { return dev_len; }
 
-    /**
-     * retrieve LOOP-FILE extents and insert them into ret_map.
-     * return 0 for success, else error (and ret_map contents will be unchanged).
-     *
-     * also checks that device blocks count can be represented by T
-     */
-    template<class T>
-    int loop_file_extents(ft_map<T> & ret_map);
+    /** return log2 of effective block size, or 0 if not open */
+    FT_INLINE ft_uoff effective_block_size_log2() const { return eff_block_size_log2; }
 
     /**
-     * given LOOP-FILE extents, compute DEVICE extents and insert them into ret_map.
-     *
-     * implementation: computes union of specified loop_file_map
-     * and free_space_extents_list(), then complements the union.
-     *
-     * return 0 for success, else error (and ret_map contents will be unchanged).
+     * calls the 3-argument version of read_extents() and, if it succeeds,
+     * calls effective_block_size_log2() to compute and remember effective block size
      */
-    template<class T>
-    int device_extents(const ft_map<T> & loop_file_map, ft_map<T> & ret_map);
+    int read_extents(ft_vector<ft_uoff> & loop_file_extents,
+                     ft_vector<ft_uoff> & free_space_extents);
 };
 
 FT_IO_NAMESPACE_END
-
-#include "io.template.hh"
 
 
 #endif /* FSTRANSFORM_IO_IO_HH */

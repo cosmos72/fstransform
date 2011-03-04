@@ -9,7 +9,8 @@ CC_SRCS += \
 ../src/map.cc \
 ../src/transform.cc \
 ../src/vector.cc \
-../src/work.cc 
+../src/work.cc \
+../src/work_dispatch.cc 
 
 OBJS += \
 ./src/fail.o \
@@ -17,7 +18,8 @@ OBJS += \
 ./src/map.o \
 ./src/transform.o \
 ./src/vector.o \
-./src/work.o 
+./src/work.o \
+./src/work_dispatch.o 
 
 CC_DEPS += \
 ./src/fail.d \
@@ -25,7 +27,8 @@ CC_DEPS += \
 ./src/map.d \
 ./src/transform.d \
 ./src/vector.d \
-./src/work.d 
+./src/work.d \
+./src/work_dispatch.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

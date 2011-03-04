@@ -21,21 +21,23 @@ FT_NAMESPACE_BEGIN
 
 
 template<typename const_iter>
-static void ff_map_show(const char * label, const_iter iter, const_iter end)
+static void ff_map_show(const char * label, ft_uoff effective_block_size, const_iter iter, const_iter end)
 {
     if (iter != end) {
-        fprintf(stdout, "# extents in %s\n# extent \t\t logical\t\tphysical\t      length\n", label);
+        fprintf(stdout, "# extents in %s, effective block size = %lu\n# extent \t\t logical\t\tphysical\t      length\n",
+                label, (unsigned long) effective_block_size);
+
         for (ft_size i = 0; iter != end; ++iter, ++i) {
 #ifdef FT_HAVE_LONG_LONG
             fprintf(stdout, "%8lu\t%16llu\t%16llu\t%12llu\n", (unsigned long)i,
-                    (unsigned long long)iter->second.fm_logical,
-                    (unsigned long long)iter->first.fm_physical,
-                    (unsigned long long)iter->second.fm_length);
+                    (unsigned long long) iter->second.fm_logical,
+                    (unsigned long long) iter->first.fm_physical,
+                    (unsigned long long) iter->second.fm_length);
 #else
             fprintf(stdout, "%8lu\t%16lu\t%16lu\t%12lu\n", (unsigned long)i,
-                    (unsigned long)iter->second.fm_logical,
-                    (unsigned long)iter->first.fm_physical,
-                    (unsigned long)iter->second.fm_length);
+                    (unsigned long) iter->second.fm_logical,
+                    (unsigned long) iter->first.fm_physical,
+                    (unsigned long) iter->second.fm_length);
 #endif /* FT_HAVE_LONG_LONG */
         }
         fprintf(stdout, "\n");
@@ -46,15 +48,15 @@ static void ff_map_show(const char * label, const_iter iter, const_iter end)
 
 
 template<typename T>
-static void ff_map_show(const char * label, const ft_vector<T> & vector)
+static void ff_map_show(const char * label, ft_uoff effective_block_size, const ft_vector<T> & vector)
 {
-    ff_map_show(label, vector.begin(), vector.end());
+    ff_map_show(label, effective_block_size, vector.begin(), vector.end());
 }
 
 template<typename T>
-static void ff_map_show(const char * label, const ft_map<T> & map)
+static void ff_map_show(const char * label, ft_uoff effective_block_size, const ft_map<T> & map)
 {
-    ff_map_show(label, map.begin(), map.end());
+    ff_map_show(label, effective_block_size, map.begin(), map.end());
 }
 
 
@@ -79,10 +81,11 @@ ft_work<T>::~ft_work()
  * return 0 if success, else error.
  */
 template<typename T>
-int ft_work<T>::main(FT_IO_NS ft_io & io)
+int ft_work<T>::main(ft_vector<ft_uoff> & loop_file_extents,
+                     ft_vector<ft_uoff> & free_space_extents, FT_IO_NS ft_io & io)
 {
     ft_work<T> worker;
-    int err = worker.init(io);
+    int err = worker.init(loop_file_extents, free_space_extents, io);
     if (err == 0)
         err = worker.run();
 
@@ -99,44 +102,6 @@ bool ft_work<T>::is_initialized()
 }
 
 
-/**
- * read extents from LOOP-FILE and ZERO-FILE and use them to fill ft_work<T>
- * return 0 if success, else error
- */
-template<typename T>
-int ft_work<T>::init(FT_IO_NS ft_io & io)
-{
-    if (is_initialized()) {
-        ff_fail(0, "I/O already initialized");
-        return EISCONN;
-    }
-    // cleanup in case io != NULL or dev_map, loop_map are not empty
-    quit();
-
-    int err = 0;
-
-    do {
-        if ((err = io.loop_file_extents(loop_map)) != 0)
-            break;
-        /* show LOOP-FILE extents sorted by physical */
-        ff_map_show(FT_IO_NS ft_io::label[FT_IO_NS ft_io::FC_LOOP_FILE], loop_map);
-
-
-        if ((err = io.device_extents(loop_map, dev_map)) != 0)
-            break;
-        /* show DEVICE extents sorted by fm_physical */
-        ff_map_show(FT_IO_NS ft_io::label[FT_IO_NS ft_io::FC_DEVICE], dev_map);
-
-    } while(0);
-
-    if (err == 0)
-        this->io = & io;
-    else
-        quit(); // clear dev_map and loop_map
-
-    return err;
-}
-
 /** performs cleanup. called by destructor, you can also call it explicitly after (or instead of) run()  */
 template<typename T>
 void ft_work<T>::quit()
@@ -147,6 +112,99 @@ void ft_work<T>::quit()
 }
 
 
+/**
+ *  check if LOOP-FILE and DEVICE in-use extents can be represented
+ *  by ft_map<T>. takes into account the fact that all extents
+ *  physical, logical and length will be divided by effective block size
+ *  before storing them into ft_map<T>.
+ *
+ *  return 0 for check passes, else error (usually EFBIG)
+ */
+template<typename T>
+int ft_work<T>::check(const FT_IO_NS ft_io & io)
+{
+    ft_uoff eff_block_size_log2 = io.effective_block_size_log2();
+    ft_uoff dev_length = io.dev_length();
+
+    ft_uoff block_count = dev_length >> eff_block_size_log2;
+    // possibly narrowing cast, let's check for overflow
+    T n = (T) block_count;
+    int err = 0;
+    if (n < 0 || block_count != (ft_uoff) n)
+        /* overflow! */
+        err = EFBIG;
+    return err;
+}
+
+
+/**
+ * given LOOP-FILE extents and FREE-SPACE extents as ft_vectors<ft_uoff>,
+ * compute LOOP-FILE extents and DEVICE in-use extents maps and insert them
+ * into the maps this->dev_map and this->loop_map.
+ *
+ * assumes that vectors are ordered by extent->logical, and modifies them
+ * in place: vector contents will be UNDEFINED when this method returns.
+ *
+ * WARNING: this method does not check for overflows, you must call
+ *  check_extents_map() to check if extents can be represented by ft_map<T>
+ *
+ * implementation: to compute this->dev_map, performs in-place the union of specified
+ * loop_file_extents and free_space_extents, then sorts in-place and complements such union.
+ */
+template<typename T>
+int ft_work<T>::init(ft_vector<ft_uoff> & loop_file_extents,
+                     ft_vector<ft_uoff> & free_space_extents, FT_IO_NS ft_io & io)
+{
+    int err = 0;
+    if (is_initialized())
+        err = EISCONN; // already initialized !
+    else if ((err = check(io)) != 0)
+        ; // extents cannot be represented by ft_map<T> !
+    else if (!io.is_open())
+        err = ENOTCONN; // I/O is not open !
+
+    if (err != 0)
+        return err;
+
+    // cleanup in case io != NULL or dev_map, loop_map are not empty
+    quit();
+
+    ft_uoff eff_block_size_log2 = io.effective_block_size_log2();
+    ft_uoff eff_block_size      = (ft_uoff)1 << eff_block_size_log2;
+    ft_uoff dev_length          = io.dev_length();
+
+    loop_file_extents.sort_by_physical();
+    loop_map.append0_shift(loop_file_extents, eff_block_size_log2);
+
+    /* show LOOP-FILE extents sorted by physical */
+    ff_map_show(FT_IO_NS ft_io::label[FT_IO_NS ft_io::FC_LOOP_FILE],
+                eff_block_size, loop_map);
+
+
+
+
+
+    /* compute in-place the union of LOOP-FILE extents and FREE-SPACE extents */
+    loop_file_extents.append(free_space_extents);
+    /*
+     * sort the extents union by fm_physical.
+     * needed by dev_map.complement0_shift() immediately below
+     */
+    loop_file_extents.sort_by_physical();
+    dev_map.complement0_shift(loop_file_extents, eff_block_size_log2, dev_length);
+
+    /* show DEVICE extents sorted by physical */
+    ff_map_show(FT_IO_NS ft_io::label[FT_IO_NS ft_io::FC_DEVICE],
+                eff_block_size, dev_map);
+
+    if (err == 0)
+        this->io = & io;
+
+    return err;
+}
+
+
+
 /** core of transformation algorithm */
 template<typename T>
 int ft_work<T>::run()
@@ -154,39 +212,5 @@ int ft_work<T>::run()
     return 0;
 }
 
-
-
-
-
-
-
-/**
- * instantiate and run ft_work<T>::main(io) with the smallest T that can represent device blocks count.
- * return 0 if success, else error.
- *
- * implementation:
- * iterates on all known types T and, if ft_work<T>::init(io) succeeds,
- * calls ff_work<T>::run(), then ff_work<T>::quit()
- */
-int ff_work_dispatch(FT_IO_NS ft_io & io)
-{
-    int err = 0;
-
-    {
-        ft_work<ft_uint> worker;
-        if ((err = worker.init(io)) == 0)
-            // if worker.init(io) above succeeded, do not try any other ft_work<T>
-            return worker.run();
-        // worker.quit() will be called automatically by the destructor
-    }
-
-    ft_work<ft_uoff> worker;
-    if ((err = worker.init(io)) == 0)
-        return worker.run();
-
-    // worker.quit() will be called automatically by the destructor
-
-    return err;
-}
 
 FT_NAMESPACE_END

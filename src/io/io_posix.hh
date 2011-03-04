@@ -29,25 +29,6 @@ private:
 
     int fd[FC_FILE_COUNT];
 
-protected:
-    /**
-     * retrieve LOOP-FILE extents and insert them into ret_list.
-     * return 0 for success, else error (and ret_list contents will be UNDEFINED).
-     *
-     * must (and will) also check that device blocks count can be represented by ret_list,
-     * by calling ret_list.extent_set_range(block_size, block_count)
-     */
-    virtual int loop_file_extents_list(ft_extent_list & ret_list);
-
-    /**
-     * retrieve FREE SPACE extents and insert them into ret_list.
-     * so now we actually retrieve the extents used by ZERO-FILE.
-     * and actually retrieve the extents used by ZERO-FILE.
-     *
-     * return 0 for success, else error (and ret_list contents will be UNDEFINED).
-     */
-    virtual int free_space_extents_list(ft_extent_list & ret_list);
-
 public:
     /** default constructor */
     ft_io_posix();
@@ -63,6 +44,28 @@ public:
 
     /** close this I/O, including file descriptors to DEVICE, LOOP-FILE and ZERO-FILE */
     virtual void close();
+
+    /**
+     * retrieve LOOP-FILE extents and FREE-SPACE extents and insert them into
+     * the vectors loop_file_extents and free_space_extents.
+     * the vectors will be ordered by extent ->logical.
+     *
+     * return 0 for success, else error (and vectors contents will be UNDEFINED).
+     *
+     * if success, also returns in ret_effective_block_size_log2 the log2()
+     * of device effective block size.
+     * the device effective block size is defined as follows:
+     * it is the largest power of 2 that exactly divides all physical,
+     * logical and lengths in all returned extents (both for LOOP-FILE
+     * and for FREE-SPACE) and that also exactly exactly divides device length.
+     *
+     * the trick ft_io_posix uses to implement this method
+     * is to fill the device's free space with a ZERO-FILE,
+     * and actually retrieve the extents used by ZERO-FILE.
+     */
+    virtual int read_extents(ft_vector<ft_uoff> & loop_file_extents,
+                             ft_vector<ft_uoff> & free_space_extents,
+                             ft_uoff & ret_block_size_bitmask);
 };
 
 FT_IO_NAMESPACE_END

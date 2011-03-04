@@ -129,36 +129,49 @@ void ft_io_posix::close()
 
 
 /**
- * retrieve LOOP-FILE extents and insert them into ret_list.
- * return 0 for success, else error (and ret_list contents will be UNDEFINED).
+ * retrieve LOOP-FILE extents and FREE-SPACE extents and insert them into
+ * the vectors loop_file_extents and free_space_extents.
+ * the vectors will be ordered by extent ->logical.
  *
- * must (and will) also check that device blocks count can be represented by ret_list,
- * by calling ret_list.extent_set_range(block_size, block_count)
- */
-int ft_io_posix::loop_file_extents_list(ft_extent_list & ret_list)
-{
-    if (!is_open())
-        return ENOTCONN; // not open!
-
-    /* ff_posix_extents() appends into ret_list, does NOT overwrite it */
-    return ff_posix_extents(fd[FC_LOOP_FILE], dev_length(), ret_list);
-}
-
-/**
- * retrieve FREE SPACE extents and insert them into ret_list.
- * trick: we filled the device free space with ZERO-FILE,
- * so now we actually retrieve the extents used by ZERO-FILE.
+ * return 0 for success, else error (and vectors contents will be UNDEFINED).
  *
- * return 0 for success, else error (and ret_list contents will be UNDEFINED).
+ * if success, also returns in ret_effective_block_size_log2 the log2()
+ * of device effective block size.
+ * the device effective block size is defined as follows:
+ * it is the largest power of 2 that exactly divides all physical,
+ * logical and lengths in all returned extents (both for LOOP-FILE
+ * and for FREE-SPACE) and that also exactly exactly divides device length.
+ *
+ * must be overridden by sub-classes.
+ *
+ * a common trick subclasses may use to implement this method
+ * is to fill the device's free space with a ZERO-FILE,
+ * and actually retrieve the extents used by ZERO-FILE.
  */
-int ft_io_posix::free_space_extents_list(ft_extent_list & ret_list)
+int ft_io_posix::read_extents(ft_vector<ft_uoff> & loop_file_extents,
+                              ft_vector<ft_uoff> & free_space_extents,
+                              ft_uoff & ret_block_size_bitmask)
 {
-    if (!is_open())
-        return ENOTCONN; // not open!
+    ft_uoff block_size_bitmask = ret_block_size_bitmask;
+    int err = 0;
+    do {
+        if (!is_open()) {
+            err = ENOTCONN; // not open!
+            break;
+        }
 
-    /* ff_posix_extents() appends into ret_list, does NOT overwrite it */
-    return ff_posix_extents(fd[FC_ZERO_FILE], dev_length(), ret_list);
+        /* ff_posix_extents() appends into ret_list, does NOT overwrite it */
+        if ((err = ff_posix_extents(fd[FC_LOOP_FILE], dev_length(), loop_file_extents, block_size_bitmask)) != 0)
+            break;
+        if ((err = ff_posix_extents(fd[FC_ZERO_FILE], dev_length(), free_space_extents, block_size_bitmask)) != 0)
+            break;
+
+    } while (0);
+
+    if (err == 0)
+        ret_block_size_bitmask = block_size_bitmask;
+
+    return err;
 }
-
 
 FT_IO_NAMESPACE_END

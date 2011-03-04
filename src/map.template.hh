@@ -7,8 +7,6 @@
 
 #include "first.hh"
 
-#include <utility>       // for std::make_pair() */
-
 #include "assert.hh"     // for ff_assert macro */
 #include "map.hh"        // for ft_map<T> */
 #include "vector.hh"     // for ft_vector<T> */
@@ -290,20 +288,6 @@ void ft_map<T>::insert(const ft_vector<T> & other)
 
 
 /**
- * insert the whole other vector into this map, hinting that insertion is at map end.
- * optimized assuming that 'other' is sorted by physical.
- *
- * WARNING: does not merge and does not check for merges
- */
-template<typename T>
-void ft_map<T>::append0(const ft_vector<T> & other)
-{
-    typename ft_vector<T>::const_iterator o_iter = other.begin(), o_end = other.end();
-    for (; o_iter != o_end; ++o_iter)
-        super_type::insert(end(), * o_iter);
-}
-
-/**
  * insert a single extent the ft_map, hinting that insertion is at map end
  *
  * WARNING: does not merge and does not check for merges
@@ -313,13 +297,37 @@ void ft_map<T>::append0(T physical, T logical, T length)
 {
     key_type key = { physical };
     mapped_type value = { logical, length };
-    super_type::insert(end(), std::make_pair(key, value));
+    value_type extent(key, value);
+
+    super_type::insert(end(), extent);
+}
+
+/**
+ * insert the whole other vector into this map,
+ * shifting extents by effective_block_size_log2,
+ * and hinting that insertion is at map end.
+ * optimized assuming that 'other' is sorted by physical.
+ *
+ * WARNING: does not merge and does not check for merges
+ * WARNING: does not check for overflows
+ */
+template<typename T>
+void ft_map<T>::append0_shift(const ft_vector<ft_uoff> & other, ft_uoff effective_block_size_log2)
+{
+    typename ft_vector<ft_uoff>::const_iterator iter = other.begin(), end = other.end();
+    for (; iter != end; ++iter) {
+        const ft_extent<ft_uoff> & extent = * iter;
+        append0(extent.physical() >> effective_block_size_log2,
+                extent.logical()  >> effective_block_size_log2,
+                extent.length()   >> effective_block_size_log2);
+    }
 }
 
 
 /**
  * makes the complement of 'other' vector,
- * i.e. calculates the extents NOT used by the extents in 'other' vector
+ * i.e. calculates the extents NOT used in 'other' vector,
+ * shifts them by effective_block_size_log2,
  * and inserts it in this map.
  *
  * since the file(s) contained in such complementary extents are not known,
@@ -327,16 +335,24 @@ void ft_map<T>::append0(T physical, T logical, T length)
  *
  * WARNING: 'other' must be already sorted by physical!
  * WARNING: does not merge and does not check for merges
+ * WARNING: does not check for overflows
  */
 template<typename T>
-void ft_map<T>::complement0(const ft_vector<T> & other, T device_length)
+void ft_map<T>::complement0_shift(const ft_vector<ft_uoff> & other,
+                                  ft_uoff effective_block_size_log2, ft_uoff device_length)
 {
-    T physical, last = 0;
+    T physical, last;
     ft_size i, n = other.size();
 
+    if (empty())
+        last = 0;
+    else {
+        const value_type & back = *--this->end();
+        last = back.first.fm_physical + back.second.fm_length;
+    }
     /* loop on 'other' extents */
     for (i = 0; i < n; i++) {
-        physical = other[i].physical();
+        physical = other[i].physical() >> effective_block_size_log2;
 
         if (physical == last) {
             /* nothing to do */
@@ -348,8 +364,9 @@ void ft_map<T>::complement0(const ft_vector<T> & other, T device_length)
             ff_assert("internal error! somebody programmed a call to complement0() without sorting the vector first!" == 0);
         }
 
-        last = physical + other[i].length();
+        last = physical + (other[i].length() >> effective_block_size_log2);
     }
+    device_length >>= effective_block_size_log2;
     if (last < device_length) {
         /* add last "hole" with fm_logical == fm_physical */
         append0(last, last, device_length - last);

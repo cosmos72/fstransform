@@ -13,14 +13,13 @@
 FT_NAMESPACE_BEGIN
 
 class ft_transform;
-class ft_extent_list;
+class ft_work_dispatch;
 
 template<typename T> struct ft_extent_key;
 template<typename T> struct ft_extent_payload;
 template<typename T> class  ft_extent;
 template<typename T> class  ft_vector;
 template<typename T> class  ft_map;
-template<typename T> class  ft_work_ctx;
 template<typename T> class  ft_work;
 
 FT_NAMESPACE_END

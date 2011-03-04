@@ -7,18 +7,18 @@
 
 #include "first.hh"
 
-#include <cerrno>         // for errno                     */
-#include <cstdio>         // for fprintf(), stdout, stderr */
-#include <cstring>        // for strcmp()                  */
+#include <cerrno>           // for errno
+#include <cstdio>           // for fprintf(), stdout, stderr
+#include <cstring>          // for strcmp()
 
-#include "fail.hh"        // for ff_fail()                               */
-#include "map.hh"         // for ft_map<T>                               */
-#include "vector.hh"      // for ft_vector<T>                            */
-#include "work.hh"        // for ff_work_dispatch()                      */
-#include "transform.hh"   // for ft_transform                            */
+#include "fail.hh"          // for ff_fail()
+#include "map.hh"           // for ft_map<T>
+#include "vector.hh"        // for ft_vector<T>
+#include "work_dispatch.hh" // for ft_work_dispatch
+#include "transform.hh"     // for ft_transform
 
-#include "io/io.hh"       // for ft_io                                   */
-#include "io/io_posix.hh" // for ft_io_posix                             */
+#include "io/io.hh"         // for ft_io
+#include "io/io_posix.hh"   // for ft_io_posix
 
 FT_NAMESPACE_BEGIN
 
@@ -151,16 +151,23 @@ int ft_transform::init(int argc, char const* const* argv)
  */
 int ft_transform::init_posix(char const* const path[FT_IO_NS ft_io_posix::FC_FILE_COUNT])
 {
-    int err;
+    FT_IO_NS ft_io_posix * io_posix = NULL;
+    int err = 0;
+    do {
+        if ((err = check_is_closed()) != 0)
+            break;
 
-    if ((err = check_is_closed()) == 0) {
+        io_posix = new FT_IO_NS ft_io_posix();
 
-        FT_IO_NS ft_io_posix * io_posix = new FT_IO_NS ft_io_posix();
+        if ((err = io_posix->open(path)) != 0)
+            break;
 
-        err = io_posix->open(path);
-        if (err == 0)
-            err = init(io_posix);
-        else
+        err = init(io_posix);
+
+    } while (0);
+
+    if (err != 0) {
+        if (io_posix != NULL)
             delete io_posix;
     }
     return err;
@@ -170,7 +177,8 @@ int ft_transform::init_posix(char const* const path[FT_IO_NS ft_io_posix::FC_FIL
 /**
  * initialize transformer to use specified I/O. if success, stores a pointer to I/O object
  * WARNING: destructor and quit() will delete ft_io object,
- *          so only pass I/O object created with new() and do not try to delete them yourself
+ *          so only pass I/O object created with new()
+ *          and delete them yourself ONLY if this call returned error!
  *
  * return 0 if success, else error.
  */
@@ -181,20 +189,6 @@ int ft_transform::init(FT_IO_NS ft_io * io) {
     return err;
 }
 
-
-/**
- * perform actual work using configured I/O
- * return 0 if success, else error.
- */
-int ft_transform::run()
-{
-    int err;
-    if ((err = check_is_open()) == 0)
-        err = ff_work_dispatch(* fm_io);
-    return err;
-}
-
-
 /** shutdown transformer. closes configured I/O and deletes it */
 void ft_transform::quit()
 {
@@ -203,6 +197,39 @@ void ft_transform::quit()
         fm_io = NULL;
     }
 }
+
+/**
+ * perform actual work using configured I/O:
+ * allocates ft_vector<ft_uoff> for both LOOP-FILE and FREE-SPACE extents,
+ * calls fm_io->read_extents() to fill them, and finally invokes
+ * ft_work_dispatch::main(loop_file_extents, free_space_extents, fm_io)
+ *
+ * return 0 if success, else error.
+ */
+int ft_transform::run()
+{
+    int err = 0;
+    do {
+        if ((err = check_is_open()) != 0)
+            break;
+
+        /* allocate ft_vector<ft_uoff> for both LOOP-FILE and FREE-SPACE extents */
+        ft_vector<ft_uoff> loop_file_extents, free_space_extents;
+        FT_IO_NS ft_io & io = * fm_io;
+
+        /* ask actual I/O subsystem to read LOOP-FILE and FREE-SPACE extents */
+        if ((err = io.read_extents(loop_file_extents, free_space_extents)) != 0)
+            break;
+
+        /* invoke ft_work_dispatch::main() to choose which ft_work<T> to instantiate, and run it */
+        err = ft_work_dispatch::main(loop_file_extents, free_space_extents, io);
+
+    } while (0);
+
+    return err;
+}
+
+
 
 FT_NAMESPACE_END
 

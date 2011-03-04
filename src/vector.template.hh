@@ -17,12 +17,6 @@
 FT_NAMESPACE_BEGIN
 
 
-/** default constructor. sets block_size = 0 */
-template<typename T>
-ft_vector<T>::ft_vector() : super_type(), block_size(0)
-{ }
-
-
 /**
  * append a single extent to this vector.
  *
@@ -91,44 +85,6 @@ void ft_vector<T>::sort_by_physical()
 {
     std::sort(this->begin(), this->end(), typename value_type::comparator_physical());
 }
-
-
-/**
- * store block_size into this container, and check that container is able
- * to store physical, logical and length values up to block_count.
- *
- * since container stores them in type T, it must (and will) check
- * that block_count does not overflow T, and immediately return EFBIG if it overflows.
- *
- * return 0 if success, else error
- */
-template<typename T>
-int ft_vector<T>::extent_set_range(ft_uoff block_size, ft_uoff block_count)
-{
-    T n = (T) block_count;
-    int err = 0;
-    if (n < 0 || block_count != (ft_uoff) n)
-        err = EFBIG;
-    else
-        this->block_size = block_size;
-    return err;
-}
-
-
-/**
- * append a new extent to this container.
- * container must check if new extent touches the last extent already in the container
- * but is assured (and can assume) than new extent will NEVER touch or intersect other extents.
- *
- * container is required to merge the new extent with the last one it contains, if they touch.
- */
-template<typename T>
-void ft_vector<T>::extent_append(ft_uoff physical, ft_uoff logical, ft_uoff length)
-{
-    // we know from ff_io::*_extents_list<T>(ft_map<T> &) that conversion ft_uoff -> T will not overflow
-    append((T) physical, (T) logical, (T) length);
-}
-
 
 
 FT_NAMESPACE_END
