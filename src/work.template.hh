@@ -64,7 +64,7 @@ static void ff_map_show(const char * label, ft_uoff effective_block_size, const 
 /** default constructor */
 template<typename T>
 ft_work<T>::ft_work()
-    : dev_map(), loop_map(), io(NULL)
+    : dev_map(), loop_map(), loop_holes(), io(NULL)
 { }
 
 
@@ -108,6 +108,7 @@ void ft_work<T>::quit()
 {
     dev_map.clear();
     loop_map.clear();
+    loop_holes.clear();
     io = NULL; // do not delete or close ft_io, we did not create it!
 }
 
@@ -173,29 +174,33 @@ int ft_work<T>::init(ft_vector<ft_uoff> & loop_file_extents,
     ft_uoff eff_block_size      = (ft_uoff)1 << eff_block_size_log2;
     ft_uoff dev_length          = io.dev_length();
 
+    /* algorithm: 1) find loop-file (logical) holes and store them in loop_holes */
+    loop_holes.complement0_logical_shift(loop_file_extents, eff_block_size_log2, dev_length);
+
     loop_file_extents.sort_by_physical();
     loop_map.append0_shift(loop_file_extents, eff_block_size_log2);
 
     /* show LOOP-FILE extents sorted by physical */
-    ff_map_show(FT_IO_NS ft_io::label[FT_IO_NS ft_io::FC_LOOP_FILE],
-                eff_block_size, loop_map);
-
-
-
+    ff_map_show(FT_IO_NS ft_io::label[FT_IO_NS ft_io::FC_LOOP_FILE], eff_block_size, loop_map);
 
 
     /* compute in-place the union of LOOP-FILE extents and FREE-SPACE extents */
-    loop_file_extents.append(free_space_extents);
+    loop_file_extents.append_all(free_space_extents);
     /*
      * sort the extents union by fm_physical.
-     * needed by dev_map.complement0_shift() immediately below
+     * needed by dev_map.complement0_physical_shift() immediately below
      */
     loop_file_extents.sort_by_physical();
-    dev_map.complement0_shift(loop_file_extents, eff_block_size_log2, dev_length);
+    /*
+     * algorithm: 0) compute DEVICE extents
+     *
+     * how: compute physical complement of all LOOP-FILE and FREE_SPACE extents
+     * and assume they are used by DEVICE for its file-system
+     */
+    dev_map.complement0_physical_shift(loop_file_extents, eff_block_size_log2, dev_length);
 
     /* show DEVICE extents sorted by physical */
-    ff_map_show(FT_IO_NS ft_io::label[FT_IO_NS ft_io::FC_DEVICE],
-                eff_block_size, dev_map);
+    ff_map_show(FT_IO_NS ft_io::label[FT_IO_NS ft_io::FC_DEVICE], eff_block_size, dev_map);
 
     if (err == 0)
         this->io = & io;
@@ -209,6 +214,28 @@ int ft_work<T>::init(ft_vector<ft_uoff> & loop_file_extents,
 template<typename T>
 int ft_work<T>::run()
 {
+    typedef typename ft_map<T>::iterator ft_map_iterator;
+    typedef typename ft_map<T>::const_iterator ft_map_const_iterator;
+
+    {
+        /* algorithm: 2) re-number used device blocks with numbers from loop-file holes
+         * do not greedily use low hole numbers:
+         * a) prefer hole numbers equal to device block number: they produce a block
+         *    already in its final destination (marked with @@)
+         * b) spread the remaining numbers (uniformly?) across rest of holes
+         */
+        ft_map<T> dev_renumbered;
+        /* how: intersect dev_map and loop_holes and put result into dev_renumbered */
+        dev_renumbered.intersect_all_all(dev_map, loop_holes);
+
+        ft_uoff eff_block_size = (ft_uoff)1 << io->effective_block_size_log2();
+
+        /* show LOOP-HOLES extents sorted by physical */
+        ff_map_show("LOOP-HOLES", eff_block_size, loop_holes);
+        /* show DEVICE-RENUMBERED extents sorted by physical */
+        ff_map_show("DEVICE-RENUMBERED", eff_block_size, dev_renumbered);
+    }
+
     return 0;
 }
 

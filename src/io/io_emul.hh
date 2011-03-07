@@ -9,29 +9,55 @@
 #define FSTRANSFORM_IO_IO_EMUL_HH
 
 #include "../types.hh"    // for ft_uoff */
+
+#include <iosfwd>         // for std::ifstream forward declaration
+
 #include "io.hh"          // for ft_io */
+
+
 FT_IO_NAMESPACE_BEGIN
 
+/**
+ * "dummy" class emulating I/O
+ */
 class ft_io_emul: public ft_io
 {
+public:
+    enum {
+        FC_LOOP_EXTENTS = 0,
+        FC_FREE_SPACE_EXTENTS,
+        FC_FILE_COUNT // must be equal to count of preceding enum constants
+    };
+
+    static char const * const label[]; // LOOP-EXTENTS and FREE-SPACE-EXTENTS
+
 private:
     typedef ft_io super_type;
 
+    std::ifstream * is[FC_FILE_COUNT];
+
 protected:
     /**
-     * retrieve LOOP-FILE extents and insert them into ret_list.
-     * return 0 for success, else error (and ret_list contents will be UNDEFINED).
-     */
-    virtual int loop_file_extents_list(ft_extent_list & ret_list);
-
-    /**
-     * retrieve FREE SPACE extents and insert them into ret_list.
-     * so now we actually retrieve the extents used by ZERO-FILE.
-     * and actually retrieve the extents used by ZERO-FILE.
+     * retrieve LOOP-FILE extents and FREE-SPACE extents and insert them into
+     * the vectors loop_file_extents and free_space_extents.
+     * the vectors will be ordered by extent ->logical.
      *
-     * return 0 for success, else error (and ret_list contents will be UNDEFINED).
+     * return 0 for success, else error (and vectors contents will be UNDEFINED).
+     *
+     * if success, also returns in ret_effective_block_size_log2 the log2()
+     * of device effective block size.
+     * the device effective block size is defined as follows:
+     * it is the largest power of 2 that exactly divides all physical,
+     * logical and lengths in all returned extents (both for LOOP-FILE
+     * and for FREE-SPACE) and that also exactly exactly divides device length.
+     *
+     * the trick ft_io_posix uses to implement this method
+     * is to fill the device's free space with a ZERO-FILE,
+     * and actually retrieve the extents used by ZERO-FILE.
      */
-    virtual int free_space_extents_list(ft_extent_list & ret_list);
+    virtual int read_extents(ft_vector<ft_uoff> & loop_file_extents,
+                             ft_vector<ft_uoff> & free_space_extents,
+                             ft_uoff & ret_block_size_bitmask);
 
 public:
     /** default constructor */
@@ -40,10 +66,10 @@ public:
     /** destructor. calls close() */
     virtual ~ft_io_emul();
 
-    /** check for consistency and open DEVICE, LOOP-FILE and ZERO-FILE */
-    int open();
+    /** check for consistency and open LOOP-FILE extents file and ZERO-FILE extents file */
+    int open(char const* const paths[FC_FILE_COUNT]);
 
-    /** return true if this ft_io_emul is currently (and correctly) open */
+    /** return true if this ft_io_posix is currently (and correctly) open */
     virtual bool is_open() const;
 
     /** close this I/O, including file descriptors to DEVICE, LOOP-FILE and ZERO-FILE */

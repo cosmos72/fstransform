@@ -44,9 +44,10 @@ class ft_extent : public std::pair<ft_extent_key<T>, ft_extent_payload<T> >
 private:
     typedef ft_extent_key<T>                   key_type;
     typedef ft_extent_payload<T>               mapped_type;
-    typedef std::pair<key_type, mapped_type>   super_type;
 
 public:
+    typedef std::pair<key_type, mapped_type>   super_type;
+
     /* default constructor */
     ft_extent() : super_type() { }
 

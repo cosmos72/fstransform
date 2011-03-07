@@ -11,7 +11,6 @@
 #include <cerrno>        // for EFBIG
 
 #include "assert.hh"     // for ff_assert()
-#include "map.hh"        // for ft_map<T>
 #include "vector.hh"     // for ft_vector<T>
 
 FT_NAMESPACE_BEGIN
@@ -32,7 +31,7 @@ template<typename T>
 void ft_vector<T>::append(T physical, T logical, T length)
 {
     if (!this->empty()) {
-        ft_extent<T> & last = this->back();
+        value_type & last = this->back();
         T & last_length = last.length();
 
         if (last.physical() + last_length == physical && last.logical() + last_length == logical) {
@@ -43,7 +42,7 @@ void ft_vector<T>::append(T physical, T logical, T length)
     }
     /* we could use this->push_back() but creating its parameter with make_pair() is cumbersome */
     this->resize(this->size() + 1);
-    ft_extent<T> & extent = this->back();
+    value_type & extent = this->back();
     extent.physical() = physical;
     extent.logical() = logical;
     extent.length() = length;
@@ -56,7 +55,7 @@ void ft_vector<T>::append(T physical, T logical, T length)
  * this method does not merge extents: the two lists of extents will be simply concatenated
  */
 template<typename T>
-void ft_vector<T>::append(const ft_vector<T> & other)
+void ft_vector<T>::append_all(const ft_vector<T> & other)
 {
     if (this != & other) {
         this->insert(this->end(), other.begin(), other.end());
@@ -65,17 +64,6 @@ void ft_vector<T>::append(const ft_vector<T> & other)
     }
 }
 
-
-/**
- * append an extent map to this vector.
- *
- * this method does not merge extents: the two lists of extents will be simply concatenated
- */
-template<typename T>
-void ft_vector<T>::append(const ft_map<T> & other)
-{
-    this->insert(this->end(), other.begin(), other.end());
-}
 
 /**
  * reorder this vector in-place, sorting by fm_physical

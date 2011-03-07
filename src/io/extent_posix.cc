@@ -1,5 +1,5 @@
 /*
- * io/posix_extent.cc
+ * io/extent_posix.cc
  *
  *  Created on: Feb 27, 2011
  *      Author: max
@@ -8,7 +8,7 @@
 #include "../first.hh" // for FT_*TEMPLATE* macros */
 
 /*
- * io/posix_extent.template.hh
+ * io/extent_posix.template.hh
  *
  *  Created on: Feb 27, 2011
  *      Author: max
@@ -31,8 +31,8 @@
 #include "../types.hh"       // for ft_off */
 #include "../extent.hh"      // for ft_extent<T>, ft_map<T>, ff_filemap() */
 #include "../vector.hh"      // for ft_vector<T> */
-#include "posix_extent.hh"   // for ff_posix_extents() */
-#include "posix_util.hh"     // for ff_posix_ioctl(), ff_posix_size() */
+#include "extent_posix.hh"   // for ff_read_extents_posix() */
+#include "util_posix.hh"     // for ff_posix_ioctl(), ff_posix_size() */
 
 FT_IO_NAMESPACE_BEGIN
 
@@ -222,7 +222,7 @@ static int ff_linux_fiemap(int fd, ft_vector<ft_uoff> & ret_list, ft_uoff & ret_
  *
  * implementation: calls ioctl(FS_IOC_FIEMAP) and if it fails, tries with ioctl(FIBMAP)
  */
-int ff_posix_extents(int fd, ft_uoff dev_length, ft_vector<ft_uoff> & ret_list, ft_uoff & ret_block_size_bitmask)
+int ff_read_extents_posix(int fd, ft_uoff dev_length, ft_vector<ft_uoff> & ret_list, ft_uoff & ret_block_size_bitmask)
 {
     int err;
 

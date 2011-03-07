@@ -26,9 +26,26 @@ private:
     typedef std::vector<ft_extent<T> > super_type;
 
 public:
-    typedef ft_extent_key<T>     key_type;
-    typedef ft_extent_payload<T> mapped_type;
-    typedef ft_extent<T>         value_type;
+    typedef ft_extent_key<T>      key_type;
+    typedef ft_extent_payload<T>  mapped_type;
+
+    typedef typename super_type::value_type value_type;
+
+    /**
+     * append a single extent to this vector.
+     *
+     * if this vector is not empty
+     * and specified extent ->fm_physical is equal to last->fm_physical + last->fm_length
+     * and specified extent ->fm_logical  is equal to last->fm_logical  + last->fm_length
+     * where 'last' is the last extent in this vector,
+     * then merge the two extents
+     *
+     * otherwise append to this vector a new extent containing specified extent (physical, logical, length)
+     */
+    FT_INLINE void append(const typename value_type::super_type & extent)
+    {
+        append(extent.first.fm_physical, extent.second.fm_logical, extent.second.fm_length);
+    }
 
     /**
      * append a single extent to this vector.
@@ -48,14 +65,7 @@ public:
      *
      * this method does not merge extents: the two lists of extents will be simply concatenated
      */
-    void append(const ft_vector<T> & other);
-
-    /**
-     * append an extent map to this vector.
-     *
-     * this method does not merge extents: the two lists of extents will be simply concatenated
-     */
-    void append(const ft_map<T> & other);
+    void append_all(const ft_vector<T> & other);
 
     /**
      * reorder this vector in-place, sorting by fm_physical

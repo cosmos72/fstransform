@@ -14,6 +14,10 @@
 
 FT_IO_NAMESPACE_BEGIN
 
+
+/**
+ * class performing I/O on POSIX systems
+ */
 class ft_io_posix: public ft_io
 {
 public:
@@ -29,22 +33,7 @@ private:
 
     int fd[FC_FILE_COUNT];
 
-public:
-    /** default constructor */
-    ft_io_posix();
-
-    /** destructor. calls close() */
-    virtual ~ft_io_posix();
-
-    /** check for consistency and open DEVICE, LOOP-FILE and ZERO-FILE */
-    int open(char const* const paths[FC_FILE_COUNT]);
-
-    /** return true if this ft_io_posix is currently (and correctly) open */
-    virtual bool is_open() const;
-
-    /** close this I/O, including file descriptors to DEVICE, LOOP-FILE and ZERO-FILE */
-    virtual void close();
-
+protected:
     /**
      * retrieve LOOP-FILE extents and FREE-SPACE extents and insert them into
      * the vectors loop_file_extents and free_space_extents.
@@ -66,6 +55,21 @@ public:
     virtual int read_extents(ft_vector<ft_uoff> & loop_file_extents,
                              ft_vector<ft_uoff> & free_space_extents,
                              ft_uoff & ret_block_size_bitmask);
+public:
+    /** default constructor */
+    ft_io_posix();
+
+    /** destructor. calls close() */
+    virtual ~ft_io_posix();
+
+    /** check for consistency and open DEVICE, LOOP-FILE and ZERO-FILE */
+    int open(char const* const paths[FC_FILE_COUNT]);
+
+    /** return true if this ft_io_posix is currently (and correctly) open */
+    virtual bool is_open() const;
+
+    /** close this I/O, including file descriptors to DEVICE, LOOP-FILE and ZERO-FILE */
+    virtual void close();
 };
 
 FT_IO_NAMESPACE_END

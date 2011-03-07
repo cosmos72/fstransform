@@ -8,7 +8,8 @@
 #include "first.hh"
 
 #include <cerrno>           // for errno
-#include <cstdio>           // for fprintf(), stdout, stderr
+#include <cstdlib>          // for malloc()
+#include <cstdio>           // for fprintf(), sprintf(), stdout, stderr
 #include <cstring>          // for strcmp()
 
 #include "fail.hh"          // for ff_fail()
@@ -19,6 +20,8 @@
 
 #include "io/io.hh"         // for ft_io
 #include "io/io_posix.hh"   // for ft_io_posix
+
+#include "io/util.hh"       // for ff_mkdir()
 
 FT_NAMESPACE_BEGIN
 
@@ -33,13 +36,15 @@ static char const* const* label = FT_IO_NS ft_io_posix::label;
 
 /** constructor */
 ft_transform::ft_transform()
-    : fm_io(NULL)
+    : job_dir_(NULL), fm_io(NULL)
 { }
 
 /** destructor. calls quit() */
 ft_transform::~ft_transform()
 {
     quit();
+    if (job_dir_)
+        free(job_dir_);
 }
 
 /**
@@ -138,18 +143,51 @@ int ft_transform::init(int argc, char const* const* argv)
         err = invalid_cmdline(argv[0], "missing argument: %s", label[2]);
 
     if (err == 0)
-        err = init_posix(& argv[1]);
+        err = init_job();
+    if (err == 0)
+        err = init_io_posix(& argv[1]);
 
     return err;
 }
 
+/** initialize persistence subsystem */
+int ft_transform::init_job()
+{
+    (void) FT_IO_NS ff_mkdir(".fstransform");
+
+    ft_uint i;
+    int err = 0;
+
+    // 3*sizeof(ft_uint)+1 chars are enough to safely print (ft_uint)
+    job_dir_ = (char *) malloc(20 + 3 * sizeof(ft_uint));
+    if (job_dir_ == NULL)
+        return ENOMEM;
+
+    memcpy(job_dir_, ".fstransform/job.", 17);
+
+    for (i = 1; i != (ft_uint)-1; i++) {
+        // finish job_dir_ with '/' - needed by everybody using job_dir_
+        sprintf(job_dir_ + 17, "%lu/", (unsigned long)i);
+
+        if ((err = FT_IO_NS ff_mkdir(job_dir_)) == 0) {
+            ff_fail(0, "started job %lu", (unsigned long)i);
+            break;
+        }
+    }
+    if (err != 0) {
+        free(job_dir_);
+        job_dir_ = NULL;
+    }
+
+    return err;
+}
 
 /**
  * initialize transformer to use POSIX I/O.
  * requires three arguments: DEVICE, LOOP-FILE and ZERO-FILE to be passed in path[].
  * return 0 if success, else error.
  */
-int ft_transform::init_posix(char const* const path[FT_IO_NS ft_io_posix::FC_FILE_COUNT])
+int ft_transform::init_io_posix(char const* const path[FT_IO_NS ft_io_posix::FC_FILE_COUNT])
 {
     FT_IO_NS ft_io_posix * io_posix = NULL;
     int err = 0;
@@ -162,7 +200,7 @@ int ft_transform::init_posix(char const* const path[FT_IO_NS ft_io_posix::FC_FIL
         if ((err = io_posix->open(path)) != 0)
             break;
 
-        err = init(io_posix);
+        err = init_io(io_posix);
 
     } while (0);
 
@@ -182,7 +220,7 @@ int ft_transform::init_posix(char const* const path[FT_IO_NS ft_io_posix::FC_FIL
  *
  * return 0 if success, else error.
  */
-int ft_transform::init(FT_IO_NS ft_io * io) {
+int ft_transform::init_io(FT_IO_NS ft_io * io) {
     int err;
     if ((err = check_is_closed()) == 0)
         fm_io = io;
@@ -219,6 +257,10 @@ int ft_transform::run()
 
         /* ask actual I/O subsystem to read LOOP-FILE and FREE-SPACE extents */
         if ((err = io.read_extents(loop_file_extents, free_space_extents)) != 0)
+            break;
+
+        /* persistence: save LOOP-FILE and FREE-SPACE extents to disk */
+        if ((err = io.write_extents(loop_file_extents, free_space_extents, job_dir_)) != 0)
             break;
 
         /* invoke ft_work_dispatch::main() to choose which ft_work<T> to instantiate, and run it */

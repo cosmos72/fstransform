@@ -10,12 +10,14 @@
 
 #include "io/io.hh"        // for ft_io
 #include "io/io_posix.hh"  // for ft_io_posix
+#include "io/io_emul.hh"   // for ft_io_emul
 
 FT_NAMESPACE_BEGIN
 
 class ft_transform
 {
 private:
+    char * job_dir_;
     FT_IO_NS ft_io * fm_io;
 
     int invalid_cmdline(const char * program_name, const char * fmt, ...);
@@ -25,6 +27,9 @@ private:
 
     /** return 0 if transformer is initialized, else call quit() and return ENOTCONN */
     int check_is_open();
+
+    /** initialize persistence subsystem */
+    int init_job();
 
 public:
 
@@ -66,14 +71,21 @@ public:
      *
      * return 0 if success, else error.
      */
-    int init(FT_IO_NS ft_io * io);
+    int init_io(FT_IO_NS ft_io * io);
 
     /**
      * initialize transformer to use POSIX I/O.
      * requires three arguments: DEVICE, LOOP-FILE and ZERO-FILE to be passed in path[].
      * return 0 if success, else error.
      */
-    int init_posix(char const* const path[FT_IO_NS ft_io_posix::FC_FILE_COUNT]);
+    int init_io_posix(char const* const path[FT_IO_NS ft_io_posix::FC_FILE_COUNT]);
+
+    /**
+     * initialize transformer to use I/O emulation. requires two arguments to be passed in path[]:
+     * file path containing LOOP-FILE extents and file path containing FREE-SPACE extents.
+     * return 0 if success, else error.
+     */
+    int init_io_emul(char const* const path[FT_IO_NS ft_io_emul::FC_FILE_COUNT]);
 
     /**
      * perform actual work using configured I/O

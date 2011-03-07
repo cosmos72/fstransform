@@ -21,14 +21,12 @@ FT_NAMESPACE_BEGIN
 template<typename T>
 class ft_map : private std::map<ft_extent_key<T>, ft_extent_payload<T> >
 {
-public:
-    typedef ft_extent_key<T> key_type;
-    typedef ft_extent_payload<T>  mapped_type;
-
 private:
-    typedef std::map<key_type, mapped_type> super_type;
+    typedef std::map<ft_extent_key<T>, ft_extent_payload<T> > super_type;
 
 public:
+    typedef typename super_type::key_type       key_type;
+    typedef typename super_type::mapped_type    mapped_type;
     typedef typename super_type::value_type     value_type;
     typedef typename super_type::iterator       iterator;
     typedef typename super_type::const_iterator const_iterator;
@@ -52,8 +50,16 @@ private:
                                       const key_type & key2, const mapped_type & value2);
 
     /**
-     * add a single extent the ft_map, hinting that insertion is at map end,
-     * without merging and without checking if merging should be performed.
+     * add a single extent the ft_map
+     *
+     * WARNING: does not merge and does not check for merges
+     */
+    void insert0(T physical, T logical, T length);
+
+    /**
+     * add a single extent the ft_map, hinting that insertion is at map end
+     *
+     * WARNING: does not merge and does not check for merges
      */
     void append0(T physical, T logical, T length);
 
@@ -103,6 +109,14 @@ private:
      */
     iterator merge(iterator pos1, const key_type & key2, const mapped_type & value2);
 
+    /**
+     * remove a part of an existing extent (or a whole existing extent)
+     * from this ft_map, splitting the existing extent if needed.
+     * throws an assertion failure if extent to remove is not part of existing extents.
+     *
+     * WARNING: does not support removing an extent that is part of TWO OR MORE existing extents.
+     */
+    void remove1(const value_type & extent);
 
 public:
 
@@ -134,22 +148,75 @@ public:
     super_type::clear;
 
     /**
-     * insert a single extent to the ft_map,
-     * merging with existing extents where possible,
+     * returns the minimum physical and the maximum physical+length in this map.
+     * if this map is empty, return {0,0}
+     */
+    void bounds(key_type & min_key, key_type & max_key) const;
+
+    /**
+     * find the intersection (matching physical and logical) between the two specified extents,
+     * insert it into this map and return true.
+     * if no intersections, return false and this will be unchanged
+     */
+    bool intersect(const value_type & extent1, const value_type & extent2);
+
+    /**
+     * find the intersections (matching physical and logical) between specified map and extent.
+     * insert list of intersections into this map and return true.
+     * if no intersections, return false and this will be unchanged
+     */
+    bool intersect_all(const ft_map<T> & map, const value_type & extent);
+
+    /**
+     * find the intersections (matching physical and logical) between specified map1 and map2.
+     * insert list of intersections into this map and return true.
+     * if no intersections, return false and this map will be unchanged
+     */
+    bool intersect_all_all(const ft_map<T> & map1, const ft_map<T> & map2);
+
+    /**
+     * insert a single extent into this ft_map,
+     * merging with existing extents where possible.
+     * return iterator to inserted/merged extent
      */
     iterator insert(const key_type & key, const mapped_type & value);
 
     /**
-     * insert the whole other map into this map.
-     * extents will be merged where possible
+     * insert a single extent into this ft_map,
+     * merging with existing extents where possible.
+     * return iterator to inserted/merged extent
      */
-    void insert(const ft_map<T> & other);
+    FT_INLINE iterator insert(const value_type & extent) { return insert(extent.first, extent.second); }
 
     /**
-     * insert the whole other vector into this map.
-     * extents will be merged where possible
+     * remove a part of an existing extent (or one or more existing extents)
+     * from this ft_map, splitting the existing extents if needed.
      */
-    void insert(const ft_vector<T> & other);
+    void remove(const value_type & extent);
+
+    /**
+     * remove any (partial or full) intersection with existing extents from this ft_map,
+     * splitting the existing extents if needed.
+     */
+    template<typename const_iter>
+    void remove_all(const_iter iter, const_iter end);
+
+
+    /**
+     * remove any (partial or full) intersection with existing extents from this ft_map,
+     * splitting the existing extents if needed.
+     */
+    void remove_all(const ft_map<T> & map);
+
+
+
+
+
+
+
+
+
+
 
     /**
      * insert the whole other vector into this map,
@@ -163,19 +230,34 @@ public:
     void append0_shift(const ft_vector<ft_uoff> & other, ft_uoff effective_block_size_log2);
 
     /**
-     * makes the complement of 'other' vector,
-     * i.e. calculates the extents NOT used in 'other' vector,
+     * makes the physical complement of 'other' vector,
+     * i.e. calculates the physical extents NOT used in 'other' vector,
      * shifts them by effective_block_size_log2,
      * and inserts it in this map.
      *
      * since the file(s) contained in such complementary extents are not known,
-     * all calculated extents will have fm_logical == fm_physical.
+     * all calculated extents will have ->logical == ->physical.
      *
      * WARNING: 'other' must be already sorted by physical!
      * WARNING: does not merge and does not check for merges
      * WARNING: does not check for overflows
      */
-    void complement0_shift(const ft_vector<ft_uoff> & other, ft_uoff effective_block_size_log2, ft_uoff device_length);
+    void complement0_physical_shift(const ft_vector<ft_uoff> & other, ft_uoff effective_block_size_log2, ft_uoff device_length);
+
+    /**
+     * makes the logical complement of 'other' vector,
+     * i.e. calculates the logical extents NOT used in 'other' vector,
+     * shifts them by effective_block_size_log2,
+     * and inserts it in this map.
+     *
+     * since the file(s) contained in such complementary extents are not known,
+     * all calculated extents will have ->logical == ->physical.
+     *
+     * WARNING: 'other' must be already sorted by physical!
+     * WARNING: does not merge and does not check for merges
+     * WARNING: does not check for overflows
+     */
+    void complement0_logical_shift(const ft_vector<ft_uoff> & other, ft_uoff effective_block_size_log2, ft_uoff device_length);
 };
 
 FT_NAMESPACE_END

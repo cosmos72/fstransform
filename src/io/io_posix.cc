@@ -15,8 +15,8 @@
 
 #include "../fail.hh"     // for ff_fail()
 
-#include "posix_extent.hh" // for ft_posix_extents()
-#include "posix_util.hh"   // for ft_posix_*() misc functions
+#include "extent_posix.hh" // for ft_extent_posixs()
+#include "util_posix.hh"   // for ft_posix_*() misc functions
 #include "io_posix.hh"     // for ft_io_posix
 
 
@@ -160,10 +160,10 @@ int ft_io_posix::read_extents(ft_vector<ft_uoff> & loop_file_extents,
             break;
         }
 
-        /* ff_posix_extents() appends into ret_list, does NOT overwrite it */
-        if ((err = ff_posix_extents(fd[FC_LOOP_FILE], dev_length(), loop_file_extents, block_size_bitmask)) != 0)
+        /* ff_read_extents_posix() appends into ft_vector<T>, does NOT overwrite it */
+        if ((err = ff_read_extents_posix(fd[FC_LOOP_FILE], dev_length(), loop_file_extents, block_size_bitmask)) != 0)
             break;
-        if ((err = ff_posix_extents(fd[FC_ZERO_FILE], dev_length(), free_space_extents, block_size_bitmask)) != 0)
+        if ((err = ff_read_extents_posix(fd[FC_ZERO_FILE], dev_length(), free_space_extents, block_size_bitmask)) != 0)
             break;
 
     } while (0);

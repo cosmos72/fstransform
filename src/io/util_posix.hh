@@ -1,5 +1,5 @@
 /*
- * io/posix_util.hh
+ * io/util_posix.hh
  *
  *  Created on: Feb 24, 2011
  *      Author: max
@@ -28,6 +28,13 @@ int ff_posix_blkdev_dev(int fd, ft_dev * ret_dev);
 
 /** if file is special block device, return its length in (*ret_dev) */
 int ff_posix_blkdev_size(int fd, ft_uoff * ret_size);
+
+
+/** return this process PID in (*ret_pid) */
+int ff_posix_pid(ft_pid * ret_pid);
+
+/** create a directory */
+int ff_posix_mkdir(const char * path, ft_mode mode = 0755);
 
 FT_IO_NAMESPACE_END
 

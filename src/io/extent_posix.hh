@@ -1,5 +1,5 @@
 /*
- * io/posix_extent.hh
+ * io/extent_posix.hh
  *
  *  Created on: Feb 27, 2011
  *      Author: max
@@ -21,7 +21,7 @@ FT_IO_NAMESPACE_BEGIN
  *
  * implementation: calls ioctl(FS_IOC_FIEMAP) and if it fails, tries with ioctl(FIBMAP)
  */
-int ff_posix_extents(int fd, ft_uoff dev_length, ft_vector<ft_uoff> & ret_list, ft_uoff & ret_block_size_bitmask);
+int ff_read_extents_posix(int fd, ft_uoff dev_length, ft_vector<ft_uoff> & ret_list, ft_uoff & ret_block_size_bitmask);
 
 
 FT_IO_NAMESPACE_END

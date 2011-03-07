@@ -26,7 +26,7 @@ template<typename T>
 class ft_work
 {
 private:
-    ft_map<T> dev_map, loop_map;
+    ft_map<T> dev_map, loop_map, loop_holes;
     FT_IO_NS ft_io * io;
 
     /** cannot call copy constructor */

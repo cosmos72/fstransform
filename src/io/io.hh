@@ -99,6 +99,14 @@ public:
      */
     int read_extents(ft_vector<ft_uoff> & loop_file_extents,
                      ft_vector<ft_uoff> & free_space_extents);
+
+    /**
+     * saves extents to files job_dir_ + '/loop_extents.txt' and job_dir_ + '/free_space_extents.txt'
+     * by calling the function ff_write_extents_file()
+     */
+    int write_extents(const ft_vector<ft_uoff> & loop_file_extents,
+                      const ft_vector<ft_uoff> & free_space_extents,
+                      const char * job_dir);
 };
 
 FT_IO_NAMESPACE_END
