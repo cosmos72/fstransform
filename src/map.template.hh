@@ -274,7 +274,7 @@ bool ft_map<T>::intersect(const value_type & extent1, const value_type & extent2
 
     T physical2 = key2.fm_physical;
     T logical2 = value2.fm_logical;
-    T end2 = value2.fm_length + physical1;
+    T end2 = value2.fm_length + physical2;
 
     if (end1 > physical2 && physical1 < end2
             && physical1 - physical2 == logical1 - logical2)
@@ -347,7 +347,7 @@ bool ft_map<T>::intersect_all_all(const ft_map<T> & map1, const ft_map<T> & map2
 
 /**
  * add a single extent to the ft_map,
- * merging with existing extents where possible,
+ * merging with existing extents where possible
  */
 template<typename T>
 typename ft_map<T>::iterator ft_map<T>::insert(const key_type & key, const mapped_type & value)
@@ -378,6 +378,18 @@ typename ft_map<T>::iterator ft_map<T>::insert(const key_type & key, const mappe
     return super_type::insert(pos, std::make_pair(key, value));
 }
 
+/**
+ * insert a single extent into this ft_map,
+ * merging with existing extents where possible.
+ * return iterator to inserted/merged extent
+ */
+template<typename T>
+typename ft_map<T>::iterator ft_map<T>::insert(T physical, T logical, T length)
+{
+    key_type key = { physical };
+    mapped_type value = { logical, length };
+    return insert(key, value);
+}
 
 /**
  * remove a part of an existing extent (or a whole existing extent)
@@ -465,6 +477,19 @@ void ft_map<T>::remove1(const value_type & extent)
 
 
 /**
+ * remove an existing extent from this ft_map.
+ * no need to check for splitting in this method, as it cannot happen:
+ * the extent to remove is specified by its iterator,
+ * so it must be exactly one of the extents of this map
+ */
+template<typename T>
+void ft_map<T>::remove(iterator iter)
+{
+    super_type::erase(iter);
+}
+
+
+/**
  * remove a part of an existing extent (or one or more existing extents)
  * from this ft_map, splitting the existing extents if needed.
  */
@@ -510,6 +535,36 @@ void ft_map<T>::remove_all(const ft_map<T> & map)
     if (iter != map.begin())
         --iter;
     remove_all(iter, end);
+}
+
+
+/**
+ * remove an initial part of an existing extent from this ft_map.
+ * returns iterator to new, smaller extent, or end() if the whole extent was removed
+ */
+template<typename T>
+typename ft_map<T>::iterator ft_map<T>::shrink_front(iterator iter, T shrink_length)
+{
+    ff_assert(iter != end());
+    const value_type & extent = *iter;
+    const mapped_type & value = extent.second;
+    T physical = extent.first.fm_physical;
+    T logical = value.fm_logical;
+    T length = value.fm_length;
+    ff_assert(length >= shrink_length);
+
+    iterator next = iter;
+    ++next;
+    super_type::erase(iter);
+
+    if (length == shrink_length)
+        return end();
+
+    key_type new_key = { physical + shrink_length };
+    mapped_type new_value = { logical + shrink_length, length - shrink_length };
+    value_type new_extent(new_key, new_value);
+
+    return super_type::insert(next, new_extent);
 }
 
 /**

@@ -20,6 +20,8 @@ template<typename T> struct ft_extent_payload;
 template<typename T> class  ft_extent;
 template<typename T> class  ft_vector;
 template<typename T> class  ft_map;
+template<typename T> class  ft_pool_entry;
+template<typename T> class  ft_pool;
 template<typename T> class  ft_work;
 
 FT_NAMESPACE_END

@@ -7,6 +7,7 @@ CC_SRCS += \
 ../src/fail.cc \
 ../src/main.cc \
 ../src/map.cc \
+../src/pool.cc \
 ../src/transform.cc \
 ../src/vector.cc \
 ../src/work.cc \
@@ -16,6 +17,7 @@ OBJS += \
 ./src/fail.o \
 ./src/main.o \
 ./src/map.o \
+./src/pool.o \
 ./src/transform.o \
 ./src/vector.o \
 ./src/work.o \
@@ -25,6 +27,7 @@ CC_DEPS += \
 ./src/fail.d \
 ./src/main.d \
 ./src/map.d \
+./src/pool.d \
 ./src/transform.d \
 ./src/vector.d \
 ./src/work.d \

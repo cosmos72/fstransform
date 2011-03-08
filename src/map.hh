@@ -185,8 +185,27 @@ public:
      * insert a single extent into this ft_map,
      * merging with existing extents where possible.
      * return iterator to inserted/merged extent
+     *
+     * simply calls insert(key_type, value_type)
      */
     FT_INLINE iterator insert(const value_type & extent) { return insert(extent.first, extent.second); }
+
+    /**
+     * insert a single extent into this ft_map,
+     * merging with existing extents where possible.
+     * return iterator to inserted/merged extent.
+     *
+     * simply calls insert(key_type, value_type)
+     */
+    iterator insert(T physical, T logical, T length);
+
+    /**
+     * remove an existing extent from this ft_map.
+     * no need to check for splitting in this method, as it cannot happen:
+     * the extent to remove is specified by its iterator,
+     * so it must be exactly one of the extents of this map
+     */
+    void remove(iterator iter);
 
     /**
      * remove a part of an existing extent (or one or more existing extents)
@@ -210,6 +229,11 @@ public:
 
 
 
+    /**
+     * remove an initial part of an existing extent from this ft_map.
+     * returns iterator to new, smaller extent, or end() if the whole extent was removed
+     */
+    iterator shrink_front(iterator iter, T shrink_length);
 
 
 

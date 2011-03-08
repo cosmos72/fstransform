@@ -42,10 +42,7 @@ public:
      *
      * otherwise append to this vector a new extent containing specified extent (physical, logical, length)
      */
-    FT_INLINE void append(const typename value_type::super_type & extent)
-    {
-        append(extent.first.fm_physical, extent.second.fm_logical, extent.second.fm_length);
-    }
+    void append(T physical, T logical, T length);
 
     /**
      * append a single extent to this vector.
@@ -58,7 +55,10 @@ public:
      *
      * otherwise append to this vector a new extent containing specified extent (physical, logical, length)
      */
-    void append(T physical, T logical, T length);
+    FT_INLINE void append(const typename value_type::super_type & extent)
+    {
+        append(extent.first.fm_physical, extent.second.fm_logical, extent.second.fm_length);
+    }
 
     /**
      * append another extent vector to this vector.

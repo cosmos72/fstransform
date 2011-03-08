@@ -6,16 +6,17 @@
  */
 #include "first.hh"
 
-#include <cerrno>         // for errno, EFBIG              */
-#include <cstdio>         // for fprintf(), stdout, stderr */
-#include <limits>         // for std::numeric_limits<T>    */
+#include <cerrno>         // for errno, EFBIG
+#include <cstdio>         // for fprintf(), stdout, stderr
 
+#include "assert.hh"      // for ff_assert()
 #include "traits.hh"      // for FT_TYPE_TO_UNSIGNED(T) macro
 #include "vector.hh"      // for ft_vector<T>
 #include "map.hh"         // for ft_map<T>
 #include "fail.hh"        // for ff_fail()
-#include "io/io.hh"       // for ft_io
+#include "pool.hh"        // for ft_pool<T>
 #include "work.hh"        // for ff_work_dispatch(), ft_work<T>
+#include "io/io.hh"       // for ft_io
 
 FT_NAMESPACE_BEGIN
 
@@ -24,19 +25,19 @@ template<typename const_iter>
 static void ff_map_show(const char * label, ft_uoff effective_block_size, const_iter iter, const_iter end)
 {
     if (iter != end) {
-        fprintf(stdout, "# extents in %s, effective block size = %lu\n# extent \t\t logical\t\tphysical\t      length\n",
+        fprintf(stdout, "# extents in %s, effective block size = %lu\n# extent \t\tphysical\t\t logical\t  length\n",
                 label, (unsigned long) effective_block_size);
 
         for (ft_size i = 0; iter != end; ++iter, ++i) {
 #ifdef FT_HAVE_LONG_LONG
-            fprintf(stdout, "%8lu\t%16llu\t%16llu\t%12llu\n", (unsigned long)i,
-                    (unsigned long long) iter->second.fm_logical,
+            fprintf(stdout, "%8lu\t%12llu\t%12llu\t%8llu\n", (unsigned long)i,
                     (unsigned long long) iter->first.fm_physical,
+                    (unsigned long long) iter->second.fm_logical,
                     (unsigned long long) iter->second.fm_length);
 #else
-            fprintf(stdout, "%8lu\t%16lu\t%16lu\t%12lu\n", (unsigned long)i,
-                    (unsigned long) iter->second.fm_logical,
+            fprintf(stdout, "%8lu\t%12lu\t%12lu\t%8lu\n", (unsigned long)i,
                     (unsigned long) iter->first.fm_physical,
+                    (unsigned long) iter->second.fm_logical,
                     (unsigned long) iter->second.fm_length);
 #endif /* FT_HAVE_LONG_LONG */
         }
@@ -210,15 +211,25 @@ int ft_work<T>::init(ft_vector<ft_uoff> & loop_file_extents,
 
 
 
+
+
+
+
+
 /** core of transformation algorithm */
 template<typename T>
 int ft_work<T>::run()
 {
-    typedef typename ft_map<T>::iterator ft_map_iterator;
-    typedef typename ft_map<T>::const_iterator ft_map_const_iterator;
+    typedef typename ft_map<T>::iterator map_iterator;
+    typedef typename ft_map<T>::const_iterator map_const_iterator;
 
     {
-        /* algorithm: 2) re-number used device blocks with numbers from loop-file holes
+        ft_uoff eff_block_size = (ft_uoff)1 << io->effective_block_size_log2();
+
+        /* show LOOP-HOLES extents before allocation, sorted by physical */
+        ff_map_show("LOOP-HOLES (INITIAL)", eff_block_size, loop_holes);
+
+        /* algorithm: 2) re-number used device blocks, setting logical to numbers from loop-file holes
          * do not greedily use low hole numbers:
          * a) prefer hole numbers equal to device block number: they produce a block
          *    already in its final destination (marked with @@)
@@ -228,12 +239,34 @@ int ft_work<T>::run()
         /* how: intersect dev_map and loop_holes and put result into dev_renumbered */
         dev_renumbered.intersect_all_all(dev_map, loop_holes);
 
-        ft_uoff eff_block_size = (ft_uoff)1 << io->effective_block_size_log2();
+        /* show DEVICE extents already in their final destination, sorted by physical */
+        ff_map_show("DEVICE (INVARIANT)", eff_block_size, dev_renumbered);
 
-        /* show LOOP-HOLES extents sorted by physical */
-        ff_map_show("LOOP-HOLES", eff_block_size, loop_holes);
+        /* remove from dev_map the extents moved to dev_renumbered */
+        dev_map.remove_all(dev_renumbered);
+        /*
+         * remove from loop_holes all extents in dev_renumbered, then clear the latter:
+         * its extents are already in their final destination -> no work on them
+         */
+        loop_holes.remove_all(dev_renumbered);
+        dev_renumbered.clear();
+
+        /* show LOOP-HOLES after allocating invariant DEVICE extents, sorted by physical */
+        ff_map_show("LOOP-HOLES (AFTER INVARIANT)", eff_block_size, loop_holes);
+
+        /* order loop_holes by length */
+        ft_pool<T> loop_holes_pool(loop_holes);
+
+        /* allocate loop_holes extents to store dev_map extents using a best-fit strategy */
+        loop_holes_pool.allocate_all(dev_map, dev_renumbered);
+
+
+        /* show LOOP-HOLES extents after allocation, sorted by physical */
+        ff_map_show("LOOP-HOLES (FINAL)", eff_block_size, loop_holes);
         /* show DEVICE-RENUMBERED extents sorted by physical */
-        ff_map_show("DEVICE-RENUMBERED", eff_block_size, dev_renumbered);
+        ff_map_show("DEVICE (RENUMBERED)", eff_block_size, dev_renumbered);
+        /* show DEVICE-NOTFITTING extents sorted by physical */
+        ff_map_show("DEVICE (NOTFITTING)", eff_block_size, dev_map);
     }
 
     return 0;

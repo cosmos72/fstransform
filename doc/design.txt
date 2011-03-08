@@ -84,7 +84,7 @@ device backup inside loop-file (physical blocks) - somewhere in these blocks
 
 0) compute LOOP-FILE extents and compute DEVICE extents
 
-1) find loop-file (logical) holes and store them in loop_holes
+1) find loop-file (logical) holes
 +-----------------------------------------------------------------------------+
 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
 +------03-04-05-------------------12-13-14----16----18----20----22-23-24-25---+
