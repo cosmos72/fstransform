@@ -11,9 +11,9 @@
 
 #include "assert.hh"      // for ff_assert()
 #include "traits.hh"      // for FT_TYPE_TO_UNSIGNED(T) macro
+#include "log.hh"         // for ff_log()
 #include "vector.hh"      // for ft_vector<T>
 #include "map.hh"         // for ft_map<T>
-#include "fail.hh"        // for ff_fail()
 #include "pool.hh"        // for ft_pool<T>
 #include "work.hh"        // for ff_work_dispatch(), ft_work<T>
 #include "io/io.hh"       // for ft_io
@@ -24,27 +24,35 @@ FT_NAMESPACE_BEGIN
 template<typename const_iter>
 static void ff_map_show(const char * label, ft_uoff effective_block_size, const_iter iter, const_iter end)
 {
+    const ft_level level = FC_TRACE;
+
+    if (!ff_log_is_enabled(level))
+        return;
+
     if (iter != end) {
-        fprintf(stdout, "# extents in %s, effective block size = %lu\n# extent \t\tphysical\t\t logical\t  length\n",
-                label, (unsigned long) effective_block_size);
+        ff_log(level, 0, "# extents in %s, effective block size = %lu",
+               label, (unsigned long) effective_block_size);
+        ff_log(level, 0, "# extent \t\tphysical\t\t logical\t  length\tuser_data");
 
         for (ft_size i = 0; iter != end; ++iter, ++i) {
 #ifdef FT_HAVE_LONG_LONG
-            fprintf(stdout, "%8lu\t%12llu\t%12llu\t%8llu\n", (unsigned long)i,
-                    (unsigned long long) iter->first.fm_physical,
-                    (unsigned long long) iter->second.fm_logical,
-                    (unsigned long long) iter->second.fm_length);
+            ff_log(level, 0, "%8lu\t%12llu\t%12llu\t%8llu\t(%llu)", (unsigned long)i,
+                    (unsigned long long) iter->first.physical,
+                    (unsigned long long) iter->second.logical,
+                    (unsigned long long) iter->second.length,
+                    (unsigned long long) iter->second.user_data);
 #else
-            fprintf(stdout, "%8lu\t%12lu\t%12lu\t%8lu\n", (unsigned long)i,
-                    (unsigned long) iter->first.fm_physical,
-                    (unsigned long) iter->second.fm_logical,
-                    (unsigned long) iter->second.fm_length);
+            ff_log(level, 0, "%8lu\t%12lu\t%12lu\t%8lu\t(%lu)", (unsigned long)i,
+                    (unsigned long) iter->first.physical,
+                    (unsigned long) iter->second.logical,
+                    (unsigned long) iter->second.length,
+                    (unsigned long) iter->second.user_data);
 #endif /* FT_HAVE_LONG_LONG */
         }
-        fprintf(stdout, "\n");
     } else {
-        fprintf(stdout, "# no extents in %s\n", label);
+        ff_log(level, 0, "# no extents in %s", label);
     }
+    ff_log(level, 0, "");
 }
 
 
@@ -188,7 +196,7 @@ int ft_work<T>::init(ft_vector<ft_uoff> & loop_file_extents,
     /* compute in-place the union of LOOP-FILE extents and FREE-SPACE extents */
     loop_file_extents.append_all(free_space_extents);
     /*
-     * sort the extents union by fm_physical.
+     * sort the extents union by physical.
      * needed by dev_map.complement0_physical_shift() immediately below
      */
     loop_file_extents.sort_by_physical();
@@ -213,8 +221,10 @@ int ft_work<T>::init(ft_vector<ft_uoff> & loop_file_extents,
 
 
 
-
-
+enum {
+    FC_DEVICE = FT_IO_NS ft_io::FC_DEVICE,
+    FC_LOOP_FILE = FT_IO_NS ft_io::FC_LOOP_FILE
+};
 
 /** core of transformation algorithm */
 template<typename T>
@@ -242,13 +252,35 @@ int ft_work<T>::run()
         /* show DEVICE extents already in their final destination, sorted by physical */
         ff_map_show("DEVICE (INVARIANT)", eff_block_size, dev_renumbered);
 
-        /* remove from dev_map the extents moved to dev_renumbered */
+        /* remove from dev_map all the extents moved to dev_renumbered */
         dev_map.remove_all(dev_renumbered);
         /*
          * remove from loop_holes all extents in dev_renumbered, then clear the latter:
-         * its extents are already in their final destination -> no work on them
+         * its extents are already in their final destination (they are INVARIANT)
+         * -> no work on them
          */
         loop_holes.remove_all(dev_renumbered);
+        dev_renumbered.clear();
+
+        /* 3) mark as INVARIANT the (logical) blocks in loop-file already in their final destination */
+        map_iterator iter = loop_map.begin(), tmp, end = loop_map.end();
+        while (iter != end) {
+            if (iter->first.physical == iter->second.logical) {
+                dev_renumbered.insert(*iter);
+                tmp = iter;
+                ++iter;
+                loop_map.remove(iter);
+            } else {
+                /*
+                 * also prepare for item 4) "merge renumbered device blocks with loop-file blocks"
+                 * i.e. remember who's who
+                 */
+                iter->second.user_data = FC_LOOP_FILE;
+                ++iter;
+            }
+        }
+        /* show LOOP-FILE (INVARIANT) blocks, sorted by physical */
+        ff_map_show("LOOP-FILE (INVARIANT)", eff_block_size, dev_renumbered);
         dev_renumbered.clear();
 
         /* show LOOP-HOLES after allocating invariant DEVICE extents, sorted by physical */
@@ -260,13 +292,27 @@ int ft_work<T>::run()
         /* allocate loop_holes extents to store dev_map extents using a best-fit strategy */
         loop_holes_pool.allocate_all(dev_map, dev_renumbered);
 
-
-        /* show LOOP-HOLES extents after allocation, sorted by physical */
-        ff_map_show("LOOP-HOLES (FINAL)", eff_block_size, loop_holes);
         /* show DEVICE-RENUMBERED extents sorted by physical */
         ff_map_show("DEVICE (RENUMBERED)", eff_block_size, dev_renumbered);
         /* show DEVICE-NOTFITTING extents sorted by physical */
         ff_map_show("DEVICE (NOTFITTING)", eff_block_size, dev_map);
+        /* show LOOP-HOLES extents after allocation, sorted by physical */
+        ff_map_show("LOOP-HOLES (FINAL)", eff_block_size, loop_holes);
+
+        /*
+         * 4) merge renumbered device blocks with loop-file blocks (remember who's who)
+         */
+        iter = dev_renumbered.begin();
+        end = dev_renumbered.end();
+        for (; iter != end; ++iter) {
+            iter->second.user_data = FC_DEVICE;
+            loop_map.insert0(iter->first, iter->second);
+        }
+        dev_renumbered.clear();
+
+        /* show DEVICE + LOOP-FILE extents after merge, sorted by physical */
+        ff_map_show("DEVICE + LOOP-FILE (MERGED)", eff_block_size, loop_map);
+
     }
 
     return 0;

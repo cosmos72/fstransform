@@ -4,7 +4,7 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CC_SRCS += \
-../src/fail.cc \
+../src/log.cc \
 ../src/main.cc \
 ../src/map.cc \
 ../src/pool.cc \
@@ -14,7 +14,7 @@ CC_SRCS += \
 ../src/work_dispatch.cc 
 
 OBJS += \
-./src/fail.o \
+./src/log.o \
 ./src/main.o \
 ./src/map.o \
 ./src/pool.o \
@@ -24,7 +24,7 @@ OBJS += \
 ./src/work_dispatch.o 
 
 CC_DEPS += \
-./src/fail.d \
+./src/log.d \
 ./src/main.d \
 ./src/map.d \
 ./src/pool.d \

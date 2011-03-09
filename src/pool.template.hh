@@ -37,7 +37,7 @@ void ft_pool<T>::init()
 template<typename T>
 void ft_pool<T>::insert0(map_iterator map_iter)
 {
-    (*this)[map_iter->second.fm_length].push_back(map_iter);
+    (*this)[map_iter->second.length].push_back(map_iter);
 }
 
 
@@ -50,16 +50,16 @@ template<typename T>
 void ft_pool<T>::allocate_unfragmented(map_iterator map_iter, ft_map<T> & map, ft_map<T> & map_allocated, iterator iter)
 {
     map_value_type & map_value = * map_iter;
-    T physical = map_value.first.fm_physical;
-    T length = map_value.second.fm_length;
+    T physical = map_value.first.physical;
+    T length = map_value.second.length;
 
     /* check that 'iter' extent is big enough to fit map_iter */
     ft_pool_entry<T> & pool_entry = iter->second;
     map_iterator pool_iter = pool_entry.back();
     map_mapped_type & pool_value = pool_iter->second;
-    T pool_value_logical = pool_value.fm_logical;
+    T pool_value_logical = pool_value.logical;
     T pool_value_length = iter->first;
-    ff_assert(pool_value_length == pool_value.fm_length);
+    ff_assert(pool_value_length == pool_value.length);
     ff_assert(pool_value_length >= length);
 
     /* update maps to reflect allocation */
@@ -89,8 +89,8 @@ template<typename T>
 typename ft_pool<T>::map_iterator ft_pool<T>::allocate_fragment(map_iterator map_iter, ft_map<T> & map, ft_map<T> & map_allocated)
 {
     map_value_type & map_value = * map_iter;
-    T physical = map_value.first.fm_physical;
-    T length = map_value.second.fm_length;
+    T physical = map_value.first.physical;
+    T length = map_value.second.length;
 
     ff_assert(!this->empty());
     iterator iter = this->begin();
@@ -98,8 +98,8 @@ typename ft_pool<T>::map_iterator ft_pool<T>::allocate_fragment(map_iterator map
     ft_pool_entry<T> & pool_entry = iter->second;
     map_iterator pool_iter = pool_entry.back();
     map_mapped_type & pool_value = pool_iter->second;
-    T pool_value_logical = pool_value.fm_logical;
-    ff_assert(pool_value_length == pool_value.fm_length);
+    T pool_value_logical = pool_value.logical;
+    ff_assert(pool_value_length == pool_value.length);
     ff_assert(pool_value_length < length);
 
     /* update maps to reflect partial allocation */
@@ -148,7 +148,7 @@ void ft_pool<T>::allocate(map_iterator map_iter, ft_map<T> & map, ft_map<T> & ma
     iterator iter, end = this->end();
     T length;
 
-    while ((length = map_iter->second.fm_length) != 0 && !this->empty()) {
+    while ((length = map_iter->second.length) != 0 && !this->empty()) {
         if ((iter = this->lower_bound(length)) != end) {
             /* found a pool entry big enough to fit extent remainder */
             allocate_unfragmented(map_iter, map, map_allocated, iter);

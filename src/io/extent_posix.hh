@@ -16,8 +16,8 @@ FT_IO_NAMESPACE_BEGIN
 
 /**
  * retrieves file blocks allocation map (extents) for specified file descriptor
- * and appends them to ret_container.
- * in case of failure returns errno-compatible error code, and ret_list contents will be UNDEFINED.
+ * and appends them to ret_vector (with user_data = FC_DEFAULT_USER_DATA)
+ * in case of failure returns errno-compatible error code, and ret_vector contents will be UNDEFINED.
  *
  * implementation: calls ioctl(FS_IOC_FIEMAP) and if it fails, tries with ioctl(FIBMAP)
  */

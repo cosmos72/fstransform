@@ -49,6 +49,20 @@
 #endif /* FT_HAVE_EXTERN_C */
 
 
+/** define if va_copy() macro is supported (copies va_list variadic arguments) */
+#ifndef FT_HAVE_VA_COPY
+#  if defined(__STDC_VERSION__) && __STDC_VERSION__ + 0 >= 199901L
+#    define FT_HAVE_VA_COPY
+#  endif
+#endif
+
+/** define if localtime_r() is supported - otherwise, localtime() will be used */
+#ifndef FT_HAVE_LOCALTIME_R
+#  if _POSIX_C_SOURCE >= 1 || _XOPEN_SOURCE || _BSD_SOURCE || _SVID_SOURCE || _POSIX_SOURCE
+#    define FT_HAVE_LOCALTIME_R
+#  endif
+#endif
+
 /**
  * define if namespace Foo { ... } is understood by the compiler.
  * should be defined in C++, and undefined in C.

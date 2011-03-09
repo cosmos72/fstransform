@@ -54,14 +54,14 @@ private:
      *
      * WARNING: does not merge and does not check for merges
      */
-    void insert0(T physical, T logical, T length);
+    void insert0(T physical, T logical, T length, ft_size user_data);
 
     /**
      * add a single extent the ft_map, hinting that insertion is at map end
      *
      * WARNING: does not merge and does not check for merges
      */
-    void append0(T physical, T logical, T length);
+    void append0(T physical, T logical, T length, ft_size user_data);
 
     /**
      * merge extent (which can belong to this ft_map) into specified position.
@@ -88,9 +88,7 @@ private:
      *          Again: call merge(), not this method.
      *
      * this method exists because it is simpler to implement than
-     * merge0(iterator, const key_type &, const mapped_type &),
-     * as it does not need to work around the limitation that std::map keys
-     * cannot be modified in-place
+     * merge0(iterator, const key_type &, const mapped_type &)
      */
     iterator merge0(iterator pos1, iterator pos2);
 
@@ -175,6 +173,13 @@ public:
     bool intersect_all_all(const ft_map<T> & map1, const ft_map<T> & map2);
 
     /**
+     * add a single extent the ft_map
+     *
+     * WARNING: does not merge and does not check for merges
+     */
+    void insert0(const key_type & key, const mapped_type & value);
+
+    /**
      * insert a single extent into this ft_map,
      * merging with existing extents where possible.
      * return iterator to inserted/merged extent
@@ -188,7 +193,7 @@ public:
      *
      * simply calls insert(key_type, value_type)
      */
-    FT_INLINE iterator insert(const value_type & extent) { return insert(extent.first, extent.second); }
+    iterator insert(const value_type & extent) { return insert(extent.first, extent.second); }
 
     /**
      * insert a single extent into this ft_map,
@@ -197,7 +202,7 @@ public:
      *
      * simply calls insert(key_type, value_type)
      */
-    iterator insert(T physical, T logical, T length);
+    iterator insert(T physical, T logical, T length, ft_size user_data = 0);
 
     /**
      * remove an existing extent from this ft_map.

@@ -20,15 +20,15 @@ FT_NAMESPACE_BEGIN
  * append a single extent to this vector.
  *
  * if this vector is not empty
- * and specified extent ->fm_physical is equal to last->fm_physical + last->fm_length
- * and specified extent ->fm_logical  is equal to last->fm_logical  + last->fm_length
+ * and specified extent ->physical is equal to last->physical + last->length
+ * and specified extent ->logical  is equal to last->logical  + last->length
  * where 'last' is the last extent in this vector,
  * then merge the two extents
  *
  * otherwise append to this vector a new extent containing specified extent (physical, logical, length)
  */
 template<typename T>
-void ft_vector<T>::append(T physical, T logical, T length)
+void ft_vector<T>::append(T physical, T logical, T length, ft_size user_data)
 {
     if (!this->empty()) {
         value_type & last = this->back();
@@ -46,6 +46,7 @@ void ft_vector<T>::append(T physical, T logical, T length)
     extent.physical() = physical;
     extent.logical() = logical;
     extent.length() = length;
+    extent.user_data() = user_data;
 }
 
 
@@ -66,7 +67,7 @@ void ft_vector<T>::append_all(const ft_vector<T> & other)
 
 
 /**
- * reorder this vector in-place, sorting by fm_physical
+ * reorder this vector in-place, sorting by physical
  */
 template<typename T>
 void ft_vector<T>::sort_by_physical()

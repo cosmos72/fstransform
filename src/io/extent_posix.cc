@@ -26,7 +26,7 @@
 #include <linux/fs.h>     // for FS_IOC_FIEMAP, FIBMAP */
 #include <linux/fiemap.h> // for struct fiemap and struct fiemap_extent */
 
-#include "../fail.hh"        // for ff_fail() */
+#include "../log.hh"         // for ff_log() */
 #include "../traits.hh"      // for FT_TYPE_TO_UNSIGNED(T) */
 #include "../types.hh"       // for ft_off */
 #include "../extent.hh"      // for ft_extent<T>, ft_map<T>, ff_filemap() */
@@ -39,7 +39,7 @@ FT_IO_NAMESPACE_BEGIN
 
 /**
  * retrieves file blocks allocation map (extents) for specified file descriptor
- * and appends them to ret_vector.
+ * and appends them to ret_vector (with user_data = FC_DEFAULT_USER_DATA).
  * in case of failure returns errno-compatible error code, and ret_vector contents will be UNDEFINED.
  *
  * must (and will) also check that device blocks count can be represented by ret_list,
@@ -105,7 +105,7 @@ static int ff_posix_fibmap(int fd, ft_uoff dev_length, ft_vector<ft_uoff> & ret_
                 ret_block_size_bitmask |= physical_uoff | logical_uoff;
 
                 /* this is painful... FIBMAP reports one block per call */
-                ret_list.append(physical_uoff, logical_uoff, block_size);
+                ret_list.append(physical_uoff, logical_uoff, block_size, FC_DEFAULT_USER_DATA);
             }
         }
     } while (0);
@@ -141,7 +141,7 @@ static int ff_linux_fiemap_allocate_and_ioctl(int fd, ft_uoff file_length, ft_si
 
 /*
  * retrieves file blocks allocation map (extents) for specified file descriptor
- * and appends them to ret_vector.
+ * and appends them to ret_vector (with user_data = FC_DEFAULT_USER_DATA).
  * in case of failure returns errno-compatible error code and ret_vector contents will be UNCHANGED.
  *
  * must (and will) also check that device blocks count can be represented by ret_list,
@@ -200,7 +200,8 @@ static int ff_linux_fiemap(int fd, ft_vector<ft_uoff> & ret_list, ft_uoff & ret_
 
             ret_list.append((ft_uoff) k_extent[i].fe_physical,
                             (ft_uoff) k_extent[i].fe_logical,
-                            (ft_uoff) k_extent[i].fe_length);
+                            (ft_uoff) k_extent[i].fe_length,
+                            FC_DEFAULT_USER_DATA);
         }
     } while (0);
 
@@ -217,7 +218,7 @@ static int ff_linux_fiemap(int fd, ft_vector<ft_uoff> & ret_list, ft_uoff & ret_
 
 /**
  * retrieves file blocks allocation map (extents) for specified file descriptor
- * and appends them to ret_vector.
+ * and appends them to ret_vector (with user_data = FC_DEFAULT_USER_DATA)
  * in case of failure returns errno-compatible error code, and ret_vector contents will be UNDEFINED.
  *
  * implementation: calls ioctl(FS_IOC_FIEMAP) and if it fails, tries with ioctl(FIBMAP)
@@ -233,8 +234,8 @@ int ff_read_extents_posix(int fd, ft_uoff dev_length, ft_vector<ft_uoff> & ret_l
             if (err2 == 0)
                 err = err2;
             else {
-                ff_fail(err,  "%s", "failed to list file blocks with ioctl(FS_IOC_FIEMAP)");
-                ff_fail(err2, "%s", "failed to list file blocks with ioctl(FIBMAP)");
+                ff_log(FC_ERROR, err,  "%s", "failed to list file blocks with ioctl(FS_IOC_FIEMAP)");
+                ff_log(FC_ERROR, err2, "%s", "failed to list file blocks with ioctl(FIBMAP)");
             }
         }
 

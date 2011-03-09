@@ -18,7 +18,7 @@ FT_IO_NAMESPACE_BEGIN
 
 /**
  * retrieves emulated file blocks allocation map (extents) from specified stream
- * and appends them to ret_container.
+ * and appends them to ret_container (retrieves also user_data)
  * in case of failure returns errno-compatible error code, and ret_list contents will be UNDEFINED.
  *
  * implementation: simply reads the list of triplets (physical, logical, length)
@@ -27,7 +27,7 @@ FT_IO_NAMESPACE_BEGIN
 int ff_read_extents_file(std::istream & is, ft_uoff dev_length, ft_vector<ft_uoff> & ret_list, ft_uoff & ret_block_size_bitmask);
 
 /**
- * writes file blocks allocation map (extents) to specified stream
+ * writes file blocks allocation map (extents) to specified stream (stores also user_data)
  * in case of failure returns errno-compatible error code.
  *
  * implementation: simply writes the list of triplets (physical, logical, length)

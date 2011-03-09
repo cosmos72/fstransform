@@ -35,29 +35,29 @@ public:
      * append a single extent to this vector.
      *
      * if this vector is not empty
-     * and specified extent ->fm_physical is equal to last->fm_physical + last->fm_length
-     * and specified extent ->fm_logical  is equal to last->fm_logical  + last->fm_length
+     * and specified extent ->physical is equal to last->physical + last->length
+     * and specified extent ->logical  is equal to last->logical  + last->length
      * where 'last' is the last extent in this vector,
      * then merge the two extents
      *
      * otherwise append to this vector a new extent containing specified extent (physical, logical, length)
      */
-    void append(T physical, T logical, T length);
+    void append(T physical, T logical, T length, ft_size user_data);
 
     /**
      * append a single extent to this vector.
      *
      * if this vector is not empty
-     * and specified extent ->fm_physical is equal to last->fm_physical + last->fm_length
-     * and specified extent ->fm_logical  is equal to last->fm_logical  + last->fm_length
+     * and specified extent ->physical is equal to last->physical + last->length
+     * and specified extent ->logical  is equal to last->logical  + last->length
      * where 'last' is the last extent in this vector,
      * then merge the two extents
      *
-     * otherwise append to this vector a new extent containing specified extent (physical, logical, length)
+     * otherwise append to this vector a new extent containing specified extent (physical, logical, length, user_data)
      */
     FT_INLINE void append(const typename value_type::super_type & extent)
     {
-        append(extent.first.fm_physical, extent.second.fm_logical, extent.second.fm_length);
+        append(extent.first.physical, extent.second.logical, extent.second.length, extent.second.user_data);
     }
 
     /**
@@ -68,7 +68,7 @@ public:
     void append_all(const ft_vector<T> & other);
 
     /**
-     * reorder this vector in-place, sorting by fm_physical
+     * reorder this vector in-place, sorting by physical
      */
     void sort_by_physical();
 };

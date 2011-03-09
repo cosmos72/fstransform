@@ -8,6 +8,10 @@
 #ifndef FSTRANSFORM_TRANSFORM_HH
 #define FSTRANSFORM_TRANSFORM_HH
 
+#include "check.hh"
+
+#include <cstdio>          // for FILE *
+
 #include "io/io.hh"        // for ft_io
 #include "io/io_posix.hh"  // for ft_io_posix
 #include "io/io_emul.hh"   // for ft_io_emul
@@ -18,15 +22,22 @@ class ft_transform
 {
 private:
     char * job_dir_;
+    ft_size job_dir__len;
+
+    FILE * job_log;
+
     FT_IO_NS ft_io * fm_io;
 
     int invalid_cmdline(const char * program_name, const char * fmt, ...);
 
-    /** return EISCONN if transformer is initialized, else call quit() and return 0 */
+    /** return EISCONN if transformer is initialized, else call quit_io() and return 0 */
     int check_is_closed();
 
-    /** return 0 if transformer is initialized, else call quit() and return ENOTCONN */
+    /** return 0 if transformer is initialized, else call quit_io() and return ENOTCONN */
     int check_is_open();
+
+    /** initialize logging subsystem */
+    int init_log();
 
     /** initialize persistence subsystem */
     int init_job();
@@ -36,12 +47,12 @@ public:
     /** constructor */
     ft_transform();
 
-    /** destructor. calls quit() */
+    /** destructor. calls quit_io() */
     ~ft_transform();
 
     /**
      * high-level main method.
-     * calls in sequence: init(argc, argv), run(), quit()
+     * calls in sequence: init(argc, argv), run(), quit_io()
      *
      * expects argc == 4 and four arguments in argv:
      * program_name, DEVICE, LOOP-FILE and ZERO-FILE.
@@ -65,7 +76,7 @@ public:
 
     /**
      * initialize transformer to use specified I/O. if success, stores a pointer to I/O object
-     * WARNING: destructor and quit() will delete ft_io object,
+     * WARNING: destructor and quit_io() will delete ft_io object,
      *          so only pass I/O object created with new()
      *          and delete them yourself ONLY if this call returned error!
      *
@@ -93,8 +104,8 @@ public:
      */
     int run();
 
-    /** shutdown transformer. closes configured I/O and deletes it */
-    void quit();
+    /** close configured I/O and delete it */
+    void quit_io();
 };
 
 

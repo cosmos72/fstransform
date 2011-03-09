@@ -13,7 +13,7 @@
 #include <fcntl.h>        //  "    "
 #include <unistd.h>       // for close()
 
-#include "../fail.hh"     // for ff_fail()
+#include "../log.hh"      // for ff_log()
 
 #include "extent_posix.hh" // for ft_extent_posixs()
 #include "util_posix.hh"   // for ft_posix_*() misc functions
@@ -70,7 +70,7 @@ int ft_io_posix::open(char const* const path[FC_FILE_COUNT])
     do {
         for (i = 0; i < FC_FILE_COUNT; i++) {
             if ((fd[i] = ::open(path[i], O_RDONLY)) < 0) {
-                err = ff_fail(errno, "error opening %s '%s'", label[i], path[i]);
+                err = ff_log(FC_ERROR, errno, "error opening %s '%s'", label[i], path[i]);
                 break;
             }
 
@@ -82,14 +82,14 @@ int ft_io_posix::open(char const* const path[FC_FILE_COUNT])
                 err = ff_posix_dev(fd[i], & dev[i]);
 
             if (err != 0) {
-                err = ff_fail(err, "error in %s fstat('%s')", label[i], path[i]);
+                err = ff_log(FC_ERROR, err, "error in %s fstat('%s')", label[i], path[i]);
                 break;
             }
 
             if (i == FC_DEVICE) {
                 /* for DEVICE, we also want to know its length */
                 if ((err = ff_posix_blkdev_size(fd[FC_DEVICE], & dev_len)) != 0) {
-                    err = ff_fail(err, "error in %s ioctl('%s', BLKGETSIZE64)", label[0], path[0]);
+                    err = ff_log(FC_ERROR, err, "error in %s ioctl('%s', BLKGETSIZE64)", label[0], path[0]);
                     break;
                 }
                 /* device length is retrieved ONLY here. we must remember it */
@@ -97,8 +97,9 @@ int ft_io_posix::open(char const* const path[FC_FILE_COUNT])
             } else {
                 /* for LOOP-FILE and ZERO-FILE, we check they are actually contained in DEVICE */
                 if (dev[FC_DEVICE] != dev[i]) {
-                    err = ff_fail(0, "invalid arguments: '%s' is device 0x%04x, but %s '%s' is contained in device 0x%04x\n",
-                                  path[FC_DEVICE], (unsigned)dev[FC_DEVICE], label[i], path[i], (unsigned)dev[i]);
+                    ff_log(FC_ERROR, 0, "invalid arguments: '%s' is device 0x%04x, but %s '%s' is contained in device 0x%04x\n",
+                           path[FC_DEVICE], (unsigned)dev[FC_DEVICE], label[i], path[i], (unsigned)dev[i]);
+                    err = EINVAL;
                     break;
                 }
             }
@@ -120,7 +121,7 @@ void ft_io_posix::close()
     for (ft_size i = 0; i < FC_FILE_COUNT; i++) {
         if (fd[i] >= 0) {
             if (::close(fd[i]) != 0)
-                ff_fail(errno, "warning: closing %s file descriptor [%d] failed", label[i], fd[i]);
+                ff_log(FC_WARN, errno, "warning: closing %s file descriptor [%d] failed", label[i], fd[i]);
             fd[i] = -1;
         }
     }

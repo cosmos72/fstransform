@@ -10,7 +10,7 @@
 #include <cerrno>          // for errno, EISCONN...
 #include <fstream>         // for std::ifstream
 
-#include "../fail.hh"      // for ff_fail()
+#include "../log.hh"       // for ff_log()
 #include "extent_file.hh"  // for ff_read_extents_file()
 #include "io_emul.hh"      // for ft_io_emul
 
@@ -63,14 +63,17 @@ int ft_io_emul::open(char const* const path[FC_FILE_COUNT])
         for (i = 0; i < FC_FILE_COUNT; i++) {
             is[i] = new std::ifstream(path[i], std::ios_base::in);
             if (! is[i]->good()) {
-                err = ff_fail(errno, "error opening %s '%s'", label[i], path[i]);
+                err = ff_log(FC_ERROR, errno, "error opening %s '%s'", label[i], path[i]);
                 break;
             }
 
-            /* both LOOP-EXTENTS and FREE-SPACE-EXTENTS start with "length" followed by emulated file size */
-            (* is[i]) >> str >> lengths[i];
+            /* both LOOP-EXTENTS and FREE-SPACE-EXTENTS start with:
+             * length {file_size}\n
+             * physical logical length user_data\n
+             */
+            (* is[i]) >> str >> lengths[i] >> str >> str >> str >> str;
             if (! is[i]->good()) {
-                err = ff_fail(errno, "error reading 'length' from %s '%s'", label[i], path[i]);
+                err = ff_log(FC_ERROR, errno, "error reading 'length' from %s '%s'", label[i], path[i]);
                 break;
             }
         }
@@ -122,8 +125,8 @@ void ft_io_emul::close()
  * and actually retrieve the extents used by ZERO-FILE.
  */
 int ft_io_emul::read_extents(ft_vector<ft_uoff> & loop_file_extents,
-                              ft_vector<ft_uoff> & free_space_extents,
-                              ft_uoff & ret_block_size_bitmask)
+                             ft_vector<ft_uoff> & free_space_extents,
+                             ft_uoff & ret_block_size_bitmask)
 {
     ft_uoff block_size_bitmask = ret_block_size_bitmask;
     int err = 0;

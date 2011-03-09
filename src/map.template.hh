@@ -61,12 +61,14 @@ template<typename T>
 ft_extent_relation ft_map<T>::compare(const key_type & key1, const mapped_type & value1,
                                       const key_type & key2, const mapped_type & value2)
 {
-    T physical1 = key1.fm_physical, logical1 = value1.fm_logical, length1 = value1.fm_length;
-    T physical2 = key2.fm_physical, logical2 = value2.fm_logical, length2 = value2.fm_length;
+    T physical1 = key1.physical, logical1 = value1.logical, length1 = value1.length;
+    T physical2 = key2.physical, logical2 = value2.logical, length2 = value2.length;
+    ft_size user_data1 = value1.user_data;
+    ft_size user_data2 = value2.user_data;
     ft_extent_relation rel;
 
     if (physical1 < physical2) {
-        if (physical1 + length1 == physical2 && logical1 + length1 == logical2)
+        if (physical1 + length1 == physical2 && logical1 + length1 == logical2 && user_data1 == user_data2)
             rel = FC_EXTENT_TOUCH_BEFORE;
         else if (physical1 + length1 <= physical2)
             rel = FC_EXTENT_BEFORE;
@@ -75,7 +77,7 @@ ft_extent_relation ft_map<T>::compare(const key_type & key1, const mapped_type &
     } else if (physical1 == physical2) {
         rel = FC_EXTENT_INTERSECT;
     } else /* physical1 > physical2 */ {
-        if (physical2 + length2 == physical1 && logical2 + length2 == logical1)
+        if (physical2 + length2 == physical1 && logical2 + length2 == logical1 && user_data1 == user_data2)
             rel = FC_EXTENT_TOUCH_BEFORE;
         else if (physical2 + length2 <= physical1)
             rel = FC_EXTENT_BEFORE;
@@ -101,32 +103,19 @@ template<typename T>
 typename ft_map<T>::iterator ft_map<T>::merge0(iterator pos1, const key_type & key2, const mapped_type & value2)
 {
     ft_extent_relation rel = compare(pos1, key2, value2);
+    const key_type & key1 = pos1->first;
     mapped_type & value1 = pos1->second;
-    T length = value1.fm_length + value2.fm_length;
+
+    // modify extent in-place
+    value1.length += value2.length;
 
     if (rel == FC_EXTENT_TOUCH_BEFORE) {
-        // modify extent in-place
-        value1.fm_length = length;
+        // nothing to do
 
     } else if (rel == FC_EXTENT_TOUCH_AFTER) {
-        /*
-         * we cannot modify std::map keys in-place!
-         * so we need to erase pos1 and reinsert it with updated key
-         *
-         * implementation:
-         * go one place forward before erasing, in worst case we will land into end()
-         * which is still a valid iterator (ok, it cannot be dereferenced)
-         * then erase original position,
-         * finally reinsert merged extent, giving hint as where to insert it
-         */
-        iterator tmp = pos1;
-        ++pos1;
-        super_type::erase(tmp);
-
-        mapped_type value_to_insert = { value2.fm_logical, length };
-
-        pos1 = super_type::insert(pos1, std::make_pair(key2, value_to_insert));
-
+        // modify extent_key in-place. possible, since we defined ft_extent_key<T>::physical as 'mutable'
+        key1.physical = key2.physical;
+        value1.logical = value2.logical;
     } else {
         /* must not happen! trigger an assertion failure. */
         ff_map_assert(rel == FC_EXTENT_TOUCH_BEFORE || rel == FC_EXTENT_TOUCH_AFTER);
@@ -146,9 +135,7 @@ typename ft_map<T>::iterator ft_map<T>::merge0(iterator pos1, const key_type & k
  *          Again: call merge(), not this method.
  *
  * this method exists because it is simpler to implement than
- * merge0(iterator, const key_type &, const mapped_type &),
- * as it does not need to work around the limitation that std::map keys
- * cannot be modified in-place
+ * merge0(iterator, const key_type &, const mapped_type &)
  */
 template<typename T>
 typename ft_map<T>::iterator ft_map<T>::merge0(iterator pos1, iterator pos2)
@@ -157,17 +144,17 @@ typename ft_map<T>::iterator ft_map<T>::merge0(iterator pos1, iterator pos2)
     mapped_type & value1 = pos1->second;
     mapped_type & value2 = pos2->second;
 
-    T length = value1.fm_length + value2.fm_length;
+    T length = value1.length + value2.length;
 
     if (rel == FC_EXTENT_TOUCH_BEFORE) {
         // modify first extent in-place, erase second
-        value1.fm_length = length;
+        value1.length = length;
         super_type::erase(pos2);
         return pos1;
 
     } else if (rel == FC_EXTENT_TOUCH_AFTER) {
         // modify second extent in-place, erase first
-        value2.fm_length = length;
+        value2.length = length;
         super_type::erase(pos1);
         return pos2;
 
@@ -234,11 +221,11 @@ void ft_map<T>::bounds(key_type & min_key, key_type & max_key) const
 {
     const_iterator b = begin(), e = end();
     if (b != e) {
-        min_key.fm_physical = b->first.fm_physical;
+        min_key.physical = b->first.physical;
         --e;
-        max_key.fm_physical = e->first.fm_physical + e->second.fm_length;
+        max_key.physical = e->first.physical + e->second.length;
     } else
-        min_key.fm_physical = max_key.fm_physical = 0;
+        min_key.physical = max_key.physical = 0;
 }
 
 
@@ -256,7 +243,7 @@ static FT_INLINE T ff_max2(T a, T b)
 
 /**
  * find the intersection (matching physical and logical) between the two specified extents,
- * insert it into 'result' and return true.
+ * insert it into 'result' (with user_data = FC_DEFAULT_USER_DATA) and return true.
  * if no intersections, return false and 'result' will be unchanged
  */
 template<typename T>
@@ -265,22 +252,22 @@ bool ft_map<T>::intersect(const value_type & extent1, const value_type & extent2
     const key_type & key1 = extent1.first;
     const mapped_type & value1 = extent1.second;
 
-    T physical1 = key1.fm_physical;
-    T logical1 = value1.fm_logical;
-    T end1 = value1.fm_length + physical1;
+    T physical1 = key1.physical;
+    T logical1 = value1.logical;
+    T end1 = value1.length + physical1;
 
     const key_type & key2 = extent2.first;
     const mapped_type & value2 = extent2.second;
 
-    T physical2 = key2.fm_physical;
-    T logical2 = value2.fm_logical;
-    T end2 = value2.fm_length + physical2;
+    T physical2 = key2.physical;
+    T logical2 = value2.logical;
+    T end2 = value2.length + physical2;
 
     if (end1 > physical2 && physical1 < end2
             && physical1 - physical2 == logical1 - logical2)
     {
         key_type key = { ff_max2(physical1, physical2) };
-        mapped_type value = { ff_max2(logical1, logical2), ff_min2(end1, end2) - key.fm_physical };
+        mapped_type value = { ff_max2(logical1, logical2), ff_min2(end1, end2) - key.physical, FC_DEFAULT_USER_DATA };
         this->insert(key, value);
         return true;
     }
@@ -384,10 +371,10 @@ typename ft_map<T>::iterator ft_map<T>::insert(const key_type & key, const mappe
  * return iterator to inserted/merged extent
  */
 template<typename T>
-typename ft_map<T>::iterator ft_map<T>::insert(T physical, T logical, T length)
+typename ft_map<T>::iterator ft_map<T>::insert(T physical, T logical, T length, ft_size user_data)
 {
     key_type key = { physical };
-    mapped_type value = { logical, length };
+    mapped_type value = { logical, length, user_data };
     return insert(key, value);
 }
 
@@ -418,13 +405,14 @@ void ft_map<T>::remove1(const value_type & extent)
     const key_type & last_key = pos->first;
     mapped_type & last_value_ = pos->second;
 
-    T last_physical = last_key.fm_physical;
-    T last_logical = last_value_.fm_logical;
-    T last_length = last_value_.fm_length;
+    T last_physical = last_key.physical;
+    T last_logical = last_value_.logical;
+    T last_length = last_value_.length;
+    ft_size user_data = last_value_.user_data;
 
-    T physical = key.fm_physical;
-    T logical = value.fm_logical;
-    T length = value.fm_length;
+    T physical = key.physical;
+    T logical = value.logical;
+    T length = value.length;
 
     ff_assert(last_physical <= physical);
     ff_assert(last_logical  <= logical);
@@ -443,7 +431,7 @@ void ft_map<T>::remove1(const value_type & extent)
          *  | last extent
          *  +--------------
          */
-        last_value_.fm_length = physical - last_physical;
+        last_value_.length = physical - last_physical;
     } else {
         /* second case:
          * "last" existing extent starts together with extent to remove
@@ -469,7 +457,8 @@ void ft_map<T>::remove1(const value_type & extent)
         T new_physical = physical + length;
         T new_logical = logical + length;
         T new_length = last_physical + last_length - new_physical;
-        insert0(new_physical, new_logical, new_length);
+
+        insert0(new_physical, new_logical, new_length, user_data);
     } else {
         /* nothing to do */
     }
@@ -548,9 +537,9 @@ typename ft_map<T>::iterator ft_map<T>::shrink_front(iterator iter, T shrink_len
     ff_assert(iter != end());
     const value_type & extent = *iter;
     const mapped_type & value = extent.second;
-    T physical = extent.first.fm_physical;
-    T logical = value.fm_logical;
-    T length = value.fm_length;
+    T physical = extent.first.physical;
+    T logical = value.logical;
+    T length = value.length;
     ff_assert(length >= shrink_length);
 
     iterator next = iter;
@@ -573,12 +562,25 @@ typename ft_map<T>::iterator ft_map<T>::shrink_front(iterator iter, T shrink_len
  * WARNING: does not merge and does not check for merges
  */
 template<typename T>
-void ft_map<T>::insert0(T physical, T logical, T length)
+void ft_map<T>::insert0(T physical, T logical, T length, ft_size user_data)
 {
     key_type key = { physical };
     mapped_type & value = (*this)[key];
-    value.fm_logical = logical;
-    value.fm_length = length;
+    value.logical = logical;
+    value.length = length;
+    value.user_data = user_data;
+}
+
+/**
+ * add a single extent the ft_map
+ *
+ * WARNING: does not merge and does not check for merges
+ */
+template<typename T>
+void ft_map<T>::insert0(const key_type & key, const mapped_type & value)
+{
+    mapped_type & value_ = (*this)[key];
+    value_ = value; /* struct assignment: copy logical, length and user_data */
 }
 
 /**
@@ -587,10 +589,10 @@ void ft_map<T>::insert0(T physical, T logical, T length)
  * WARNING: does not merge and does not check for merges
  */
 template<typename T>
-void ft_map<T>::append0(T physical, T logical, T length)
+void ft_map<T>::append0(T physical, T logical, T length, ft_size user_data)
 {
     key_type key = { physical };
-    mapped_type value = { logical, length };
+    mapped_type value = { logical, length, user_data };
     value_type extent(key, value);
 
     super_type::insert(end(), extent);
@@ -615,7 +617,8 @@ void ft_map<T>::append0_shift(const ft_vector<ft_uoff> & other, ft_uoff effectiv
         const ft_extent<ft_uoff> & extent = * iter;
         append0(extent.physical() >> effective_block_size_log2,
                 extent.logical()  >> effective_block_size_log2,
-                extent.length()   >> effective_block_size_log2);
+                extent.length()   >> effective_block_size_log2,
+                extent.user_data());
     }
 }
 
@@ -624,7 +627,7 @@ void ft_map<T>::append0_shift(const ft_vector<ft_uoff> & other, ft_uoff effectiv
  * makes the physical complement of 'other' vector,
  * i.e. calculates the physical extents NOT used in 'other' vector,
  * shifts them by effective_block_size_log2,
- * and inserts it in this map.
+ * and inserts it in this map (with user_data = FC_DEFAULT_USER_DATA)
  *
  * since the file(s) contained in such complementary extents are not known,
  * all calculated extents will have ->logical == ->physical.
@@ -644,7 +647,7 @@ void ft_map<T>::complement0_physical_shift(const ft_vector<ft_uoff> & other,
         last = 0;
     else {
         const value_type & back = *--this->end();
-        last = back.first.fm_physical + back.second.fm_length;
+        last = back.first.physical + back.second.length;
     }
     /* loop on 'other' extents */
     for (i = 0; i < n; i++) {
@@ -653,8 +656,8 @@ void ft_map<T>::complement0_physical_shift(const ft_vector<ft_uoff> & other,
         if (physical == last) {
             /* nothing to do */
         } else if (physical > last) {
-            /* add "hole" with fm_logical == fm_physical */
-            append0(last, last, physical - last);
+            /* add "hole" with logical == physical */
+            append0(last, last, physical - last, FC_DEFAULT_USER_DATA);
         } else {
             /* oops.. some programmer really screwed up */
             ff_assert("internal error! somebody programmed a call to ft_map<T>::complement0_physical_shift() with an argument not sorted by ->physical() !" == 0);
@@ -664,8 +667,8 @@ void ft_map<T>::complement0_physical_shift(const ft_vector<ft_uoff> & other,
     }
     device_length >>= effective_block_size_log2;
     if (last < device_length) {
-        /* add last "hole" with fm_logical == fm_physical */
-        append0(last, last, device_length - last);
+        /* add last "hole" with logical == physical */
+        append0(last, last, device_length - last, FC_DEFAULT_USER_DATA);
     }
 }
 
@@ -674,7 +677,7 @@ void ft_map<T>::complement0_physical_shift(const ft_vector<ft_uoff> & other,
  * makes the logical complement of 'other' vector,
  * i.e. calculates the logical extents NOT used in 'other' vector,
  * shifts them by effective_block_size_log2,
- * and inserts it in this map.
+ * and inserts it in this map (with user_data = FC_DEFAULT_USER_DATA).
  *
  * since the file(s) contained in such complementary extents are not known,
  * all calculated extents will have ->logical == ->physical.
@@ -693,7 +696,7 @@ void ft_map<T>::complement0_logical_shift(const ft_vector<ft_uoff> & other, ft_u
         last = 0;
     else {
         const mapped_type & back = (--this->end())->second;
-        last = back.fm_logical + back.fm_length;
+        last = back.logical + back.length;
     }
     /* loop on 'other' extents */
     for (i = 0; i < n; i++) {
@@ -702,8 +705,8 @@ void ft_map<T>::complement0_logical_shift(const ft_vector<ft_uoff> & other, ft_u
         if (logical == last) {
             /* nothing to do */
         } else if (logical > last) {
-            /* add "hole" with fm_logical == fm_logical */
-            append0(last, last, logical - last);
+            /* add "hole" with logical == logical */
+            append0(last, last, logical - last, FC_DEFAULT_USER_DATA);
         } else {
             /* oops.. some programmer really screwed up */
             ff_assert("internal error! somebody programmed a call to ft_map<T>::complement0_logical_shift() with an argument not sorted by ->logical() !" == 0);
@@ -713,8 +716,8 @@ void ft_map<T>::complement0_logical_shift(const ft_vector<ft_uoff> & other, ft_u
     }
     device_length >>= effective_block_size_log2;
     if (last < device_length) {
-        /* add last "hole" with fm_logical == fm_logical */
-        append0(last, last, device_length - last);
+        /* add last "hole" with logical == logical */
+        append0(last, last, device_length - last, FC_DEFAULT_USER_DATA);
     }
 }
 

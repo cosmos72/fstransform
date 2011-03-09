@@ -12,7 +12,7 @@
 #include <cstdio>           // for fprintf(), sprintf(), stdout, stderr
 #include <cstring>          // for strcmp()
 
-#include "fail.hh"          // for ff_fail()
+#include "log.hh"           // for ff_log()
 #include "map.hh"           // for ft_map<T>
 #include "vector.hh"        // for ft_vector<T>
 #include "work_dispatch.hh" // for ft_work_dispatch
@@ -36,20 +36,28 @@ static char const* const* label = FT_IO_NS ft_io_posix::label;
 
 /** constructor */
 ft_transform::ft_transform()
-    : job_dir_(NULL), fm_io(NULL)
-{ }
+    : job_dir_(NULL), job_log(NULL), fm_io(NULL)
+{
+    ff_log_init();
+    ff_log_set_threshold(FC_TRACE);
+}
 
-/** destructor. calls quit() */
+/** destructor. calls quit_io() */
 ft_transform::~ft_transform()
 {
-    quit();
-    if (job_dir_)
+    quit_io();
+    if (job_log != NULL) {
+        ff_log_unregister(job_log);
+        fclose(job_log);
+        job_log = NULL;
+    }
+    if (job_dir_ != NULL)
         free(job_dir_);
 }
 
 /**
  * high-level main method.
- * calls in sequence: init(argc, argv), run() and quit()
+ * calls in sequence: init(argc, argv), run() and quit_io()
  *
  * expects argc == 4 and four arguments in argv:
  * program_name, DEVICE, LOOP-FILE and ZERO-FILE.
@@ -69,8 +77,8 @@ int ft_transform::main(int argc, char const* const* argv)
     if (err == 0)
         err = transformer.run();
 
-    // not needed, destructor will call quit()
-    // transformer.quit();
+    // not needed, destructor will call quit_io()
+    // transformer.quit_io();
 
     return err;
 }
@@ -78,8 +86,7 @@ int ft_transform::main(int argc, char const* const* argv)
 
 /** print command-line usage to stdout and return 0 */
 int ft_transform::usage(const char * program_name) {
-    fprintf(stdout, "Usage: %s %s %s %s\n", program_name, label[0], label[1], label[2]);
-    return 0;
+    return ff_log(FC_NOTICE, 0, "Usage: %s %s %s %s\n", program_name, label[0], label[1], label[2]);
 }
 
 
@@ -88,26 +95,26 @@ int ft_transform::invalid_cmdline(const char * program_name, const char * fmt, .
     va_list args;
 
     va_start(args, fmt);
-    ff_vfail(0, fmt, args);
+    ff_vlog(FC_FATAL, 0, fmt, args);
     va_end(args);
 
-    fprintf(stderr, "Try `%s --help' for more information\n", program_name);
+    ff_log(FC_FATAL, 0, "Try `%s --help' for more information", program_name);
     return 1;
 }
 
 
 
-/** return EISCONN if transformer is initialized, else call quit() and return 0 */
+/** return EISCONN if transformer is initialized, else call quit_io() and return 0 */
 int ft_transform::check_is_closed()
 {
     int err = 0;
     if (is_initialized()) {
-        ff_fail(0, "error: I/O subsystem already initialized");
+        ff_log(FC_ERROR, 0, "error: I/O subsystem already initialized");
         err = EISCONN;
     } else
-        // quit() to make sure we are not left in a half-initialized status
+        // quit_io() to make sure we are not left in a half-initialized status
         // (fm_io != NULL && !fm_io->is_open())
-        quit();
+        quit_io();
     return err;
 }
 
@@ -116,10 +123,10 @@ int ft_transform::check_is_open()
 {
     int err = 0;
     if (!is_initialized()) {
-        ff_fail(0, "error: I/O subsystem not initialized");
-        // quit() to make sure we are not left in a half-initialized status
+        ff_log(FC_ERROR, 0, "error: I/O subsystem not initialized");
+        // quit_io() to make sure we are not left in a half-initialized status
         // (fm_io != NULL && !fm_io->is_open())
-        quit();
+        quit_io();
         err = ENOTCONN;
     }
     return err;
@@ -150,6 +157,25 @@ int ft_transform::init(int argc, char const* const* argv)
     return err;
 }
 
+int ft_transform::init_log()
+{
+    const char * log_name = "fstransform.log";
+    ft_size log_name_len = strlen(log_name) + 1; // also count final '\0'
+
+    char * log_file = (char *) malloc(job_dir__len + log_name_len);
+
+    if (log_file == NULL)
+        return ff_log(FC_ERROR, ENOMEM, "failed to allocate %lu bytes for log_file", (unsigned long)(job_dir__len + log_name_len));
+
+    memcpy(log_file, job_dir_, job_dir__len);
+    memcpy(log_file + job_dir__len, log_name, log_name_len);
+    if ((job_log = fopen(log_file, "a")) == NULL)
+        return ff_log(FC_ERROR, errno, "failed to open log file '%s'", log_file);
+
+    ff_log_register(job_log);
+    return 0;
+}
+
 /** initialize persistence subsystem */
 int ft_transform::init_job()
 {
@@ -168,9 +194,12 @@ int ft_transform::init_job()
     for (i = 1; i != (ft_uint)-1; i++) {
         // finish job_dir_ with '/' - needed by everybody using job_dir_
         sprintf(job_dir_ + 17, "%lu/", (unsigned long)i);
+        job_dir__len = strlen(job_dir_);
 
-        if ((err = FT_IO_NS ff_mkdir(job_dir_)) == 0) {
-            ff_fail(0, "started job %lu", (unsigned long)i);
+        if ((err = FT_IO_NS ff_mkdir(job_dir_)) == 0
+                && (err = init_log()) == 0)
+        {
+            ff_log(FC_NOTICE, 0, "started job %lu", (unsigned long)i);
             break;
         }
     }
@@ -214,7 +243,7 @@ int ft_transform::init_io_posix(char const* const path[FT_IO_NS ft_io_posix::FC_
 
 /**
  * initialize transformer to use specified I/O. if success, stores a pointer to I/O object
- * WARNING: destructor and quit() will delete ft_io object,
+ * WARNING: destructor and quit_io() will delete ft_io object,
  *          so only pass I/O object created with new()
  *          and delete them yourself ONLY if this call returned error!
  *
@@ -228,7 +257,7 @@ int ft_transform::init_io(FT_IO_NS ft_io * io) {
 }
 
 /** shutdown transformer. closes configured I/O and deletes it */
-void ft_transform::quit()
+void ft_transform::quit_io()
 {
     if (fm_io != NULL) {
         delete fm_io;
