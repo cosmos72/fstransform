@@ -139,11 +139,17 @@ public:
     // return true is this map is empty, i.e. if it size() == 0
     super_type::empty;
 
-    // return number of elements in this map
+    // return number of extents in this map
     super_type::size;
 
     // clear this map, i.e. erase all elements
     super_type::clear;
+
+    /**
+     * return number of blocks in this map extents, i.e. the sum of all extents ->length
+     * NOTE: this method is O(N), i.e. linear time in the number of extents
+     */
+    ft_uoff length() const;
 
     /**
      * returns the minimum physical and the maximum physical+length in this map.
@@ -296,7 +302,7 @@ FT_NAMESPACE_END
 #  define FT_TEMPLATE_map_hh(ft_prefix, T) ft_prefix class FT_NS ft_map< T >;
    FT_TEMPLATE_DECLARE(FT_TEMPLATE_map_hh)
 #else
-#  include "map.template.hh"
+#  include "map.t.hh"
 #endif /* FT_HAVE_EXTERN_TEMPLATE */
 
 

@@ -101,7 +101,8 @@ int ff_posix_pid(ft_pid * ret_pid)
 /** create a directory */
 int ff_posix_mkdir(const char * path, ft_mode mode)
 {
-    return mkdir(path, mode);
+    int err = mkdir(path, mode);
+    return err == 0 ? err : errno;
 }
 
 FT_IO_NAMESPACE_END

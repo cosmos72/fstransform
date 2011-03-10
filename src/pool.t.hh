@@ -93,7 +93,8 @@ typename ft_pool<T>::map_iterator ft_pool<T>::allocate_fragment(map_iterator map
     T length = map_value.second.length;
 
     ff_assert(!this->empty());
-    iterator iter = this->begin();
+    iterator iter = this->end(); // use the largest extent we have
+    --iter;
     T pool_value_length = iter->first;
     ft_pool_entry<T> & pool_entry = iter->second;
     map_iterator pool_iter = pool_entry.back();

@@ -29,8 +29,16 @@ typedef mode_t ft_mode;  // type used for file/directory permissions
 
 typedef FT_TYPE_TO_UNSIGNED(ft_off) ft_uoff; // unsigned variant of ft_off, in case ft_off is signed
 
-// a medium-size unsigned integer: smaller than ft_off, but large enough to represent blocks count for many devices
+// a medium-size unsigned integer: smaller than ft_uoff, but large enough to represent blocks count for many devices
 typedef unsigned int ft_uint;
+
+#ifdef FT_HAVE_LONG_LONG
+#  define FT_ULL unsigned long long
+#  define FS_ULL "llu"
+#else
+#  define FT_ULL unsigned long
+#  define FS_ULL "lu"
+#endif
 
 
 typedef struct stat ft_stat;

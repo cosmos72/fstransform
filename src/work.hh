@@ -9,8 +9,9 @@
 #define FSTRANSFORM_WORK_HH
 
 #include "types.hh"     // for ft_uoff
-#include "io/io.hh"     // for ft_io
 #include "map.hh"       // for ft_map<T>
+#include "log.hh"       // for ft_level
+#include "io/io.hh"     // for ft_io
 
 
 FT_NAMESPACE_BEGIN
@@ -34,6 +35,8 @@ private:
 
     /** cannot call assignment operator */
     const ft_work<T> & operator=(const ft_work<T> &);
+
+    void show(const char * label, ft_uoff effective_block_size, const ft_map<T> & map, ft_level level = FC_TRACE);
 
 public:
     /** default constructor */
@@ -95,7 +98,7 @@ FT_NAMESPACE_END
 #  define FT_TEMPLATE_work_hh(ft_prefix, T)     ft_prefix class FT_NS ft_work< T >;
    FT_TEMPLATE_DECLARE(FT_TEMPLATE_work_hh)
 #else
-#  include "work.template.hh"
+#  include "work.t.hh"
 #endif /* FT_HAVE_EXTERN_TEMPLATE */
 
 

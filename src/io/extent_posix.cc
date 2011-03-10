@@ -8,7 +8,7 @@
 #include "../first.hh" // for FT_*TEMPLATE* macros */
 
 /*
- * io/extent_posix.template.hh
+ * io/extent_posix.t.hh
  *
  *  Created on: Feb 27, 2011
  *      Author: max

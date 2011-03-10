@@ -10,6 +10,6 @@
 #include "types.hh"      // for ft_uint, ft_uoff
 
 #ifdef FT_HAVE_EXTERN_TEMPLATE
-#  include "pool.template.hh"
+#  include "pool.t.hh"
    FT_TEMPLATE_INSTANTIATE(FT_TEMPLATE_pool_hh)
 #endif /* FT_HAVE_EXTERN_TEMPLATE */

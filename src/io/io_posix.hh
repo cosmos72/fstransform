@@ -56,8 +56,8 @@ protected:
                              ft_vector<ft_uoff> & free_space_extents,
                              ft_uoff & ret_block_size_bitmask);
 public:
-    /** default constructor */
-    ft_io_posix();
+    /** constructor */
+    ft_io_posix(ft_job & job);
 
     /** destructor. calls close() */
     virtual ~ft_io_posix();

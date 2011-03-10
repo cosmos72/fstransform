@@ -1,5 +1,5 @@
 /*
- * work_dispatch.cc
+ * dispatch.cc
  *
  *  Created on: Mar 3, 2011
  *      Author: max
@@ -7,7 +7,7 @@
 
 #include "first.hh"
 
-#include "work_dispatch.hh"    // for ft_work_dispatch
+#include "dispatch.hh"    // for ft_dispatch
 #include "work.hh"             // for ft_work<T>
 
 FT_NAMESPACE_BEGIN
@@ -22,7 +22,7 @@ FT_NAMESPACE_BEGIN
  * if both ft_work<T>::check() and ft_work<T>::init() succeed,
  * calls ft_work<T>::run(), then ft_work<T>::quit()
  */
-int ft_work_dispatch::main(ft_vector<ft_uoff> & loop_file_extents,
+int ft_dispatch::main(ft_vector<ft_uoff> & loop_file_extents,
                            ft_vector<ft_uoff> & free_space_extents, FT_IO_NS ft_io & io)
 {
     int err;

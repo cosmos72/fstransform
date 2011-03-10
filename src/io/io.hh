@@ -11,6 +11,7 @@
 #include "../check.hh"
 
 #include "../types.hh"       // for ft_uoff
+#include "../job.hh"         // for ft_job
 #include "../map.hh"         // for ft_map<T>
 
 
@@ -24,6 +25,8 @@ class ft_io
 {
 private:
     ft_uoff dev_len, eff_block_size_log2;
+
+    ft_job & fm_job;
 
     /* cannot call copy constructor */
     ft_io(const ft_io &);
@@ -69,8 +72,8 @@ public:
 
     static char const * const label[]; // DEVICE, LOOP-FILE (and ZERO-FILE, but don't tell)
 
-    /** default constructor */
-    ft_io();
+    /** constructor */
+    ft_io(ft_job & job);
 
     /**
      * destructor.
@@ -93,6 +96,23 @@ public:
     /** return log2 of effective block size, or 0 if not open */
     FT_INLINE ft_uoff effective_block_size_log2() const { return eff_block_size_log2; }
 
+
+
+    /** return job */
+    FT_INLINE ft_job & job() const { return fm_job; }
+
+    /** return job_id, or 0 if not set */
+    FT_INLINE ft_size job_id() const { return fm_job.job_id(); }
+
+    /** return job_dir_, or "" if not set */
+    FT_INLINE const std::string & job_dir() const { return fm_job.job_dir(); }
+
+    /** return job_dir_, or "" if not set */
+    FT_INLINE const char * job_dir_cstr() const { return fm_job.job_dir_cstr(); }
+
+
+
+
     /**
      * calls the 3-argument version of read_extents() and, if it succeeds,
      * calls effective_block_size_log2() to compute and remember effective block size
@@ -101,12 +121,11 @@ public:
                      ft_vector<ft_uoff> & free_space_extents);
 
     /**
-     * saves extents to files job_dir_ + '/loop_extents.txt' and job_dir_ + '/free_space_extents.txt'
+     * saves extents to files job.job_dir() + '/loop_extents.txt' and job.job_dir() + '/free_space_extents.txt'
      * by calling the function ff_write_extents_file()
      */
     int write_extents(const ft_vector<ft_uoff> & loop_file_extents,
-                      const ft_vector<ft_uoff> & free_space_extents,
-                      const char * job_dir);
+                      const ft_vector<ft_uoff> & free_space_extents);
 };
 
 FT_IO_NAMESPACE_END

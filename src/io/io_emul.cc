@@ -19,9 +19,9 @@ FT_IO_NAMESPACE_BEGIN
 
 char const * const ft_io_emul::label[ft_io_emul::FC_FILE_COUNT] = { "LOOP-EXTENTS", "FREE-SPACE-EXTENTS" };
 
-/** default constructor */
-ft_io_emul::ft_io_emul()
-: super_type()
+/** constructor */
+ft_io_emul::ft_io_emul(ft_job & job)
+: super_type(job)
 {
     /* mark fd[] as invalid: they are not open yet */
     for (ft_size i = 0; i < FC_FILE_COUNT; i++)

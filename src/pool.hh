@@ -97,7 +97,7 @@ FT_NAMESPACE_END
 #  define FT_TEMPLATE_pool_hh(ft_prefix, T)     ft_prefix class FT_NS ft_pool< T >;
    FT_TEMPLATE_DECLARE(FT_TEMPLATE_pool_hh)
 #else
-#  include "pool.template.hh"
+#  include "pool.t.hh"
 #endif /* FT_HAVE_EXTERN_TEMPLATE */
 
 

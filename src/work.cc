@@ -8,6 +8,6 @@
 #include "first.hh"      // for FT_*TEMPLATE* macros */
 
 #ifdef FT_HAVE_EXTERN_TEMPLATE
-#  include "work.template.hh"
+#  include "work.t.hh"
    FT_TEMPLATE_INSTANTIATE(FT_TEMPLATE_work_hh)
 #endif /* FT_HAVE_EXTERN_TEMPLATE */

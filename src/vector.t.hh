@@ -1,5 +1,5 @@
 /*
- * vector.template.hh
+ * vector.t.hh
  *
  *  Created on: Feb 27, 2011
  *      Author: max

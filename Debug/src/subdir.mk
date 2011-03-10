@@ -4,34 +4,40 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CC_SRCS += \
+../src/dispatch.cc \
+../src/job.cc \
 ../src/log.cc \
 ../src/main.cc \
 ../src/map.cc \
 ../src/pool.cc \
 ../src/transform.cc \
+../src/util.cc \
 ../src/vector.cc \
-../src/work.cc \
-../src/work_dispatch.cc 
+../src/work.cc 
 
 OBJS += \
+./src/dispatch.o \
+./src/job.o \
 ./src/log.o \
 ./src/main.o \
 ./src/map.o \
 ./src/pool.o \
 ./src/transform.o \
+./src/util.o \
 ./src/vector.o \
-./src/work.o \
-./src/work_dispatch.o 
+./src/work.o 
 
 CC_DEPS += \
+./src/dispatch.d \
+./src/job.d \
 ./src/log.d \
 ./src/main.d \
 ./src/map.d \
 ./src/pool.d \
 ./src/transform.d \
+./src/util.d \
 ./src/vector.d \
-./src/work.d \
-./src/work_dispatch.d 
+./src/work.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

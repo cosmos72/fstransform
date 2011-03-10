@@ -27,20 +27,16 @@ typedef enum ft_level_e { FC_TRACE, FC_DEBUG, FC_INFO, FC_NOTICE, FC_WARN, FC_ER
 void ff_log_init();
 
 /**
- * print fmt and subsequent printf-style args to log stream(s).
- * if err != 0, append ": ", strerror(errno) and "\n"
- * else append "\n"
- * finally return err
- */
-int ff_log(ft_level level, int err, const char * fmt, ...);
-
-/**
  * print to log fmt and subsequent printf-style args log stream(s).
  * if err != 0, append ": ", strerror(errno) and "\n"
  * else append "\n"
  * finally return err
  */
-int ff_vlog(ft_level level, int err, const char * fmt, va_list args);
+#define ff_log(level, err, ...)         ff_logl(FT_THIS_FILE, FT_THIS_FUNCTION, FT_THIS_LINE, level, err, __VA_ARGS__)
+#define ff_vlog(level, err, fmt, vargs) ff_logv(FT_THIS_FILE, FT_THIS_FUNCTION, FT_THIS_LINE, level, err, fmt, vargs)
+
+int ff_logl(const char * caller_file, const char * caller_func, int caller_line, ft_level level, int err, const char * fmt, ...);
+int ff_logv(const char * caller_file, const char * caller_func, int caller_line, ft_level level, int err, const char * fmt, va_list args);
 
 /**
  * flush all buffered streams used to log messages of specified level

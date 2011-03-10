@@ -1,5 +1,5 @@
 /*
- * work_dispatch.hh
+ * dispatch.hh
  *
  *  Created on: Mar 3, 2011
  *      Author: max
@@ -14,7 +14,7 @@
 FT_NAMESPACE_BEGIN
 
 
-class ft_work_dispatch
+class ft_dispatch
 {
 public:
     /**

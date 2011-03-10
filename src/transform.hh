@@ -21,14 +21,12 @@ FT_NAMESPACE_BEGIN
 class ft_transform
 {
 private:
-    char * job_dir_;
-    ft_size job_dir__len;
-
-    FILE * job_log;
-
+    ft_job * fm_job;
     FT_IO_NS ft_io * fm_io;
 
-    int invalid_cmdline(const char * program_name, const char * fmt, ...);
+    static int invalid_cmdline(const char * program_name, const char * fmt, ...);
+
+    static int invalid_verbosity(const char * program_name);
 
     /** return EISCONN if transformer is initialized, else call quit_io() and return 0 */
     int check_is_closed();
@@ -36,13 +34,18 @@ private:
     /** return 0 if transformer is initialized, else call quit_io() and return ENOTCONN */
     int check_is_open();
 
-    /** initialize logging subsystem */
-    int init_log();
-
-    /** initialize persistence subsystem */
-    int init_job();
+    /** initialize job/persistence subsystem */
+    int init_job(const char * root_dir, ft_uint job_id);
 
 public:
+
+    struct ft_args
+    {
+        const char * root_dir;   // if NULL, will autodetect
+        ft_uint job_id;          // if 0, will autodetect
+        const char * io_name;    // if NULL, will autodetect
+        const char * io_args[3]; // some I/O will need less than 3 arguments
+    };
 
     /** constructor */
     ft_transform();
@@ -69,10 +72,18 @@ public:
     FT_INLINE bool is_initialized() const { return fm_io != NULL && fm_io->is_open(); }
 
     /**
-     * autodetect from command line which I/O to use and initialize it.
+     * parse from command line and initialize all subsystems (job, I/O, log...)
      * return 0 if success, else error.
+     *
+     * implementation: parse command line, fill a ft_args and call init(const ft_args &)
      */
     int init(int argc, char const* const* argv);
+
+    /**
+     * initialize all subsystems (job, I/O, log...) using specified arguments
+     * return 0 if success, else error.
+     */
+    int init(const ft_args & args);
 
     /**
      * initialize transformer to use specified I/O. if success, stores a pointer to I/O object

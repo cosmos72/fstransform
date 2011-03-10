@@ -12,15 +12,17 @@
 #include <cstring>         // for strlen(), memcpy()
 #include <fstream>         // for std::ofstream
 
+#include <string>          // for std::string
+
 #include "io.hh"           // for ft_io
 #include "extent_file.hh"  // for ff_write_extents_file()
 
 FT_IO_NAMESPACE_BEGIN
 
 
-/** default constructor */
-ft_io::ft_io()
-    : dev_len(0), eff_block_size_log2(0)
+/** constructor */
+ft_io::ft_io(ft_job & job)
+    : dev_len(0), eff_block_size_log2(0), fm_job(job)
 { }
 
 /**
@@ -68,29 +70,23 @@ int ft_io::read_extents(ft_vector<ft_uoff> & loop_file_extents,
 }
 
 /**
- * saves extents to files job_dir_ + 'loop_extents.txt' and job_dir_ + 'free_space_extents.txt'
+ * saves extents to files job.job_dir() + '/loop_extents.txt' and job.job_dir() + '/free_space_extents.txt'
  * by calling the function ff_write_extents_file()
  */
 int ft_io::write_extents(const ft_vector<ft_uoff> & loop_file_extents,
-                         const ft_vector<ft_uoff> & free_space_extents,
-                         const char * job_dir_)
+                         const ft_vector<ft_uoff> & free_space_extents)
 {
     static char const* const filename[] = { "loop_extents.txt", "free_space_extents.txt" };
     enum { FC_FILE_COUNT = sizeof(filename)/sizeof(filename[0]) };
-    char * path;
-    ft_size i, job_dir__len = strlen(job_dir_), filename_len;
+    std::string path;
+    const std::string & job_dir = fm_job.job_dir();
+    ft_size i;
     int err = 0;
     for (i = 0; i < FC_FILE_COUNT; i++) {
-        filename_len = strlen(filename[i]);
-        path = (char *) malloc(job_dir__len + filename_len + 1);
-        if (path == NULL) {
-            err = ENOMEM;
-            break;
-        }
-        memcpy(path, job_dir_, job_dir__len);
-        memcpy(path + job_dir__len, filename[i], filename_len + 1); // including final '\0'
-        std::ofstream os(path, std::ios_base::out|std::ios_base::trunc);
-        free(path);
+        path = job_dir;
+        path += filename[i];
+        std::ofstream os(path.c_str(), std::ios_base::out|std::ios_base::trunc);
+
         if (!os.good()) {
             /* no idea what's the problem... */
             err = EINVAL;

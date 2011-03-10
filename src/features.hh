@@ -8,6 +8,8 @@
 #ifndef FSTRANSFORM_FEATURES_HH
 #define FSTRANSFORM_FEATURES_HH
 
+#include <features.h>
+
 #include "autoconf.hh"
 
 #ifdef FT_HAVE_EXTERN_C

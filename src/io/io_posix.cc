@@ -25,8 +25,8 @@ FT_IO_NAMESPACE_BEGIN
 char const * const ft_io::label[ft_io_posix::FC_FILE_COUNT] = { "DEVICE", "LOOP-FILE", "ZERO-FILE" };
 
 /** default constructor */
-ft_io_posix::ft_io_posix()
-: super_type()
+ft_io_posix::ft_io_posix(ft_job & job)
+: super_type(job)
 {
     /* mark fd[] as invalid: they are not open yet */
     for (ft_size i = 0; i < FC_FILE_COUNT; i++)

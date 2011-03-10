@@ -1,5 +1,5 @@
 /*
- * map.template.hh
+ * map.t.hh
  *
  *  Created on: Feb 27, 2011
  *      Author: max
@@ -209,6 +209,21 @@ typename ft_map<T>::iterator ft_map<T>::merge(iterator pos1, const key_type & ke
         ff_assert(rel == FC_EXTENT_TOUCH_BEFORE || rel == FC_EXTENT_TOUCH_AFTER);
     }
     return pos1;
+}
+
+
+/**
+ * return number of blocks in this map extents, i.e. the sum of all extents ->length
+ * NOTE: this method is O(N), i.e. linear time in the number of extents
+ */
+template<typename T>
+ft_uoff ft_map<T>::length() const
+{
+    const_iterator iter = begin(), e = end();
+    ft_uoff len = 0;
+    for (; iter != e; ++iter)
+        len += iter->second.length;
+    return len;
 }
 
 
@@ -535,25 +550,25 @@ template<typename T>
 typename ft_map<T>::iterator ft_map<T>::shrink_front(iterator iter, T shrink_length)
 {
     ff_assert(iter != end());
-    const value_type & extent = *iter;
-    const mapped_type & value = extent.second;
+    value_type & extent = *iter;
+    const key_type & key = extent.first;
+    mapped_type & value = extent.second;
     T physical = extent.first.physical;
     T logical = value.logical;
     T length = value.length;
     ff_assert(length >= shrink_length);
 
-    iterator next = iter;
-    ++next;
-    super_type::erase(iter);
-
-    if (length == shrink_length)
+    if (length == shrink_length) {
+        super_type::erase(iter);
         return end();
+    }
 
-    key_type new_key = { physical + shrink_length };
-    mapped_type new_value = { logical + shrink_length, length - shrink_length };
-    value_type new_extent(new_key, new_value);
+    /** modify the extent in-place */
+    key.physical = physical + shrink_length; /* key_type::physical is mutable :) */
+    value.logical = logical + shrink_length;
+    value.length = length - shrink_length;
 
-    return super_type::insert(next, new_extent);
+    return iter;
 }
 
 /**

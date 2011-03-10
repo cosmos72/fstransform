@@ -80,7 +80,7 @@ FT_NAMESPACE_END
 #  define FT_TEMPLATE_vector_hh(ft_prefix, T) ft_prefix class FT_NS ft_vector< T >;
    FT_TEMPLATE_DECLARE(FT_TEMPLATE_vector_hh)
 #else
-#  include "vector.template.hh"
+#  include "vector.t.hh"
 #endif /* FT_HAVE_EXTERN_TEMPLATE */
 
 
