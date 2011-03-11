@@ -46,13 +46,16 @@ every reasonable precaution is taken in order not to lose/corrupt data.
 
 * components must be emulable, especially OS I/O
 
-* fstatfs(loop_fd) to stat device filesystem, including used space (=S) and total inodes (=I)
+* fstatfs(loop_fd) to stat device file-system, including used space (=S) and total inodes (=I)
  
-* create loop filesystem with number of inodes >= I
+* create loop file-system with number of inodes >= I
 
-* Immediately check on created loop filesystem that available space >= S
+* Immediately check on created loop file-system that available space >= S
 
-
+* move files inside loop file-system, monitoring available space on BOTH
+  original device and loop file-system
+  
+* at fstransform start, check that device is mounted read-only
 
 ################################## Design #####################################
 

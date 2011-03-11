@@ -37,6 +37,13 @@ private:
     std::ifstream * is[FC_FILE_COUNT];
 
 protected:
+
+    /** return true if this I/O has open descriptors/streams to LOOP-FILE and FREE-SPACE */
+    bool is_open_extents() const;
+
+    /** close a single descriptor/stream */
+    void close0(ft_size which);
+
     /**
      * retrieve LOOP-FILE extents and FREE-SPACE extents and insert them into
      * the vectors loop_file_extents and free_space_extents.
@@ -74,6 +81,19 @@ public:
 
     /** close this I/O, including file descriptors to DEVICE, LOOP-FILE and ZERO-FILE */
     virtual void close();
+
+    /**
+     * close the file descriptors for LOOP-FILE and ZERO-FILE
+     */
+    virtual void close_extents();
+
+    /**
+     * create and open file job.job_dir() + '/storage.bin' and fill it with job.job_storage_size() bytes of zeros.
+     * return 0 if success, else error
+     *
+     * implementation: do nothing and return success
+     */
+    virtual int create_storage();
 };
 
 FT_IO_NAMESPACE_END

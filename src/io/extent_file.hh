@@ -35,6 +35,12 @@ int ff_read_extents_file(std::istream & is, ft_uoff dev_length, ft_vector<ft_uof
  */
 int ff_write_extents_file(std::ostream & os, const ft_vector<ft_uoff> & extent_list);
 
+/**
+ * write a 'length' bytes zeros '\0' into file descriptor and return 0.
+ * in case of failure returns errno-compatible error code.
+ */
+int ff_write_zero_fd(int fd, ft_uoff length);
+
 FT_IO_NAMESPACE_END
 
 

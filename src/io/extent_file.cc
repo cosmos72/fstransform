@@ -72,6 +72,7 @@ int ff_write_extents_file(std::ostream & os, const ft_vector<ft_uoff> & extent_l
         file_length = last.length() + (last.logical() > last.physical() ? last.logical() : last.physical());
     }
 
+    errno = 0;
     os << "length " << file_length << '\n';
     ft_vector<ft_uoff>::const_iterator iter = extent_list.begin(), end = extent_list.end();
 
@@ -81,7 +82,7 @@ int ff_write_extents_file(std::ostream & os, const ft_vector<ft_uoff> & extent_l
         os << extent.physical() << '\t' << extent.logical() << '\t' << extent.length() << '\t' << extent.user_data() << '\n';
     }
     /* no idea what's the problem... */
-    return os.good() ? 0 : EINVAL;
+    return os.good() ? 0 : errno ? errno : EINVAL;
 }
 
 

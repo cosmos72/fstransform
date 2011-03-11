@@ -18,6 +18,7 @@
 #include "util.hh"        // for ff_pretty_size()
 #include "work.hh"        // for ff_dispatch(), ft_work<T>
 #include "io/io.hh"       // for ft_io
+#include "arch/mem.hh"    // for ff_arch_free_system_memory()
 
 FT_NAMESPACE_BEGIN
 
@@ -54,7 +55,7 @@ void ft_work<T>::show(const char * label, ft_uoff effective_block_size, const ft
 /** default constructor */
 template<typename T>
 ft_work<T>::ft_work()
-    : dev_map(), loop_map(), loop_holes(), io(NULL)
+    : dev_map(), loop_map(), loop_holes(), io(NULL), work_count(0)
 { }
 
 
@@ -207,13 +208,28 @@ enum {
     FC_LOOP_FILE = FT_IO_NS ft_io::FC_LOOP_FILE
 };
 
-/** core of transformation algorithm */
+/** full transformation algorithm */
 template<typename T>
 int ft_work<T>::run()
 {
-    typedef typename ft_map<T>::iterator map_iterator;
-    typedef typename ft_map<T>::const_iterator map_const_iterator;
+    int err = 0;
+    do {
+        if ((err = analyze()) != 0)
+            break;
+        if ((err = create_storage()) != 0)
+            break;
+        if ((err = relocate()) != 0)
+            break;
 
+    } while (0);
+
+    return err;
+}
+
+/** analysis phase of transformation algorithm, must be executed before relocate() */
+template<typename T>
+int ft_work<T>::analyze()
+{
     int err = 0;
 
     do {
@@ -251,7 +267,7 @@ int ft_work<T>::run()
          * also compute loop_map length...
          */
         map_iterator iter = loop_map.begin(), tmp, end = loop_map.end();
-        ft_uoff work_length = 0;
+        work_count = 0;
         while (iter != end) {
             if (iter->first.physical == iter->second.logical) {
                 dev_renumbered.insert(*iter);
@@ -260,7 +276,7 @@ int ft_work<T>::run()
                 loop_map.remove(tmp);
             } else {
                 /* also compute loop_map length... */
-                work_length += iter->second.length;
+                work_count += iter->second.length;
                 /*
                  * also prepare for item 4) "merge renumbered device blocks with loop-file blocks"
                  * i.e. remember who's who
@@ -300,7 +316,7 @@ int ft_work<T>::run()
         iter = dev_renumbered.begin();
         end = dev_renumbered.end();
         for (; iter != end; ++iter) {
-            work_length += iter->second.length;
+            work_count += iter->second.length;
             iter->second.user_data = FC_DEVICE;
             loop_map.insert0(iter->first, iter->second);
         }
@@ -310,12 +326,71 @@ int ft_work<T>::run()
         show("DEVICE + LOOP-FILE (MERGED)", eff_block_size, loop_map);
 
         double pretty_len = 0.0;
-        const char * pretty_unit = ff_pretty_size(work_length << eff_block_size_log2, & pretty_len);
+        const char * pretty_unit = ff_pretty_size(work_count << eff_block_size_log2, & pretty_len);
 
-        ff_log(FC_NOTICE, 0, "analysis completed: %.2f %sbytes must be relocated", pretty_len, pretty_unit);
+        ff_log(FC_INFO, 0, "analysis completed: %.2f %sbytes must be relocated", pretty_len, pretty_unit);
 
     } while (0);
 
+    return err;
+}
+
+/**
+ * creates on-disk secondary storage, used as (small) backup area during relocate().
+ * must be executed before relocate()
+ */
+template<typename T>
+int ft_work<T>::create_storage()
+{
+    enum { _1M_minus_1 = 1024*1024 - 1, _16k_minus_1 = 16*1024 - 1 };
+
+    int err = 0;
+    do {
+        ft_uoff len = io->job_storage_size();
+        if (len == 0) {
+            /*
+             * we want storage_size to be the smallest between:
+             *   33% of free RAM (use 16 MB if free RAM cannot be determined)
+             *   10% of bytes to relocate
+             */
+            ft_uoff free_ram_3 = FT_ARCH_NS ff_arch_free_system_memory() / 3;
+            if (free_ram_3 == 0)
+                free_ram_3 = (ft_uoff) 16*1024*1024;
+
+            ft_uoff work_length_10 = (work_count << io->effective_block_size_log2()) / 10;
+            len = ff_min2(free_ram_3, work_length_10);
+
+            /* round up to multiples of 1M */
+            len = (len + _1M_minus_1) & ~(ft_uoff)_1M_minus_1;
+        } else
+            /* try to honor user-specified length, and only round up to multiples of 16k */
+            len = (len + _16k_minus_1) & ~(ft_uoff)_16k_minus_1;
+
+        /* finally, truncate length to fit into ft_size. needed for mmap() inside io_posix::create_storage() */
+        ft_size slen = (ft_size) len;
+        if (slen < 0 || len != (ft_uoff) slen) {
+            /* overflow, truncate to some big value */
+            len = (ft_size)-1 & ~(ft_size)_1M_minus_1;
+        }
+
+        io->job_storage_size(len);
+
+        if ((err = io->create_storage()) != 0)
+            break;
+
+    } while (0);
+    return err;
+}
+
+
+/** core of transformation algorithm, actually moves DEVICE blocks */
+template<typename T>
+int ft_work<T>::relocate()
+{
+    int err = 0;
+    do {
+
+    } while (0);
     return err;
 }
 

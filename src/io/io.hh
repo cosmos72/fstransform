@@ -70,7 +70,7 @@ public:
         FC_DEVICE = 0, FC_LOOP_FILE
     };
 
-    static char const * const label[]; // DEVICE, LOOP-FILE (and ZERO-FILE, but don't tell)
+    static char const * const label[]; // DEVICE, LOOP-FILE (and also ZERO-FILE and SECONDARY-STORAGE, but don't tell)
 
     /** constructor */
     ft_io(ft_job & job);
@@ -110,7 +110,11 @@ public:
     /** return job_dir_, or "" if not set */
     FT_INLINE const char * job_dir_cstr() const { return fm_job.job_dir_cstr(); }
 
+    /** return job_storage_size, or 0 if not set */
+    FT_INLINE ft_uoff job_storage_size() const { return fm_job.job_storage_size(); }
 
+    /** set job_storage_size */
+    FT_INLINE void job_storage_size(ft_uoff len) { fm_job.job_storage_size(len); }
 
 
     /**
@@ -126,6 +130,17 @@ public:
      */
     int write_extents(const ft_vector<ft_uoff> & loop_file_extents,
                       const ft_vector<ft_uoff> & free_space_extents);
+
+    /**
+     * close the file descriptors for LOOP-FILE and ZERO-FILE
+     */
+    virtual void close_extents() = 0;
+
+    /**
+     * create and open file job.job_dir() + '/storage.bin' and fill it with job.job_storage_size() bytes of zeros.
+     * return 0 if success, else error
+     */
+    virtual int create_storage() = 0;
 };
 
 FT_IO_NAMESPACE_END

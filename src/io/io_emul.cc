@@ -37,22 +37,17 @@ ft_io_emul::~ft_io_emul()
 /** return true if this ft_io_emul is currently (and correctly) open */
 bool ft_io_emul::is_open() const
 {
-    bool flag = false;
-    if (dev_length() != 0) {
-        ft_size i;
-        for (i = 0; i < FC_FILE_COUNT; i++)
-            if (is[i] == NULL)
-                break;
-        flag = i == FC_FILE_COUNT;
-    }
-    return flag;
+    return dev_length() != 0;
 }
 
 /** check for consistency and open LOOP-EXTENTS and FREE-SPACE-EXTENTS */
 int ft_io_emul::open(char const* const path[FC_FILE_COUNT])
 {
-    if (is_open())
-        return EISCONN; // already open!
+    if (is_open()) {
+        // already open!
+        ff_log(FC_ERROR, 0, "unexpected call, I/O is already open");
+        return EISCONN;
+    }
 
     std::string str;
     ft_uoff lengths[FC_FILE_COUNT];
@@ -88,20 +83,54 @@ int ft_io_emul::open(char const* const path[FC_FILE_COUNT])
     return err;
 }
 
+
+/** close a single descriptor/stream */
+void ft_io_emul::close0(ft_size i)
+{
+    if (is[i] != NULL) {
+        delete is[i];
+        is[i] = NULL;
+    }
+}
+
 /**
  * close file descriptors.
  * return 0 for success, 1 for error (prints by itself error message to stderr)
  */
 void ft_io_emul::close()
 {
-    for (ft_size i = 0; i < FC_FILE_COUNT; i++) {
-        if (is[i] != NULL) {
-            delete is[i];
-            is[i] = NULL;
-        }
-    }
+    for (ft_size i = 0; i < FC_FILE_COUNT; i++)
+        close0(i);
     super_type::close();
 }
+
+/**
+ * close the file descriptors for LOOP-FILE and ZERO-FILE
+ */
+void ft_io_emul::close_extents()
+{
+    ft_size which[] = { FC_LOOP_EXTENTS, FC_FREE_SPACE_EXTENTS };
+    for (ft_size i = 0; i < sizeof(which)/sizeof(which[0]); i++)
+        close0(which[i]);
+}
+
+
+/** return true if this I/O has open descriptors/streams to LOOP-FILE and FREE-SPACE */
+bool ft_io_emul::is_open_extents() const
+{
+    bool flag = false;
+    if (dev_length() != 0) {
+        ft_size which[] = { FC_LOOP_EXTENTS, FC_FREE_SPACE_EXTENTS };
+        ft_size i, n = sizeof(which)/sizeof(which[0]);
+        for (i = 0; i < n; i++)
+            if (is[which[i]] == NULL)
+                break;
+        flag = i == n;
+    }
+    return flag;
+}
+
+
 
 
 /**
@@ -131,7 +160,7 @@ int ft_io_emul::read_extents(ft_vector<ft_uoff> & loop_file_extents,
     ft_uoff block_size_bitmask = ret_block_size_bitmask;
     int err = 0;
     do {
-        if (!is_open()) {
+        if (!is_open_extents()) {
             err = ENOTCONN; // not open!
             break;
         }
@@ -149,5 +178,19 @@ int ft_io_emul::read_extents(ft_vector<ft_uoff> & loop_file_extents,
 
     return err;
 }
+
+
+
+/**
+ * create and open file job.job_dir() + '/storage.bin' and fill it with job.job_storage_size() bytes of zeros.
+ * return 0 if success, else error
+ *
+ * implementation: do nothing and return success
+ */
+int ft_io_emul::create_storage()
+{
+    return 0;
+}
+
 
 FT_IO_NAMESPACE_END

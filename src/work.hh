@@ -28,7 +28,10 @@ class ft_work
 {
 private:
     ft_map<T> dev_map, loop_map, loop_holes;
+
     FT_IO_NS ft_io * io;
+
+    ft_uoff work_count; /**< number of blocks to be relocated */
 
     /** cannot call copy constructor */
     ft_work(const ft_work<T> &);
@@ -37,6 +40,24 @@ private:
     const ft_work<T> & operator=(const ft_work<T> &);
 
     void show(const char * label, ft_uoff effective_block_size, const ft_map<T> & map, ft_level level = FC_TRACE);
+
+    /**
+     * analysis phase of transformation algorithm,
+     * must be executed before create_storage() and relocate()
+     */
+    int analyze();
+
+    /**
+     * creates on-disk secondary storage, used as (small) backup area during relocate().
+     * must be executed before relocate()
+     */
+    int create_storage();
+
+    /** core of transformation algorithm, actually moves DEVICE blocks */
+    int relocate();
+
+    typedef typename ft_map<T>::iterator map_iterator;
+    typedef typename ft_map<T>::const_iterator map_const_iterator;
 
 public:
     /** default constructor */

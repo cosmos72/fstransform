@@ -25,15 +25,33 @@ public:
         FC_DEVICE = ft_io::FC_DEVICE,
         FC_LOOP_FILE = ft_io::FC_LOOP_FILE,
         FC_ZERO_FILE,
-        FC_FILE_COUNT // must be equal to count of preceding enum constants
+        FC_FILE_COUNT, // must be equal to count of preceding enum constants,
+        FC_STORAGE_FILE = FC_FILE_COUNT,
+        FC_ALL_FILE_COUNT
     };
 
 private:
     typedef ft_io super_type;
 
-    int fd[FC_FILE_COUNT];
+    int fd[FC_ALL_FILE_COUNT];
+    void * storage_mmap;
+    ft_size storage_mmap_size;
+
 
 protected:
+
+    /** return true if a single descriptor/stream is open */
+    bool is_open0(ft_size which) const;
+
+    /** close a single descriptor/stream */
+    void close0(ft_size which);
+
+    /** return true if this I/O has open descriptors/streams to LOOP-FILE and FREE-SPACE */
+    bool is_open_extents() const;
+
+    /** close and munmap() STORAGE-FILE. called by close() */
+    void close_storage();
+
     /**
      * retrieve LOOP-FILE extents and FREE-SPACE extents and insert them into
      * the vectors loop_file_extents and free_space_extents.
@@ -68,8 +86,20 @@ public:
     /** return true if this ft_io_posix is currently (and correctly) open */
     virtual bool is_open() const;
 
-    /** close this I/O, including file descriptors to DEVICE, LOOP-FILE and ZERO-FILE */
+    /** close this I/O, including file descriptors to DEVICE, LOOP-FILE, ZERO-FILE and STORAGE-FILE */
     virtual void close();
+
+    /**
+     * close the file descriptors for LOOP-FILE and ZERO-FILE
+     */
+    virtual void close_extents();
+
+    /**
+     * create STORAGE-FILE as job.job_dir() + '/storage.bin',
+     * fill it with job.job_storage_size() bytes of zeros,
+     * and mmap() it. return 0 if success, else error
+     */
+    virtual int create_storage();
 };
 
 FT_IO_NAMESPACE_END

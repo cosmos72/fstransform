@@ -80,16 +80,15 @@ int ft_io::write_extents(const ft_vector<ft_uoff> & loop_file_extents,
     enum { FC_FILE_COUNT = sizeof(filename)/sizeof(filename[0]) };
     std::string path;
     const std::string & job_dir = fm_job.job_dir();
-    ft_size i;
     int err = 0;
-    for (i = 0; i < FC_FILE_COUNT; i++) {
+    for (ft_size i = 0; i < FC_FILE_COUNT; i++) {
         path = job_dir;
         path += filename[i];
+        errno = 0;
         std::ofstream os(path.c_str(), std::ios_base::out|std::ios_base::trunc);
 
         if (!os.good()) {
-            /* no idea what's the problem... */
-            err = EINVAL;
+            err = errno ? errno : EINVAL;
             break;
         }
         if ((err = ff_write_extents_file(os, i == 0 ? loop_file_extents : free_space_extents)) != 0)

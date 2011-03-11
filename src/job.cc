@@ -21,7 +21,7 @@ FT_NAMESPACE_BEGIN
 
 /** default constructor */
 ft_job::ft_job()
-    : fm_dir_(), fm_id(0), fm_log_file(NULL)
+    : fm_dir_(), fm_storage_size(0), fm_id(0), fm_log_file(NULL)
 { }
 
 /** destructor. calls quit() */
@@ -47,7 +47,7 @@ int ft_job::init_log()
 
 
 /** initialize this job, or return error */
-int ft_job::init(const char * root_dir, ft_uint job_id)
+int ft_job::init(const char * root_dir, ft_uint job_id, ft_size storage_size)
 {
     const char * user_home = NULL;
     if (root_dir == NULL) {
@@ -92,19 +92,21 @@ int ft_job::init(const char * root_dir, ft_uint job_id)
         if ((err = FT_IO_NS ff_mkdir(path)) == 0
                 && (err = init_log()) == 0)
         {
-            ff_log(FC_NOTICE, 0, "starting job %"FS_ULL", persistent storage in '%s'", (FT_ULL)i, path);
+            ff_log(FC_NOTICE, 0, "starting job %"FS_ULL, (FT_ULL)i);
+            ff_log(FC_INFO, 0, "job persistent data and logs will be in '%s'", path);
             break;
         }
     }
     if (i == job_max) {
         if (job_id != 0)
-            err = ff_log(FC_ERROR, err, "failed to create persistent storage in '%s' for job id %"FS_ULL, path, (FT_ULL) job_id);
+            err = ff_log(FC_ERROR, err, "failed to create persistent data folder '%s' for job id %"FS_ULL, path, (FT_ULL) job_id);
         else
             err = ff_log(FC_ERROR, err, "failed to locate a free job id, tried range %"FS_ULL"...%"FS_ULL, (FT_ULL) job_min, (FT_ULL) (job_max-1));
     }
-    if (err == 0)
+    if (err == 0) {
+        fm_storage_size = storage_size;
         fm_id = i;
-    else
+    } else
         quit();
 
     return err;
@@ -121,6 +123,7 @@ void ft_job::quit()
     if (!fm_dir_.empty())
         fm_dir_.clear();
 
+    fm_storage_size = 0;
     fm_id = 0;
 }
 

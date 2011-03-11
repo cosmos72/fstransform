@@ -25,4 +25,5 @@ C_UPPER_DEPS :=
 SUBDIRS := \
 src \
 src/io \
+src/arch \
 

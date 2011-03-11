@@ -143,9 +143,10 @@ int ft_transform::init(int argc, char const* const* argv)
 
     ft_args args = {
             NULL, /* root_dir */
-            0,    /* job_id */
             NULL, /* io_name */
             { NULL, NULL, NULL }, /* io_args[3] */
+            0,    /* job_storage_size */
+            0,    /* job_id */
     };
 
     ft_level level = FC_INFO;
@@ -212,10 +213,18 @@ int ft_transform::init(int argc, char const* const* argv)
                 else if (argc > 1 && (!strcmp(arg, "-t") || !strcmp(arg, "--dir")))
                     --argc, args.root_dir = *++argv;
 
+                /* -m job_storage_size[k|M|G|T|P|E|Z|Y] */
+                else if (argc > 1 && (!strcmp(arg, "-m") || !strcmp(arg, "--storage"))) {
+                    if ((err = ff_str2un_scaled(argv[1], & args.storage_size)) != 0) {
+                        err = invalid_cmdline(program_name, "invalid storage size '%s'", arg);
+                        break;
+                    }
+                    --argc, ++argv;
+                }
                 /* -j job_id */
                 else if (argc > 1 && (!strcmp(arg, "-j") || !strcmp(arg, "--job"))) {
                     if ((err = ff_str2un(argv[1], & args.job_id)) != 0) {
-                        err = invalid_cmdline(program_name, "invalid job id: '%s'", arg);
+                        err = invalid_cmdline(program_name, "invalid job id '%s'", arg);
                         break;
                     }
                     --argc, ++argv;
@@ -248,34 +257,61 @@ int ft_transform::init(int argc, char const* const* argv)
 
     } while (0);
 
-    do {
-        if (err != 0)
-            break;
-
+    if (err == 0) {
         ff_log_set_threshold(level);
-        if ((err = init_job(args.root_dir, args.job_id)) != 0)
+        err = init(args);
+    }
+
+    return err;
+}
+
+
+/**
+ * initialize all subsystems (job, I/O, log...) using specified arguments
+ * return 0 if success, else error.
+ */
+int ft_transform::init(const ft_args & args)
+{
+    int err;
+    do {
+        if ((err = init_job(args.root_dir, args.job_id, args.storage_size)) != 0)
             break;
 
         if ((err = init_io_posix(args.io_args)) != 0)
             break;
-
     } while (0);
 
     return err;
 }
 
+
 /** initialize job/persistence subsystem */
-int ft_transform::init_job(const char * root_dir, ft_uint job_id)
+int ft_transform::init_job(const char * root_dir, ft_uint job_id, ft_size storage_size)
 {
     if (fm_job != NULL)
         return 0;
 
     ft_job * job = new ft_job();
-    int err = job->init(root_dir, job_id);
+    int err = job->init(root_dir, job_id, storage_size);
     if (err == 0)
         fm_job = job;
     else
         delete job;
+    return err;
+}
+
+/**
+ * initialize transformer to use specified I/O. if success, stores a pointer to I/O object
+ * WARNING: destructor and quit_io() will delete ft_io object,
+ *          so only pass I/O object created with new()
+ *          and delete them yourself ONLY if this call returned error!
+ *
+ * return 0 if success, else error.
+ */
+int ft_transform::init_io(FT_IO_NS ft_io * io) {
+    int err;
+    if ((err = check_is_closed()) == 0)
+        fm_io = io;
     return err;
 }
 
@@ -314,20 +350,6 @@ int ft_transform::init_io_posix(char const* const path[FT_IO_NS ft_io_posix::FC_
 }
 
 
-/**
- * initialize transformer to use specified I/O. if success, stores a pointer to I/O object
- * WARNING: destructor and quit_io() will delete ft_io object,
- *          so only pass I/O object created with new()
- *          and delete them yourself ONLY if this call returned error!
- *
- * return 0 if success, else error.
- */
-int ft_transform::init_io(FT_IO_NS ft_io * io) {
-    int err;
-    if ((err = check_is_closed()) == 0)
-        fm_io = io;
-    return err;
-}
 
 /** shutdown transformer. closes configured I/O and deletes it */
 void ft_transform::quit_io()
@@ -353,7 +375,7 @@ int ft_transform::run()
         if ((err = check_is_open()) != 0)
             break;
 
-        ff_log(FC_NOTICE, 0, "analyzing file-system, this may take some minutes...");
+        ff_log(FC_INFO, 0, "analyzing file-system, this may take some minutes...");
 
         /* allocate ft_vector<ft_uoff> for both LOOP-FILE and FREE-SPACE extents */
         ft_vector<ft_uoff> loop_file_extents, free_space_extents;
@@ -366,6 +388,8 @@ int ft_transform::run()
         /* persistence: save LOOP-FILE and FREE-SPACE extents to disk */
         if ((err = io.write_extents(loop_file_extents, free_space_extents)) != 0)
             break;
+
+        io.close_extents();
 
         /* invoke ft_dispatch::main() to choose which ft_work<T> to instantiate, and run it */
         err = ft_dispatch::main(loop_file_extents, free_space_extents, io);

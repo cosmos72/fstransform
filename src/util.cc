@@ -12,21 +12,67 @@
 FT_NAMESPACE_BEGIN
 
 
-int ff_str2uoff(const char * str, ft_uoff * ret_n)
+static int ff_str2uoff_(const char *& str, ft_uoff * ret_n)
 {
     ft_uoff n = 0;
+    int err = 0;
     char ch;
     while ((ch = *str++) >= '0' && ch <= '9') {
         n *= 10;
         n += (ft_uoff) (ch - '0');
     }
-    if (ch == '\0') {
+    if (err == 0)
         * ret_n = n;
-        return 0;
-    }
-    return EINVAL;
+    return err;
 }
 
+int ff_str2uoff(const char * str, ft_uoff * ret_n)
+{
+    ft_uoff n;
+    int err = ff_str2uoff_(str, & n);
+    if (err == 0) {
+        if (*str == '\0')
+            * ret_n = n;
+        else
+            err = EINVAL;
+    }
+    return err;
+}
+
+
+/** convert string with optional [k|M|G|T|P|E|Z|Y] scale to unsigned number */
+int ff_str2uoff_scaled(const char * str, ft_uoff * ret_n)
+{
+    ft_uoff n, scale;
+    int err;
+    do {
+        if ((err = ff_str2uoff_(str, & n)) != 0)
+            break;
+
+        switch (*str) {
+            case '\0': scale = 0; break;
+            case 'k': scale = 10; break;
+            case 'M': scale = 20; break;
+            case 'G': scale = 30; break;
+            case 'T': scale = 40; break;
+            case 'P': scale = 50; break;
+            case 'E': scale = 60; break;
+            case 'Z': scale = 70; break;
+            case 'Y': scale = 80; break;
+            default: err = EINVAL; break;
+        }
+        if (err != 0)
+            break;
+
+        /* overflow? */
+        if (scale >= 8*sizeof(ft_uoff) || n > (ft_uoff)-1 >> scale) {
+            err = ERANGE;
+            break;
+        }
+        * ret_n = n << scale;
+    } while (0);
+    return err;
+}
 
 
 
@@ -36,6 +82,10 @@ static char const* fc_pretty_size[] = {
 
 enum { fc_pretty_size_len = sizeof(fc_pretty_size)/sizeof(fc_pretty_size[0]) };
 
+/**
+ * return human-readable representation of len,
+ * with [kilo|mega|giga|tera|peta|exa|zeta|yotta] scale as appropriate
+ */
 const char * ff_pretty_size(ft_uoff len, double * ret_pretty_len)
 {
     double pretty_len = (double) len;

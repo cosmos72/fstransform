@@ -35,16 +35,17 @@ private:
     int check_is_open();
 
     /** initialize job/persistence subsystem */
-    int init_job(const char * root_dir, ft_uint job_id);
+    int init_job(const char * root_dir, ft_uint job_id, ft_size storage_size);
 
 public:
 
     struct ft_args
     {
         const char * root_dir;   // if NULL, will autodetect
-        ft_uint job_id;          // if 0, will autodetect
         const char * io_name;    // if NULL, will autodetect
         const char * io_args[3]; // some I/O will need less than 3 arguments
+        ft_size storage_size;        // if 0, will autodetect
+        ft_uint job_id;          // if 0, will autodetect
     };
 
     /** constructor */

@@ -7,9 +7,10 @@
 
 #include "first.hh"
 
-#include "assert.hh"     // for ff_assert macro */
-#include "map.hh"        // for ft_map<T> */
-#include "vector.hh"     // for ft_vector<T> */
+#include "assert.hh"     // for ff_assert macro
+#include "map.hh"        // for ft_map<T>
+#include "util.hh"       // for ff_max2(), ff_min2()
+#include "vector.hh"     // for ft_vector<T>
 
 FT_NAMESPACE_BEGIN
 
@@ -244,17 +245,6 @@ void ft_map<T>::bounds(key_type & min_key, key_type & max_key) const
 }
 
 
-template<typename T>
-static FT_INLINE T ff_min2(T a, T b)
-{
-    return a < b ? a : b;
-}
-
-template<typename T>
-static FT_INLINE T ff_max2(T a, T b)
-{
-    return a > b ? a : b;
-}
 
 /**
  * find the intersection (matching physical and logical) between the two specified extents,
