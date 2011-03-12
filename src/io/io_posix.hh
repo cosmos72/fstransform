@@ -26,7 +26,8 @@ public:
         FC_LOOP_FILE = ft_io::FC_LOOP_FILE,
         FC_ZERO_FILE,
         FC_FILE_COUNT, // must be equal to count of preceding enum constants,
-        FC_STORAGE_FILE = FC_FILE_COUNT,
+        FC_PRIMARY_STORAGE = FC_FILE_COUNT,
+        FC_SECONDARY_STORAGE,
         FC_ALL_FILE_COUNT
     };
 
@@ -49,9 +50,6 @@ protected:
     /** return true if this I/O has open descriptors/streams to LOOP-FILE and FREE-SPACE */
     bool is_open_extents() const;
 
-    /** close and munmap() STORAGE-FILE. called by close() */
-    void close_storage();
-
     /**
      * retrieve LOOP-FILE extents and FREE-SPACE extents and insert them into
      * the vectors loop_file_extents and free_space_extents.
@@ -73,6 +71,28 @@ protected:
     virtual int read_extents(ft_vector<ft_uoff> & loop_file_extents,
                              ft_vector<ft_uoff> & free_space_extents,
                              ft_uoff & ret_block_size_bitmask);
+
+
+    /**
+     * replace a part of the mmapped() storage_mmap area with specified storage_extent,
+     * and store mmapped() address into storage_extent.user_data().
+     * return 0 if success, else error.
+     *
+     * note: fd shoud be this->fd[FC_DEVICE] for primary storage,
+     * or this->fd[FC_SECONDARY_STORAGE] for secondary storage
+     */
+    int replace_storage_mmap(int fd, ft_extent<ft_uoff> & storage_extent, ft_size & mem_offset);
+
+    /**
+     * create and open SECONDARY-STORAGE in job.job_dir() + '.storage'
+     * and fill it with 'secondary_len' bytes of zeros. do not mmap() it.
+     * return 0 if success, else error
+     */
+    int create_secondary_storage(ft_uoff secondary_len);
+
+    /** close and munmap() PRIMARY-STORAGE and SECONDARY-STORAGE. called by close() */
+    void close_storage();
+
 public:
     /** constructor */
     ft_io_posix(ft_job & job);
@@ -86,7 +106,7 @@ public:
     /** return true if this ft_io_posix is currently (and correctly) open */
     virtual bool is_open() const;
 
-    /** close this I/O, including file descriptors to DEVICE, LOOP-FILE, ZERO-FILE and STORAGE-FILE */
+    /** close this I/O, including file descriptors to DEVICE, LOOP-FILE, ZERO-FILE and SECONDARY-STORAGE */
     virtual void close();
 
     /**
@@ -95,11 +115,14 @@ public:
     virtual void close_extents();
 
     /**
-     * create STORAGE-FILE as job.job_dir() + '/storage.bin',
-     * fill it with job.job_storage_size() bytes of zeros,
-     * and mmap() it. return 0 if success, else error
+     * create and open SECONDARY-STORAGE in job.job_dir() + '.storage',
+     * fill it with 'secondary_len' bytes of zeros and mmap() it.
+     *
+     * then mmap() together into consecutive RAM this->primary_storage extents and secondary_storage extents.
+     *
+     * return 0 if success, else error
      */
-    virtual int create_storage();
+    virtual int create_storage(ft_uoff secondary_len);
 };
 
 FT_IO_NAMESPACE_END

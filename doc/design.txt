@@ -85,39 +85,50 @@ device backup inside loop-file (physical blocks) - somewhere in these blocks
 
 ================ Algorithm simulation ================
 
-0) compute LOOP-FILE extents and compute DEVICE extents
+0) compute LOOP-FILE extents, DEVICE extents and FREE-SPACE extents
 
-1) find loop-file (logical) holes
+1) find LOOP-FILE (logical) holes, i.e. LOOP-HOLES
 +-----------------------------------------------------------------------------+
 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
 +------03-04-05-------------------12-13-14----16----18----20----22-23-24-25---+
 
-2) re-number used device blocks with numbers from loop-file holes.
-   do not greedily use low hole numbers:
-   a) prefer hole (logical) numbers equal to device block number:
-      they produce a block already in its final destination (marked with @@)
-   b) spread the remaining numbers (uniformly?) across rest of holes  
+2) re-number used DEVICE blocks, setting ->logical to values
+   from loop-file holes (LOOP-HOLES). do not greedily use low hole numbers:
+   a) prefer holes with ->logical numbers equal to DEVICE ->physical block number:
+      they produce an INVARIANT block, already in its final destination
+      (marked with @@)
+   b) spread the remaining ->logical across rest of holes (use best-fit allocation)
     
 device renumbered blocks - original numbers are above
 +01-02----04-------07-08-------------------15----------19-20-21-------------26+
 |03|05|  |04|  |  |12|13|  |  |  |  |  |  |16|  |  |  |18|20|23|  |  |  |  |25|
 +---------@@----------------------------------------------@@------------------+
 
-3) mark (with @@) loop-file (logical) blocks already in their final destination
-   (none in this case)
-   mark with !! loop-file (logical) holes that are still not used
-   after device blocks renumbering (in this case 14 22 24)
+2.1) mark as INVARIANT (with @@) the LOOP-FILE (logical) blocks already in their
+   final destination and forget them (no work on those).
+   also compute total length of blocks remaining in LOOP-FILE.
 
+   in this case, none
 +01-02----04-------07-08-------------------15----------19-20-21-------------26+
 |03|05|  |04|  |  |12|13|  |  |  |  |  |  |16|  |  |  |18|20|23|  |  |  |  |25|
-+---------@@----------------------------!!----------------@@----!!----!!------+
++---------@@----------------------------------------------@@------------------+
 
-4) merge renumbered device blocks with loop-file blocks (remember who's who)
+3) merge renumbered DEVICE blocks with remaining LOOP-FILE blocks (remember who's who)
    
 merged blocks
 +01-02----04-------07-08-------------------15----------19-20-21-------------26+
 |03|05|  |04|21|26|12|13|19|17|10|15|08|11|16|07|09|  |18|20|23|02|01|  |06|25|
-+---------@@----------------------------!!----------------@@----!!----!!------+
++---------@@----------------------------------------------@@------------------+
+     
+4) compute (physical) intersection of FREE-SPACE and LOOP-HOLES,
+   and mark it as INVARIANT FREE-SPACE (with !!). 
+   we can use these blocks as partial or total replacement for STORAGE - see 5)
+   if there are sections with enough consecutive blocks (>= blocks to relocate / 1024)
+    
+   in this case, only 24
++01-02----04-------07-08-------------------15----------19-20-21-------------26+
+|03|05|  |04|21|26|12|13|19|17|10|15|08|11|16|07|09|  |18|20|23|02|01|  |06|25|
++---------@@----------------------------------------------@@----------!!------+
      
 
 5) sort

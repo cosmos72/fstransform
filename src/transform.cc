@@ -26,7 +26,7 @@
 FT_NAMESPACE_BEGIN
 
 
-enum { FC_FILE_COUNT = FT_IO_NS ft_io_posix::FC_FILE_COUNT };
+enum { FC_DEVICE = FT_IO_NS ft_io_posix::FC_DEVICE, FC_FILE_COUNT = FT_IO_NS ft_io_posix::FC_FILE_COUNT };
 
 static char const* const* label = FT_IO_NS ft_io_posix::label;
 
@@ -37,9 +37,7 @@ static char const* const* label = FT_IO_NS ft_io_posix::label;
 /** constructor */
 ft_transform::ft_transform()
     : fm_job(NULL), fm_io(NULL)
-{
-    ff_log_init();
-}
+{ }
 
 /** destructor. calls quit_io() */
 ft_transform::~ft_transform()
@@ -72,6 +70,12 @@ int ft_transform::main(int argc, char const* const* argv)
 
     if (err == 0)
         err = transformer.run();
+    /*
+     * note 1.2.2) fstransform::main() must check for unreported errors
+     * and log them them with message "failed with unreported error"
+     */
+    if (!ff_log_is_reported(err))
+        err = ff_log(FC_ERROR, err, "failed with unreported error");
 
     // not needed, destructor will call quit_io()
     // transformer.quit_io();
@@ -109,7 +113,8 @@ int ft_transform::check_is_closed()
     int err = 0;
     if (is_initialized()) {
         ff_log(FC_ERROR, 0, "error: I/O subsystem already started");
-        err = EISCONN;
+        /* error is already reported, flip sign */
+        err = -EISCONN;
     } else
         // quit_io() to make sure we are not left in a half-initialized status
         // (fm_io != NULL && !fm_io->is_open())
@@ -126,7 +131,8 @@ int ft_transform::check_is_open()
         // quit_io() to make sure we are not left in a half-initialized status
         // (fm_io != NULL && !fm_io->is_open())
         quit_io();
-        err = ENOTCONN;
+        /* error is already reported, flip sign */
+        err = -ENOTCONN;
     }
     return err;
 }
@@ -145,11 +151,11 @@ int ft_transform::init(int argc, char const* const* argv)
             NULL, /* root_dir */
             NULL, /* io_name */
             { NULL, NULL, NULL }, /* io_args[3] */
-            0,    /* job_storage_size */
+            0,    /* secondary_storage_size */
             0,    /* job_id */
     };
 
-    ft_level level = FC_INFO;
+    ft_log_level level = FC_INFO;
 
     do {
         if ((err = check_is_closed()) != 0)
@@ -213,7 +219,7 @@ int ft_transform::init(int argc, char const* const* argv)
                 else if (argc > 1 && (!strcmp(arg, "-t") || !strcmp(arg, "--dir")))
                     --argc, args.root_dir = *++argv;
 
-                /* -m job_storage_size[k|M|G|T|P|E|Z|Y] */
+                /* -m secondary_storage_size[k|M|G|T|P|E|Z|Y] */
                 else if (argc > 1 && (!strcmp(arg, "-m") || !strcmp(arg, "--storage"))) {
                     if ((err = ff_str2un_scaled(argv[1], & args.storage_size)) != 0) {
                         err = invalid_cmdline(program_name, "invalid storage size '%s'", arg);
@@ -259,6 +265,13 @@ int ft_transform::init(int argc, char const* const* argv)
 
     if (err == 0) {
         ff_log_set_threshold(level);
+
+        if (level <= FC_DEBUG) {
+            /* note 1.4.1) -v enables FC_FMT_LEVEL_MSG also for stdout/stderr */
+            /* note 1.4.2) -vv enables FC_FMT_DATETIME_LEVEL_MSG also for stdout/stderr */
+            ff_log_register(stdout, level == FC_DEBUG ? FC_FMT_LEVEL_MSG : FC_FMT_DATETIME_LEVEL_MSG, FC_TRACE, FC_NOTICE);
+            ff_log_register(stderr, level == FC_DEBUG ? FC_FMT_LEVEL_MSG : FC_FMT_DATETIME_LEVEL_MSG, FC_WARN,  FC_FATAL);
+        }
         err = init(args);
     }
 
@@ -329,7 +342,7 @@ int ft_transform::init_io_posix(char const* const path[FT_IO_NS ft_io_posix::FC_
             break;
         if (fm_job == NULL) {
             ff_log(FC_ERROR, 0, "error: cannot start I/O subsystem, job must be initialized first");
-            err = ENOTCONN;
+            err = -ENOTCONN;
             break;
         }
 
@@ -375,7 +388,7 @@ int ft_transform::run()
         if ((err = check_is_open()) != 0)
             break;
 
-        ff_log(FC_INFO, 0, "analyzing file-system, this may take some minutes...");
+        ff_log(FC_INFO, 0, "analyzing %s, this may take some minutes ...", label[FC_DEVICE]);
 
         /* allocate ft_vector<ft_uoff> for both LOOP-FILE and FREE-SPACE extents */
         ft_vector<ft_uoff> loop_file_extents, free_space_extents;

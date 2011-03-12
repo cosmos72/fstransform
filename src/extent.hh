@@ -84,6 +84,10 @@ public:
     FT_INLINE ft_size & user_data()       { return this->second.user_data;  }
     FT_INLINE ft_size   user_data() const { return this->second.user_data;  }
 
+    void clear() {
+        physical() = logical() = length() = 0;
+        user_data() = 0;
+    }
 
     class comparator_physical
     {

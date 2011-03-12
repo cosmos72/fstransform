@@ -25,23 +25,10 @@ FT_NAMESPACE_BEGIN
 int ft_dispatch::main(ft_vector<ft_uoff> & loop_file_extents,
                            ft_vector<ft_uoff> & free_space_extents, FT_IO_NS ft_io & io)
 {
-    int err;
+    if (ft_work<ft_uint>::check(io) == 0)
+        return ft_work<ft_uint>::main(loop_file_extents, free_space_extents, io);
 
-    if ((err = ft_work<ft_uint>::check(io)) == 0) {
-        ft_work<ft_uint> worker;
-        if ((err = worker.init(loop_file_extents, free_space_extents, io)) == 0)
-            // if worker.init(io) succeeds, do not try any other ft_work<T>
-            return worker.run();
-        // worker.quit() will be called automatically by the destructor
-    }
-
-    ft_work<ft_uoff> worker;
-    if ((err = worker.init(loop_file_extents, free_space_extents, io)) == 0)
-        return worker.run();
-
-    // worker.quit() will be called automatically by the destructor
-
-    return err;
+    return ft_work<ft_uoff>::main(loop_file_extents, free_space_extents, io);
 }
 
 FT_NAMESPACE_END

@@ -124,9 +124,6 @@ public:
     // duplicate a ft_map, i.e. initialize this ft_map as a copy of other.
     ft_map(const ft_map<T> & other);
 
-    // copy ft_map, i.e. set this ft_map contents as a copy of other's contents.
-    const ft_map<T> & operator=(const ft_map<T> & other);
-
     // destroy ft_map
     ~ft_map();
 
@@ -145,11 +142,11 @@ public:
     // clear this map, i.e. erase all elements
     super_type::clear;
 
-    /**
-     * return number of blocks in this map extents, i.e. the sum of all extents ->length
-     * NOTE: this method is O(N), i.e. linear time in the number of extents
-     */
-    ft_uoff length() const;
+    // copy ft_map, i.e. set this ft_map contents as a copy of other's contents.
+    const ft_map<T> & operator=(const ft_map<T> & other);
+
+    // swap this map contents with other map
+    void swap(ft_map<T> & other);
 
     /**
      * returns the minimum physical and the maximum physical+length in this map.
@@ -294,6 +291,7 @@ public:
      */
     void complement0_logical_shift(const ft_vector<ft_uoff> & other, ft_uoff effective_block_size_log2, ft_uoff device_length);
 };
+
 
 FT_NAMESPACE_END
 

@@ -9,6 +9,7 @@ CC_SRCS += \
 ../src/log.cc \
 ../src/main.cc \
 ../src/map.cc \
+../src/map_stat.cc \
 ../src/pool.cc \
 ../src/transform.cc \
 ../src/util.cc \
@@ -21,6 +22,7 @@ OBJS += \
 ./src/log.o \
 ./src/main.o \
 ./src/map.o \
+./src/map_stat.o \
 ./src/pool.o \
 ./src/transform.o \
 ./src/util.o \
@@ -33,6 +35,7 @@ CC_DEPS += \
 ./src/log.d \
 ./src/main.d \
 ./src/map.d \
+./src/map_stat.d \
 ./src/pool.d \
 ./src/transform.d \
 ./src/util.d \

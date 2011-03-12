@@ -180,14 +180,14 @@ int ft_io_emul::read_extents(ft_vector<ft_uoff> & loop_file_extents,
 }
 
 
-
 /**
- * create and open file job.job_dir() + '/storage.bin' and fill it with job.job_storage_size() bytes of zeros.
+ * create SECONDARY-STORAGE as job.job_dir() + '.storage' and fill it with 'len' bytes of zeros,
+ * setup a virtual storage composed by this->primary_storage extents inside DEVICE, plus secondary-storage extents.
  * return 0 if success, else error
  *
  * implementation: do nothing and return success
  */
-int ft_io_emul::create_storage()
+int ft_io_emul::create_secondary_storage(ft_uoff len)
 {
     return 0;
 }

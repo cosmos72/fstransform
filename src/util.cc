@@ -66,7 +66,7 @@ int ff_str2uoff_scaled(const char * str, ft_uoff * ret_n)
 
         /* overflow? */
         if (scale >= 8*sizeof(ft_uoff) || n > (ft_uoff)-1 >> scale) {
-            err = ERANGE;
+            err = EOVERFLOW;
             break;
         }
         * ret_n = n << scale;

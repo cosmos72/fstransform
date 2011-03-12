@@ -14,6 +14,7 @@
 
 #include <string>          // for std::string
 
+#include "../log.hh"       // for ff_log()
 #include "io.hh"           // for ft_io
 #include "extent_file.hh"  // for ff_write_extents_file()
 
@@ -22,8 +23,10 @@ FT_IO_NAMESPACE_BEGIN
 
 /** constructor */
 ft_io::ft_io(ft_job & job)
-    : dev_len(0), eff_block_size_log2(0), fm_job(job)
-{ }
+    : fm_primary_storage(), dev_len(0), eff_block_size_log2(0), fm_job(job)
+{
+    fm_secondary_storage.clear();
+}
 
 /**
  * destructor.
@@ -39,10 +42,13 @@ ft_io::~ft_io()
  */
 void ft_io::close()
 {
+    fm_primary_storage.clear();
+    fm_secondary_storage.clear();
+
     dev_len = eff_block_size_log2 = 0;
 }
 
-/** compute log2() of effective block size and remember it */
+/** compute and return log2() of effective block size and remember it */
 ft_uoff ft_io::effective_block_size_log2(ft_uoff block_size_bitmask)
 {
     ft_uoff block_size_log2 = 0;
@@ -64,8 +70,10 @@ int ft_io::read_extents(ft_vector<ft_uoff> & loop_file_extents,
 {
     ft_uoff block_size_bitmask = 0;
     int err = read_extents(loop_file_extents, free_space_extents, block_size_bitmask);
-    if (err == 0)
-        (void) effective_block_size_log2(block_size_bitmask);
+    if (err == 0) {
+        ft_uoff eff_block_size_log2 = effective_block_size_log2(block_size_bitmask);
+        ff_log(FC_DEBUG, 0, "%s effective block size = %"FS_ULL, label[FC_DEVICE], (FT_ULL) 1 << eff_block_size_log2);
+    }
     return err;
 }
 
@@ -76,7 +84,7 @@ int ft_io::read_extents(ft_vector<ft_uoff> & loop_file_extents,
 int ft_io::write_extents(const ft_vector<ft_uoff> & loop_file_extents,
                          const ft_vector<ft_uoff> & free_space_extents)
 {
-    static char const* const filename[] = { "loop_extents.txt", "free_space_extents.txt" };
+    static char const* const filename[] = { "/loop_extents.txt", "/free_space_extents.txt" };
     enum { FC_FILE_COUNT = sizeof(filename)/sizeof(filename[0]) };
     std::string path;
     const std::string & job_dir = fm_job.job_dir();

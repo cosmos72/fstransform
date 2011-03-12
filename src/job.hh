@@ -19,7 +19,7 @@ FT_NAMESPACE_BEGIN
 class ft_job
 {
 private:
-    std::string fm_dir_;
+    std::string fm_dir;
     ft_size fm_storage_size;
     ft_uint fm_id;
 
@@ -44,11 +44,8 @@ public:
     /** return job_id, or 0 if not set */
     FT_INLINE ft_uint job_id() const { return fm_id; }
 
-    /** return job_dir_, or empty if not set */
-    FT_INLINE const char * job_dir_cstr() const { return fm_dir_.c_str(); }
-
-    /** return job_dir_, or empty if not set */
-    FT_INLINE const std::string & job_dir() const { return fm_dir_; }
+    /** return job_dir, or empty if not set */
+    FT_INLINE const std::string & job_dir() const { return fm_dir; }
 
     /** return size of storage to use, or 0 if not set */
     FT_INLINE ft_size job_storage_size() const { return fm_storage_size; }

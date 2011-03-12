@@ -16,7 +16,7 @@ FT_ARCH_NAMESPACE_BEGIN
  * return an approximation of free system memory in bytes,
  * or 0 if cannot be determined
  */
-ft_uoff ff_arch_linux_free_system_memory();
+ft_uoff ff_arch_linux_mem_system_free();
 
 FT_ARCH_NAMESPACE_END
 

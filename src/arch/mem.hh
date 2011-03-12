@@ -16,7 +16,12 @@ FT_ARCH_NAMESPACE_BEGIN
  * return an approximation of free system memory in bytes,
  * or 0 if cannot be determined
  */
-ft_uoff ff_arch_free_system_memory();
+ft_uoff ff_arch_mem_system_free();
+
+/**
+ * return RAM page size, or 0 if cannot be determined
+ */
+ft_size ff_arch_mem_page_size();
 
 FT_ARCH_NAMESPACE_END
 

@@ -5,15 +5,18 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 CC_SRCS += \
 ../src/arch/mem.cc \
-../src/arch/mem_linux.cc 
+../src/arch/mem_linux.cc \
+../src/arch/mem_posix.cc 
 
 OBJS += \
 ./src/arch/mem.o \
-./src/arch/mem_linux.o 
+./src/arch/mem_linux.o \
+./src/arch/mem_posix.o 
 
 CC_DEPS += \
 ./src/arch/mem.d \
-./src/arch/mem_linux.d 
+./src/arch/mem_linux.d \
+./src/arch/mem_posix.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

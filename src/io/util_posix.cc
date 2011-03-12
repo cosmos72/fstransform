@@ -44,7 +44,7 @@ int ff_posix_size(int fd, ft_uoff * ret_size)
 	    if ((ft_off) file_size == st_buf.st_size)
 	        * ret_size = file_size;
 	    else
-	        err = EFBIG; // file size cannot be represented by ft_uoff!
+	        err = EOVERFLOW; // file size cannot be represented by ft_uoff!
 	}
 	return err;
 }
@@ -85,7 +85,7 @@ int ff_posix_blkdev_size(int fd, ft_uoff * ret_size)
         if ((ft_u64) dev_size == size_buf)
             * ret_size = dev_size;
         else
-            err = EFBIG; // device size cannot be represented by ft_uoff!
+            err = EOVERFLOW; // device size cannot be represented by ft_uoff!
 	}
 	return err;
 }

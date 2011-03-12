@@ -1,0 +1,49 @@
+###############################################
+################### NOTES #####################
+###############################################
+
+1) logging
+
+1.1) ff_log() and ff_vlog() must check if log subsystem is not initialized, and in case initialize it.
+   removes the need to manually call ff_log_init()
+
+1.2) ff_log(err) must distinguish between unreported (not yet logged) and reported (already logged) errors.
+   the former have normal sign (EINVAL, ENOMEM...) and are reported normally,
+   the latter have opposite sign (-EINVAL, -ENOMEM...) and are reported as " (caused by previous error: %s)"
+
+1.2.1) ff_log() and ff_vlog() always return errors as reported (-EINVAL, -ENOMEM...)
+  
+1.2.2) fstransform::main() must check for unreported errors
+   and log them them with message "failed with unreported error" 
+  
+1.3) configurable log format:
+   FC_FMT_MSG, // message only
+   FC_FMT_LEVEL_MSG, // level + message
+   FC_FMT_DATETIME_LEVEL_MSG, // datetime + level + message
+   FC_FMT_DATETIME_LEVEL_CALLER_MSG, // datetime + level + [file.func(line)] + message
+  
+1.4.1) -v enables FC_FMT_LEVEL_MSG also for stdout/stderr
+1.4.2) -vv enables FC_FMT_DATETIME_LEVEL_MSG also for stdout/stderr
+1.4.3) instead fstransform.log always uses FC_FMT_DATETIME_LEVEL_CALLER_MSG
+
+1.5) more log(DEBUG) in io_posix.read_extents()
+
+
+###############################################
+################### TO DO #####################
+###############################################
+
+* -n --dry-run option to run everything normally (including which I/O to use),
+  except that extents relocation does not read/write on disk
+  problem: still create secondary storage?
+  
+  
+* rename fstransform -> fsrelocate? needed only if it's not the main program
+  (fsmove must be written still)
+
+  
+  
+  
+  
+  
+  

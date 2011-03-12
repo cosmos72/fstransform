@@ -26,14 +26,6 @@ template<typename T>
 ft_map<T>::ft_map(const ft_map<T> & other) : super_type(other)
 { }
 
-// copy ft_map, i.e. set this ft_map contents as a copy of other's contents.
-template<typename T>
-const ft_map<T> & ft_map<T>::operator=(const ft_map<T> & other)
-{
-    super_type::operator=(other);
-    return * this;
-}
-
 // destroy ft_map
 template<typename T>
 ft_map<T>::~ft_map()
@@ -213,18 +205,20 @@ typename ft_map<T>::iterator ft_map<T>::merge(iterator pos1, const key_type & ke
 }
 
 
-/**
- * return number of blocks in this map extents, i.e. the sum of all extents ->length
- * NOTE: this method is O(N), i.e. linear time in the number of extents
- */
+
+// copy ft_map, i.e. set this ft_map contents as a copy of other's contents.
 template<typename T>
-ft_uoff ft_map<T>::length() const
+const ft_map<T> & ft_map<T>::operator=(const ft_map<T> & other)
 {
-    const_iterator iter = begin(), e = end();
-    ft_uoff len = 0;
-    for (; iter != e; ++iter)
-        len += iter->second.length;
-    return len;
+    super_type::operator=(other);
+    return * this;
+}
+
+// swap this map contents with other map
+template<typename T>
+void ft_map<T>::swap(ft_map<T> & other)
+{
+    super_type::swap(other);
 }
 
 

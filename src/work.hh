@@ -9,8 +9,8 @@
 #define FSTRANSFORM_WORK_HH
 
 #include "types.hh"     // for ft_uoff
-#include "map.hh"       // for ft_map<T>
-#include "log.hh"       // for ft_level
+#include "map_stat.hh"  // for ft_map_stat<T>
+#include "log.hh"       // for ft_log_level
 #include "io/io.hh"     // for ft_io
 
 
@@ -27,11 +27,10 @@ template<typename T>
 class ft_work
 {
 private:
-    ft_map<T> dev_map, loop_map, loop_holes;
+    ft_map_stat<T> dev_map, dev_free_map, storage_map;
+    T work_count; /**< number of blocks to be relocated */
 
     FT_IO_NS ft_io * io;
-
-    ft_uoff work_count; /**< number of blocks to be relocated */
 
     /** cannot call copy constructor */
     ft_work(const ft_work<T> &);
@@ -39,13 +38,37 @@ private:
     /** cannot call assignment operator */
     const ft_work<T> & operator=(const ft_work<T> &);
 
-    void show(const char * label, ft_uoff effective_block_size, const ft_map<T> & map, ft_level level = FC_TRACE);
+    void show(const char * label, ft_uoff effective_block_size, const ft_map<T> & map, ft_log_level level = FC_TRACE);
+
+    /**
+     * call check(io) to ensure that io.dev_length() can be represented by T,
+     * then checks that I/O is open.
+     * if success, stores a reference to I/O object.
+     */
+    int init(FT_IO_NS ft_io & io);
 
     /**
      * analysis phase of transformation algorithm,
-     * must be executed before create_storage() and relocate()
+     * must be executed before create_secondary_storage() and relocate()
+     *
+     * given LOOP-FILE extents and FREE-SPACE extents as ft_vectors<ft_uoff>,
+     * compute LOOP-FILE extents map and DEVICE in-use extents map
+     * and stores them into this->loop_map and this->dev_map.
+     *
+     * assumes that vectors are ordered by extent->logical, and modifies them
+     * in place: vector contents will be UNDEFINED when this method returns.
+     *
+     * implementation: to compute this->dev_map, performs in-place the union of specified
+     * loop_file_extents and free_space_extents, then sorts in-place and complements such union.
      */
-    int analyze();
+    int analyze(ft_vector<ft_uoff> & loop_file_extents,
+                ft_vector<ft_uoff> & free_space_extents);
+
+    /**
+     * fill io->primary_storage() with DEVICE extents to be actually used as PRIMARY-STORAGE
+     * (already computed into dev_free_map by analyze())
+     */
+    void fill_io_primary_storage(ft_uoff primary_storage_len) const;
 
     /**
      * creates on-disk secondary storage, used as (small) backup area during relocate().
@@ -67,15 +90,12 @@ public:
     ~ft_work();
 
     /**
-     * high-level do-everything method. calls in sequence init(), run() and quit().
+     * high-level do-everything method. calls in sequence run() and quit().
      * return 0 if success, else error.
      */
     static int main(ft_vector<ft_uoff> & loop_file_extents,
                     ft_vector<ft_uoff> & free_space_extents, FT_IO_NS ft_io & io);
 
-
-    /** return true if this ft_work is currently (and correctly) initialized */
-    bool is_initialized();
 
     /**
      *  check if LOOP-FILE and DEVICE in-use extents can be represented
@@ -88,24 +108,11 @@ public:
     static int check(const FT_IO_NS ft_io & io);
 
     /**
-     * given LOOP-FILE extents and FREE-SPACE extents as ft_vectors<ft_uoff>,
-     * compute LOOP-FILE extents and DEVICE in-use extents maps and insert them
-     * into the maps this->dev_map and this->loop_map.
-     *
-     * assumes that vectors are ordered by extent->logical, and modifies them
-     * in place: vector contents will be UNDEFINED when this method returns.
-     *
-     * also calls check(io) to be sure that allextents can be represented by ft_map<T>
-     *
-     * implementation: to compute this->dev_map, performs in-place the union of specified
-     * loop_file_extents and free_space_extents, then sorts in-place and complements such union.
+     * main transformation algorithm.
+     * calls in sequence init(), analyze(), create_secondary_storage() and relocate()
      */
-    int init(ft_vector<ft_uoff> & loop_file_extents,
-             ft_vector<ft_uoff> & free_space_extents, FT_IO_NS ft_io & io);
-
-
-    /** core of transformation algorithm */
-    int run();
+    int run(ft_vector<ft_uoff> & loop_file_extents,
+            ft_vector<ft_uoff> & free_space_extents, FT_IO_NS ft_io & io);
 
     /** performs cleanup. called by destructor, you can also call it explicitly after (or instead of) run()  */
     void quit();

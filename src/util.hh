@@ -41,13 +41,13 @@ int ff_str2uoff_scaled(const char * str, ft_uoff * ret_n);
 
 
 
-/** convert ft_uoff to T, or return ERANGE if it overflows */
+/** convert ft_uoff to T, or return EOVERFLOW if it overflows */
 template<typename T>
 int ff_narrow(ft_uoff ln, T * ret_n)
 {
     T n = (T) ln;
     if (n < 0 || ln != (ft_uoff) n)
-        return ERANGE;
+        return EOVERFLOW;
     * ret_n = n;
     return 0;
 }

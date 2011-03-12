@@ -10,21 +10,34 @@
 
 #include "check.hh"
 
+#include <errno.h>  // for EINVAL
 #include <stdio.h>  // for FILE *
 #include <stdarg.h> // for va_list
 
 FT_EXTERN_C_BEGIN
 FT_NAMESPACE_BEGIN
 
-typedef enum ft_level_e { FC_TRACE, FC_DEBUG, FC_INFO, FC_NOTICE, FC_WARN, FC_ERROR, FC_FATAL } ft_level;
-
 
 /**
- * initialize log subsystem:
- * configure stderr to receive all WARN messages or more serious,
- * configure stdout to receive all NOTICE messages or less serious
+ * note 1.1)
+ * log subsystem is automatically initialized upon first call to
+ * ff_log(), ff_vlog(), ff_log_register() or ff_log_set_threshold().
+ *
+ * automatic initialization configuration is:
+ * print to stderr all WARN messages or more serious, with format FC_FMT_MSG
+ * print to stdout all NOTICE messages or less serious, with format FC_FMT_MSG
  */
-void ff_log_init();
+
+
+typedef enum ft_log_level_e { FC_TRACE, FC_DEBUG, FC_INFO, FC_NOTICE, FC_WARN, FC_ERROR, FC_FATAL } ft_log_level;
+
+typedef enum ft_log_fmt_e {
+    FC_FMT_MSG, // message only
+    FC_FMT_LEVEL_MSG, // level + message
+    FC_FMT_DATETIME_LEVEL_MSG, // datetime + level + message
+    FC_FMT_DATETIME_LEVEL_CALLER_MSG, // datetime + level + [file.func(line)] + message
+} ft_log_fmt;
+
 
 /**
  * print to log fmt and subsequent printf-style args log stream(s).
@@ -35,13 +48,21 @@ void ff_log_init();
 #define ff_log(level, err, ...)         ff_logl(FT_THIS_FILE, FT_THIS_FUNCTION, FT_THIS_LINE, level, err, __VA_ARGS__)
 #define ff_vlog(level, err, fmt, vargs) ff_logv(FT_THIS_FILE, FT_THIS_FUNCTION, FT_THIS_LINE, level, err, fmt, vargs)
 
-int ff_logl(const char * caller_file, const char * caller_func, int caller_line, ft_level level, int err, const char * fmt, ...);
-int ff_logv(const char * caller_file, const char * caller_func, int caller_line, ft_level level, int err, const char * fmt, va_list args);
+int ff_logl(const char * caller_file, const char * caller_func, int caller_line, ft_log_level level, int err, const char * fmt, ...);
+int ff_logv(const char * caller_file, const char * caller_func, int caller_line, ft_log_level level, int err, const char * fmt, va_list args);
+
+
+#if defined(EINVAL) && EINVAL < 0
+#  define ff_log_is_reported(err) ((err) >= 0)
+#else
+#  define ff_log_is_reported(err) ((err) <= 0)
+#endif
+
 
 /**
- * flush all buffered streams used to log messages of specified level
+ * flush all buffered streams used to log messages for specified level
  */
-void ff_log_flush(ft_level level);
+void ff_log_flush(ft_log_level level);
 
 /**
  * add 'stream' to the list of streams receiving log messages
@@ -51,25 +72,25 @@ void ff_log_flush(ft_level level);
  * and all NOTICE messages or less serious are sent to stdout
  * note: by default, messages less serious than INFO are suppressed, see ff_log_set_threshold()
  */
-void ff_log_register(FILE * stream, ft_level min_level = FC_TRACE, ft_level max_level = FC_FATAL);
+void ff_log_register(FILE * stream, ft_log_fmt format, ft_log_level min_level = FC_TRACE, ft_log_level max_level = FC_FATAL);
 
 /**
  * remove 'stream' from the list of streams receiving log messages
  * at least as serious as 'level'.
  */
-void ff_log_unregister(FILE * stream, ft_level min_level = FC_TRACE, ft_level max_level = FC_FATAL);
+void ff_log_unregister(FILE * stream, ft_log_level min_level = FC_TRACE, ft_log_level max_level = FC_FATAL);
 
 /**
  * tell ff_log() and ff_vlog() to suppress printing of messages less serious than 'level'.
  *
  * by default, all messages less serious than 'INFO' are suppressed
  */
-void ff_log_set_threshold(ft_level level);
+void ff_log_set_threshold(ft_log_level level);
 
 /**
- * return true if printing specified message level is not suppressed
+ * return true if printing specified message level is enabled (i.e. not suppressed)
  */
-bool ff_log_is_enabled(ft_level level);
+bool ff_log_is_enabled(ft_log_level level);
 
 
 FT_NAMESPACE_END

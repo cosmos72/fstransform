@@ -12,6 +12,8 @@
 
 #include "../types.hh"       // for ft_uoff
 #include "../job.hh"         // for ft_job
+#include "../extent.hh"      // for ft_extent<T>
+#include "../vector.hh"      // for ft_vector<T>
 #include "../map.hh"         // for ft_map<T>
 
 
@@ -24,6 +26,9 @@ FT_IO_NAMESPACE_BEGIN
 class ft_io
 {
 private:
+    ft_vector<ft_uoff> fm_primary_storage;
+    ft_extent<ft_uoff> fm_secondary_storage;
+
     ft_uoff dev_len, eff_block_size_log2;
 
     ft_job & fm_job;
@@ -38,7 +43,7 @@ protected:
     /** remember device length */
     FT_INLINE void dev_length(ft_uoff dev_length) { dev_len = dev_length; }
 
-    /** compute log2() of effective block size and remember it */
+    /** compute and return log2() of effective block size and remember it */
     ft_uoff effective_block_size_log2(ft_uoff block_size_bitmask);
 
     /**
@@ -64,6 +69,12 @@ protected:
     virtual int read_extents(ft_vector<ft_uoff> & loop_file_extents,
                              ft_vector<ft_uoff> & free_space_extents,
                              ft_uoff & ret_effective_block_size_log2) = 0;
+
+    /**
+     * get writable reference to secondary_storage.
+     * must be called by create_storage() to set the details of secondary_storage
+     */
+    FT_INLINE ft_extent<ft_uoff> & secondary_storage() { return fm_secondary_storage; }
 
 public:
     enum {
@@ -104,17 +115,11 @@ public:
     /** return job_id, or 0 if not set */
     FT_INLINE ft_size job_id() const { return fm_job.job_id(); }
 
-    /** return job_dir_, or "" if not set */
+    /** return job_dir, or "" if not set */
     FT_INLINE const std::string & job_dir() const { return fm_job.job_dir(); }
 
-    /** return job_dir_, or "" if not set */
-    FT_INLINE const char * job_dir_cstr() const { return fm_job.job_dir_cstr(); }
-
-    /** return job_storage_size, or 0 if not set */
+    /** return secondary_storage_size, or 0 if not set */
     FT_INLINE ft_uoff job_storage_size() const { return fm_job.job_storage_size(); }
-
-    /** set job_storage_size */
-    FT_INLINE void job_storage_size(ft_uoff len) { fm_job.job_storage_size(len); }
 
 
     /**
@@ -136,11 +141,23 @@ public:
      */
     virtual void close_extents() = 0;
 
+
+
     /**
-     * create and open file job.job_dir() + '/storage.bin' and fill it with job.job_storage_size() bytes of zeros.
+     * get writable reference to primary_storage.
+     * must be called before create_storage() to set the details of primary_storage
+     */
+    FT_INLINE ft_vector<ft_uoff> & primary_storage() { return fm_primary_storage; }
+
+    /** get const reference to primary_storage */
+    FT_INLINE const ft_vector<ft_uoff> & primary_storage() const { return fm_primary_storage; }
+
+    /**
+     * create and open SECONDARY-STORAGE job.job_dir() + '/storage.bin' and fill it with 'secondary_len' bytes of zeros.
+     * setup a virtual storage composed by this->primary_storage extents inside DEVICE, plus secondary-storage extents.
      * return 0 if success, else error
      */
-    virtual int create_storage() = 0;
+    virtual int create_storage(ft_uoff secondary_len) = 0;
 };
 
 FT_IO_NAMESPACE_END
