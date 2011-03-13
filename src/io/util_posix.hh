@@ -7,7 +7,7 @@
 #ifndef FSTRANSLATE_IO_POSIX_UTIL_HH
 #define FSTRANSLATE_IO_POSIX_UTIL_HH
 
-#include "../types.hh" // for ft_off, ft_stat, ft_dev, ft_u64 */
+#include "../types.hh" // for ft_off, ft_stat, ft_dev */
 
 FT_IO_NAMESPACE_BEGIN
 

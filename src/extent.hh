@@ -106,6 +106,15 @@ public:
             return e1.logical() < e2.logical();
         }
     };
+
+    class reverse_comparator_length
+    {
+    public:
+        FT_INLINE bool operator()(const ft_extent<T> & e1, const ft_extent<T> & e2)
+        {
+            return e1.length() > e2.length();
+        }
+    };
 };
 
 

@@ -52,14 +52,14 @@ private:
     /**
      * add a single extent the ft_map
      *
-     * WARNING: does not merge and does not check for merges
+     * does not merge and does not check for merges
      */
     void insert0(T physical, T logical, T length, ft_size user_data);
 
     /**
      * add a single extent the ft_map, hinting that insertion is at map end
      *
-     * WARNING: does not merge and does not check for merges
+     * does not merge and does not check for merges
      */
     void append0(T physical, T logical, T length, ft_size user_data);
 
@@ -70,7 +70,7 @@ private:
      *
      * return iterator to merged position.
      *
-     * WARNING: this is an internal method and should ONLY be invoked by merge(),
+     * this is an internal method and should ONLY be invoked by merge(),
      *          as it does not handle chains of merges, as merge() does instead.
      *          Again: call merge(), not this method.
      */
@@ -83,7 +83,7 @@ private:
      *
      * return iterator to merged position.
      *
-     * WARNING: this is an internal method and should ONLY be invoked by merge(),
+     * this is an internal method and should ONLY be invoked by merge(),
      *          as it does not handle chains of merges, as merge() does instead.
      *          Again: call merge(), not this method.
      *
@@ -112,7 +112,7 @@ private:
      * from this ft_map, splitting the existing extent if needed.
      * throws an assertion failure if extent to remove is not part of existing extents.
      *
-     * WARNING: does not support removing an extent that is part of TWO OR MORE existing extents.
+     * does not support removing an extent that is part of TWO OR MORE existing extents.
      */
     void remove1(const value_type & extent);
 
@@ -178,7 +178,7 @@ public:
     /**
      * add a single extent the ft_map
      *
-     * WARNING: does not merge and does not check for merges
+     * does not merge and does not check for merges
      */
     void insert0(const key_type & key, const mapped_type & value);
 
@@ -256,8 +256,8 @@ public:
      * and hinting that insertion is at map end.
      * optimized assuming that 'other' is sorted by physical.
      *
-     * WARNING: does not merge and does not check for merges
-     * WARNING: does not check for overflows
+     * does not merge and does not check for merges
+     * does not check for overflows
      */
     void append0_shift(const ft_vector<ft_uoff> & other, ft_uoff effective_block_size_log2);
 
@@ -270,9 +270,9 @@ public:
      * since the file(s) contained in such complementary extents are not known,
      * all calculated extents will have ->logical == ->physical.
      *
-     * WARNING: 'other' must be already sorted by physical!
-     * WARNING: does not merge and does not check for merges
-     * WARNING: does not check for overflows
+     * 'other' must be already sorted by physical!
+     * does not merge and does not check for merges
+     * does not check for overflows
      */
     void complement0_physical_shift(const ft_vector<ft_uoff> & other, ft_uoff effective_block_size_log2, ft_uoff device_length);
 
@@ -285,9 +285,9 @@ public:
      * since the file(s) contained in such complementary extents are not known,
      * all calculated extents will have ->logical == ->physical.
      *
-     * WARNING: 'other' must be already sorted by physical!
-     * WARNING: does not merge and does not check for merges
-     * WARNING: does not check for overflows
+     * 'other' must be already sorted by physical!
+     * does not merge and does not check for merges
+     * does not check for overflows
      */
     void complement0_logical_shift(const ft_vector<ft_uoff> & other, ft_uoff effective_block_size_log2, ft_uoff device_length);
 };

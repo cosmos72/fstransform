@@ -21,9 +21,12 @@ class ft_job
 private:
     std::string fm_dir;
     ft_size fm_storage_size;
-    ft_uint fm_id;
 
     FILE * fm_log_file;
+    ft_uint fm_id;
+
+    /** true if storage_size must be honored EXACTLY (to resume an existent job) */
+    bool fm_storage_size_exact;
 
     /** initialize logging subsystem */
     int init_log();
@@ -50,8 +53,14 @@ public:
     /** return storage_size to use (in bytes), or 0 if not set */
     FT_INLINE ft_size job_storage_size() const { return fm_storage_size; }
 
-    /** set storage_size to use (in bytes), or 0 if not set */
+    /** set storage_size to use (in bytes), or 0 to unset it */
     FT_INLINE void job_storage_size(ft_size len) { fm_storage_size = len; }
+
+    /** return true if storage_size must be honored EXACTLY (to resume an existent job) */
+    FT_INLINE bool job_storage_size_exact() const { return fm_storage_size_exact; }
+
+    /** set whether storage_size must be honored EXACTLY (to resume an existent job) */
+    FT_INLINE void job_storage_size_exact(bool flag) { fm_storage_size_exact = flag; }
 };
 
 FT_NAMESPACE_END

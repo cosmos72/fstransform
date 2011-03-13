@@ -81,7 +81,7 @@ public:
         FC_DEVICE = 0, FC_LOOP_FILE
     };
 
-    static char const * const label[]; // DEVICE, LOOP-FILE (and also ZERO-FILE and SECONDARY-STORAGE, but don't tell)
+    static char const * const label[]; // DEVICE, LOOP-FILE (and also others, but don't tell)
 
     /** constructor */
     ft_io(ft_job & job);
@@ -119,8 +119,16 @@ public:
     FT_INLINE const std::string & job_dir() const { return fm_job.job_dir(); }
 
     /** return storage_size to use (in bytes), or 0 if not set */
-    FT_INLINE ft_uoff job_storage_size() const { return fm_job.job_storage_size(); }
+    FT_INLINE ft_size job_storage_size() const { return fm_job.job_storage_size(); }
 
+    /** set storage_size to use (in bytes), or 0 to unset it */
+    FT_INLINE void job_storage_size(ft_size len) { fm_job.job_storage_size(len); }
+
+    /** return true if storage_size must be honored EXACTLY (to resume an existent job) */
+    FT_INLINE bool job_storage_size_exact() const { return fm_job.job_storage_size_exact(); }
+
+    /** set whether storage_size must be honored EXACTLY (to resume an existent job) */
+    FT_INLINE void job_storage_size_exact(bool flag) { fm_job.job_storage_size_exact(flag); }
 
     /**
      * calls the 3-argument version of read_extents() and, if it succeeds,

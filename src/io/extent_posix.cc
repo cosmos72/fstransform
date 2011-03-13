@@ -66,7 +66,7 @@ static int ff_posix_fibmap(int fd, ft_uoff dev_length, ft_vector<ft_uoff> & ret_
         // but explicitly checking for overflow is always safer than "expecting"
         if (block_size < 0 || block_size_int != (int) block_size) {
             /* overflow! give up. */
-            err = ff_log(FC_ERROR, EFBIG, "ff_posix_fibmap(): error, block_size = %"FS_ULL" overflows type (ft_uoff)", (FT_ULL) block_size_int);
+            err = ff_log(FC_ERROR, EFBIG, "ff_posix_fibmap(): error, block_size = %"FS_ULL" overflows type (ft_uoff)", (ft_ull) block_size_int);
             break;
         }
         /* keep track of bits used by extents. needed to compute effective block size */
@@ -93,14 +93,14 @@ static int ff_posix_fibmap(int fd, ft_uoff dev_length, ft_vector<ft_uoff> & ret_
         {
             /* overflow! give up. */
             err = ff_log(FC_ERROR, EFBIG, "ff_posix_fibmap(): error, dev_block_count = %"FS_ULL", file_block_count = %"FS_ULL" overflow type (int)",
-                         fd, (FT_ULL) dev_block_count, (FT_ULL) file_block_count);
+                         fd, (ft_ull) dev_block_count, (ft_ull) file_block_count);
             break;
         }
 
         for (logical = 0; logical < n; logical++) {
             physical = logical;
             if ((err = ff_posix_ioctl(fd, FIBMAP, & physical))) {
-                err = ff_log(FC_ERROR, err, "ff_posix_fibmap(): error in ioctl(%d, FIBMAP, %"FS_ULL")", fd, (FT_ULL) logical);
+                err = ff_log(FC_ERROR, err, "ff_posix_fibmap(): error in ioctl(%d, FIBMAP, %"FS_ULL")", fd, (ft_ull) logical);
                 break;
             }
             /* FIBMAP reports holes (i.e. unallocated blocks in the file) as physical == 0. ugly */
@@ -132,7 +132,7 @@ static int ff_linux_fiemap_allocate_and_ioctl(int fd, ft_uoff file_length, ft_si
     do {
         k_map = (struct fiemap *) malloc(k_len);
         if (k_map == NULL) {
-            ff_log(FC_DEBUG, 0, "malloc(%"FS_ULL") failed (%s), falling back on ioctl(FIBMAP) ...", fd, (FT_ULL) k_len, strerror(err));
+            ff_log(FC_DEBUG, 0, "malloc(%"FS_ULL") failed (%s), falling back on ioctl(FIBMAP) ...", fd, (ft_ull) k_len, strerror(err));
             /* do not mark the error as reported, this is just a DEBUG message */
             err = ENOMEM; /* Out of memory */
             break;
@@ -146,7 +146,7 @@ static int ff_linux_fiemap_allocate_and_ioctl(int fd, ft_uoff file_length, ft_si
 
         if ((err = ff_posix_ioctl(fd, FS_IOC_FIEMAP, k_map)) != 0) {
             /* do not mark the error as reported, this is just a DEBUG message */
-            ff_log(FC_DEBUG, 0, "ioctl(%d, FS_IOC_FIEMAP, extents[%"FS_ULL"]) failed (%s), falling back on ioctl(FIBMAP) ...", fd, (FT_ULL) extent_n, strerror(err));
+            ff_log(FC_DEBUG, 0, "ioctl(%d, FS_IOC_FIEMAP, extents[%"FS_ULL"]) failed (%s), falling back on ioctl(FIBMAP) ...", fd, (ft_ull) extent_n, strerror(err));
         }
     } while (0);
 
@@ -206,7 +206,7 @@ static int ff_linux_fiemap(int fd, ft_vector<ft_uoff> & ret_list, ft_uoff & ret_
             if (k_extent[i].fe_flags & (FIEMAP_EXTENT_UNKNOWN | FIEMAP_EXTENT_ENCODED)) {
 
                 ff_log(FC_DEBUG, 0, "ioctl(%d, FIEMAP, extents[%"FS_ULL"]) returned unsupported %s%s%s extents, falling back on ioctl(FIBMAP) ...",
-                       fd, (FT_ULL)extent_n,
+                       fd, (ft_ull)extent_n,
                        (k_extent[i].fe_flags & FIEMAP_EXTENT_UNKNOWN ? "UNKNOWN" : ""),
                        ((k_extent[i].fe_flags & (FIEMAP_EXTENT_UNKNOWN|FIEMAP_EXTENT_ENCODED)) == (FIEMAP_EXTENT_UNKNOWN|FIEMAP_EXTENT_ENCODED) ? "+" : ""),
                        (k_extent[i].fe_flags & FIEMAP_EXTENT_ENCODED ? "ENCODED" : "")
@@ -239,7 +239,7 @@ static int ff_linux_fiemap(int fd, ft_vector<ft_uoff> & ret_list, ft_uoff & ret_
         free(k_map);
 
     if (err == 0) {
-        ff_log(FC_DEBUG, 0, "ioctl(%d, FS_IOC_FIEMAP, extents[%"FS_ULL"]) succeeded", fd, (FT_ULL)extent_n);
+        ff_log(FC_DEBUG, 0, "ioctl(%d, FS_IOC_FIEMAP, extents[%"FS_ULL"]) succeeded", fd, (ft_ull)extent_n);
         ret_block_size_bitmask = block_size_bitmask;
     }
 

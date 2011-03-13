@@ -26,9 +26,10 @@ public:
         FC_LOOP_FILE = ft_io::FC_LOOP_FILE,
         FC_ZERO_FILE,
         FC_FILE_COUNT, // must be equal to count of preceding enum constants,
-        FC_PRIMARY_STORAGE = FC_FILE_COUNT,
-        FC_SECONDARY_STORAGE,
-        FC_ALL_FILE_COUNT
+        FC_SECONDARY_STORAGE = FC_FILE_COUNT,
+        FC_ALL_FILE_COUNT,
+        FC_PRIMARY_STORAGE = FC_ALL_FILE_COUNT,
+        FC_STORAGE,
     };
 
 private:

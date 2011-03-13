@@ -24,7 +24,7 @@ private:
     ft_job * fm_job;
     FT_IO_NS ft_io * fm_io;
 
-    static int invalid_cmdline(const char * program_name, const char * fmt, ...);
+    static int invalid_cmdline(const char * program_name, int err, const char * fmt, ...);
 
     static int invalid_verbosity(const char * program_name);
 
@@ -44,7 +44,7 @@ public:
         const char * root_dir;   // if NULL, will autodetect
         const char * io_name;    // if NULL, will autodetect
         const char * io_args[3]; // some I/O will need less than 3 arguments
-        ft_size storage_size;        // if 0, will autodetect
+        ft_size storage_size;    // if 0, will autodetect
         ft_uint job_id;          // if 0, will autodetect
     };
 
@@ -88,7 +88,7 @@ public:
 
     /**
      * initialize transformer to use specified I/O. if success, stores a pointer to I/O object
-     * WARNING: destructor and quit_io() will delete ft_io object,
+     * destructor and quit_io() will delete ft_io object,
      *          so only pass I/O object created with new()
      *          and delete them yourself ONLY if this call returned error!
      *

@@ -35,9 +35,13 @@ static std::map<FILE *, ft_log_fmt> fm_log_stream[FC_FATAL+1];
 
 static char const* const fm_log_label[FC_FATAL+1] =
 {
-     "TRACE ", "DEBUG ", "INFO  ", "NOTICE", "WARN  ", "ERROR ", "FATAL "
+     "TRACE ", "DEBUG ", "INFO  ", "NOTICE", "WARN  ", "ERROR ", "FATAL ",
 };
 
+static char const* const fm_log_label_always[FC_FATAL+1] =
+{
+		"", "", "", "", "WARN", "ERROR", "FATAL ERROR",
+};
 
 
 
@@ -155,6 +159,9 @@ static void ff_log0(FILE * f, ft_log_fmt format, ft_log_args & args)
             break;
         case FC_FMT_MSG:
         default:
+        	if (args.level >= FC_WARN)
+        		/* always mark warnings, errors and fatal errors as such */
+        		fprintf(f, "%s: ", fm_log_label_always[args.level]);
             break;
     }
 

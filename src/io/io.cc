@@ -72,7 +72,7 @@ int ft_io::read_extents(ft_vector<ft_uoff> & loop_file_extents,
     int err = read_extents(loop_file_extents, free_space_extents, block_size_bitmask);
     if (err == 0) {
         ft_uoff eff_block_size_log2 = effective_block_size_log2(block_size_bitmask);
-        ff_log(FC_DEBUG, 0, "%s effective block size = %"FS_ULL, label[FC_DEVICE], (FT_ULL) 1 << eff_block_size_log2);
+        ff_log(FC_DEBUG, 0, "%s effective block size = %"FS_ULL, label[FC_DEVICE], (ft_ull) 1 << eff_block_size_log2);
     }
     return err;
 }

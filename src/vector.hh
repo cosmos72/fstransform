@@ -71,6 +71,11 @@ public:
      * reorder this vector in-place, sorting by physical
      */
     void sort_by_physical();
+
+    /**
+     * reorder this vector in-place, sorting by reverse length (largest extents will be first)
+     */
+    void sort_by_reverse_length();
 };
 
 FT_NAMESPACE_END

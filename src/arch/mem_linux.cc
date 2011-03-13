@@ -32,7 +32,7 @@ ft_uoff ff_arch_linux_mem_system_free() {
         return 0;
     }
     char label[256], unit[8];
-    FT_ULL n_ull = 0, scale;
+    ft_ull n_ull = 0, scale;
     ft_uoff total = 0, n;
     ft_uint left = 3;
     int err;
@@ -63,14 +63,14 @@ ft_uoff ff_arch_linux_mem_system_free() {
             default: scale = 0; break;
         }
         /* overflow? then approximate.. */
-        if (scale >= 8*sizeof(FT_ULL) || n_ull > (FT_ULL)-1 >> scale)
-            n_ull = (FT_ULL)-1;
+        if (scale >= 8*sizeof(ft_ull) || n_ull > (ft_ull)-1 >> scale)
+            n_ull = (ft_ull)-1;
         else
             n_ull <<= scale;
 
         n = (ft_uoff) n_ull;
         /* overflow? then approximate.. */
-        if (n < 0 || n_ull != (FT_ULL) n || n > (ft_uoff)-1 - total) {
+        if (n < 0 || n_ull != (ft_ull) n || n > (ft_uoff)-1 - total) {
             total = (ft_uoff)-1;
             break;
         }

@@ -90,21 +90,22 @@ int ft_transform::usage(const char * program_name) {
 }
 
 
-int ft_transform::invalid_cmdline(const char * program_name, const char * fmt, ...)
+int ft_transform::invalid_cmdline(const char * program_name, int err, const char * fmt, ...)
 {
     va_list args;
 
     va_start(args, fmt);
-    ff_vlog(FC_FATAL, 0, fmt, args);
+    err = ff_vlog(FC_ERROR, err, fmt, args);
     va_end(args);
 
-    ff_log(FC_FATAL, 0, "Try `%s --help' for more information", program_name);
-    return 1;
+    ff_log(FC_NOTICE, 0, "Try `%s --help' for more information", program_name);
+    /* mark error as reported */
+    return err ? err : -EINVAL;
 }
 
 int ft_transform::invalid_verbosity(const char * program_name)
 {
-    return invalid_cmdline(program_name, "options -q, -qq, -v, -vv, --quiet, --verbose are mutually exclusive");
+    return invalid_cmdline(program_name, 0, "options -q, -qq, -v, -vv, --quiet, --verbose are mutually exclusive");
 }
 
 /** return EISCONN if transformer is initialized, else call quit_io() and return 0 */
@@ -162,7 +163,7 @@ int ft_transform::init(int argc, char const* const* argv)
             break;
 
         if (argc == 0) {
-            err = invalid_cmdline("fstransform", "missing arguments: %s %s %s", label[0], label[1], label[2]);
+            err = invalid_cmdline("fstransform", 0, "missing arguments: %s %s %s", label[0], label[1], label[2]);
             break;
         }
 
@@ -222,7 +223,7 @@ int ft_transform::init(int argc, char const* const* argv)
                 /* -m storage_size[k|M|G|T|P|E|Z|Y] */
                 else if (argc > 1 && (!strcmp(arg, "-m") || !strcmp(arg, "--storage"))) {
                     if ((err = ff_str2un_scaled(argv[1], & args.storage_size)) != 0) {
-                        err = invalid_cmdline(program_name, "invalid storage size '%s'", arg);
+                        err = invalid_cmdline(program_name, err, "invalid storage size '%s'", argv[1]);
                         break;
                     }
                     --argc, ++argv;
@@ -230,12 +231,12 @@ int ft_transform::init(int argc, char const* const* argv)
                 /* -j job_id */
                 else if (argc > 1 && (!strcmp(arg, "-j") || !strcmp(arg, "--job"))) {
                     if ((err = ff_str2un(argv[1], & args.job_id)) != 0) {
-                        err = invalid_cmdline(program_name, "invalid job id '%s'", arg);
+                        err = invalid_cmdline(program_name, err, "invalid job id '%s'", argv[1]);
                         break;
                     }
                     --argc, ++argv;
                 } else {
-                    err = invalid_cmdline(program_name, "unknown option: '%s'", arg);
+                    err = invalid_cmdline(program_name, 0, "unknown option: '%s'", arg);
                     break;
                 }
                 continue;
@@ -244,19 +245,19 @@ int ft_transform::init(int argc, char const* const* argv)
             if (io_args_n < FC_FILE_COUNT)
                 args.io_args[io_args_n++] = arg;
             else
-                err = invalid_cmdline(program_name, "too many arguments");
+                err = invalid_cmdline(program_name, 0, "too many arguments");
         }
 
         if (err == 0 && io_args_n < FC_FILE_COUNT) {
             switch (io_args_n) {
                 case 0:
-                    err = invalid_cmdline(program_name, "missing arguments: %s %s %s", label[0], label[1], label[2]);
+                    err = invalid_cmdline(program_name, 0, "missing arguments: %s %s %s", label[0], label[1], label[2]);
                     break;
                 case 1:
-                    err = invalid_cmdline(program_name, "missing arguments: %s %s", label[1], label[2]);
+                    err = invalid_cmdline(program_name, 0, "missing arguments: %s %s", label[1], label[2]);
                     break;
                 case 2:
-                    err = invalid_cmdline(program_name, "missing argument: %s", label[2]);
+                    err = invalid_cmdline(program_name, 0, "missing argument: %s", label[2]);
                     break;
             }
         }
@@ -315,7 +316,7 @@ int ft_transform::init_job(const char * root_dir, ft_uint job_id, ft_size storag
 
 /**
  * initialize transformer to use specified I/O. if success, stores a pointer to I/O object
- * WARNING: destructor and quit_io() will delete ft_io object,
+ * destructor and quit_io() will delete ft_io object,
  *          so only pass I/O object created with new()
  *          and delete them yourself ONLY if this call returned error!
  *
