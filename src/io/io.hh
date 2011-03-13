@@ -26,7 +26,7 @@ FT_IO_NAMESPACE_BEGIN
 class ft_io
 {
 private:
-    ft_vector<ft_uoff> fm_primary_storage;
+	ft_vector<ft_uoff> fm_primary_storage;
     ft_extent<ft_uoff> fm_secondary_storage;
 
     ft_uoff dev_len, eff_block_size_log2;
@@ -118,7 +118,7 @@ public:
     /** return job_dir, or "" if not set */
     FT_INLINE const std::string & job_dir() const { return fm_job.job_dir(); }
 
-    /** return secondary_storage_size, or 0 if not set */
+    /** return storage_size to use (in bytes), or 0 if not set */
     FT_INLINE ft_uoff job_storage_size() const { return fm_job.job_storage_size(); }
 
 

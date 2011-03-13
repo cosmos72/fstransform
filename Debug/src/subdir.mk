@@ -4,6 +4,7 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CC_SRCS += \
+../src/assert.cc \
 ../src/dispatch.cc \
 ../src/job.cc \
 ../src/log.cc \
@@ -17,6 +18,7 @@ CC_SRCS += \
 ../src/work.cc 
 
 OBJS += \
+./src/assert.o \
 ./src/dispatch.o \
 ./src/job.o \
 ./src/log.o \
@@ -30,6 +32,7 @@ OBJS += \
 ./src/work.o 
 
 CC_DEPS += \
+./src/assert.d \
 ./src/dispatch.d \
 ./src/job.d \
 ./src/log.d \

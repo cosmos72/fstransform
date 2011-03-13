@@ -10,7 +10,6 @@
 #include <cstdio>         // for fprintf(), stdout, stderr
 
 #include "assert.hh"      // for ff_assert()
-#include "traits.hh"      // for FT_TYPE_TO_UNSIGNED(T) macro
 #include "log.hh"         // for ff_log()
 #include "vector.hh"      // for ft_vector<T>
 #include "map.hh"         // for ft_map<T>
@@ -18,16 +17,18 @@
 #include "util.hh"        // for ff_pretty_size()
 #include "work.hh"        // for ff_dispatch(), ft_work<T>
 #include "io/io.hh"       // for ft_io
+#include "io/io_posix.hh" // for ft_io_posix
 #include "arch/mem.hh"    // for ff_arch_mem_system_free()
 
 FT_NAMESPACE_BEGIN
 
 enum {
     FC_DEVICE = FT_IO_NS ft_io::FC_DEVICE,
-    FC_LOOP_FILE = FT_IO_NS ft_io::FC_LOOP_FILE
+    FC_LOOP_FILE = FT_IO_NS ft_io::FC_LOOP_FILE,
+    FC_PRIMARY_STORAGE = FT_IO_NS ft_io_posix::FC_PRIMARY_STORAGE,
 };
 
-char const* const* const label = FT_IO_NS ft_io::label;
+char const* const* const label = FT_IO_NS ft_io_posix::label;
 
 
 template<typename T>
@@ -42,8 +43,8 @@ void ft_work<T>::show(const char * label, ft_uoff effective_block_size, const ft
     ft_size n = map.size();
 
     if (iter != end) {
-        ff_log(header_level, 0, "# %4"FS_ULL" extent%s in %s",
-               (FT_ULL) n, (n == 1 ? " " : "s"), label);
+        ff_log(header_level, 0, "# %4"FS_ULL" extent%s in %s, effective block size = %"FS_ULL,
+               (FT_ULL) n, (n == 1 ? " " : "s"), label, (FT_ULL) effective_block_size);
 
         if (ff_log_is_enabled(level)) {
             ff_log(level, 0, "# extent \t\tphysical\t\t logical\t  length\tuser_data");
@@ -254,7 +255,7 @@ int ft_work<T>::analyze(ft_vector<ft_uoff> & loop_file_extents,
         for (; iter != end; ++iter) {
             physical = iter->first.physical >> eff_block_size_log2;
             length = iter->second.length >> eff_block_size_log2;
-            dev_free_map.insert(physical, physical, length);
+            dev_free_map.insert(physical, physical, length, FC_DEFAULT_USER_DATA);
         }
         show("FREE-SPACE", eff_block_size, dev_free_map);
     }
@@ -432,7 +433,7 @@ int ft_work<T>::analyze(ft_vector<ft_uoff> & loop_file_extents,
 
     iter = renumbered_map.begin();
     end = renumbered_map.end();
-    show("FREE-SPACE (invariant)", eff_block_size, renumbered_map);
+    show("PRIMARY-STORAGE (invariant)", eff_block_size, renumbered_map);
     while (iter != end) {
         if ((ft_uoff) iter->second.length >= hole_threshold) {
             /* trim hole on both ends to align it to PAGE_SIZE */
@@ -447,22 +448,33 @@ int ft_work<T>::analyze(ft_vector<ft_uoff> & loop_file_extents,
         ++iter;
         renumbered_map.remove(tmp);
     }
-    /* move FREE-SPACE (INVARIANT) extents into dev_free_map, the latter is stored into 'this' */
+    /*
+     * move FREE-SPACE (INVARIANT) extents into dev_free_map (i.e. PRIMARY-STORAGE),
+     * as the latter is stored into 'this'
+     */
     dev_free_map.swap(renumbered_map);
-    /* show FREE-SPACE (INVARIANT) extents, sorted by physical */
-    show("FREE-SPACE (invariant, contiguous, aligned)", eff_block_size, dev_free_map);
+    /* show PRIMARY-STORAGE extents, sorted by physical */
+    show("PRIMARY-STORAGE (invariant, contiguous, aligned)", eff_block_size, dev_free_map);
 
 
     pretty_len = 0.0;
     pretty_unit = ff_pretty_size((ft_uoff) hole_count << eff_block_size_log2, & pretty_len);
     ft_size dev_free_map_n = dev_free_map.size();
 
-    ff_log(FC_INFO, 0, "located %.2f %sbytes (%"FS_ULL" fragment%s) in %s available as PRIMARY-STORAGE (free, invariant, contiguous and aligned)",
-           pretty_len, pretty_unit, (FT_ULL)dev_free_map_n, (dev_free_map_n == 1 ? "" : "s"), label[FC_DEVICE]);
+    ff_log(FC_INFO, 0, "%s: located %.2f %sbytes (%"FS_ULL" fragment%s) usable in %s (free, invariant, contiguous and aligned)",
+           label[FC_PRIMARY_STORAGE], pretty_len, pretty_unit, (FT_ULL)dev_free_map_n, (dev_free_map_n == 1 ? "" : "s"), label[FC_DEVICE]);
 
     dev_free_map.total_count(hole_count);
 
     return 0;
+}
+
+template<typename T>
+static T ff_round_up(T n, T power_of_2_minus_1)
+{
+	if (n & power_of_2_minus_1)
+		n = (n | power_of_2_minus_1) + 1;
+	return n;
 }
 
 /**
@@ -474,113 +486,135 @@ int ft_work<T>::create_storage()
 {
     enum {
         _1M_minus_1 = 1024*1024 - 1,
+        _64k_minus_1 = 64*1024 - 1,
     };
 
-    int err = 0;
-    do {
-        ft_uoff len = io->job_storage_size();
-        const ft_uoff eff_block_size_log2 = io->effective_block_size_log2();
+	ft_uoff total_len = io->job_storage_size();
+	const ft_uoff eff_block_size_log2 = io->effective_block_size_log2();
 
-        if (len == 0) {
-            /*
-             * auto-detect storage_size: we want it to be the smallest between
-             *   33% of free RAM (use 16 MB if free RAM cannot be determined)
-             *   10% of bytes to relocate
-             */
-            ft_uoff free_ram_3 = FT_ARCH_NS ff_arch_mem_system_free() / 3;
-            if (free_ram_3 == 0)
-                free_ram_3 = (ft_uoff) 16*1024*1024;
+	const ft_uoff free_ram = FT_ARCH_NS ff_arch_mem_system_free();
+	ft_uoff free_ram_3 = free_ram / 3;
+	const ft_uoff page_size_minus_1 = (ft_uoff) ff_mem_page_size() - 1;
 
-            ft_uoff work_length_10 = ((ft_uoff) work_count << eff_block_size_log2) / 10;
-            len = ff_min2(free_ram_3, work_length_10);
+	if (total_len != 0) {
+		/* honor user-specified storage size */
+		if (free_ram_3 != 0 && total_len > free_ram_3 * 2) {
+			double total_pretty_len = 0.0, free_pretty_len = 0.0;
+			const char * total_pretty_label = ff_pretty_size(total_len, & total_pretty_len);
+			const char * free_pretty_label  = ff_pretty_size(free_ram,  & free_pretty_len);
 
-            /* round up to multiples of 1M */
-            len = (len + _1M_minus_1) & ~(ft_uoff)_1M_minus_1;
-        }
-        /* else try to honor user-specified length */
+			ff_log(FC_WARN, 0, "warning: user requested %.2f %sbytes for storage, but only %.2f %sbytes RAM are free. expect troubles.",
+					total_pretty_len, total_pretty_label, free_pretty_len, free_pretty_label);
+		}
+	} else {
+		/*
+		 * auto-detect total storage size to use:
+		 * we want it to be the smallest between
+		 *   33% of free RAM (use 16 MB if free RAM cannot be determined)
+		 *   10% of bytes to relocate
+		 */
+		if (free_ram_3 == 0)
+			free_ram_3 = (ft_uoff) 16*1024*1024;
 
-        const ft_uoff page_size_m_1 = (ft_uoff) ff_mem_page_size() - 1;
+		ft_uoff work_length_10 = ((ft_uoff) work_count << eff_block_size_log2) / 10;
+		total_len = ff_min2(free_ram_3, work_length_10);
 
-        ft_uoff primary_storage_len = (ft_uoff) dev_free_map.total_count() << eff_block_size_log2;
-        /* primary_storage_len should be already a multiple of PAGE_SIZE */
-        primary_storage_len &= ~page_size_m_1;
+		/* round up to multiples of 1M */
+		total_len = ff_round_up<ft_uoff>(total_len, _1M_minus_1);
+	}
 
-        /*
-         * truncate primary_storage_len to 1/4 of addressable memory (= 1GB on 32-bit machines)
-         * keep PAGE_SIZE alignment!
-         */
-        const ft_size mem_max = ((ft_size)-1 >> 2) + 1;
-        ft_size mem_len = (ft_size) primary_storage_len;
-        if (mem_len < 0 || primary_storage_len != (ft_uoff) mem_len || mem_len > mem_max)
-            primary_storage_len = (ft_uoff) mem_max & ~page_size_m_1;
+	/* round up total_len to a multiple of PAGE_SIZE */
+	total_len = ff_round_up<ft_uoff>(total_len, page_size_minus_1);
 
+	ft_uoff primary_len = (ft_uoff) dev_free_map.total_count() << eff_block_size_log2;
+	/* round down primary_len to a multiple of PAGE_SIZE, even it should be already */
+	primary_len &= ~page_size_minus_1;
 
-        /* fill io->primary_storage() with DEVICE extents actually available as PRIMARY-STORAGE */
-        fill_io_primary_storage(primary_storage_len);
+	/*
+	 * adjust both total_len and primary_len as follows:
+	 * truncate to fit off_t (== ft_off, signed version of ft_uoff)
+	 * truncate to 1/4 of addressable memory (= 1GB on 32-bit machines)
+	 * keep PAGE_SIZE alignment!
+	 */
+	const ft_uoff off_max = ((ft_uoff)(ft_off)-1 >> 1) & ~page_size_minus_1;
+	total_len =   ff_min2<ft_uoff>(total_len,   off_max);
+	primary_len = ff_min2<ft_uoff>(primary_len, off_max);
 
-        double pretty_len = 0.0;
-        const char * pretty_unit = ff_pretty_size(primary_storage_len, & pretty_len);
-        ft_size fragment_n = io->primary_storage().size();
+	const ft_size mem_max_4 = (((ft_size)-1 >> 2) + 1) & ~page_size_minus_1;
+	total_len   = ff_min2<ft_uoff>(total_len,   mem_max_4);
+	primary_len = ff_min2<ft_uoff>(primary_len, mem_max_4);
 
-        ff_log(FC_INFO, 0, "PRIMARY-STORAGE: actually using %.2f %sbytes (%"FS_ULL" fragment%s) from %s",
-               pretty_len, pretty_unit, (FT_ULL)fragment_n, (fragment_n == 1 ? "" : "s"), label[FC_DEVICE]);
+	if (primary_len > total_len)
+		primary_len = total_len;
+	ft_uoff secondary_len = total_len - primary_len;
 
+	/* fill io->primary_storage() with DEVICE extents actually used as PRIMARY-STORAGE */
+	fill_io_primary_storage(primary_len);
 
-        if (len <= primary_storage_len) {
-            len = 0;
+	double pretty_len = 0.0;
+	const char * pretty_unit = ff_pretty_size(primary_len, & pretty_len);
+	ft_size fragment_n = io->primary_storage().size();
 
-        } else {
-            len -= primary_storage_len;
+	ff_log(FC_INFO, 0, "PRIMARY-STORAGE: actually using %.2f %sbytes (%"FS_ULL" fragment%s) from %s",
+		   pretty_len, pretty_unit, (FT_ULL)fragment_n, (fragment_n == 1 ? "" : "s"), label[FC_DEVICE]);
 
-            /* round up length to a multiple of PAGE_SIZE: required by mmap() inside io_posix::create_storage() */
-            len = (len + page_size_m_1) & ~page_size_m_1;
-            /*
-             * round down length to fit off_t (== ft_off, signed version of ft_uoff)
-             * keep PAGE_SIZE alignment!
-             */
-            if ((ft_off) len < 0)
-                len &= (ft_uoff)(ft_off)-1 >> 1;
-            /*
-             * truncate length to 1/4 of addressable memory (= 1GB on 32-bit machines)
-             * keep PAGE_SIZE alignment!
-             */
-            mem_len = (ft_size) len;
-            if (mem_len < 0 || len != (ft_uoff) mem_len || mem_len > mem_max)
-                len = (ft_uoff) mem_max & ~page_size_m_1;
-        }
+	show("PRIMARY-STORAGE (actually used)", (ft_uoff) 1 << eff_block_size_log2, dev_free_map);
 
-        if ((err = io->create_storage(len)) != 0)
-            break;
-
-    } while (0);
-    return err;
+	return io->create_storage(secondary_len);
 }
 
 /**
  * fill io->primary_storage() with DEVICE extents to be actually used as PRIMARY-STORAGE
- * (already computed into dev_free_map by analyze())
+ * (already computed into dev_free_map by analyze()).
+ *
+ * if only a fraction of available PRIMARY-STORAGE will be actually used,
+ * exploit a ft_pool<T> to select the largest contiguous extents.
+ *
+ * updates dev_free_map to contain the PRIMARY-STORAGE extents actually used.
  */
 template<typename T>
-void ft_work<T>::fill_io_primary_storage(ft_uoff primary_storage_len) const
+void ft_work<T>::fill_io_primary_storage(ft_uoff primary_len)
 {
-    ft_vector<ft_uoff> & primary_storage = io->primary_storage();
-    map_const_iterator iter = dev_free_map.begin(), end = dev_free_map.end();
+    ft_uoff eff_block_size_log2 = io->effective_block_size_log2();
 
-
-    ft_uoff physical, length, eff_block_size_log2 = io->effective_block_size_log2();
-
-    for (; primary_storage_len != 0 && iter != end; ++iter) {
-        const typename ft_map<T>::value_type & extent = *iter;
-        physical = (ft_uoff) extent.first.physical << eff_block_size_log2;
-        length   = (ft_uoff) extent.second.length  << eff_block_size_log2;
-
-        /* stop at primary_storage_len bytes */
-        if (length > primary_storage_len)
-            length = primary_storage_len;
-        primary_storage_len -= length;
-
-        primary_storage.append(physical, physical, length, 0/*no user_data*/);
+    if (primary_len < (ft_uoff) dev_free_map.total_count() << eff_block_size_log2) {
+    	/*
+    	 * exploit a ft_pool<T> to select the largest contiguous extents up to primary_len
+    	 *
+    	 * create a stub map containing only one extent with
+    	 * ->length = primary_len >> eff_block_size_log2
+    	 */
+    	ft_map<T> primary_to_allocate, primary_allocated;
+    	primary_to_allocate.insert(0, 0, primary_len >> eff_block_size_log2, FC_DEFAULT_USER_DATA);
+    	/* and ask ft_pool<T> to allocate it */
+    	ft_pool<T> dev_free_pool(dev_free_map);
+    	dev_free_pool.allocate_all(primary_to_allocate, primary_allocated);
+    	/* check that the full primary_len was actually allocated */
+    	ff_assert(primary_to_allocate.empty());
+    	/** move back allocated extents to dev_free_map */
+    	dev_free_map.swap(primary_allocated);
+    	/*
+    	 * WARNING: ft_pool<T>.allocate_all() renumbered dev_free_map->physical to reflect allocation,
+    	 *          we must undo it below!
+    	 */
     }
+
+    dev_free_map.total_count((T)(primary_len >> eff_block_size_log2));
+    /*
+     * now dev_free_map.total_count() (in blocks) matches primary_len (in bytes),
+     * so simply copy all extents from dev_free_map to primary_storage
+     */
+    ft_vector<ft_uoff> & primary_storage = io->primary_storage();
+	T physical, length;
+    map_iterator iter = dev_free_map.begin(), end = dev_free_map.end();
+	for (; iter != end; ++iter) {
+		typename ft_map<T>::value_type & extent = *iter;
+    	/* undo any ->physical block renumbering performed by ft_pool<T>.allocate_all() */
+		physical = (ft_uoff) (extent.first.physical = extent.second.logical) << eff_block_size_log2;
+		length   = (ft_uoff) extent.second.length  << eff_block_size_log2;
+
+		primary_storage.append(physical, physical, length, FC_DEFAULT_USER_DATA);
+	}
 }
 
 

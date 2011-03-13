@@ -132,8 +132,8 @@ static int ff_linux_fiemap_allocate_and_ioctl(int fd, ft_uoff file_length, ft_si
     do {
         k_map = (struct fiemap *) malloc(k_len);
         if (k_map == NULL) {
-            /* do not mark the error as reported, this is just a DEBUG message */
             ff_log(FC_DEBUG, 0, "malloc(%"FS_ULL") failed (%s), falling back on ioctl(FIBMAP) ...", fd, (FT_ULL) k_len, strerror(err));
+            /* do not mark the error as reported, this is just a DEBUG message */
             err = ENOMEM; /* Out of memory */
             break;
         }
@@ -205,14 +205,14 @@ static int ff_linux_fiemap(int fd, ft_vector<ft_uoff> & ret_list, ft_uoff & ret_
         for (i = 0; i < extent_n; i++) {
             if (k_extent[i].fe_flags & (FIEMAP_EXTENT_UNKNOWN | FIEMAP_EXTENT_ENCODED)) {
 
-                err = ENOSYS;
-                /* do not mark the error as reported, this is just a DEBUG message */
                 ff_log(FC_DEBUG, 0, "ioctl(%d, FIEMAP, extents[%"FS_ULL"]) returned unsupported %s%s%s extents, falling back on ioctl(FIBMAP) ...",
                        fd, (FT_ULL)extent_n,
                        (k_extent[i].fe_flags & FIEMAP_EXTENT_UNKNOWN ? "UNKNOWN" : ""),
                        ((k_extent[i].fe_flags & (FIEMAP_EXTENT_UNKNOWN|FIEMAP_EXTENT_ENCODED)) == (FIEMAP_EXTENT_UNKNOWN|FIEMAP_EXTENT_ENCODED) ? "+" : ""),
                        (k_extent[i].fe_flags & FIEMAP_EXTENT_ENCODED ? "ENCODED" : "")
                 );
+                /* do not mark the error as reported, this is just a DEBUG message */
+                err = ENOSYS;
                 break;
             }
             /* keep track of bits used by all physical, logical and lengths.

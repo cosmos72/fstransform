@@ -219,7 +219,7 @@ int ft_transform::init(int argc, char const* const* argv)
                 else if (argc > 1 && (!strcmp(arg, "-t") || !strcmp(arg, "--dir")))
                     --argc, args.root_dir = *++argv;
 
-                /* -m secondary_storage_size[k|M|G|T|P|E|Z|Y] */
+                /* -m storage_size[k|M|G|T|P|E|Z|Y] */
                 else if (argc > 1 && (!strcmp(arg, "-m") || !strcmp(arg, "--storage"))) {
                     if ((err = ff_str2un_scaled(argv[1], & args.storage_size)) != 0) {
                         err = invalid_cmdline(program_name, "invalid storage size '%s'", arg);

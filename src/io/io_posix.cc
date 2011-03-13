@@ -253,8 +253,8 @@ int ft_io_posix::create_storage(ft_uoff secondary_len)
      * and in any case we will still need to iterate on primary_storage to mmap() it
      */
     ft_uoff primary_len = 0;
-    ft_vector<ft_uoff>::iterator iter = primary_storage().begin(), end = primary_storage().end();
-    for (; iter != end; ++iter) {
+    ft_vector<ft_uoff>::iterator begin = primary_storage().begin(), iter, end = primary_storage().end();
+    for (iter = begin; iter != end; ++iter) {
         primary_len += iter->second.length;
     }
 
@@ -276,10 +276,13 @@ int ft_io_posix::create_storage(ft_uoff secondary_len)
 #  error both MAP_ANONYMOUS and MAP_ANON are missing, cannot compile io_posix.cc
 #endif
         if (storage_mmap == MAP_FAILED) {
-            err = ff_log(FC_ERROR, errno, "error in mmap(%"FS_ULL", PROT_NONE, MAP_PRIVATE|MAP_ANONYMOUS)", (FT_ULL) mem_len);
+        	err = ff_log(FC_ERROR, errno, "error in STORAGE mmap(%"FS_ULL", PROT_NONE, MAP_PRIVATE|MAP_ANONYMOUS, -1)",
+        			(FT_ULL) mem_len);
             break;
         } else
-            ff_log(FC_DEBUG, 0, "mmap(%"FS_ULL", PROT_NONE, MAP_PRIVATE|MAP_ANONYMOUS) succeeded", (FT_ULL) mem_len);
+            ff_log(FC_DEBUG, 0, "STORAGE: preemptively reserved contiguous RAM,"
+            		" mmap(length = %"FS_ULL", PROT_NONE, MAP_PRIVATE|MAP_ANONYMOUS, -1) = ok",
+            		(FT_ULL) mem_len);
 
         storage_mmap_size = mem_len;
 
@@ -287,22 +290,23 @@ int ft_io_posix::create_storage(ft_uoff secondary_len)
             if ((err = create_secondary_storage(secondary_len)) != 0)
                 break;
         } else
-            ff_log(FC_INFO, 0, "%s is large enough, not creating %s", label[i], label[j]);
+            ff_log(FC_INFO, 0, "not creating %s, %s is large enough", label[j], label[i]);
 
         /* now incrementally replace storage_mmap with actually mmapped() storage extents */
-        iter = primary_storage().begin();
+        begin = primary_storage().begin();
         end = primary_storage().end();
         ft_size mem_offset = 0;
-        for (; err == 0 && iter != end; ++iter)
-            err = replace_storage_mmap(fd[FC_DEVICE], *iter, mem_offset);
+        for (iter = begin; err == 0 && iter != end; ++iter)
+            err = replace_storage_mmap(fd[FC_DEVICE], label[i], *iter, iter-begin, mem_offset);
         if (err != 0)
             break;
 
-        if ((err = replace_storage_mmap(fd[j], secondary_storage(), mem_offset)) != 0)
-            break;
-
+        if (secondary_len != 0) {
+        	if ((err = replace_storage_mmap(fd[j], label[j], secondary_storage(), 0, mem_offset)) != 0)
+        		break;
+        }
         if (mem_offset != storage_mmap_size) {
-            ff_log(FC_ERROR, 0, "internal error, remapped storage extents used %"FS_ULL" bytes instead of expected %"FS_ULL" bytes",
+            ff_log(FC_ERROR, 0, "internal error, mapped STORAGE extents in RAM used %"FS_ULL" bytes instead of expected %"FS_ULL" bytes",
                    (FT_ULL) mem_offset, (FT_ULL) storage_mmap_size);
             err = EINVAL;
         }
@@ -311,7 +315,12 @@ int ft_io_posix::create_storage(ft_uoff secondary_len)
     if (err == 0) {
         double pretty_len = 0.0;
         const char * pretty_label = ff_pretty_size(storage_mmap_size, & pretty_len);
-        ff_log(FC_NOTICE, 0, "PRIMARY and SECONDARY STORAGE initialized and mmapped() to %.2f %sbytes in contiguous RAM", pretty_len, pretty_label);
+
+        ff_log(FC_NOTICE, 0, "%s initialized and mmapped() to %.2f %sbytes of contiguous RAM",
+        		(primary_len != 0 && secondary_len != 0
+          	        ? "PRIMARY and SECONDARY storage"
+        		    : primary_len != 0 ? label[i] : label[j]
+        		), pretty_len, pretty_label);
     } else
         close_storage();
 
@@ -326,41 +335,52 @@ int ft_io_posix::create_storage(ft_uoff secondary_len)
  * note: fd shoud be this->fd[FC_DEVICE] for primary storage,
  * or this->fd[FC_SECONDARY_STORAGE] for secondary storage
  */
-int ft_io_posix::replace_storage_mmap(int fd, ft_extent<ft_uoff> & storage_extent, ft_size & ret_mem_offset)
+int ft_io_posix::replace_storage_mmap(int fd, const char * label,
+		ft_extent<ft_uoff> & storage_extent, ft_size extent_index,
+		ft_size & ret_mem_offset)
 {
     ft_size len = (ft_size) storage_extent.length();
     ft_size mem_start = ret_mem_offset, mem_end = mem_start + len;
     int err = 0;
     do {
         if (mem_start >= storage_mmap_size || mem_end > storage_mmap_size) {
-            ff_log(FC_ERROR, 0, "internal error! tried to replace extent beyond end of mmapped() storage area:"
-                   " extent (%"FS_ULL", len = %"FS_ULL") overflows storage_mmap_size = %"FS_ULL,
-                   (FT_ULL) mem_start, (FT_ULL) len, (FT_ULL) storage_mmap_size);
-            err = EINVAL;
+            ff_log(FC_FATAL, 0, "internal error mapping %s extent #%"FS_ULL" in RAM!"
+            		" extent (%"FS_ULL", length = %"FS_ULL") overflows total STORAGE length = %"FS_ULL,
+                   label, (FT_ULL) extent_index, (FT_ULL) mem_start, (FT_ULL) len, (FT_ULL) storage_mmap_size);
+            /* mark error as reported */
+            err = -EINVAL;
             break;
         }
         void * addr_old = (char *) storage_mmap + mem_start;
         if (munmap(addr_old, len) != 0) {
-            err = ff_log(FC_ERROR, errno, "error replacing extent, in munmap(storage_mmap + %"FS_ULL", len = %"FS_ULL")", (FT_ULL) mem_start, (FT_ULL) len);
+            err = ff_log(FC_ERROR, errno, "error mapping %s extent #%"FS_ULL" in RAM,"
+            		" in munmap(address + %"FS_ULL", length = %"FS_ULL")",
+            		label, (FT_ULL) extent_index, (FT_ULL) mem_start, (FT_ULL) len);
             break;
         }
         void * addr_new = mmap(addr_old, len, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_FIXED, fd, storage_extent.physical());
         if (addr_new == MAP_FAILED) {
-            err = ff_log(FC_ERROR, errno, "error replacing extent, in mmap(storage_mmap + %"FS_ULL", len = %"FS_ULL", MAP_FIXED)", (FT_ULL) mem_start, (FT_ULL) len);
+            err = ff_log(FC_ERROR, errno, "error mapping %s extent #%"FS_ULL" in RAM,"
+            		" mmap(address + %"FS_ULL", length = %"FS_ULL", MAP_FIXED) failed",
+            		label, (FT_ULL) extent_index, (FT_ULL) mem_start, (FT_ULL) len);
             break;
         }
         if (addr_new != addr_old) {
-            ff_log(FC_ERROR, 0, "error replacing extent, mmap(storage_mmap + %"FS_ULL", len = %"FS_ULL", MAP_FIXED)"
-                   ": mmap() did not respect MAP_FIXED and returned a different address",
-                   (FT_ULL) mem_start, (FT_ULL) len);
-            err = EFAULT;
+            ff_log(FC_ERROR, 0, "error mapping %s extent in RAM,"
+            		" mmap(address + %"FS_ULL", length = %"FS_ULL", MAP_FIXED)"
+                   " violated MAP_FIXED and returned a different address",
+                   label, (FT_ULL) extent_index, (FT_ULL) mem_start, (FT_ULL) len);
+            /* mark error as reported */
+            err = -EFAULT;
             /** try at least to munmap() this problematic extent */
             if (munmap(addr_new, len) != 0) {
-                ff_log(FC_WARN, errno, "warning: not only mmap() did not respect MAP_FIXED, but subsequent munmap() failed too");
+                ff_log(FC_WARN, errno, "warning: weird OS! not only mmap() violated MAP_FIXED, but subsequent munmap() failed too.");
             }
             break;
         }
-        ff_log(FC_TRACE, 0, "replaced storage extent, mmap(storage_mmap + %"FS_ULL", len = %"FS_ULL", MAP_FIXED) succeeded", (FT_ULL) mem_start, (FT_ULL) len);
+        ff_log(FC_TRACE, 0, "%s extent #%"FS_ULL" mapped in RAM,"
+        		" mmap(address + %"FS_ULL", length = %"FS_ULL", MAP_FIXED) = ok",
+        		label, (FT_ULL) extent_index, (FT_ULL) mem_start, (FT_ULL) len);
         /**
          * all ok, let's store mmapped() address into extent.user_data to remember it,
          * as it could be needed for munmap() inside close_storage()
@@ -391,7 +411,7 @@ int ft_io_posix::create_secondary_storage(ft_uoff secondary_len)
     do {
         const ft_uoff len = secondary_len;
 
-        ff_log(FC_DEBUG, 0, "creating %s ...", label[j]);
+        ff_log(FC_DEBUG, 0, "creating %s file ...", label[j]);
 
         const ft_off s_len = (ft_off) len;
         if (s_len < 0 || len != (ft_uoff) s_len) {
@@ -440,7 +460,7 @@ int ft_io_posix::create_secondary_storage(ft_uoff secondary_len)
 
         double pretty_len = 0.0;
         const char * pretty_label = ff_pretty_size(len, & pretty_len);
-        ff_log(FC_INFO, 0, "%s created, %.2f %sbytes written in '%s'", label[j], pretty_len, pretty_label, path);
+        ff_log(FC_INFO, 0, "%s created, %.2f %sbytes written to '%s'", label[j], pretty_len, pretty_label, path);
 
     } while (0);
 

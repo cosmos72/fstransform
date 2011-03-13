@@ -1,6 +1,0 @@
-2011-03-11 01:15:30 INFO   [job.init(95)] starting job 2, persistent storage in '/root/fstransform/home/.fstransform/job.2/'
-2011-03-11 01:15:30 INFO   [transform.run(378)] analyzing file-system, this may take some minutes...
-2011-03-11 01:17:39 INFO   [work<T>.analyze(331)] analysis completed: 122.89 gigabytes must be relocated
-2011-03-11 01:17:44 INFO   [io/io_posix.create_storage(236)] STORAGE-FILE will be 962.00 megabytes long
-2011-03-11 01:17:45 INFO   [io/io_posix.create_storage(237)] creating STORAGE-FILE '/root/fstransform/home/.fstransform/job.2/storage.bin'...
-2011-03-11 01:17:58 INFO   [io/io_posix.create_storage(290)] STORAGE-FILE created and mmapped()

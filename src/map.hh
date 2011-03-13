@@ -205,7 +205,7 @@ public:
      *
      * simply calls insert(key_type, value_type)
      */
-    iterator insert(T physical, T logical, T length, ft_size user_data = 0);
+    iterator insert(T physical, T logical, T length, ft_size user_data);
 
     /**
      * remove an existing extent from this ft_map.

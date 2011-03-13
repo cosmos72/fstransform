@@ -67,8 +67,13 @@ private:
     /**
      * fill io->primary_storage() with DEVICE extents to be actually used as PRIMARY-STORAGE
      * (already computed into dev_free_map by analyze())
+     *
+     * if only a fraction of available PRIMARY-STORAGE will be actually used,
+     * exploit a ft_pool<T> to select the largest contiguous extents.
+     *
+     * updates dev_free_map to contain the PRIMARY-STORAGE extents actually used.
      */
-    void fill_io_primary_storage(ft_uoff primary_storage_len) const;
+    void fill_io_primary_storage(ft_uoff primary_len);
 
     /**
      * creates on-disk secondary storage, used as (small) backup area during relocate().

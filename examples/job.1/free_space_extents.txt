@@ -1,2 +1,0 @@
-length 0
-physical	logical	length	user_data

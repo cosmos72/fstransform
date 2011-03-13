@@ -8,7 +8,7 @@
 #include "first.hh"
 
 #include "dispatch.hh"    // for ft_dispatch
-#include "work.hh"             // for ft_work<T>
+#include "work.hh"        // for ft_work<T>
 
 FT_NAMESPACE_BEGIN
 

@@ -1,3 +1,0 @@
-2011-03-10 03:28:43 NOTICE [job.init(95)] starting job 1, persistent storage in '/root/.fstransform/job.1/'
-2011-03-10 03:28:43 NOTICE [transform.run(356)] analyzing file-system, this may take some minutes...
-2011-03-10 03:28:43 NOTICE [work<T>.run(315)] analysis completed: 2.00 megabytes must be relocated

@@ -659,7 +659,7 @@ void ft_map<T>::complement0_physical_shift(const ft_vector<ft_uoff> & other,
             append0(last, last, physical - last, FC_DEFAULT_USER_DATA);
         } else {
             /* oops.. some programmer really screwed up */
-            ff_assert("internal error! somebody programmed a call to ft_map<T>::complement0_physical_shift() with an argument not sorted by ->physical() !" == 0);
+            ff_assert_fail("somebody programmed a call to ft_map<T>::complement0_physical_shift() with an argument not sorted by ->physical() !");
         }
 
         last = physical + (other[i].length() >> effective_block_size_log2);
@@ -708,7 +708,7 @@ void ft_map<T>::complement0_logical_shift(const ft_vector<ft_uoff> & other, ft_u
             append0(last, last, logical - last, FC_DEFAULT_USER_DATA);
         } else {
             /* oops.. some programmer really screwed up */
-            ff_assert("internal error! somebody programmed a call to ft_map<T>::complement0_logical_shift() with an argument not sorted by ->logical() !" == 0);
+            ff_assert_fail("somebody programmed a call to ft_map<T>::complement0_logical_shift() with an argument not sorted by ->logical() !");
         }
 
         last = logical + (other[i].length() >> effective_block_size_log2);

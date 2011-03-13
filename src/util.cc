@@ -12,43 +12,34 @@
 FT_NAMESPACE_BEGIN
 
 
-static int ff_str2uoff_(const char *& str, ft_uoff * ret_n)
+static ft_uoff ff_str2uoff_(const char *& str)
 {
     ft_uoff n = 0;
-    int err = 0;
     char ch;
-    while ((ch = *str++) >= '0' && ch <= '9') {
+    while ((ch = *str) >= '0' && ch <= '9') {
+    	str++;
         n *= 10;
         n += (ft_uoff) (ch - '0');
     }
-    if (err == 0)
-        * ret_n = n;
-    return err;
+    return n;
 }
 
 int ff_str2uoff(const char * str, ft_uoff * ret_n)
 {
-    ft_uoff n;
-    int err = ff_str2uoff_(str, & n);
-    if (err == 0) {
-        if (*str == '\0')
-            * ret_n = n;
-        else
-            err = EINVAL;
-    }
-    return err;
+    ft_uoff n = ff_str2uoff_(str);
+    if (*str != '\0')
+    	return EINVAL;
+    * ret_n = n;
+    return 0;
 }
 
 
 /** convert string with optional [k|M|G|T|P|E|Z|Y] scale to unsigned number */
 int ff_str2uoff_scaled(const char * str, ft_uoff * ret_n)
 {
-    ft_uoff n, scale;
-    int err;
+    ft_uoff scale, n = ff_str2uoff_(str);
+    int err = 0;
     do {
-        if ((err = ff_str2uoff_(str, & n)) != 0)
-            break;
-
         switch (*str) {
             case '\0': scale = 0; break;
             case 'k': scale = 10; break;

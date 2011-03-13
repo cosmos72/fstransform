@@ -47,10 +47,10 @@ public:
     /** return job_dir, or empty if not set */
     FT_INLINE const std::string & job_dir() const { return fm_dir; }
 
-    /** return size of storage to use, or 0 if not set */
+    /** return storage_size to use (in bytes), or 0 if not set */
     FT_INLINE ft_size job_storage_size() const { return fm_storage_size; }
 
-    /** set size of storage to use */
+    /** set storage_size to use (in bytes), or 0 if not set */
     FT_INLINE void job_storage_size(ft_size len) { fm_storage_size = len; }
 };
 

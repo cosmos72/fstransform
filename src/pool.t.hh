@@ -52,6 +52,7 @@ void ft_pool<T>::allocate_unfragmented(map_iterator map_iter, ft_map<T> & map, f
     map_value_type & map_value = * map_iter;
     T physical = map_value.first.physical;
     T length = map_value.second.length;
+    ft_size user_data = map_value.second.user_data;
 
     /* check that 'iter' extent is big enough to fit map_iter */
     ft_pool_entry<T> & pool_entry = iter->second;
@@ -63,7 +64,7 @@ void ft_pool<T>::allocate_unfragmented(map_iterator map_iter, ft_map<T> & map, f
     ff_assert(pool_value_length >= length);
 
     /* update maps to reflect allocation */
-    map_allocated.insert(physical, pool_value_logical, length);
+    map_allocated.insert(physical, pool_value_logical, length, user_data);
     map.remove(map_iter);
 
     /* remove extent from pool_entry */
@@ -91,6 +92,7 @@ typename ft_pool<T>::map_iterator ft_pool<T>::allocate_fragment(map_iterator map
     map_value_type & map_value = * map_iter;
     T physical = map_value.first.physical;
     T length = map_value.second.length;
+    ft_size user_data = map_value.second.user_data;
 
     ff_assert(!this->empty());
     iterator iter = this->end(); // use the largest extent we have
@@ -104,7 +106,7 @@ typename ft_pool<T>::map_iterator ft_pool<T>::allocate_fragment(map_iterator map
     ff_assert(pool_value_length < length);
 
     /* update maps to reflect partial allocation */
-    map_allocated.insert(physical, pool_value_logical, pool_value_length);
+    map_allocated.insert(physical, pool_value_logical, pool_value_length, user_data);
     map_iter = map.shrink_front(map_iter, pool_value_length);
 
     /* remove extent from pool_entry */
@@ -124,7 +126,8 @@ typename ft_pool<T>::map_iterator ft_pool<T>::allocate_fragment(map_iterator map
 
 /*
  * "allocate" (and remove) extents from this pool to store map extents using a best-fit strategy.
- * remove allocated (and renumbered) extents from map and write them into map_allocated
+ * remove allocated (and renumbered) extents from map and write them into map_allocated,
+ * fragmenting them if needed
  */
 template<typename T>
 void ft_pool<T>::allocate_all(ft_map<T> & map, ft_map<T> & map_allocated)
@@ -140,8 +143,9 @@ void ft_pool<T>::allocate_all(ft_map<T> & map, ft_map<T> & map_allocated)
 
 /**
  * "allocate" using a best-fit strategy (and remove) extents from this pool
- * to store the single extent 'map_iter'.
- * remove allocated (and renumbered) extent from map and write it into map_allocated
+ * to store the single extent 'map_iter', which must belong to 'map'.
+ * remove allocated (and renumbered) extent from map and write it into map_allocated,
+ * fragmenting it if needed.
  */
 template<typename T>
 void ft_pool<T>::allocate(map_iterator map_iter, ft_map<T> & map, ft_map<T> & map_allocated)

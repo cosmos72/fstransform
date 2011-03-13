@@ -10,7 +10,6 @@
 #include <algorithm>     // for std::sort()
 #include <cerrno>        // for EFBIG
 
-#include "assert.hh"     // for ff_assert()
 #include "vector.hh"     // for ft_vector<T>
 
 FT_NAMESPACE_BEGIN

@@ -81,7 +81,8 @@ protected:
      * note: fd shoud be this->fd[FC_DEVICE] for primary storage,
      * or this->fd[FC_SECONDARY_STORAGE] for secondary storage
      */
-    int replace_storage_mmap(int fd, ft_extent<ft_uoff> & storage_extent, ft_size & mem_offset);
+    int replace_storage_mmap(int fd, const char * label, ft_extent<ft_uoff> & storage_extent,
+    		 ft_size extent_index, ft_size & mem_offset);
 
     /**
      * create and open SECONDARY-STORAGE in job.job_dir() + '.storage'
