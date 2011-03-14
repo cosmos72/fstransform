@@ -23,7 +23,7 @@ FT_IO_NAMESPACE_BEGIN
 
 /** constructor */
 ft_io::ft_io(ft_job & job)
-    : fm_primary_storage(), dev_len(0), eff_block_size_log2(0), fm_job(job)
+    : fm_primary_storage(), fm_dev_length(0), fm_eff_block_size_log2(0), fm_dev_path(NULL), fm_job(job)
 {
     fm_secondary_storage.clear();
 }
@@ -45,7 +45,8 @@ void ft_io::close()
     fm_primary_storage.clear();
     fm_secondary_storage.clear();
 
-    dev_len = eff_block_size_log2 = 0;
+    fm_dev_length = fm_eff_block_size_log2 = 0;
+    fm_dev_path = NULL;
 }
 
 /** compute and return log2() of effective block size and remember it */
@@ -58,7 +59,7 @@ ft_uoff ft_io::effective_block_size_log2(ft_uoff block_size_bitmask)
             block_size_bitmask >>= 1;
         }
     }
-    return eff_block_size_log2 = block_size_log2;
+    return fm_eff_block_size_log2 = block_size_log2;
 }
 
 /**

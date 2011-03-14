@@ -30,6 +30,7 @@ public:
         FC_ALL_FILE_COUNT,
         FC_PRIMARY_STORAGE = FC_ALL_FILE_COUNT,
         FC_STORAGE,
+        FC_FREE_SPACE,
     };
 
 private:

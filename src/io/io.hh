@@ -29,9 +29,11 @@ private:
 	ft_vector<ft_uoff> fm_primary_storage;
     ft_extent<ft_uoff> fm_secondary_storage;
 
-    ft_uoff dev_len, eff_block_size_log2;
+    ft_uoff fm_dev_length, fm_eff_block_size_log2;
+    const char * fm_dev_path;
 
     ft_job & fm_job;
+
 
     /* cannot call copy constructor */
     ft_io(const ft_io &);
@@ -41,7 +43,10 @@ private:
 
 protected:
     /** remember device length */
-    FT_INLINE void dev_length(ft_uoff dev_length) { dev_len = dev_length; }
+    FT_INLINE void dev_length(ft_uoff dev_length) { fm_dev_length = dev_length; }
+
+    /** remember device path */
+    FT_INLINE void dev_path(const char * dev_path) { fm_dev_path = dev_path; }
 
     /** compute and return log2() of effective block size and remember it */
     ft_uoff effective_block_size_log2(ft_uoff block_size_bitmask);
@@ -102,10 +107,13 @@ public:
     virtual void close();
 
     /** return device length, or 0 if not open */
-    FT_INLINE ft_uoff dev_length() const { return dev_len; }
+    FT_INLINE ft_uoff dev_length() const { return fm_dev_length; }
+
+    /** return device path, or NULL if not open */
+    FT_INLINE const char * dev_path() const { return fm_dev_path; }
 
     /** return log2 of effective block size, or 0 if not open */
-    FT_INLINE ft_uoff effective_block_size_log2() const { return eff_block_size_log2; }
+    FT_INLINE ft_uoff effective_block_size_log2() const { return fm_eff_block_size_log2; }
 
 
 

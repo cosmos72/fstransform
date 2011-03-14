@@ -27,7 +27,7 @@
 FT_IO_NAMESPACE_BEGIN
 
 char const * const ft_io::label[] = {
-		"device", "loop-file", "zero-file", "secondary-storage", "primary-storage", "storage"
+		"device", "loop-file", "zero-file", "secondary-storage", "primary-storage", "storage", "free-space"
 };
 
 /** default constructor */
@@ -111,6 +111,9 @@ int ft_io_posix::open(char const* const path[FC_FILE_COUNT])
                 }
                 /* device length is retrieved ONLY here. we must remember it */
                 dev_length(dev_len);
+                /* also remember device path */
+                dev_path(path[i]);
+
                 if (ff_log_is_enabled(FC_DEBUG)) {
                     double pretty_len;
                     const char * pretty_label = ff_pretty_size(dev_len, & pretty_len);

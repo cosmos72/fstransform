@@ -20,7 +20,7 @@ FT_NAMESPACE_BEGIN
  *
  * implementation: iterates on all known configured T and,
  * if both ft_work<T>::check() and ft_work<T>::init() succeed,
- * calls ft_work<T>::run(), then ft_work<T>::quit()
+ * calls ft_work<T>::run(), then ft_work<T>::cleanup()
  */
 int ft_dispatch::main(ft_vector<ft_uoff> & loop_file_extents,
                            ft_vector<ft_uoff> & free_space_extents, FT_IO_NS ft_io & io)

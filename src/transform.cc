@@ -221,7 +221,7 @@ int ft_transform::init(int argc, char const* const* argv)
                     --argc, args.root_dir = *++argv;
 
                 /* -m storage_size[k|M|G|T|P|E|Z|Y] */
-                else if (argc > 1 && (!strcmp(arg, "-m") || !strcmp(arg, "--storage"))) {
+                else if (argc > 1 && (!strcmp(arg, "-m") || !strcmp(arg, "--mmap-storage"))) {
                     if ((err = ff_str2un_scaled(argv[1], & args.storage_size)) != 0) {
                         err = invalid_cmdline(program_name, err, "invalid storage size '%s'", argv[1]);
                         break;
@@ -265,13 +265,16 @@ int ft_transform::init(int argc, char const* const* argv)
     } while (0);
 
     if (err == 0) {
-        ff_log_set_threshold(level);
+        if (level < ff_log_get_threshold())
+            ff_log_set_threshold(level);
 
         if (level <= FC_DEBUG) {
             /* note 1.4.1) -v enables FC_FMT_LEVEL_MSG also for stdout/stderr */
             /* note 1.4.2) -vv enables FC_FMT_DATETIME_LEVEL_MSG also for stdout/stderr */
-            ff_log_register(stdout, level == FC_DEBUG ? FC_FMT_LEVEL_MSG : FC_FMT_DATETIME_LEVEL_MSG, FC_TRACE, FC_NOTICE);
-            ff_log_register(stderr, level == FC_DEBUG ? FC_FMT_LEVEL_MSG : FC_FMT_DATETIME_LEVEL_MSG, FC_WARN,  FC_FATAL);
+            ft_log_fmt format = level == FC_DEBUG ? FC_FMT_LEVEL_MSG : FC_FMT_DATETIME_LEVEL_MSG;
+
+            ff_log_register(stdout, format, level,   FC_NOTICE);
+            ff_log_register(stderr, format, FC_WARN, FC_FATAL);
         }
         err = init(args);
     }
@@ -389,11 +392,13 @@ int ft_transform::run()
         if ((err = check_is_open()) != 0)
             break;
 
-        ff_log(FC_INFO, 0, "analyzing %s, this may take some minutes ...", label[FC_DEVICE]);
+        FT_IO_NS ft_io & io = * fm_io;
+        const char * dev_path = ff_if_null(io.dev_path(), "<unknown>");
+
+        ff_log(FC_INFO, 0, "analyzing %s '%s', this may take some minutes ...", label[FC_DEVICE], dev_path);
 
         /* allocate ft_vector<ft_uoff> for both LOOP-FILE and FREE-SPACE extents */
         ft_vector<ft_uoff> loop_file_extents, free_space_extents;
-        FT_IO_NS ft_io & io = * fm_io;
 
         /* ask actual I/O subsystem to read LOOP-FILE and FREE-SPACE extents */
         if ((err = io.read_extents(loop_file_extents, free_space_extents)) != 0)

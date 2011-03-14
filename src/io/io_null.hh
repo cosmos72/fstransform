@@ -20,7 +20,7 @@ FT_IO_NAMESPACE_BEGIN
 /**
  * "dummy" class emulating I/O
  */
-class ft_io_emul: public ft_io
+class ft_io_null: public ft_io
 {
 public:
     enum {
@@ -68,10 +68,10 @@ protected:
 
 public:
     /** constructor */
-    ft_io_emul(ft_job & job);
+    ft_io_null(ft_job & job);
 
     /** destructor. calls close() */
-    virtual ~ft_io_emul();
+    virtual ~ft_io_null();
 
     /** check for consistency and open LOOP-FILE extents file and ZERO-FILE extents file */
     int open(char const* const paths[FC_FILE_COUNT]);

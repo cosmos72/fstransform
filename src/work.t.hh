@@ -25,15 +25,19 @@ FT_NAMESPACE_BEGIN
 enum {
     FC_DEVICE = FT_IO_NS ft_io::FC_DEVICE,
     FC_LOOP_FILE = FT_IO_NS ft_io::FC_LOOP_FILE,
+    FC_FREE_SPACE = FT_IO_NS ft_io_posix::FC_FREE_SPACE,
     FC_STORAGE = FT_IO_NS ft_io_posix::FC_STORAGE,
     FC_PRIMARY_STORAGE = FT_IO_NS ft_io_posix::FC_PRIMARY_STORAGE,
 };
 
 char const* const* const label = FT_IO_NS ft_io_posix::label;
 
+char const* const label_LOOP_HOLES = "loop-holes";
+
+
 
 template<typename T>
-void ft_work<T>::show(const char * label, ft_uoff effective_block_size, const ft_map<T> & map, ft_log_level level)
+void ft_work<T>::show(const char * label1, const char * label2, ft_uoff effective_block_size, const ft_map<T> & map, ft_log_level level)
 {
     ft_log_level header_level = level <= FC_TRACE ? FC_DEBUG : level;
 
@@ -44,10 +48,11 @@ void ft_work<T>::show(const char * label, ft_uoff effective_block_size, const ft
     ft_size n = map.size();
 
     if (iter != end) {
-        ff_log(header_level, 0, "# %4"FS_ULL" extent%s in %s, effective block size = %"FS_ULL,
-               (ft_ull) n, (n == 1 ? " " : "s"), label, (ft_ull) effective_block_size);
+        ff_log(header_level, 0, "# %4"FS_ULL" extent%s in %s%s",
+               (ft_ull) n, (n == 1 ? " " : "s"), label1, label2);
 
         if (ff_log_is_enabled(level)) {
+            ff_log(level, 0, "# effective block size = %"FS_ULL, (ft_ull) effective_block_size);
             ff_log(level, 0, "# extent \t\tphysical\t\t logical\t  length\tuser_data");
 
             for (ft_size i = 0; iter != end; ++iter, ++i) {
@@ -59,7 +64,7 @@ void ft_work<T>::show(const char * label, ft_uoff effective_block_size, const ft
             }
         }
     } else {
-        ff_log(header_level, 0, "#   no extents in %s", label);
+        ff_log(header_level, 0, "#   no extents in %s%s", label1, label2);
     }
     ff_log(level, 0, "");
 }
@@ -73,17 +78,17 @@ ft_work<T>::ft_work()
 { }
 
 
-/** destructor. calls quit() */
+/** destructor. calls cleanup() */
 template<typename T>
 ft_work<T>::~ft_work()
 {
-    quit();
+    cleanup();
 }
 
 
 /** performs cleanup. called by destructor, you can also call it explicitly after (or instead of) run()  */
 template<typename T>
-void ft_work<T>::quit()
+void ft_work<T>::cleanup()
 {
     dev_map.clear();
     dev_free_map.clear();
@@ -94,7 +99,7 @@ void ft_work<T>::quit()
 
 
 /**
- * high-level do-everything method. calls in sequence init(), run() and quit().
+ * high-level do-everything method. calls in sequence init(), run() and cleanup().
  * return 0 if success, else error.
  */
 template<typename T>
@@ -104,7 +109,7 @@ int ft_work<T>::main(ft_vector<ft_uoff> & loop_file_extents,
     ft_work<T> worker;
     return worker.run(loop_file_extents, free_space_extents, io);
 
-    // worker.quit() is called automatically by destructor, no need to call explicitly
+    // worker.cleanup() is called automatically by destructor, no need to call explicitly
 }
 
 /** full transformation algorithm */
@@ -117,6 +122,13 @@ int ft_work<T>::run(ft_vector<ft_uoff> & loop_file_extents,
         && (err = analyze(loop_file_extents, free_space_extents)) == 0
         && (err = create_storage()) == 0
         && (err = relocate()) == 0;
+    /*
+     * note 1.2.2) ft_transform.main() and other high-level *.main() methods
+     * must check for unreported errors and log them them with message
+     * "failed with unreported error"
+     */
+    if (!ff_log_is_reported(err))
+        err = ff_log(FC_ERROR, err, "failed with unreported error");
     return err;
 }
 
@@ -229,7 +241,7 @@ int ft_work<T>::analyze(ft_vector<ft_uoff> & loop_file_extents,
                         ft_vector<ft_uoff> & free_space_extents)
 {
     // cleanup in case dev_map, dev_free_map or storage_map are not empty, or work_count != 0
-    quit();
+    cleanup();
 
     ft_map<T> loop_map, loop_holes_map, renumbered_map;
 
@@ -250,7 +262,7 @@ int ft_work<T>::analyze(ft_vector<ft_uoff> & loop_file_extents,
     loop_file_extents.sort_by_physical();
     loop_map.append0_shift(loop_file_extents, eff_block_size_log2);
     /* show LOOP-FILE extents sorted by physical */
-    show(label[FC_LOOP_FILE], eff_block_size, loop_map);
+    show(label[FC_LOOP_FILE], "", eff_block_size, loop_map);
 
 
     /* algorithm: 0) compute FREE-SPACE extents and store in dev_free_map, sorted by physical
@@ -269,7 +281,7 @@ int ft_work<T>::analyze(ft_vector<ft_uoff> & loop_file_extents,
             length = iter->second.length >> eff_block_size_log2;
             dev_free_map.insert(physical, physical, length, FC_DEFAULT_USER_DATA);
         }
-        show("free-space", eff_block_size, dev_free_map);
+        show(label[FC_FREE_SPACE], "", eff_block_size, dev_free_map);
     }
 
 
@@ -287,7 +299,7 @@ int ft_work<T>::analyze(ft_vector<ft_uoff> & loop_file_extents,
     loop_file_extents.sort_by_physical();
     dev_map.complement0_physical_shift(loop_file_extents, eff_block_size_log2, dev_length);
     /* show DEVICE extents sorted by physical */
-    show(label[FC_DEVICE], eff_block_size, dev_map);
+    show(label[FC_DEVICE], "", eff_block_size, dev_map);
 
 
 
@@ -297,7 +309,7 @@ int ft_work<T>::analyze(ft_vector<ft_uoff> & loop_file_extents,
      * and for LOOP-FILE invariant extents
      */
     /* show LOOP-HOLES extents before allocation, sorted by physical */
-    show("initial loop-holes", eff_block_size, loop_holes_map);
+    show(label_LOOP_HOLES, " (initial)", eff_block_size, loop_holes_map);
 
     /* algorithm: 2) re-number used DEVICE blocks, setting ->logical to values
      * from LOOP-HOLES. do not greedily use low hole numbers:
@@ -309,7 +321,7 @@ int ft_work<T>::analyze(ft_vector<ft_uoff> & loop_file_extents,
     /* how: intersect dev_map and loop_holes_map and put result into renumbered_map */
     renumbered_map.intersect_all_all(dev_map, loop_holes_map);
     /* show DEVICE INVARIANT extents (i.e. already in their final destination), sorted by physical */
-    show("device (invariant)", eff_block_size, renumbered_map);
+    show(label[FC_DEVICE], " (invariant)", eff_block_size, renumbered_map);
     /* remove from dev_map all the INVARIANT extents in renumbered_map */
     dev_map.remove_all(renumbered_map);
     /*
@@ -324,7 +336,7 @@ int ft_work<T>::analyze(ft_vector<ft_uoff> & loop_file_extents,
      */
     renumbered_map.clear();
     /* show LOOP-HOLES (sorted by physical) after allocating DEVICE-INVARIANT extents */
-    show("loop-holes after device (invariant)", eff_block_size, loop_holes_map);
+    show(label_LOOP_HOLES, " after device (invariant)", eff_block_size, loop_holes_map);
 
 
 
@@ -340,15 +352,15 @@ int ft_work<T>::analyze(ft_vector<ft_uoff> & loop_file_extents,
      */
     loop_holes_pool.allocate_all(dev_map, renumbered_map);
     /* show DEVICE RENUMBERED extents sorted by physical */
-    show("device (renumbered)", eff_block_size, renumbered_map);
+    show(label[FC_DEVICE], " (renumbered)", eff_block_size, renumbered_map);
     /* show LOOP-HOLES extents after allocation, sorted by physical */
-    show("final loop-holes", eff_block_size, loop_holes_map);
+    show(label_LOOP_HOLES, " (final)", eff_block_size, loop_holes_map);
 
     /* sanity check */
     if (!dev_map.empty()) {
         ff_log(FC_FATAL, 0, "internal error: there are extents in DEVICE not fitting DEVICE. this is impossible! I give up");
         /* show DEVICE-NOTFITTING extents sorted by physical */
-        show("device (not fitting)", eff_block_size, dev_map, FC_NOTICE);
+        show(label[FC_DEVICE], " (not fitting)", eff_block_size, dev_map, FC_NOTICE);
         return ENOSPC;
     }
     /* move DEVICE (RENUMBERED) back into dev_map and clear renumbered_map */
@@ -385,7 +397,7 @@ int ft_work<T>::analyze(ft_vector<ft_uoff> & loop_file_extents,
         }
     }
     /* show LOOP-FILE (INVARIANT) blocks, sorted by physical */
-    show("loop-file (invariant)", eff_block_size, renumbered_map);
+    show(label[FC_LOOP_FILE], " (invariant)", eff_block_size, renumbered_map);
     /* then forget them */
     renumbered_map.clear();
 
@@ -414,7 +426,7 @@ int ft_work<T>::analyze(ft_vector<ft_uoff> & loop_file_extents,
     dev_map.total_count(work_count);
     dev_map.used_count(work_count);
     /* show DEVICE + LOOP-FILE extents after merge, sorted by physical */
-    show("device + loop-file (merged)", eff_block_size, dev_map);
+    show("device + loop-file", " (merged)", eff_block_size, dev_map);
 
     double pretty_len = 0.0;
     const char * pretty_unit = ff_pretty_size((ft_uoff) work_count << eff_block_size_log2, & pretty_len);
@@ -445,7 +457,7 @@ int ft_work<T>::analyze(ft_vector<ft_uoff> & loop_file_extents,
 
     iter = renumbered_map.begin();
     end = renumbered_map.end();
-    show("free-space (invariant)", eff_block_size, renumbered_map);
+    show(label[FC_FREE_SPACE], " (invariant)", eff_block_size, renumbered_map);
     while (iter != end) {
         if ((ft_uoff) iter->second.length >= hole_threshold) {
             /* trim hole on both ends to align it to PAGE_SIZE */
@@ -466,7 +478,7 @@ int ft_work<T>::analyze(ft_vector<ft_uoff> & loop_file_extents,
      */
     dev_free_map.swap(renumbered_map);
     /* show PRIMARY-STORAGE extents, sorted by physical */
-    show("primary-storage (= free-space, invariant, contiguous, aligned)", eff_block_size, dev_free_map);
+    show(label[FC_PRIMARY_STORAGE], " (= free-space, invariant, contiguous, aligned)", eff_block_size, dev_free_map);
 
 
     pretty_len = 0.0;
@@ -630,7 +642,7 @@ int ft_work<T>::create_storage()
 		   label[FC_PRIMARY_STORAGE], pretty_len, pretty_unit,
 		   (ft_ull)fragment_n, (fragment_n == 1 ? "" : "s"), label[FC_DEVICE]);
 
-	show("primary-storage (actually used)", (ft_uoff) 1 << eff_block_size_log2, dev_free_map);
+	show(label[FC_PRIMARY_STORAGE], " (actually used)", (ft_uoff) 1 << eff_block_size_log2, dev_free_map);
 
 	return io->create_storage(secondary_len);
 }

@@ -20,12 +20,12 @@ FT_NAMESPACE_BEGIN
 
 /**
  * note 1.1)
- * log subsystem is automatically initialized upon first call to
+ * log subsystem is automatically initialized and configured upon first call to
  * ff_log(), ff_vlog(), ff_log_register() or ff_log_set_threshold().
  *
- * automatic initialization configuration is:
- * print to stderr all WARN messages or more serious, with format FC_FMT_MSG
- * print to stdout all NOTICE messages or less serious, with format FC_FMT_MSG
+ * automatic configuration is:
+ * print to stderr all INFO and NOTICE messages, with format FC_FMT_MSG
+ * print to stdout all WARN, ERROR and FATAL messages, with format FC_FMT_MSG
  */
 
 
@@ -81,14 +81,21 @@ void ff_log_register(FILE * stream, ft_log_fmt format, ft_log_level min_level = 
 void ff_log_unregister(FILE * stream, ft_log_level min_level = FC_TRACE, ft_log_level max_level = FC_FATAL);
 
 /**
+ * return least serious level that is not suppressed.
+ * by default, all messages less serious than 'FC_DEBUG' are suppressed on all streams
+ */
+ft_log_level ff_log_get_threshold();
+
+/**
  * tell ff_log() and ff_vlog() to suppress printing of messages less serious than 'level'.
  *
- * by default, all messages less serious than 'INFO' are suppressed
+ * by default, all messages less serious than 'FC_DEBUG' are suppressed on all streams
  */
 void ff_log_set_threshold(ft_log_level level);
 
 /**
- * return true if printing specified message level is enabled (i.e. not suppressed)
+ * return true if printing specified message level is enabled,
+ * i.e. not suppressed and there are streams that will actually receive it
  */
 bool ff_log_is_enabled(ft_log_level level);
 

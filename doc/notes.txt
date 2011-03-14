@@ -13,8 +13,9 @@
 
 1.2.1) ff_log() and ff_vlog() always return errors as reported (-EINVAL, -ENOMEM...)
   
-1.2.2) fstransform::main() must check for unreported errors
-   and log them them with message "failed with unreported error" 
+1.2.2) ft_transform.main() and other high-level *.main() methods
+   must check for unreported errors and log them them with message
+   "failed with unreported error"
   
 1.3) configurable log format:
    FC_FMT_MSG, // message only

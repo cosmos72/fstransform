@@ -28,8 +28,8 @@ FT_EXTERN_C_BEGIN
 FT_NAMESPACE_BEGIN
 
 
-/* by default, all messages less serious than 'FC_INFO' are suppressed */
-static ft_log_level fm_log_threshold = FC_INFO;
+/* by default, all messages less serious than 'FC_DEBUG' are suppressed on all streams */
+static ft_log_level fm_log_threshold = FC_DEBUG;
 
 static std::map<FILE *, ft_log_fmt> fm_log_stream[FC_FATAL+1];
 
@@ -40,7 +40,7 @@ static char const* const fm_log_label[FC_FATAL+1] =
 
 static char const* const fm_log_label_always[FC_FATAL+1] =
 {
-		"", "", "", "", "WARN", "ERROR", "FATAL ERROR",
+    "", "", "", "", "WARN: ", "ERROR: ", "FATAL: ",
 };
 
 
@@ -48,9 +48,10 @@ static char const* const fm_log_label_always[FC_FATAL+1] =
 static bool fm_log_initialized = false;
 
 /**
- * initialize log subsystem:
- * configure stderr to receive all WARN messages or more serious,
- * configure stdout to receive all NOTICE messages or less serious
+ * initialize log subsystem. automatic configuration is:
+ *
+ * print to stderr all INFO and NOTICE messages, with format FC_FMT_MSG
+ * print to stdout all WARN, ERROR and FATAL messages, with format FC_FMT_MSG
  */
 static void ff_log_init()
 {
@@ -62,7 +63,7 @@ static void ff_log_init()
         (void) setvbuf(stdout, NULL, _IOLBF, 0);
         (void) setvbuf(stderr, NULL, _IOLBF, 0);
 
-        ff_log_register(stdout, FC_FMT_MSG, FC_TRACE, FC_NOTICE);
+        ff_log_register(stdout, FC_FMT_MSG, FC_INFO, FC_NOTICE);
         ff_log_register(stderr, FC_FMT_MSG, FC_WARN, FC_FATAL);
     }
 }
@@ -73,13 +74,22 @@ static void ff_log_init()
  */
 bool ff_log_is_enabled(ft_log_level level)
 {
-    return level >= fm_log_threshold;
+    return level >= fm_log_threshold && !fm_log_stream[level].empty();
+}
+
+
+/**
+ * return least serious level that is not suppressed.
+ * by default, all messages less serious than 'FC_DEBUG' are suppressed on all streams
+ */
+ft_log_level ff_log_get_threshold() {
+    return fm_log_threshold;
 }
 
 /**
  * tell ff_log() and ff_vlog() to suppress printing of messages less serious than 'level'.
  *
- * by default, all messages less serious than 'FC_INFO' are suppressed
+ * by default, all messages less serious than 'FC_DEBUG' are suppressed on all streams
  */
 void ff_log_set_threshold(ft_log_level level)
 {
@@ -159,9 +169,8 @@ static void ff_log0(FILE * f, ft_log_fmt format, ft_log_args & args)
             break;
         case FC_FMT_MSG:
         default:
-        	if (args.level >= FC_WARN)
-        		/* always mark warnings, errors and fatal errors as such */
-        		fprintf(f, "%s: ", fm_log_label_always[args.level]);
+            /* always mark warnings, errors and fatal errors as such */
+            fprintf(f, "%s", fm_log_label_always[args.level]);
             break;
     }
 

@@ -14,7 +14,7 @@
 
 #include "io/io.hh"        // for ft_io
 #include "io/io_posix.hh"  // for ft_io_posix
-#include "io/io_emul.hh"   // for ft_io_emul
+#include "io/io_null.hh"   // for ft_io_null
 
 FT_NAMESPACE_BEGIN
 
@@ -108,7 +108,7 @@ public:
      * file path containing LOOP-FILE extents and file path containing FREE-SPACE extents.
      * return 0 if success, else error.
      */
-    int init_io_emul(char const* const path[FT_IO_NS ft_io_emul::FC_FILE_COUNT]);
+    int init_io_emul(char const* const path[FT_IO_NS ft_io_null::FC_FILE_COUNT]);
 
     /**
      * perform actual work using configured I/O

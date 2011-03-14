@@ -138,17 +138,20 @@ merged blocks
    
    Reads and writes will happen in moderately large in-order chunks, such that:
    a) chunk size must fit into RAM
-   b) secondary storage must not overflow
+   b) storage must not overflow
    
-   secondary storage is usually the same as job persistence,
-   in $HOME/.fstransform/job.$$ but must be configurable.
+   storage is the contatenation of primary-storage and secondary-storage.
+   primary-storage is the intersection of FREE-SPACE and LOOP-HOLES,
+   aligned to system PAGE_SIZE.
+   secondary storage is the file ${dir}/.fstransform/job.$$.storage
+   
 +==============+
-|  |  |  |  |  |  secondary storage (SMALL!)
+|  |  |  |  |  |  storage (SMALL!)
 +==============+
 
 5.0) start with position P=1
    
-5.1) if secondary storage has N free blocks (in this case N=5),
+5.1) if storage has N free blocks (in this case N=5),
      lookup the contents of the consecutive positions P..P+N-1 
      on disk (in this case 01..05).
 
@@ -161,28 +164,37 @@ merged blocks
      destination so we set N=7, extend the lookup to 01..07 and find
      03|05|  |@@|21|26|12 - again, remember to ignore 04, it's marked @@)
 
-5.3) order the found blocks by their number (in this case 03 05 12 21 26)
+5.3) sort the found blocks by their (logical) number (in this case 03 05 12 21 26)
 
-5.4) for each block, check the contents of its final destination (in this case,
-     pos[03]=free, pos[05]=21, pos[12]=15, pos[21]=23, pos[26]=25)
+5.4) for each block, check the contents of its final destination
+     (in this case, pos[03]=free, pos[05]=21, pos[12]=15, pos[21]=23, pos[26]=25).
      
-5.5) check the contents of the final destinations (in this case, 21 15 23 25)
-     for each such block, in case its own final destination is free move it there,
-     else move it into secondary storage
-     (in this case, none of them can be moved to their destination)
+     if a final destination is free, move the block there and mark
+     its old position as free, otherwise put the block in a "move queue"
+
+5.5) for each non-free final destination, examine the "lookup" block it contains
+     and check if such block final destination is free or not.
+     in case it is free, directly move there the "lookup" block,
+     else move the "lookup" block into storage.
+     
+     also remember to update the "move queue", as some "lookup" blocks
+     may also belong to it
+
+     (in this case, final destinations are 21 15 23 25.
+     none of them is free, so blocks 03 05 12 21 26 are moved to storage)
 +======21=26===+
-|21|15|23|25|  |  secondary storage
+|21|15|23|25|  |  storage
 +==============+
 
-5.6) mark the blocks moved away from final destinations as free
+5.6) mark as free the blocks moved away from final destinations checked at 5.4)
 
 +01-02----04-------07-08-------------------15----------19-20------------------+
 |03|05|  |04|  |26|12|13|19|17|10|  |08|11|16|07|09|  |18|20|  |02|01|  |06|  |
 +---------@@----------------------------!!----------------@@----!!----!!------+
 
-5.7) move the blocks selected at step 5.2 into their final destinations,
-     if they were not moved already in their final destination by step 5.5
-     (note: step 5.5 could have moved them to secondary storage)
+5.7) move blocks in the "move queue" to their final destinations,
+     if they were not moved already to their final destination by step 5.5
+     (note: step 5.5 could have moved them to storage)
      
      remember to read and write them in disk order, and to mark their initial
      position as free AFTER they have been written in their final destination,
@@ -193,35 +205,40 @@ merged blocks
 |  |  |03|04|05|  |  |13|19|17|10|12|08|11|16|07|09|  |18|20|21|02|01|  |06|26|
 +------@@-@@-@@-------------------@@----!!----------------@@-@@-!!----!!----@@+
 
-5.8) in secondary storage, mark as free any block that was just written (to its
+5.8) in storage, mark as free any block that was just written (to its
      final destination) during previous step (in this case, 21).
 +======21=26===+
-|  |15|23|25|  |  secondary storage
+|  |15|23|25|  |  storage
 +==============+
        
-5.9) scan secondary storage for blocks that can be directly written to their
+5.9) scan storage for blocks that can be directly written to their
      final destination (i.e. if it's free) and move them
      (in this case none)
 
-5.10) if secondary storage is more than 50% full then perform extra pass 6,
+5.10) if storage is at least 50% full then perform extra pass 6,
      else set P = P+N and restart from 5.1 if new P is less than device size 
      
 
-6) extra pass if secondary storage is more than 50% full
+6) extra pass if storage is at least 50% full
 
-6.1) find up to N blocks that can be directly moved to their final destination
+6.1) find at least N/2 and up to N blocks that can be directly moved
+     to their final destination
+     note: since storage has at least N/2 blocks, there are at least N/2
+     free final destinations, and thus at least N/2 blocks that could be moved
+     to such destinations.
+     
      how to find: get the position number of free blocks not marked '!!'
-     note: the blocks cound be in secondary storage
+     note: the blocks could be in storage if we arrived here from step 6.2)
      (in this case 01 02 06 07 18)
      
-     read them in-order (in this case 07 18 02 01 06)
-     and move them into their final destination in-order (in this case
+     read them in disk order (in this case 07 18 02 01 06)
+     and write them into their final destination in disk order (in this case
      01 02 07 07 18)
 +------01-04-02-------08----------07-------15-------19----20------------------+
 |01|02|03|04|05|06|07|13|19|17|10|12|08|11|16|  |09|18|  |20|21|  |  |  |  |26|
 +@@-@@-@@-@@-@@-@@-@@-------------@@----!!----------@@----@@-@@-!!----!!----@@+
      
-6.2) repeat 6.1) until secondary storage is 25% full or less,
+6.2) repeat 6.1) until storage is 25% full or less,
      or until work is finished,
      or until less than N/2 blocks can be moved (whatever comes first)
      (in this case move 16 19 23 25)
@@ -229,17 +246,19 @@ merged blocks
 |01|02|03|04|05|06|07|13|  |17|10|12|08|11|  |16|09|18|19|20|21|  |23|  |25|26|
 +@@-@@-@@-@@-@@-@@-@@-------------@@----!!----@@----@@-@@-@@-@@-!!-@@-!!-@@-@@+
 +==============+
-|  |15|  |  |  |  secondary storage
+|  |15|  |  |  |  storage
 +==============+
       
-6.3) move as many blocks as possible from secondary storage to free positions
+6.3) OBSOLETE - free positions marked as '!!' are primary-storage
+
+     move as many blocks as possible from storage to free positions
      marked '!!'
      (in this case 15)
 +------01-04-02-------08----------07----------15----19----20-------21----26---+
 |01|02|03|04|05|06|07|13|  |17|10|12|08|11|  |16|09|18|19|20|21|15|23|  |25|26|
 +@@-@@-@@-@@-@@-@@-@@-------------@@----!!----@@----@@-@@-@@-@@-!!-@@-!!-@@-@@+
 +==============+
-|  |  |  |  |  |  secondary storage
+|  |  |  |  |  |  storage
 +==============+
 
 6.4) set P = P + N and restart from 5.1 if new P is less than device size
@@ -254,7 +273,7 @@ merged blocks
 [5.1] N=7, lookup positions 08..14, found blocks 13 17 10 08 11 (ignore 12,
       is marked '@@')
 
-[5.2] 5 positions are used (= secondary storage size), continue with [5.3] 
+[5.2] 5 positions are used (= storage size), continue with [5.3] 
 
 [5.3] order blocks by their number, 08 10 11 13 17
 
@@ -265,13 +284,13 @@ merged blocks
 
 [5.5] check the contents of such blocks (13 17 10 08 09) final destinations.
      for each such block, in case its own final destination is free move it there,
-     else move it into secondary storage
+     else move it into storage
      only 09 can be moved directly (17 requires 09 to be moved first,
      13 requires 08 to be moved first),
-     so put 13 17 10 08 to secondary storage.
+     so put 13 17 10 08 to storage.
      
 +08============+
-|13|17|10|08|  |  secondary storage
+|13|17|10|08|  |  storage
 +==============+
 
 [5.6] mark the blocks moved away from final destinations as free
@@ -282,29 +301,29 @@ merged blocks
      
 [5.7] move the blocks selected at step [5.2] into their final destinations,
      if they were not moved already in their final destination by step 5.5
-     (note: step 5.5 could have moved them to secondary storage)
+     (note: step 5.5 could have moved them to storage)
      read/write in disk order, update marks.
      
-     read 13 17 10 08 11 (11 from main device, others from secondary storage)
+     read 13 17 10 08 11 (11 from main device, others from storage)
      write 08 10 11 13 17 to their final destinations
      
 +------01-04-02-------------------07-08-------15----19----20-------21----26---+
 |01|02|03|04|05|06|07|08|09|10|11|12|13|  |  |16|17|18|19|20|21|15|23|  |25|26|
 +@@-@@-@@-@@-@@-@@-@@-@@-@@-@@-@@-@@-@@-!!----@@-@@-@@-@@-@@-@@-!!-@@-!!-@@-@@+
 
-[5.8] in secondary storage, mark as free any block that was just written (to its
+[5.8] in storage, mark as free any block that was just written (to its
      final destination) during previous step (in this case, all).
 +==============+
-|  |  |  |  |  |  secondary storage
+|  |  |  |  |  |  storage
 +==============+
 
-[5.9] scan secondary storage for blocks that can be directly written to their
+[5.9] scan storage for blocks that can be directly written to their
      final destination (i.e. if it's free) and move them
      (in this case none)
 
-[5.10] if secondary storage is more than 50% full then perform extra pass 6,
+[5.10] if storage is more than 50% full then perform extra pass 6,
      else set P = P+N and restart from 5.1 if new P is less than device size 
-     (in this case secondary storage is empty, so since N=7, set new P=15 and
+     (in this case storage is empty, so since N=7, set new P=15 and
      restart from 5.1)
 
 [5.1] N=5, lookup positions 15..19
@@ -336,7 +355,7 @@ merged blocks
 
 [5.7] move the blocks selected at step [5.2] into their final destinations,
      if they were not moved already in their final destination by step 5.5
-     (note: step 5.5 could have moved them to secondary storage)
+     (note: step 5.5 could have moved them to storage)
      read/write in disk order, update marks.
      
      we move block 15 to its destination
@@ -344,14 +363,14 @@ merged blocks
 |01|02|03|04|05|06|07|08|09|10|11|12|13|  |15|16|17|18|19|20|21|  |23|  |25|26|
 +@@-@@-@@-@@-@@-@@-@@-@@-@@-@@-@@-@@-@@-!!-@@-@@-@@-@@-@@-@@-@@-!!-@@-!!-@@-@@+
 
-[5.8] in secondary storage, mark as free any block that was just written (to its
+[5.8] in storage, mark as free any block that was just written (to its
      final destination) during previous step (in this case, none).
 
-[5.9] scan secondary storage for blocks that can be directly written to their
+[5.9] scan storage for blocks that can be directly written to their
      final destination (i.e. if it's free) and move them
      (in this case none)
 
-[5.10] if secondary storage is more than 50% full then perform extra pass 6,
+[5.10] if storage is more than 50% full then perform extra pass 6,
      else set P = P+N and restart from 5.1 if new P is less than device size 
-     (in this case secondary storage is empty, so since N=12, set new P=26,
+     (in this case storage is empty, so since N=12, set new P=26,
      is not less than device size -> we finished)

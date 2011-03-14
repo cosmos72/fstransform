@@ -12,15 +12,15 @@
 
 #include "../log.hh"       // for ff_log()
 #include "extent_file.hh"  // for ff_read_extents_file()
-#include "io_emul.hh"      // for ft_io_emul
+#include "io_null.hh"      // for ft_io_null
 
 
 FT_IO_NAMESPACE_BEGIN
 
-char const * const ft_io_emul::label[ft_io_emul::FC_FILE_COUNT] = { "LOOP-EXTENTS", "FREE-SPACE-EXTENTS" };
+char const * const ft_io_null::label[ft_io_null::FC_FILE_COUNT] = { "LOOP-EXTENTS", "FREE-SPACE-EXTENTS" };
 
 /** constructor */
-ft_io_emul::ft_io_emul(ft_job & job)
+ft_io_null::ft_io_null(ft_job & job)
 : super_type(job)
 {
     /* mark fd[] as invalid: they are not open yet */
@@ -29,19 +29,19 @@ ft_io_emul::ft_io_emul(ft_job & job)
 }
 
 /** destructor. calls close() */
-ft_io_emul::~ft_io_emul()
+ft_io_null::~ft_io_null()
 {
     close();
 }
 
-/** return true if this ft_io_emul is currently (and correctly) open */
-bool ft_io_emul::is_open() const
+/** return true if this ft_io_null is currently (and correctly) open */
+bool ft_io_null::is_open() const
 {
     return dev_length() != 0;
 }
 
 /** check for consistency and open LOOP-EXTENTS and FREE-SPACE-EXTENTS */
-int ft_io_emul::open(char const* const path[FC_FILE_COUNT])
+int ft_io_null::open(char const* const path[FC_FILE_COUNT])
 {
     if (is_open()) {
         // already open!
@@ -74,10 +74,11 @@ int ft_io_emul::open(char const* const path[FC_FILE_COUNT])
         }
     } while (0);
 
-    if (err == 0)
+    if (err == 0) {
         /* use emulated LOOP length as DEVICE length */
         dev_length(lengths[FC_LOOP_EXTENTS]);
-    else
+        dev_path("<fictitious>");
+    } else
         close();
 
     return err;
@@ -85,7 +86,7 @@ int ft_io_emul::open(char const* const path[FC_FILE_COUNT])
 
 
 /** close a single descriptor/stream */
-void ft_io_emul::close0(ft_size i)
+void ft_io_null::close0(ft_size i)
 {
     if (is[i] != NULL) {
         delete is[i];
@@ -97,7 +98,7 @@ void ft_io_emul::close0(ft_size i)
  * close file descriptors.
  * return 0 for success, 1 for error (prints by itself error message to stderr)
  */
-void ft_io_emul::close()
+void ft_io_null::close()
 {
     for (ft_size i = 0; i < FC_FILE_COUNT; i++)
         close0(i);
@@ -107,7 +108,7 @@ void ft_io_emul::close()
 /**
  * close the file descriptors for LOOP-FILE and ZERO-FILE
  */
-void ft_io_emul::close_extents()
+void ft_io_null::close_extents()
 {
     ft_size which[] = { FC_LOOP_EXTENTS, FC_FREE_SPACE_EXTENTS };
     for (ft_size i = 0; i < sizeof(which)/sizeof(which[0]); i++)
@@ -116,7 +117,7 @@ void ft_io_emul::close_extents()
 
 
 /** return true if this I/O has open descriptors/streams to LOOP-FILE and FREE-SPACE */
-bool ft_io_emul::is_open_extents() const
+bool ft_io_null::is_open_extents() const
 {
     bool flag = false;
     if (dev_length() != 0) {
@@ -153,7 +154,7 @@ bool ft_io_emul::is_open_extents() const
  * is to fill the device's free space with a ZERO-FILE,
  * and actually retrieve the extents used by ZERO-FILE.
  */
-int ft_io_emul::read_extents(ft_vector<ft_uoff> & loop_file_extents,
+int ft_io_null::read_extents(ft_vector<ft_uoff> & loop_file_extents,
                              ft_vector<ft_uoff> & free_space_extents,
                              ft_uoff & ret_block_size_bitmask)
 {
@@ -187,7 +188,7 @@ int ft_io_emul::read_extents(ft_vector<ft_uoff> & loop_file_extents,
  *
  * implementation: do nothing and return success
  */
-int ft_io_emul::create_secondary_storage(ft_uoff len)
+int ft_io_null::create_secondary_storage(ft_uoff len)
 {
     return 0;
 }

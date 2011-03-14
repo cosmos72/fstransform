@@ -38,7 +38,7 @@ private:
     /** cannot call assignment operator */
     const ft_work<T> & operator=(const ft_work<T> &);
 
-    void show(const char * label, ft_uoff effective_block_size, const ft_map<T> & map, ft_log_level level = FC_TRACE);
+    void show(const char * label1, const char * label2, ft_uoff effective_block_size, const ft_map<T> & map, ft_log_level level = FC_TRACE);
 
     /**
      * call check(io) to ensure that io.dev_length() can be represented by T,
@@ -91,11 +91,11 @@ public:
     /** default constructor */
     ft_work();
 
-    /** destructor. calls quit() */
+    /** destructor. calls cleanup() */
     ~ft_work();
 
     /**
-     * high-level do-everything method. calls in sequence run() and quit().
+     * high-level do-everything method. calls in sequence run() and cleanup().
      * return 0 if success, else error.
      */
     static int main(ft_vector<ft_uoff> & loop_file_extents,
@@ -120,7 +120,7 @@ public:
             ft_vector<ft_uoff> & free_space_extents, FT_IO_NS ft_io & io);
 
     /** performs cleanup. called by destructor, you can also call it explicitly after (or instead of) run()  */
-    void quit();
+    void cleanup();
 };
 
 

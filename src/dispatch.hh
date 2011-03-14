@@ -24,7 +24,7 @@ public:
      *
      * implementation: iterates on all configured T and,
      * if both ft_work<T>::check(..) and ft_work<T>::init(..) succeed,
-     * calls ff_work<T>::run(), then ff_work<T>::quit()
+     * calls ff_work<T>::run(), then ff_work<T>::cleanup()
      */
     static int main(ft_vector<ft_uoff> & loop_file_extents,
                     ft_vector<ft_uoff> & free_space_extents, FT_IO_NS ft_io & io);

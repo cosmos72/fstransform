@@ -26,11 +26,6 @@ static FT_INLINE T ff_max2(T a, T b)
     return a > b ? a : b;
 }
 
-/**
- * return human-readable representation of len,
- * with [kilo|mega|giga|tera|peta|exa|zeta|yotta] scale as appropriate
- */
-const char * ff_pretty_size(ft_uoff len, double * ret_pretty_len);
 
 
 /** convert string to unsigned number */
@@ -74,6 +69,20 @@ int ff_str2un_scaled(const char * str, T * ret_n)
         err = ff_narrow(ln, ret_n);
     return err;
 }
+
+
+
+/**
+ * return human-readable representation of len,
+ * with [kilo|mega|giga|tera|peta|exa|zeta|yotta] scale as appropriate
+ */
+const char * ff_pretty_size(ft_uoff len, double * ret_pretty_len);
+
+/** return p != NULL ? p : default_p */
+template<typename T>
+FT_INLINE T * ff_if_null(T * p, T * default_p) { return p != NULL ? p : default_p; }
+
+
 
 FT_NAMESPACE_END
 
