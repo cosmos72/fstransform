@@ -14,7 +14,6 @@
 
 FT_IO_NAMESPACE_BEGIN
 
-
 /**
  * class performing I/O on POSIX systems
  */
@@ -36,10 +35,33 @@ public:
 private:
     typedef ft_io super_type;
 
+
+    /**
+     * simple I/O buffering class for ft_io_posix
+     */
+    class ft_queue
+    {
+    public:
+        ft_uoff from_physical;
+        ft_uoff to_physical;
+        ft_uoff length;
+        ft_dir  dir;
+
+        /** construct a queue with no pending copies */
+        ft_queue();
+
+        /**
+         * forget and discard any pending copy.
+         */
+        void clear();
+    };
+
+
     int fd[FC_ALL_FILE_COUNT];
     void * storage_mmap;
     ft_size storage_mmap_size;
 
+    ft_queue queue;
 
 protected:
 
@@ -95,6 +117,47 @@ protected:
 
     /** close and munmap() PRIMARY-STORAGE and SECONDARY-STORAGE. called by close() */
     void close_storage();
+
+
+    /**
+     * copy a single fragment from DEVICE to FREE-STORAGE, or from STORAGE to FREE-DEVICE or from DEVICE to FREE-DEVICE
+     * (STORAGE to FREE-STORAGE copies could be supported easily, but are not considered useful)
+     * note: parameters are in bytes!
+     * note: this implementation will accumulate (queue) some copy requests, actual copy and error reporting may be delayed until flush()
+     *
+     * return 0 if success, else error
+     *
+     * on return, 'ret_queued' will be increased by the number of bytes actually copied or queued for copying,
+     * which could be > 0 even in case of errors
+     */
+    virtual int copy_bytes(ft_uoff from_physical, ft_uoff to_physical, ft_uoff length, ft_uoff & ret_queued, ft_dir dir);
+
+
+    /**
+     * called by copy_bytes() after checking for invalid parameters.
+     * queues the copy request if possible, else calls flush() and copies copy request to ft_queue
+     * note: parameters are in bytes!
+     *
+     * return 0 if success, else error
+     *
+     * on return, 'ret_queued' will be increased by the number of bytes actually copied or queued for copying,
+     * which could be > 0 even in case of errors
+     */
+    int queue_copy(ft_uoff from_physical, ft_uoff to_physical, ft_uoff length, ft_uoff & ret_queued, ft_dir dir);
+
+    /**
+     * flush any pending copy, i.e. actually perform all queued copies.
+     * return 0 if success, else error
+     *
+     * on return, 'ret_copied' will be increased by the number of blocks actually copied (NOT queued for copying),
+     * which could be > 0 even in case of errors
+     */
+    virtual int flush_bytes(ft_uoff & ret_copied);
+
+    /**
+     * return number of blocks queued for copying.
+     */
+    virtual ft_uoff queued_bytes() const;
 
 public:
     /** constructor */

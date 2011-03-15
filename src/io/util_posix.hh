@@ -36,6 +36,29 @@ int ff_posix_pid(ft_pid * ret_pid);
 /** create a directory */
 int ff_posix_mkdir(const char * path, ft_mode mode = 0755);
 
+
+/**
+ * seek file descriptor to specified position from file beginning.
+ * note: if an error is returned, file descriptor position will be undefined!
+ */
+int ff_posix_lseek(int fd, ft_uoff pos);
+
+/**
+ * read from a file descriptor.
+ * keep retrying in case of EINTR or short reads.
+ * on return, ret_length will be increased by the number of bytes actually read
+ */
+int ff_posix_read(int fd, void * mem, ft_uoff length, ft_uoff * ret_length);
+
+
+/**
+ * write to a file descriptor.
+ * keep retrying in case of EINTR or short writes.
+ * on return, ret_length will be increased by the number of bytes actually written
+ */
+int ff_posix_write(int fd, const void * mem, ft_uoff length, ft_uoff * ret_length);
+
+
 FT_IO_NAMESPACE_END
 
 

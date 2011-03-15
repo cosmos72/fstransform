@@ -27,8 +27,19 @@ template<typename T>
 class ft_work
 {
 private:
-    ft_map_stat<T> dev_map, dev_free_map, storage_map;
-    T work_count; /**< number of blocks to be relocated */
+    typedef ft_map_stat<T>                  map_stat_type;
+    typedef ft_map<T>                       map_type;
+
+    typedef typename ft_map<T>::iterator    map_iterator;
+    typedef typename ft_map<T>::const_iterator map_const_iterator;
+    typedef typename ft_map<T>::key_type    map_key_type;
+    typedef typename ft_map<T>::mapped_type map_mapped_type;
+    typedef typename ft_map<T>::value_type  map_value_type;
+
+
+    map_stat_type dev_map, storage_map;
+    map_type dev_free, dev_transpose;
+    map_type storage_free, storage_transpose;
 
     FT_IO_NS ft_io * io;
 
@@ -38,7 +49,21 @@ private:
     /** cannot call assignment operator */
     const ft_work<T> & operator=(const ft_work<T> &);
 
-    void show(const char * label1, const char * label2, ft_uoff effective_block_size, const ft_map<T> & map, ft_log_level level = FC_TRACE);
+    enum { FC_SHOW_DEFAULT_LEVEL = FC_TRACE };
+
+    /** print extents header to log */
+    void show(ft_log_level level = (ft_log_level)FC_SHOW_DEFAULT_LEVEL);
+
+    /** print extent contents to log */
+    void show(ft_size i, T physical, T logical, T length, ft_size user_data, ft_log_level level = (ft_log_level)FC_SHOW_DEFAULT_LEVEL);
+
+    /** print extent contents to log */
+    FT_INLINE void show(ft_size i, const map_value_type & extent, ft_log_level level = (ft_log_level)FC_SHOW_DEFAULT_LEVEL) {
+        show(i, extent.first.physical, extent.second.logical, extent.second.length, extent.second.user_data, level);
+    }
+
+    /** print map contents to log */
+    void show(const char * label1, const char * label2, ft_uoff effective_block_size, const ft_map<T> & map, ft_log_level level = (ft_log_level)FC_SHOW_DEFAULT_LEVEL);
 
     /**
      * call check(io) to ensure that io.dev_length() can be represented by T,
@@ -66,12 +91,12 @@ private:
 
     /**
      * fill io->primary_storage() with DEVICE extents to be actually used as PRIMARY-STORAGE
-     * (already computed into dev_free_map by analyze())
+     * (already computed into storage_map by analyze())
      *
      * if only a fraction of available PRIMARY-STORAGE will be actually used,
      * exploit a ft_pool<T> to select the largest contiguous extents.
      *
-     * updates dev_free_map to contain the PRIMARY-STORAGE extents actually used.
+     * updates storage_map to contain the PRIMARY-STORAGE extents actually used.
      */
     void fill_io_primary_storage(ft_uoff primary_len);
 
@@ -84,8 +109,36 @@ private:
     /** core of transformation algorithm, actually moves DEVICE blocks */
     int relocate();
 
-    typedef typename ft_map<T>::iterator map_iterator;
-    typedef typename ft_map<T>::const_iterator map_const_iterator;
+    /** called by relocate(). move as many extents as possible from DEVICE to STORAGE */
+    int fill_storage();
+
+    /** called by relocate(). move as many extents as possible from DEVICE and from STORAGE directly to their final destination */
+    int move_to_target();
+
+    /**
+     * called by fill_storage().
+     * move as much as possible of a single extent from DEVICE to FREE-STORAGE or from STORAGE to FREE-DEVICE.
+     * invalidates from_iter.
+     * note: the extent can be fragmented in the process.
+     * on return, 'ret_moved' will be increased by the number of blocks actually moved
+     * note: some blocks may be moved even in case of errors!
+     */
+    int move(ft_size counter, map_iterator from_iter, ft_dir dir, T & ret_moved);
+
+    /**
+     * called by move().
+     * move a single fragment from DEVICE to FREE STORAGE, or from STORAGE to FREE-DEVICE or from DEVICE to FREE DEVICE.
+     * the moved amount is the largest between (from_length = from_iter->length) and (to_length = to_free_iter->length).
+     *
+     * updates dev_* and storage_* maps.
+     *
+     * if from_length <= to_length, invalidates from_iter.
+     * if from_length >= to_length, invalidates to_iter.
+     *
+     * on return, 'ret_moved' will be increased by the number of blocks actually moved
+     * note: some blocks may be moved even in case of errors!
+     */
+    int move_fragment(map_iterator from_iter, map_iterator to_free_iter, ft_dir dir, T & ret_moved);
 
 public:
     /** default constructor */

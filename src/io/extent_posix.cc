@@ -124,7 +124,7 @@ static int ff_posix_fibmap(int fd, ft_uoff dev_length, ft_vector<ft_uoff> & ret_
     return err;
 }
 
-static int ff_linux_fiemap_allocate_and_ioctl(int fd, ft_uoff file_length, ft_size extent_n, struct fiemap ** ret_k_map) {
+static int ff_linux_fiemap_ioctl(int fd, ft_uoff file_length, ft_size extent_n, struct fiemap ** ret_k_map) {
     struct fiemap * k_map;
     ft_size k_len = sizeof(struct fiemap) + extent_n * sizeof(struct fiemap_extent);
     int err = 0;
@@ -184,7 +184,7 @@ static int ff_linux_fiemap(int fd, ft_vector<ft_uoff> & ret_list, ft_uoff & ret_
             break;
 
         /* first pass: call ioctl() and ask how many extents are needed */
-        if ((err = ff_linux_fiemap_allocate_and_ioctl(fd, file_length, extent_n, & k_map)))
+        if ((err = ff_linux_fiemap_ioctl(fd, file_length, extent_n, & k_map)))
             break;
 
         extent_n = k_map->fm_mapped_extents;
@@ -192,7 +192,7 @@ static int ff_linux_fiemap(int fd, ft_vector<ft_uoff> & ret_list, ft_uoff & ret_
         k_map = NULL;
 
         /* second pass: allocate enough extents and call ioctl() again to retrieve them */
-        if ((err = ff_linux_fiemap_allocate_and_ioctl(fd, file_length, extent_n, & k_map)))
+        if ((err = ff_linux_fiemap_ioctl(fd, file_length, extent_n, & k_map)))
             break;
 
         extent_n = k_map->fm_mapped_extents;

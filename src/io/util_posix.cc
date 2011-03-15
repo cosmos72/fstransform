@@ -6,12 +6,13 @@
  */
 #include "../first.hh"
 
-#include <cerrno>        // for errno           */
-#include <sys/ioctl.h>   // for ioctl()          */
-#include <linux/fs.h>    // for BLKGETSIZE64     */
+#include <cerrno>        // for errno, EOVERFLOW, ENOTBLK, EINTR
+#include <sys/ioctl.h>   // for ioctl()
+#include <linux/fs.h>    // for BLKGETSIZE64
 
-#include "../types.hh"   // for ft_u64, ft_stat  */
-#include "util_posix.hh" // for ff_posix_ioctl(), ff_posix_stat(), ff_posix_size(), ff_filedev() */
+#include "../types.hh"   // for ft_u64, ft_stat
+#include "../util.hh"    // for ff_min2<T>()
+#include "util_posix.hh" // for ff_posix_ioctl(), ff_posix_stat(), ff_posix_size(), ff_filedev()
 
 
 FT_IO_NAMESPACE_BEGIN
@@ -104,5 +105,80 @@ int ff_posix_mkdir(const char * path, ft_mode mode)
     int err = mkdir(path, mode);
     return err == 0 ? err : errno;
 }
+
+
+
+/**
+ * seek file descriptor to specified position from file beginning.
+ * note: if an error is returned, file descriptor position will be undefined!
+ */
+int ff_posix_lseek(int fd, ft_uoff pos)
+{
+    off_t pos_s = (off_t)pos;
+
+    if (pos_s < 0 || pos != (ft_uoff) pos_s)
+        return EOVERFLOW;
+    if ((pos_s = lseek(fd, pos_s, SEEK_SET)) < 0)
+        return errno;
+    if (pos != (ft_uoff) pos_s)
+        return ESPIPE;
+    return 0;
+}
+
+
+
+/**
+ * read from a file descriptor.
+ * keep retrying in case of EINTR or short reads.
+ * on return, ret_length will be increased by the number of bytes actually read
+ */
+int ff_posix_read(int fd, void * mem, ft_uoff length, ft_uoff * ret_length)
+{
+    ft_uoff chunk, max = (ft_uoff)((size_t)(ssize_t)-1 >> 1); /**< max = std::numeric_limits<ssize_t>::max() */
+    ssize_t got;
+
+    while (length != 0) {
+        chunk = ff_min2(length, max);
+        while ((got = ::read(fd, mem, (size_t)chunk)) < 0 && errno == EINTR)
+            ;
+        if (got < 0)
+            return errno;
+        if (got == 0)
+            /* end-of-file */
+            break;
+        mem = (void *)((char *)mem + got);
+        length -= (ft_uoff) got;
+        * ret_length += (ft_uoff) got;
+    }
+    return 0;
+}
+
+
+/**
+ * write to a file descriptor.
+ * keep retrying in case of EINTR or short writes.
+ * on return, ret_length will be increased by the number of bytes actually written
+ */
+int ff_posix_write(int fd, const void * mem, ft_uoff length, ft_uoff * ret_length)
+{
+    ft_uoff chunk, max = (ft_uoff)((size_t)(ssize_t)-1 >> 1); /**< max = std::numeric_limits<ssize_t>::max() */
+    ssize_t sent;
+
+    while (length != 0) {
+        chunk = ff_min2(length, max);
+        while ((sent = ::write(fd, mem, (size_t)chunk)) < 0 && errno == EINTR)
+            ;
+        if (sent < 0)
+            return errno;
+        if (sent == 0)
+            /* end-of-file */
+            break;
+        mem = (const void *)((const char *)mem + sent);
+        length -= (ft_uoff) sent;
+        * ret_length += (ft_uoff) sent;
+    }
+    return 0;
+}
+
 
 FT_IO_NAMESPACE_END

@@ -18,6 +18,7 @@ class ft_map_stat : public ft_map<T>
 {
 private:
     typedef ft_map<T> super_type;
+    typedef typename ft_map<T>::iterator iterator;
 
     T fm_total_count; /**< total length (number of blocks) in this map extents */
     T fm_used_count;  /**< used  length (number of blocks) in this map extents */
@@ -39,14 +40,32 @@ public:
     // copy ft_map_stat, i.e. set ft_map_stat ft_map contents as a copy of other's contents.
     const ft_map_stat<T> & operator=(const ft_map_stat<T> & other);
 
+    /** clear this ft_map_stat. also sets total_count, used_count and free_count to zero */
+    void clear();
+
+    /** same as super_type::insert(T,T,T,ft_size), but also updates used_count() */
+    FT_INLINE iterator stat_insert(T physical, T logical, T length, ft_size user_data)
+    {
+        fm_used_count += length;
+        return super_type::insert(physical, logical, length, user_data);
+    }
+
+    /** same as super_type::remove(iterator), but also updates used_count() */
+    FT_INLINE void stat_remove(iterator iter)
+    {
+        fm_used_count -= iter->second.length;
+        super_type::remove(iter);
+    }
 
     FT_INLINE T total_count() const { return fm_total_count; }
     FT_INLINE T used_count() const { return fm_used_count; }
     FT_INLINE T free_count() const { return fm_total_count - fm_used_count; }
 
     FT_INLINE void total_count(T n) { fm_total_count = n; }
+
     FT_INLINE void used_count(T n) { fm_used_count = n; }
-    FT_INLINE void free_count(T n) { fm_used_count = fm_total_count - n; }
+    FT_INLINE void used_count_add(T n) { fm_used_count += n; }
+    FT_INLINE void used_count_sub(T n) { fm_used_count -= n; }
 };
 
 FT_NAMESPACE_END

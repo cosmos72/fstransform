@@ -30,9 +30,25 @@ char const * const ft_io::label[] = {
 		"device", "loop-file", "zero-file", "secondary-storage", "primary-storage", "storage", "free-space"
 };
 
+
+/** construct a queue with no pending copies */
+ft_io_posix::ft_queue::ft_queue() {
+    clear();
+}
+
+/**
+ * forget and discard any pending copy.
+ */
+void ft_io_posix::ft_queue::clear() {
+    from_physical = to_physical = length = 0;
+    dir = FC_STORAGE2STORAGE; /* use FC_STORAGE2STORAGE as 'invalid dir' */
+}
+
+
+
 /** default constructor */
 ft_io_posix::ft_io_posix(ft_job & job)
-: super_type(job), storage_mmap(MAP_FAILED), storage_mmap_size(0)
+: super_type(job), storage_mmap(MAP_FAILED), storage_mmap_size(0), queue()
 {
     /* mark fd[] as invalid: they are not open yet */
     for (ft_size i = 0; i < FC_ALL_FILE_COUNT; i++)
@@ -148,6 +164,8 @@ void ft_io_posix::close()
     close_storage();
     for (ft_size i = 0; i < FC_FILE_COUNT; i++)
         close0(i);
+    queue.clear();
+
     super_type::close();
 }
 
@@ -225,6 +243,23 @@ void ft_io_posix::close_extents()
         close0(which[i]);
 }
 
+/** close and munmap() SECONDARY-STORAGE. called by close() */
+void ft_io_posix::close_storage()
+{
+    enum { i = FC_PRIMARY_STORAGE, j = FC_SECONDARY_STORAGE };
+    if (storage_mmap != MAP_FAILED) {
+        if (munmap(storage_mmap, storage_mmap_size) != 0) {
+            bool flag_j = secondary_storage().length() != 0;
+            ff_log(FC_WARN, errno, "munmap() %s%s%s failed", label[i],
+                   (flag_j ? " and" : ""),
+                   (flag_j ? label[j] : "")
+            );
+        }
+        storage_mmap = MAP_FAILED;
+    }
+    storage_mmap_size = 0;
+    close0(i);
+}
 
 /**
  * create and open SECONDARY-STORAGE job.job_dir() + '.storage',
@@ -268,7 +303,7 @@ int ft_io_posix::create_storage(ft_uoff secondary_len)
         ft_uoff total_len = primary_len + secondary_len;
         const ft_size mem_len = (ft_size) total_len;
         if (mem_len < 0 || total_len != (ft_uoff) mem_len) {
-            err = ff_log(FC_ERROR, EOVERFLOW, "internal error, %s + %s total length = %"FS_ULL" is larger than addressable memory", label[i], label[j], (ft_ull) total_len);
+            err = ff_log(FC_FATAL, EOVERFLOW, "internal error, %s + %s total length = %"FS_ULL" is larger than addressable memory", label[i], label[j], (ft_ull) total_len);
             break;
         }
 
@@ -311,7 +346,7 @@ int ft_io_posix::create_storage(ft_uoff secondary_len)
         		break;
         }
         if (mem_offset != storage_mmap_size) {
-            ff_log(FC_ERROR, 0, "internal error, mapped %s extents in RAM used %"FS_ULL" bytes instead of expected %"FS_ULL" bytes",
+            ff_log(FC_FATAL, 0, "internal error, mapped %s extents in RAM used %"FS_ULL" bytes instead of expected %"FS_ULL" bytes",
             		label[FC_STORAGE], (ft_ull) mem_offset, (ft_ull) storage_mmap_size);
             err = EINVAL;
         }
@@ -321,7 +356,7 @@ int ft_io_posix::create_storage(ft_uoff secondary_len)
         double pretty_len = 0.0;
         const char * pretty_label = ff_pretty_size(storage_mmap_size, & pretty_len);
 
-        ff_log(FC_NOTICE, 0, "%s%s%s: initialized and mmapped() to %.2f %sbytes of contiguous RAM",
+        ff_log(FC_NOTICE, 0, "%s%s%s initialized and mmapped() to %.2f %sbytes of contiguous RAM",
         		(primary_len != 0 ? label[i] : ""),
         		(primary_len != 0 && secondary_len != 0 ? " and " : ""),
         		(secondary_len != 0 ? label[j] : ""),
@@ -410,7 +445,7 @@ int ft_io_posix::create_secondary_storage(ft_uoff secondary_len)
     enum { j = FC_SECONDARY_STORAGE };
 
     std::string filepath = job_dir();
-    filepath += ".storage";
+    filepath += "/storage.bin";
     const char * path = filepath.c_str();
     int err = 0;
 
@@ -419,13 +454,13 @@ int ft_io_posix::create_secondary_storage(ft_uoff secondary_len)
 
         const ft_off s_len = (ft_off) len;
         if (s_len < 0 || len != (ft_uoff) s_len) {
-            err = ff_log(FC_ERROR, EOVERFLOW, "internal error, %s length = %"FS_ULL" overflows type (off_t)", label[j], (ft_ull) len);
+            err = ff_log(FC_FATAL, EOVERFLOW, "internal error, %s length = %"FS_ULL" overflows type (off_t)", label[j], (ft_ull) len);
             break;
         }
         
         const ft_size mem_len = (ft_size) len;
         if (mem_len < 0 || len != (ft_uoff) mem_len) {
-            err = ff_log(FC_ERROR, EOVERFLOW, "internal error, %s length = %"FS_ULL" is larger than addressable memory", label[j], (ft_ull) len);
+            err = ff_log(FC_FATAL, EOVERFLOW, "internal error, %s length = %"FS_ULL" is larger than addressable memory", label[j], (ft_ull) len);
             break;
         }
 
@@ -481,23 +516,153 @@ int ft_io_posix::create_secondary_storage(ft_uoff secondary_len)
 }
 
 
-/** close and munmap() SECONDARY-STORAGE. called by close() */
-void ft_io_posix::close_storage()
+/**
+ * copy a single fragment from DEVICE to FREE-STORAGE, or from STORAGE to FREE-DEVICE or from DEVICE to FREE-DEVICE
+ * (STORAGE to FREE-STORAGE copies could be supported easily, but are not considered useful)
+ * note: parameters are in bytes!
+ *
+ * return 0 if success, else error
+ *
+ * on return, 'ret_queued' will be increased by the number of bytes actually copied or queued for copying,
+ * which could be > 0 even in case of errors
+ */
+int ft_io_posix::copy_bytes(ft_uoff from_physical, ft_uoff to_physical, ft_uoff length, ft_uoff & ret_queued, ft_dir dir)
 {
-    enum { i = FC_PRIMARY_STORAGE, j = FC_SECONDARY_STORAGE };
-    if (storage_mmap != MAP_FAILED) {
-        if (munmap(storage_mmap, storage_mmap_size) != 0) {
-            bool flag_j = secondary_storage().length() != 0;
-            ff_log(FC_WARN, errno, "munmap() %s%s%s failed", label[i],
-                   (flag_j ? " and" : ""),
-                   (flag_j ? label[j] : "")
-            );
-        }
-        storage_mmap = MAP_FAILED;
+    int err = 0;
+    const bool is_from_dev = ff_from_dev(dir), is_to_dev = ff_to_dev(dir);
+
+    if (is_from_dev != is_to_dev) {
+        /* from memory-mapped STORAGE to DEVICE, or vice-versa */
+        ft_uoff storage_offset = is_to_dev ? from_physical : to_physical;
+        const ft_size mem_offset = (ft_size)storage_offset;
+        const ft_size mem_length = (ft_size)length;
+
+        if (mem_offset < 0 || mem_length < 0 || storage_offset != (ft_uoff)mem_offset || length != (ft_uoff)mem_length) {
+            err = ff_log(FC_FATAL, EOVERFLOW, "internal error! tried to copy outside addressable memory: copy offset = 0x%"FS_XLL", length = 0x%"FS_XLL,
+                         (ft_ull)storage_offset, (ft_ull)length);
+
+        } else if (mem_offset >= storage_mmap_size || mem_length > storage_mmap_size - mem_offset) {
+            err = ff_log(FC_FATAL, EFAULT, "internal error! tried to copy outside mmapped() %s, length = %"FS_ULL", copy offset = 0x%"FS_ULL", length = 0x%"FS_ULL,
+                         label[FC_STORAGE], (ft_ull)storage_mmap_size, (ft_ull)mem_offset, (ft_ull)mem_length);
+
+        } else
+            err = queue_copy(from_physical, to_physical, length, ret_queued, dir);
+
+    } else if (is_from_dev) {
+        /* from DEVICE to DEVICE */
+        /********** TODO **************/
+        err = ff_log(FC_ERROR, ENOSYS, "DEVICE to DEVICE copies not implemented yet");
+    } else {
+        /* from STORAGE to STORAGE */
+        err = ff_log(FC_FATAL, ENOSYS, "internal error! unexpected call to io_posix.copy_bytes(), STORAGE to STORAGE copies are not supposed to be used");
     }
-    storage_mmap_size = 0;
-    close0(i);
+    return err;
 }
 
+
+
+/**
+ * copy a single fragment from DEVICE to FREE-STORAGE, or from STORAGE to FREE-DEVICE or from DEVICE to FREE-DEVICE
+ * (STORAGE to FREE-STORAGE copies could be supported easily, but are not considered useful)
+ * note: parameters are in bytes!
+ *
+ * return 0 if success, else error
+ *
+ * on return, 'ret_copied' will be increased by the number of bytes actually copied (NOT queued for copying),
+ * which could be > 0 even in case of errors
+ */
+int ft_io_posix::queue_copy(ft_uoff from_physical, ft_uoff to_physical, ft_uoff length, ft_uoff & ret_queued, ft_dir dir)
+{
+    ft_uoff ret_copied = 0;
+    int err = 0;
+    do {
+        if (queue.length != 0 && queue.dir != dir) {
+            if ((err = flush_bytes(ret_copied)) != 0)
+                break;
+        }
+
+        queue.dir = dir;
+        /* copy_bytes() already checked for all possible overflows, no need to check again */
+        if (queue.length != 0) {
+            if (from_physical == queue.from_physical + queue.length && to_physical == queue.to_physical + queue.length) {
+                /* append the copy request to this queue */
+                queue.length += length;
+                ret_queued += length;
+                break;
+            } else {
+                if (from_physical + length != queue.from_physical || to_physical + length != queue.to_physical)
+                    if ((err = flush_bytes(ret_copied)) != 0)
+                        break;
+                /* prepend the copy request into this queue */
+            }
+        }
+        queue.from_physical = from_physical;
+        queue.to_physical = to_physical;
+        queue.length += length;
+        ret_queued += length;
+    } while (0);
+    return err;
+}
+
+
+/**
+ * flush any pending copy, i.e. actually perform all queued copies.
+ * return 0 if success, else error
+ */
+int ft_io_posix::flush_bytes(ft_uoff & ret_copied)
+{
+    int err = 0;
+
+    if (queue.length != 0) {
+        const bool is_to_dev = ff_to_dev(queue.dir);
+        ft_uoff copied = 0, device_offset = is_to_dev ? queue.to_physical : queue.from_physical;
+
+        if ((err = ff_posix_lseek(fd[FC_DEVICE], device_offset)) != 0) {
+            err = ff_log(FC_ERROR, err, "I/O error in %s lseek(%d, %"FS_ULL", SEEK_SET)", label[FC_DEVICE], fd[FC_DEVICE], (ft_ull)device_offset);
+        } else {
+            /* from memory-mapped STORAGE to DEVICE, or vice-versa */
+            ft_uoff storage_offset = is_to_dev ? queue.from_physical : queue.to_physical;
+
+            /* copy_bytes() already checked for all possible overflows, no need to check again */
+            const ft_size mem_offset = (ft_size)storage_offset;
+            const ft_size mem_length = (ft_size)queue.length;
+
+            if (is_to_dev)
+                err = ff_posix_write(fd[FC_DEVICE], (const char * )storage_mmap + mem_offset, mem_length, & copied);
+            else
+                err = ff_posix_read(fd[FC_DEVICE], (char * )storage_mmap + mem_offset, mem_length, & copied);
+
+            if (err != 0)
+                err = ff_log(FC_ERROR, err, "I/O error in %s ff_posix_%s(%d, address + %"FS_ULL", length = %"FS_ULL")",
+                             label[FC_DEVICE], is_to_dev ? "write" : "read", fd[FC_DEVICE], (ft_ull)mem_offset, (ft_ull)mem_length);
+            else
+                ff_log(FC_DEBUG, 0, "%s ff_posix_%s(%d, address + %"FS_ULL", length = %"FS_ULL") = ok",
+                       label[FC_DEVICE], is_to_dev ? "write" : "read", fd[FC_DEVICE], (ft_ull)mem_offset, (ft_ull)mem_length);
+
+        }
+        if (err == 0 ? copied != queue.length : copied > queue.length) {
+            err = ff_log(FC_FATAL, err, "internal error! ff_posix_%() was requested to copy %"FS_ULL" bytes from %s to %s"
+                         " but actually copied %"FS_ULL" bytes",
+                         is_to_dev ? "write" : "read", (ft_ull)queue.length, label[ff_from_dev(queue.dir) ? FC_DEVICE : FC_STORAGE],
+                         label[is_to_dev ? FC_DEVICE : FC_STORAGE], (ft_ull)copied);
+        }
+        if (copied <= queue.length) {
+            ret_copied += copied;
+            queue.length -= copied;
+        } else {
+            ret_copied += queue.length;
+            queue.length -= 0;
+        }
+    }
+    return err;
+}
+
+/**
+ * return number of blocks queued for copying.
+ */
+ft_uoff ft_io_posix::queued_bytes() const
+{
+    return queue.length;
+}
 
 FT_IO_NAMESPACE_END

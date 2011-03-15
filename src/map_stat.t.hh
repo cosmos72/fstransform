@@ -58,4 +58,13 @@ const ft_map_stat<T> & ft_map_stat<T>::operator=(const ft_map_stat<T> & other)
     return * this;
 }
 
+
+/** clear this ft_map_stat. also sets total_count, used_count and free_count to zero */
+template<typename T>
+void ft_map_stat<T>::clear()
+{
+    super_type::clear();
+    fm_total_count = fm_used_count = 0;
+}
+
 FT_NAMESPACE_END

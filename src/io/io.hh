@@ -81,6 +81,33 @@ protected:
      */
     FT_INLINE ft_extent<ft_uoff> & secondary_storage() { return fm_secondary_storage; }
 
+    /**
+     * copy a single fragment from DEVICE to FREE-STORAGE, or from STORAGE to FREE-DEVICE or from DEVICE to FREE-DEVICE
+     * (STORAGE to FREE-STORAGE copies could be supported easily, but are not considered useful)
+     * note: parameters are in bytes!
+     *
+     * return 0 if success, else error
+     *
+     * on return, 'ret_queued' will be increased by the number of bytes actually copied or queued for copying,
+     * which could be > 0 even in case of errors
+     */
+    virtual int copy_bytes(ft_uoff from_physical, ft_uoff to_physical, ft_uoff length, ft_uoff & ret_queued, ft_dir dir) = 0;
+
+
+    /**
+     * flush any pending copy, i.e. actually perform all queued copies.
+     * return 0 if success, else error
+     *
+     * on return, 'ret_copied' will be increased by the number of blocks actually copied (NOT queued for copying),
+     * which could be > 0 even in case of errors
+     */
+    virtual int flush_bytes(ft_uoff & ret_copied) = 0;
+
+    /**
+     * return number of blocks queued for copying.
+     */
+    virtual ft_uoff queued_bytes() const = 0;
+
 public:
     enum {
         FC_DEVICE = 0, FC_LOOP_FILE
@@ -106,7 +133,7 @@ public:
      */
     virtual void close();
 
-    /** return device length, or 0 if not open */
+    /** return device length (in bytes), or 0 if not open */
     FT_INLINE ft_uoff dev_length() const { return fm_dev_length; }
 
     /** return device path, or NULL if not open */
@@ -127,16 +154,16 @@ public:
     FT_INLINE const std::string & job_dir() const { return fm_job.job_dir(); }
 
     /** return storage_size to use (in bytes), or 0 if not set */
-    FT_INLINE ft_size job_storage_size() const { return fm_job.job_storage_size(); }
+    FT_INLINE ft_size job_storage_length() const { return fm_job.job_storage_length(); }
 
     /** set storage_size to use (in bytes), or 0 to unset it */
-    FT_INLINE void job_storage_size(ft_size len) { fm_job.job_storage_size(len); }
+    FT_INLINE void job_storage_length(ft_size len) { fm_job.job_storage_length(len); }
 
     /** return true if storage_size must be honored EXACTLY (to resume an existent job) */
-    FT_INLINE bool job_storage_size_exact() const { return fm_job.job_storage_size_exact(); }
+    FT_INLINE bool job_storage_length_exact() const { return fm_job.job_storage_length_exact(); }
 
     /** set whether storage_size must be honored EXACTLY (to resume an existent job) */
-    FT_INLINE void job_storage_size_exact(bool flag) { fm_job.job_storage_size_exact(flag); }
+    FT_INLINE void job_storage_length_exact(bool flag) { fm_job.job_storage_length_exact(flag); }
 
     /**
      * calls the 3-argument version of read_extents() and, if it succeeds,
@@ -174,9 +201,67 @@ public:
      * return 0 if success, else error
      */
     virtual int create_storage(ft_uoff secondary_len) = 0;
+
+    /**
+     * copy a single fragment from DEVICE to FREE-STORAGE, or from STORAGE to FREE-DEVICE or from DEVICE to FREE-DEVICE
+     * (STORAGE to FREE-STORAGE copies could be supported easily, but are not considered useful)
+     * note: parameters are in bytes!
+     * note: implementations may accumulate (queue) copy requests, actual copy and error reporting may be delayed until flush()
+     *
+     * return 0 if success, else error
+     *
+     * on return, 'ret_copied' will be increased by the number of blocks actually copied or queued for copying,
+     * which could be > 0 even in case of errors
+     */
+    template<typename T>
+    int copy(T from_physical, T to_physical, T length, T & ret_queued, ft_dir dir)
+    {
+        ft_uoff queued = 0;
+        int err = copy_bytes((ft_uoff)from_physical << fm_eff_block_size_log2,
+                             (ft_uoff)to_physical << fm_eff_block_size_log2,
+                             (ft_uoff)length  << fm_eff_block_size_log2,
+                             queued, dir);
+        /*
+         * note: possible loss of precision in low bits (in case of short write, i.e. error)
+         * not a problem: caller will believe fewer bytes have been written,
+         * but since 'to' was free, there is nothing to recover there.
+         */
+        ret_queued += queued >> fm_eff_block_size_log2;
+        return err;
+    }
+
+    /**
+     * return number of blocks queued for copying.
+     */
+    template<typename T>
+    T queued() const
+    {
+        return (T)(queued_bytes() >> fm_eff_block_size_log2);
+    }
+
+    /**
+     * flush any pending copy, i.e. actually perform all queued copies.
+     * return 0 if success, else error
+     *
+     * on return, 'ret_copied' will be increased by the number of blocks actually copied (NOT queued for copying),
+     * which could be > 0 even in case of errors
+     */
+    template<typename T>
+    int flush(T * ret_copied = NULL)
+    {
+        ft_uoff copied = 0;
+        int err = flush_bytes(copied);
+        if (ret_copied != NULL)
+            *ret_copied += (T)(copied >> fm_eff_block_size_log2);
+        return err;
+    }
+
 };
 
+
+
 FT_IO_NAMESPACE_END
+
 
 
 #endif /* FSTRANSFORM_IO_IO_HH */

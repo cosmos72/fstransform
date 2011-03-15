@@ -491,6 +491,18 @@ void ft_map<T>::remove(const value_type & extent)
         remove1(*iter);
 }
 
+/**
+ * remove a part of an existing extent (or one or more existing extents)
+ * from this ft_map, splitting the existing extents if needed.
+ */
+template<typename T>
+void ft_map<T>::remove(T physical, T logical, T length, ft_size user_data)
+{
+    key_type key = { physical };
+    mapped_type value = { logical, length, user_data };
+    value_type extent(key, value);
+    remove(extent);
+}
 
 /**
  * remove any (partial or full) intersection with existing extents from this ft_map,
@@ -537,8 +549,7 @@ typename ft_map<T>::iterator ft_map<T>::shrink_front(iterator iter, T shrink_len
     value_type & extent = *iter;
     const key_type & key = extent.first;
     mapped_type & value = extent.second;
-    T physical = extent.first.physical;
-    T logical = value.logical;
+
     T length = value.length;
     ff_assert(length >= shrink_length);
 
@@ -546,13 +557,28 @@ typename ft_map<T>::iterator ft_map<T>::shrink_front(iterator iter, T shrink_len
         super_type::erase(iter);
         return end();
     }
-
     /** modify the extent in-place */
-    key.physical = physical + shrink_length; /* key_type::physical is mutable :) */
-    value.logical = logical + shrink_length;
-    value.length = length - shrink_length;
+    key.physical += shrink_length; /* key_type::physical is mutable :) */
+    value.logical += shrink_length;
+    value.length -= shrink_length;
 
     return iter;
+}
+
+
+/**
+ * set this map to a transposed copy of other map,
+ * i.e. to a copy where all ->physical and ->logical are swapped
+ */
+template<typename T>
+void ft_map<T>::transpose(const ft_map<T> & other)
+{
+    clear();
+    const_iterator iter = other.begin(), end = other.end();
+    for (; iter != end; ++iter) {
+        const value_type & extent = *iter;
+        insert0(extent.second.logical, extent.first.physical, extent.second.length, extent.second.user_data);
+    }
 }
 
 /**

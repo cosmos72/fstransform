@@ -50,13 +50,6 @@ private:
                                       const key_type & key2, const mapped_type & value2);
 
     /**
-     * add a single extent the ft_map
-     *
-     * does not merge and does not check for merges
-     */
-    void insert0(T physical, T logical, T length, ft_size user_data);
-
-    /**
      * add a single extent the ft_map, hinting that insertion is at map end
      *
      * does not merge and does not check for merges
@@ -142,6 +135,10 @@ public:
     // clear this map, i.e. erase all elements
     super_type::clear;
 
+    // find an extent given its ->physical
+    super_type::find;
+
+
     // copy ft_map, i.e. set this ft_map contents as a copy of other's contents.
     const ft_map<T> & operator=(const ft_map<T> & other);
 
@@ -183,6 +180,13 @@ public:
     void insert0(const key_type & key, const mapped_type & value);
 
     /**
+     * add a single extent the ft_map
+     *
+     * does not merge and does not check for merges
+     */
+    void insert0(T physical, T logical, T length, ft_size user_data);
+
+    /**
      * insert a single extent into this ft_map,
      * merging with existing extents where possible.
      * return iterator to inserted/merged extent
@@ -222,6 +226,12 @@ public:
     void remove(const value_type & extent);
 
     /**
+     * remove a part of an existing extent (or one or more existing extents)
+     * from this ft_map, splitting the existing extents if needed.
+     */
+    void remove(T physical, T logical, T length, ft_size user_data);
+
+    /**
      * remove any (partial or full) intersection with existing extents from this ft_map,
      * splitting the existing extents if needed.
      */
@@ -246,7 +256,11 @@ public:
 
 
 
-
+    /**
+     * set this map to a transposed copy of other map,
+     * i.e. to a copy where all ->physical and ->logical are swapped
+     */
+    void transpose(const ft_map<T> & other);
 
 
 

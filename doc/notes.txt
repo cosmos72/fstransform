@@ -34,6 +34,10 @@
 ################### TO DO #####################
 ###############################################
 
+* io.copy() and io.flush() queueing must be managed by io, not its subclasses,
+  and it must be possible to disable it. Overflow checks must be performed by
+  the queueing methods in io, and also by flush_bytes() method in subclasses.
+
 * -n --dry-run option to run everything normally (including which I/O to use),
   except that extents relocation does not read/write on disk
   problem: still create secondary storage?

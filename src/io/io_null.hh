@@ -66,6 +66,34 @@ protected:
                              ft_vector<ft_uoff> & free_space_extents,
                              ft_uoff & ret_block_size_bitmask);
 
+    /**
+     * copy a single fragment from DEVICE to FREE-STORAGE, or from STORAGE to FREE-DEVICE or from DEVICE to FREE-DEVICE
+     * (STORAGE to FREE-STORAGE copies could be supported easily, but are not considered useful)
+     * note: parameters are in bytes!
+     * note: this implementation will do nothing, increase ret_copied by length, and return success
+     *
+     * return 0 if success, else error
+     *
+     * on return, 'ret_queued' will be increased by the number of bytes actually copied or queued for copying,
+     * which could be > 0 even in case of errors
+     */
+    virtual int copy_bytes(ft_uoff from_physical, ft_uoff to_physical, ft_uoff length, ft_uoff & ret_queued, ft_dir dir);
+
+    /**
+     * return number of blocks queued for copying.
+     */
+    virtual ft_uoff queued_bytes() const;
+
+    /**
+     * flush any pending copy, i.e. actually perform all queued copies.
+     * return 0 if success, else error
+     * on return, 'ret_copied' will be increased by the number of blocks actually copied (NOT queued for copying),
+     *
+     * implementation: do nothing and return success
+     */
+    virtual int flush_bytes(ft_uoff & ret_copied);
+
+
 public:
     /** constructor */
     ft_io_null(ft_job & job);

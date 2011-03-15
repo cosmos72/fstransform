@@ -49,6 +49,7 @@ typedef unsigned int ft_uint;
 #ifdef FT_HAVE_LONG_LONG
    typedef unsigned long long ft_ull;
 #  define FS_ULL "llu"
+#  define FS_XLL "llx"
 #else
    typedef unsigned long ft_ull;
 #  define FS_ULL "lu"
