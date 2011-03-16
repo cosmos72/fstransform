@@ -10,6 +10,7 @@ CC_SRCS += \
 ../src/io/io_null.cc \
 ../src/io/io_posix.cc \
 ../src/io/persist.cc \
+../src/io/request.cc \
 ../src/io/util.cc \
 ../src/io/util_posix.cc 
 
@@ -20,6 +21,7 @@ OBJS += \
 ./src/io/io_null.o \
 ./src/io/io_posix.o \
 ./src/io/persist.o \
+./src/io/request.o \
 ./src/io/util.o \
 ./src/io/util_posix.o 
 
@@ -30,6 +32,7 @@ CC_DEPS += \
 ./src/io/io_null.d \
 ./src/io/io_posix.d \
 ./src/io/persist.d \
+./src/io/request.d \
 ./src/io/util.d \
 ./src/io/util_posix.d 
 

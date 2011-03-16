@@ -36,16 +36,16 @@ static char const* const* label = FT_IO_NS ft_io_posix::label;
 
 /** constructor */
 ft_transform::ft_transform()
-    : fm_job(NULL), fm_io(NULL)
+    : this_job(NULL), this_io(NULL)
 { }
 
 /** destructor. calls quit_io() */
 ft_transform::~ft_transform()
 {
     quit_io();
-    if (fm_job != NULL) {
-        delete fm_job;
-        fm_job = NULL;
+    if (this_job != NULL) {
+        delete this_job;
+        this_job = NULL;
     }
 }
 
@@ -118,7 +118,7 @@ int ft_transform::check_is_closed()
         err = -EISCONN;
     } else
         // quit_io() to make sure we are not left in a half-initialized status
-        // (fm_io != NULL && !fm_io->is_open())
+        // (this_io != NULL && !this_io->is_open())
         quit_io();
     return err;
 }
@@ -130,7 +130,7 @@ int ft_transform::check_is_open()
     if (!is_initialized()) {
         ff_log(FC_ERROR, 0, "error: I/O subsystem not started");
         // quit_io() to make sure we are not left in a half-initialized status
-        // (fm_io != NULL && !fm_io->is_open())
+        // (this_io != NULL && !this_io->is_open())
         quit_io();
         /* error is already reported, flip sign */
         err = -ENOTCONN;
@@ -305,13 +305,13 @@ int ft_transform::init(const ft_args & args)
 /** initialize job/persistence subsystem */
 int ft_transform::init_job(const char * root_dir, ft_uint job_id, ft_size storage_size)
 {
-    if (fm_job != NULL)
+    if (this_job != NULL)
         return 0;
 
     ft_job * job = new ft_job();
     int err = job->init(root_dir, job_id, storage_size);
     if (err == 0)
-        fm_job = job;
+        this_job = job;
     else
         delete job;
     return err;
@@ -328,7 +328,7 @@ int ft_transform::init_job(const char * root_dir, ft_uint job_id, ft_size storag
 int ft_transform::init_io(FT_IO_NS ft_io * io) {
     int err;
     if ((err = check_is_closed()) == 0)
-        fm_io = io;
+        this_io = io;
     return err;
 }
 
@@ -344,13 +344,13 @@ int ft_transform::init_io_posix(char const* const path[FT_IO_NS ft_io_posix::FC_
     do {
         if ((err = check_is_closed()) != 0)
             break;
-        if (fm_job == NULL) {
+        if (this_job == NULL) {
             ff_log(FC_ERROR, 0, "error: cannot start I/O subsystem, job must be initialized first");
             err = -ENOTCONN;
             break;
         }
 
-        io_posix = new FT_IO_NS ft_io_posix(* fm_job);
+        io_posix = new FT_IO_NS ft_io_posix(* this_job);
 
         if ((err = io_posix->open(path)) != 0)
             break;
@@ -371,17 +371,17 @@ int ft_transform::init_io_posix(char const* const path[FT_IO_NS ft_io_posix::FC_
 /** shutdown transformer. closes configured I/O and deletes it */
 void ft_transform::quit_io()
 {
-    if (fm_io != NULL) {
-        delete fm_io;
-        fm_io = NULL;
+    if (this_io != NULL) {
+        delete this_io;
+        this_io = NULL;
     }
 }
 
 /**
  * perform actual work using configured I/O:
  * allocates ft_vector<ft_uoff> for both LOOP-FILE and FREE-SPACE extents,
- * calls fm_io->read_extents() to fill them, and finally invokes
- * ft_dispatch::main(loop_file_extents, free_space_extents, fm_io)
+ * calls this_io->read_extents() to fill them, and finally invokes
+ * ft_dispatch::main(loop_file_extents, free_space_extents, this_io)
  *
  * return 0 if success, else error.
  */
@@ -392,7 +392,7 @@ int ft_transform::run()
         if ((err = check_is_open()) != 0)
             break;
 
-        FT_IO_NS ft_io & io = * fm_io;
+        FT_IO_NS ft_io & io = * this_io;
         const char * dev_path = ff_if_null(io.dev_path(), "<unknown>");
 
         ff_log(FC_INFO, 0, "analyzing %s '%s', this may take some minutes ...", label[FC_DEVICE], dev_path);

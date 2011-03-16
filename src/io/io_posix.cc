@@ -31,24 +31,9 @@ char const * const ft_io::label[] = {
 };
 
 
-/** construct a queue with no pending copies */
-ft_io_posix::ft_queue::ft_queue() {
-    clear();
-}
-
-/**
- * forget and discard any pending copy.
- */
-void ft_io_posix::ft_queue::clear() {
-    from_physical = to_physical = length = 0;
-    dir = FC_STORAGE2STORAGE; /* use FC_STORAGE2STORAGE as 'invalid dir' */
-}
-
-
-
 /** default constructor */
 ft_io_posix::ft_io_posix(ft_job & job)
-: super_type(job), storage_mmap(MAP_FAILED), storage_mmap_size(0), queue()
+: super_type(job), storage_mmap(MAP_FAILED), storage_mmap_size(0)
 {
     /* mark fd[] as invalid: they are not open yet */
     for (ft_size i = 0; i < FC_ALL_FILE_COUNT; i++)
@@ -102,7 +87,7 @@ int ft_io_posix::open(char const* const path[FC_FILE_COUNT])
 
     do {
         for (i = 0; i < FC_FILE_COUNT; i++) {
-            if ((fd[i] = ::open(path[i], i == FC_DEVICE ? O_RDWR : O_RDONLY)) < 0) {
+            if ((fd[i] = ::open(path[i], i == FC_DEVICE ? O_RDWR|O_SYNC : O_RDONLY)) < 0) {
                 err = ff_log(FC_ERROR, errno, "error opening %s '%s'", label[i], path[i]);
                 break;
             }
@@ -164,7 +149,6 @@ void ft_io_posix::close()
     close_storage();
     for (ft_size i = 0; i < FC_FILE_COUNT; i++)
         close0(i);
-    queue.clear();
 
     super_type::close();
 }
@@ -526,27 +510,30 @@ int ft_io_posix::create_secondary_storage(ft_uoff secondary_len)
  * on return, 'ret_queued' will be increased by the number of bytes actually copied or queued for copying,
  * which could be > 0 even in case of errors
  */
-int ft_io_posix::copy_bytes(ft_uoff from_physical, ft_uoff to_physical, ft_uoff length, ft_uoff & ret_queued, ft_dir dir)
+int ft_io_posix::copy_bytes(const ft_request & request)
 {
     int err = 0;
-    const bool is_from_dev = ff_from_dev(dir), is_to_dev = ff_to_dev(dir);
+    const bool is_from_dev = request.is_from_dev(), is_to_dev = request.is_to_dev();
 
     if (is_from_dev != is_to_dev) {
         /* from memory-mapped STORAGE to DEVICE, or vice-versa */
-        ft_uoff storage_offset = is_to_dev ? from_physical : to_physical;
+        ft_uoff device_offset  = is_to_dev ? request.to()   : request.from();
+        ft_uoff storage_offset = is_to_dev ? request.from() : request.to();
+        ft_uoff length = request.length();
+
         const ft_size mem_offset = (ft_size)storage_offset;
         const ft_size mem_length = (ft_size)length;
 
         if (mem_offset < 0 || mem_length < 0 || storage_offset != (ft_uoff)mem_offset || length != (ft_uoff)mem_length) {
-            err = ff_log(FC_FATAL, EOVERFLOW, "internal error! tried to copy outside addressable memory: copy offset = 0x%"FS_XLL", length = 0x%"FS_XLL,
+            err = ff_log(FC_FATAL, EOVERFLOW, "internal error! tried to copy() outside addressable memory: storage_offset = 0x%"FS_XLL", length = 0x%"FS_XLL,
                          (ft_ull)storage_offset, (ft_ull)length);
 
         } else if (mem_offset >= storage_mmap_size || mem_length > storage_mmap_size - mem_offset) {
-            err = ff_log(FC_FATAL, EFAULT, "internal error! tried to copy outside mmapped() %s, length = %"FS_ULL", copy offset = 0x%"FS_ULL", length = 0x%"FS_ULL,
+            err = ff_log(FC_FATAL, EFAULT, "internal error! tried to copy() outside mmapped() %s (length = %"FS_ULL"): storage_offset = 0x%"FS_ULL", length = 0x%"FS_ULL,
                          label[FC_STORAGE], (ft_ull)storage_mmap_size, (ft_ull)mem_offset, (ft_ull)mem_length);
 
         } else
-            err = queue_copy(from_physical, to_physical, length, ret_queued, dir);
+            err = copy_mmap(request.dir(), device_offset, mem_offset, mem_length);
 
     } else if (is_from_dev) {
         /* from DEVICE to DEVICE */
@@ -561,108 +548,72 @@ int ft_io_posix::copy_bytes(ft_uoff from_physical, ft_uoff to_physical, ft_uoff 
 
 
 
-/**
- * copy a single fragment from DEVICE to FREE-STORAGE, or from STORAGE to FREE-DEVICE or from DEVICE to FREE-DEVICE
- * (STORAGE to FREE-STORAGE copies could be supported easily, but are not considered useful)
- * note: parameters are in bytes!
- *
- * return 0 if success, else error
- *
- * on return, 'ret_copied' will be increased by the number of bytes actually copied (NOT queued for copying),
- * which could be > 0 even in case of errors
- */
-int ft_io_posix::queue_copy(ft_uoff from_physical, ft_uoff to_physical, ft_uoff length, ft_uoff & ret_queued, ft_dir dir)
+
+/** internal method called by copy_bytes(const ft_request &) to perform the work */
+int ft_io_posix::copy_mmap(ft_dir dir, ft_uoff device_offset, ft_size mem_offset, ft_size mem_length)
 {
-    ft_uoff ret_copied = 0;
     int err = 0;
     do {
-        if (queue.length != 0 && queue.dir != dir) {
-            if ((err = flush_bytes(ret_copied)) != 0)
-                break;
+        if (mem_length == 0)
+            break;
+
+        if ((err = ff_posix_lseek(fd[FC_DEVICE], device_offset)) != 0) {
+            err = ff_log(FC_ERROR, err, "I/O error in %s lseek(%d, %"FS_ULL", SEEK_SET)", label[FC_DEVICE], fd[FC_DEVICE], (ft_ull)device_offset);
+            break;
         }
 
-        queue.dir = dir;
-        /* copy_bytes() already checked for all possible overflows, no need to check again */
-        if (queue.length != 0) {
-            if (from_physical == queue.from_physical + queue.length && to_physical == queue.to_physical + queue.length) {
-                /* append the copy request to this queue */
-                queue.length += length;
-                ret_queued += length;
-                break;
-            } else {
-                if (from_physical + length != queue.from_physical || to_physical + length != queue.to_physical)
-                    if ((err = flush_bytes(ret_copied)) != 0)
-                        break;
-                /* prepend the copy request into this queue */
-            }
+        ft_uoff copied = 0;
+        const bool is_to_dev = ff_is_to_dev(dir);
+        const char * label_op = is_to_dev ? "write" : "read";
+        if (is_to_dev)
+            err = ff_posix_write(fd[FC_DEVICE], (const char * )storage_mmap + mem_offset, mem_length, & copied);
+        else
+            err = ff_posix_read(fd[FC_DEVICE], (char * )storage_mmap + mem_offset, mem_length, & copied);
+
+        if (err != 0)
+            err = ff_log(FC_ERROR, err, "I/O error in %s %s(%d, address + %"FS_ULL", length = %"FS_ULL")",
+                         label[FC_DEVICE], label_op, fd[FC_DEVICE], (ft_ull)mem_offset, (ft_ull)mem_length);
+        else
+            ff_log(FC_DEBUG, 0, "%s %s(%d, address + %"FS_ULL", length = %"FS_ULL") = ok",
+                   label[FC_DEVICE], label_op, fd[FC_DEVICE], (ft_ull)mem_offset, (ft_ull)mem_length);
+
+        if (err == 0 ? copied != (ft_uoff)mem_length : copied > (ft_uoff)mem_length) {
+            err = ff_log(FC_FATAL, err, "internal error! %(%d, address + %"FS_ULL", length = %"FS_ULL") from %s to %s"
+                         " returned err = %d but unexpectedly copied %"FS_ULL" bytes",
+                         label_op, fd[FC_DEVICE], (ft_ull)mem_offset, (ft_ull)mem_length,
+                         label[ff_is_from_dev(dir) ? FC_DEVICE : FC_STORAGE], label[is_to_dev ? FC_DEVICE : FC_STORAGE],
+                         (ft_ull)copied);
+            if (err == 0)
+                err = -EFAULT;
         }
-        queue.from_physical = from_physical;
-        queue.to_physical = to_physical;
-        queue.length += length;
-        ret_queued += length;
     } while (0);
     return err;
 }
 
-
 /**
- * flush any pending copy, i.e. actually perform all queued copies.
+ * flush any I/O specific buffer
  * return 0 if success, else error
+ * implementation: call msync() because we use a mmapped() buffer for STORAGE,
+ * and call sync() because we write() to DEVICE
  */
-int ft_io_posix::flush_bytes(ft_uoff & ret_copied)
+int ft_io_posix::flush_bytes()
 {
     int err = 0;
-
-    if (queue.length != 0) {
-        const bool is_to_dev = ff_to_dev(queue.dir);
-        ft_uoff copied = 0, device_offset = is_to_dev ? queue.to_physical : queue.from_physical;
-
-        if ((err = ff_posix_lseek(fd[FC_DEVICE], device_offset)) != 0) {
-            err = ff_log(FC_ERROR, err, "I/O error in %s lseek(%d, %"FS_ULL", SEEK_SET)", label[FC_DEVICE], fd[FC_DEVICE], (ft_ull)device_offset);
-        } else {
-            /* from memory-mapped STORAGE to DEVICE, or vice-versa */
-            ft_uoff storage_offset = is_to_dev ? queue.from_physical : queue.to_physical;
-
-            /* copy_bytes() already checked for all possible overflows, no need to check again */
-            const ft_size mem_offset = (ft_size)storage_offset;
-            const ft_size mem_length = (ft_size)queue.length;
-
-            if (is_to_dev)
-                err = ff_posix_write(fd[FC_DEVICE], (const char * )storage_mmap + mem_offset, mem_length, & copied);
-            else
-                err = ff_posix_read(fd[FC_DEVICE], (char * )storage_mmap + mem_offset, mem_length, & copied);
-
-            if (err != 0)
-                err = ff_log(FC_ERROR, err, "I/O error in %s ff_posix_%s(%d, address + %"FS_ULL", length = %"FS_ULL")",
-                             label[FC_DEVICE], is_to_dev ? "write" : "read", fd[FC_DEVICE], (ft_ull)mem_offset, (ft_ull)mem_length);
-            else
-                ff_log(FC_DEBUG, 0, "%s ff_posix_%s(%d, address + %"FS_ULL", length = %"FS_ULL") = ok",
-                       label[FC_DEVICE], is_to_dev ? "write" : "read", fd[FC_DEVICE], (ft_ull)mem_offset, (ft_ull)mem_length);
-
+    do {
+        if ((err = msync(storage_mmap, storage_mmap_size, MS_SYNC)) != 0) {
+            err = ff_log(FC_ERROR, errno, "I/O error in %s msync(address + 0, length = %"FS_ULL")",
+                         label[FC_STORAGE], (ft_ull)storage_mmap_size);
+            break;
         }
-        if (err == 0 ? copied != queue.length : copied > queue.length) {
-            err = ff_log(FC_FATAL, err, "internal error! ff_posix_%() was requested to copy %"FS_ULL" bytes from %s to %s"
-                         " but actually copied %"FS_ULL" bytes",
-                         is_to_dev ? "write" : "read", (ft_ull)queue.length, label[ff_from_dev(queue.dir) ? FC_DEVICE : FC_STORAGE],
-                         label[is_to_dev ? FC_DEVICE : FC_STORAGE], (ft_ull)copied);
+        (void) sync();
+#if 0
+        {
+            err = ff_log(FC_ERROR, errno, "I/O error in %s fsync(%d)", label[FC_DEVICE], fd[FC_DEVICE]);
+            break;
         }
-        if (copied <= queue.length) {
-            ret_copied += copied;
-            queue.length -= copied;
-        } else {
-            ret_copied += queue.length;
-            queue.length -= 0;
-        }
-    }
+#endif
+    } while (0);
     return err;
-}
-
-/**
- * return number of blocks queued for copying.
- */
-ft_uoff ft_io_posix::queued_bytes() const
-{
-    return queue.length;
 }
 
 FT_IO_NAMESPACE_END

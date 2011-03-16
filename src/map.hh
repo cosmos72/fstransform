@@ -251,7 +251,7 @@ public:
      * remove an initial part of an existing extent from this ft_map.
      * returns iterator to new, smaller extent, or end() if the whole extent was removed
      */
-    iterator shrink_front(iterator iter, T shrink_length);
+    iterator remove_front(iterator iter, T shrink_length);
 
 
 

@@ -21,7 +21,7 @@ FT_NAMESPACE_BEGIN
 
 /** default constructor */
 ft_job::ft_job()
-    : fm_dir(), fm_storage_size(0), fm_log_file(NULL), fm_id(0), fm_storage_size_exact(false)
+    : this_dir(), this_storage_size(0), this_log_file(NULL), this_id(0), this_storage_size_exact(false)
 { }
 
 /** destructor. calls quit() */
@@ -33,18 +33,18 @@ ft_job::~ft_job()
 /** initialize logging subsystem, or return error */
 int ft_job::init_log()
 {
-    std::string log_file_name = fm_dir;
+    std::string log_file_name = this_dir;
     log_file_name += "/fstransform.log";
 
     const char * log_file = log_file_name.c_str();
 
-    if ((fm_log_file = fopen(log_file, "a")) == NULL)
+    if ((this_log_file = fopen(log_file, "a")) == NULL)
         return ff_log(FC_ERROR, errno, "failed to open log file '%s'", log_file);
 
-    (void) setvbuf(fm_log_file, NULL, _IOLBF, 0);
+    (void) setvbuf(this_log_file, NULL, _IOLBF, 0);
 
     /* note 1.4.3) fstransform.log always uses FC_FMT_DATETIME_LEVEL_CALLER_MSG */
-    ff_log_register(fm_log_file, FC_FMT_DATETIME_LEVEL_CALLER_MSG);
+    ff_log_register(this_log_file, FC_FMT_DATETIME_LEVEL_CALLER_MSG);
     return 0;
 }
 
@@ -56,24 +56,24 @@ int ft_job::init(const char * root_dir, ft_uint job_id, ft_size storage_size)
     if (root_dir == NULL) {
         user_home = getenv("HOME");
         if (user_home != NULL) {
-            fm_dir = user_home;
-            fm_dir += '/';
+            this_dir = user_home;
+            this_dir += '/';
         }
     } else {
-        fm_dir = root_dir;
-        fm_dir += '/';
+        this_dir = root_dir;
+        this_dir += '/';
     }
-    fm_dir += ".fstransform";
+    this_dir += ".fstransform";
 
-    const char * path = fm_dir.c_str();
+    const char * path = this_dir.c_str();
 
     if (root_dir == NULL && user_home == NULL)
         ff_log(FC_WARN, 0, "$HOME is not set, persistent storage will use sub-folders of '%s' in current directory", path);
 
     (void) FT_IO_NS ff_mkdir(path);
 
-    fm_dir += "/job.";
-    ft_size len = fm_dir.size();
+    this_dir += "/job.";
+    ft_size len = this_dir.size();
     ft_uint i, job_min = 1, job_max = (ft_uint)-1;
     int err = 0;
 
@@ -81,15 +81,15 @@ int ft_job::init(const char * root_dir, ft_uint job_id, ft_size storage_size)
         /* force job_id */
         job_min = job_id, job_max = job_id + 1;
 
-    path = fm_dir.c_str();
+    path = this_dir.c_str();
 
     for (i = job_min; i != job_max; i++) {
         // 1 + 3*sizeof(ft_uint) chars are enough to safely print (ft_uint)
-        fm_dir.resize(len + 2 + 3*sizeof(ft_uint));
-        sprintf(& fm_dir[len], "%"FS_ULL, (ft_ull) i);
-        fm_dir.resize(len + strlen(& fm_dir[len]));
+        this_dir.resize(len + 2 + 3*sizeof(ft_uint));
+        sprintf(& this_dir[len], "%"FS_ULL, (ft_ull) i);
+        this_dir.resize(len + strlen(& this_dir[len]));
 
-        path = fm_dir.c_str();
+        path = this_dir.c_str();
 
         if ((err = FT_IO_NS ff_mkdir(path)) == 0
                 && (err = init_log()) == 0)
@@ -106,8 +106,8 @@ int ft_job::init(const char * root_dir, ft_uint job_id, ft_size storage_size)
             err = ff_log(FC_ERROR, err, "failed to locate a free job id, tried range %"FS_ULL"...%"FS_ULL, (ft_ull) job_min, (ft_ull) (job_max-1));
     }
     if (err == 0) {
-        fm_storage_size = storage_size;
-        fm_id = i;
+        this_storage_size = storage_size;
+        this_id = i;
     } else
         quit();
 
@@ -117,14 +117,14 @@ int ft_job::init(const char * root_dir, ft_uint job_id, ft_size storage_size)
 
 void ft_job::quit()
 {
-    if (fm_log_file != NULL) {
-        ff_log_unregister(fm_log_file);
-        fclose(fm_log_file);
-        fm_log_file = NULL;
+    if (this_log_file != NULL) {
+        ff_log_unregister(this_log_file);
+        fclose(this_log_file);
+        this_log_file = NULL;
     }
-    fm_dir.clear();
-    fm_storage_size = 0;
-    fm_id = 0;
+    this_dir.clear();
+    this_storage_size = 0;
+    this_id = 0;
 }
 
 FT_NAMESPACE_END

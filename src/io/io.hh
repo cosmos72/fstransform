@@ -16,6 +16,8 @@
 #include "../vector.hh"      // for ft_vector<T>
 #include "../map.hh"         // for ft_map<T>
 
+#include "request.hh"        // for ft_request
+
 
 FT_IO_NAMESPACE_BEGIN
 
@@ -26,13 +28,15 @@ FT_IO_NAMESPACE_BEGIN
 class ft_io
 {
 private:
-	ft_vector<ft_uoff> fm_primary_storage;
-    ft_extent<ft_uoff> fm_secondary_storage;
+	ft_vector<ft_uoff> this_primary_storage;
+    ft_extent<ft_uoff> this_secondary_storage;
 
-    ft_uoff fm_dev_length, fm_eff_block_size_log2;
-    const char * fm_dev_path;
+    ft_uoff this_dev_length, this_eff_block_size_log2;
+    const char * this_dev_path;
 
-    ft_job & fm_job;
+    ft_job & this_job;
+
+    ft_request request;
 
 
     /* cannot call copy constructor */
@@ -43,10 +47,10 @@ private:
 
 protected:
     /** remember device length */
-    FT_INLINE void dev_length(ft_uoff dev_length) { fm_dev_length = dev_length; }
+    FT_INLINE void dev_length(ft_uoff dev_length) { this_dev_length = dev_length; }
 
     /** remember device path */
-    FT_INLINE void dev_path(const char * dev_path) { fm_dev_path = dev_path; }
+    FT_INLINE void dev_path(const char * dev_path) { this_dev_path = dev_path; }
 
     /** compute and return log2() of effective block size and remember it */
     ft_uoff effective_block_size_log2(ft_uoff block_size_bitmask);
@@ -79,34 +83,40 @@ protected:
      * get writable reference to secondary_storage.
      * must be called by create_storage() to set the details of secondary_storage
      */
-    FT_INLINE ft_extent<ft_uoff> & secondary_storage() { return fm_secondary_storage; }
+    FT_INLINE ft_extent<ft_uoff> & secondary_storage() { return this_secondary_storage; }
 
     /**
-     * copy a single fragment from DEVICE to FREE-STORAGE, or from STORAGE to FREE-DEVICE or from DEVICE to FREE-DEVICE
-     * (STORAGE to FREE-STORAGE copies could be supported easily, but are not considered useful)
+     * perform buffering and coalescing of copy requests.
+     * queues a copy of single fragment from DEVICE or FREE-STORAGE, to STORAGE to FREE-DEVICE.
+     * calls flush_queue() as needed to actually perform any copy that cannot be buffered or coalesced.
      * note: parameters are in bytes!
-     *
      * return 0 if success, else error
-     *
-     * on return, 'ret_queued' will be increased by the number of bytes actually copied or queued for copying,
-     * which could be > 0 even in case of errors
      */
-    virtual int copy_bytes(ft_uoff from_physical, ft_uoff to_physical, ft_uoff length, ft_uoff & ret_queued, ft_dir dir) = 0;
-
+    int copy_queue(ft_uoff from_physical, ft_uoff to_physical, ft_uoff length, ft_dir dir);
 
     /**
-     * flush any pending copy, i.e. actually perform all queued copies.
+     * flush any pending copy, i.e. actually call copy_bytes(request).
      * return 0 if success, else error
-     *
      * on return, 'ret_copied' will be increased by the number of blocks actually copied (NOT queued for copying),
      * which could be > 0 even in case of errors
      */
-    virtual int flush_bytes(ft_uoff & ret_copied) = 0;
+    int flush_queue();
+
 
     /**
-     * return number of blocks queued for copying.
+     * actually copy a single fragment from DEVICE or FREE-STORAGE, to STORAGE to FREE-DEVICE.
+     * must be implemented by sub-classes.
+     * note: parameters are in bytes!
+     * return 0 if success, else error.
      */
-    virtual ft_uoff queued_bytes() const = 0;
+    virtual int copy_bytes(const ft_request & request) = 0;
+
+    /**
+     * flush any I/O specific buffer
+     * return 0 if success, else error
+     * default implementation: do nothing
+     */
+    virtual int flush_bytes();
 
 public:
     enum {
@@ -134,36 +144,36 @@ public:
     virtual void close();
 
     /** return device length (in bytes), or 0 if not open */
-    FT_INLINE ft_uoff dev_length() const { return fm_dev_length; }
+    FT_INLINE ft_uoff dev_length() const { return this_dev_length; }
 
     /** return device path, or NULL if not open */
-    FT_INLINE const char * dev_path() const { return fm_dev_path; }
+    FT_INLINE const char * dev_path() const { return this_dev_path; }
 
     /** return log2 of effective block size, or 0 if not open */
-    FT_INLINE ft_uoff effective_block_size_log2() const { return fm_eff_block_size_log2; }
+    FT_INLINE ft_uoff effective_block_size_log2() const { return this_eff_block_size_log2; }
 
 
 
     /** return job */
-    FT_INLINE ft_job & job() const { return fm_job; }
+    FT_INLINE ft_job & job() const { return this_job; }
 
     /** return job_id, or 0 if not set */
-    FT_INLINE ft_size job_id() const { return fm_job.job_id(); }
+    FT_INLINE ft_size job_id() const { return this_job.job_id(); }
 
     /** return job_dir, or "" if not set */
-    FT_INLINE const std::string & job_dir() const { return fm_job.job_dir(); }
+    FT_INLINE const std::string & job_dir() const { return this_job.job_dir(); }
 
     /** return storage_size to use (in bytes), or 0 if not set */
-    FT_INLINE ft_size job_storage_length() const { return fm_job.job_storage_length(); }
+    FT_INLINE ft_size job_storage_length() const { return this_job.job_storage_length(); }
 
     /** set storage_size to use (in bytes), or 0 to unset it */
-    FT_INLINE void job_storage_length(ft_size len) { fm_job.job_storage_length(len); }
+    FT_INLINE void job_storage_length(ft_size len) { this_job.job_storage_length(len); }
 
     /** return true if storage_size must be honored EXACTLY (to resume an existent job) */
-    FT_INLINE bool job_storage_length_exact() const { return fm_job.job_storage_length_exact(); }
+    FT_INLINE bool job_storage_length_exact() const { return this_job.job_storage_length_exact(); }
 
     /** set whether storage_size must be honored EXACTLY (to resume an existent job) */
-    FT_INLINE void job_storage_length_exact(bool flag) { fm_job.job_storage_length_exact(flag); }
+    FT_INLINE void job_storage_length_exact(bool flag) { this_job.job_storage_length_exact(flag); }
 
     /**
      * calls the 3-argument version of read_extents() and, if it succeeds,
@@ -190,10 +200,10 @@ public:
      * get writable reference to primary_storage.
      * must be called before create_storage() to set the details of primary_storage
      */
-    FT_INLINE ft_vector<ft_uoff> & primary_storage() { return fm_primary_storage; }
+    FT_INLINE ft_vector<ft_uoff> & primary_storage() { return this_primary_storage; }
 
     /** get const reference to primary_storage */
-    FT_INLINE const ft_vector<ft_uoff> & primary_storage() const { return fm_primary_storage; }
+    FT_INLINE const ft_vector<ft_uoff> & primary_storage() const { return this_primary_storage; }
 
     /**
      * create and open SECONDARY-STORAGE job.job_dir() + '/storage.bin' and fill it with 'secondary_len' bytes of zeros.
@@ -214,48 +224,20 @@ public:
      * which could be > 0 even in case of errors
      */
     template<typename T>
-    int copy(T from_physical, T to_physical, T length, T & ret_queued, ft_dir dir)
+    int copy(T from_physical, T to_physical, T length, ft_dir dir)
     {
-        ft_uoff queued = 0;
-        int err = copy_bytes((ft_uoff)from_physical << fm_eff_block_size_log2,
-                             (ft_uoff)to_physical << fm_eff_block_size_log2,
-                             (ft_uoff)length  << fm_eff_block_size_log2,
-                             queued, dir);
-        /*
-         * note: possible loss of precision in low bits (in case of short write, i.e. error)
-         * not a problem: caller will believe fewer bytes have been written,
-         * but since 'to' was free, there is nothing to recover there.
-         */
-        ret_queued += queued >> fm_eff_block_size_log2;
-        return err;
+        return copy_queue((ft_uoff)from_physical << this_eff_block_size_log2,
+                          (ft_uoff)to_physical << this_eff_block_size_log2,
+                          (ft_uoff)length  << this_eff_block_size_log2,
+                          dir);
     }
 
     /**
-     * return number of blocks queued for copying.
-     */
-    template<typename T>
-    T queued() const
-    {
-        return (T)(queued_bytes() >> fm_eff_block_size_log2);
-    }
-
-    /**
-     * flush any pending copy, i.e. actually perform all queued copies.
+     * flush any pending copy (call copy_bytes() through flush_queue()),
+     * plus flush any I/O specific buffer (call flush_bytes())
      * return 0 if success, else error
-     *
-     * on return, 'ret_copied' will be increased by the number of blocks actually copied (NOT queued for copying),
-     * which could be > 0 even in case of errors
      */
-    template<typename T>
-    int flush(T * ret_copied = NULL)
-    {
-        ft_uoff copied = 0;
-        int err = flush_bytes(copied);
-        if (ret_copied != NULL)
-            *ret_copied += (T)(copied >> fm_eff_block_size_log2);
-        return err;
-    }
-
+    int flush();
 };
 
 

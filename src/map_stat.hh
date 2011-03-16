@@ -20,8 +20,8 @@ private:
     typedef ft_map<T> super_type;
     typedef typename ft_map<T>::iterator iterator;
 
-    T fm_total_count; /**< total length (number of blocks) in this map extents */
-    T fm_used_count;  /**< used  length (number of blocks) in this map extents */
+    T this_total_count; /**< total length (number of blocks) in this map extents */
+    T this_used_count;  /**< used  length (number of blocks) in this map extents */
 
 public:
     // construct empty ft_map_stat
@@ -46,26 +46,26 @@ public:
     /** same as super_type::insert(T,T,T,ft_size), but also updates used_count() */
     FT_INLINE iterator stat_insert(T physical, T logical, T length, ft_size user_data)
     {
-        fm_used_count += length;
+        this_used_count += length;
         return super_type::insert(physical, logical, length, user_data);
     }
 
     /** same as super_type::remove(iterator), but also updates used_count() */
     FT_INLINE void stat_remove(iterator iter)
     {
-        fm_used_count -= iter->second.length;
+        this_used_count -= iter->second.length;
         super_type::remove(iter);
     }
 
-    FT_INLINE T total_count() const { return fm_total_count; }
-    FT_INLINE T used_count() const { return fm_used_count; }
-    FT_INLINE T free_count() const { return fm_total_count - fm_used_count; }
+    FT_INLINE T total_count() const { return this_total_count; }
+    FT_INLINE T used_count() const { return this_used_count; }
+    FT_INLINE T free_count() const { return this_total_count - this_used_count; }
 
-    FT_INLINE void total_count(T n) { fm_total_count = n; }
+    FT_INLINE void total_count(T n) { this_total_count = n; }
 
-    FT_INLINE void used_count(T n) { fm_used_count = n; }
-    FT_INLINE void used_count_add(T n) { fm_used_count += n; }
-    FT_INLINE void used_count_sub(T n) { fm_used_count -= n; }
+    FT_INLINE void used_count(T n) { this_used_count = n; }
+    FT_INLINE void used_count_add(T n) { this_used_count += n; }
+    FT_INLINE void used_count_sub(T n) { this_used_count -= n; }
 };
 
 FT_NAMESPACE_END

@@ -74,7 +74,7 @@ void ft_pool<T>::allocate_unfragmented(map_iterator map_iter, ft_map<T> & map, f
         super_type::erase(iter);
 
     /* shrink 'iter' extent inside backing map */
-    pool_iter = backing_map.shrink_front(pool_iter, length);
+    pool_iter = backing_map.remove_front(pool_iter, length);
     if (pool_iter != backing_map.end())
         /* we have a remainder: reinsert it into this pool */
         insert0(pool_iter);
@@ -107,7 +107,7 @@ typename ft_pool<T>::map_iterator ft_pool<T>::allocate_fragment(map_iterator map
 
     /* update maps to reflect partial allocation */
     map_allocated.insert(physical, pool_value_logical, pool_value_length, user_data);
-    map_iter = map.shrink_front(map_iter, pool_value_length);
+    map_iter = map.remove_front(map_iter, pool_value_length);
 
     /* remove extent from pool_entry */
     pool_entry.pop_back();

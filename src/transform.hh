@@ -21,8 +21,8 @@ FT_NAMESPACE_BEGIN
 class ft_transform
 {
 private:
-    ft_job * fm_job;
-    FT_IO_NS ft_io * fm_io;
+    ft_job * this_job;
+    FT_IO_NS ft_io * this_io;
 
     static int invalid_cmdline(const char * program_name, int err, const char * fmt, ...);
 
@@ -70,7 +70,7 @@ public:
     int usage(const char * program_name);
 
 
-    FT_INLINE bool is_initialized() const { return fm_io != NULL && fm_io->is_open(); }
+    FT_INLINE bool is_initialized() const { return this_io != NULL && this_io->is_open(); }
 
     /**
      * parse from command line and initialize all subsystems (job, I/O, log...)

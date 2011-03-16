@@ -15,15 +15,37 @@
 FT_NAMESPACE_BEGIN
 
 template<typename T>
-static FT_INLINE T ff_min2(T a, T b)
+FT_INLINE T ff_min2(T a, T b)
 {
     return a < b ? a : b;
 }
 
 template<typename T>
-static FT_INLINE T ff_max2(T a, T b)
+FT_INLINE T ff_min3(T a, T b, T c)
+{
+    return ff_min2(ff_min2(a, b), c);
+}
+
+template<typename T>
+FT_INLINE T ff_max2(T a, T b)
 {
     return a > b ? a : b;
+}
+
+template<typename T>
+FT_INLINE T ff_max3(T a, T b, T c)
+{
+    return ff_max2(ff_max2(a, b), c);
+}
+
+/**
+ * is it possible to sum a and b (a+b), or it will overflow?
+ * note: T must be unsigned!
+ */
+template<typename T>
+FT_INLINE bool ff_can_sum(T a, T b)
+{
+    return a <= ~b;
 }
 
 

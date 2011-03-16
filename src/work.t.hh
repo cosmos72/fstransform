@@ -782,7 +782,7 @@ int ft_work<T>::fill_storage()
         err = move(counter++, from_pos, FC_DEV2STORAGE, moved);
     }
     if (err == 0) {
-        if ((err = io->flush<T>()) == 0)
+        if ((err = io->flush()) == 0)
             ff_log(FC_DEBUG, 0, "storage filled");
         else {
             /* error should has been reported by io->flush<T>() */
@@ -804,7 +804,7 @@ template<typename T>
 int ft_work<T>::move(ft_size counter, map_iterator from_iter, ft_dir dir, T & ret_moved)
 {
     T moved, length = from_iter->second.length;
-    const bool is_to_dev = ff_to_dev(dir);
+    const bool is_to_dev = ff_is_to_dev(dir);
     map_stat_type & to_map = is_to_dev ? dev_map : storage_map;
     map_type & to_free_map = is_to_dev ? dev_free : storage_free;
 
@@ -853,12 +853,12 @@ int ft_work<T>::move_fragment(map_iterator from_iter, map_iterator to_free_iter,
 
     T from_physical = from_extent.first.physical;
     T to_physical = to_free_extent.first.physical;
-    T queued = 0;
-    int err = io->copy(from_physical, to_physical, length, queued, dir);
-    ff_assert(err == 0 ? queued == length : queued <= length);
-    ret_queued += queued;
-    if (err != 0 && queued == 0)
+
+    int err = io->copy(from_physical, to_physical, length, dir);
+    if (err != 0)
         return err;
+    /** io->copy() returned success. trust that it copied exactly 'length' blocks */
+    ret_queued += length;
     /*
      * some blocks were moved.
      * update 'from' and 'to' maps also in case of errors,
@@ -869,34 +869,34 @@ int ft_work<T>::move_fragment(map_iterator from_iter, map_iterator to_free_iter,
 
     /* update the 'to' maps */
     {
-        const bool is_to_dev = ff_to_dev(dir);
+        const bool is_to_dev = ff_is_to_dev(dir);
 
         map_stat_type & to_map = is_to_dev ? dev_map : storage_map;
-        to_map.stat_insert(to_physical, logical, queued, user_data);
+        to_map.stat_insert(to_physical, logical, length, user_data);
 
         map_type & to_transpose = is_to_dev ? dev_transpose : storage_transpose;
-        to_transpose.insert(logical, to_physical, queued, user_data);
+        to_transpose.insert(logical, to_physical, length, user_data);
 
         map_type & to_free = is_to_dev ? dev_free : storage_free;
         /*
          * erase to_free_iter completely (if moved == to_free_length),
          * or shrink it (if moved < to_free_length)
          */
-        to_free.shrink_front(to_free_iter, queued);
+        to_free.remove_front(to_free_iter, length);
     }
 
     /* update the 'from' maps */
     {
-        const bool is_from_dev = ff_from_dev(dir);
+        const bool is_from_dev = ff_is_from_dev(dir);
 
         map_stat_type & from_map = is_from_dev ? dev_map : storage_map;
         from_map.stat_remove(from_iter); /* invalidates from_iter, from_extent, from_value */
 
         map_type & from_transpose = is_from_dev ? dev_transpose : storage_transpose;
-        from_transpose.remove(logical, from_physical, queued, user_data);
+        from_transpose.remove(logical, from_physical, length, user_data);
 
         map_type & from_free = is_from_dev ? dev_free : storage_free;
-        from_free.insert(from_physical, from_physical, queued, FC_DEFAULT_USER_DATA);
+        from_free.insert(from_physical, from_physical, length, FC_DEFAULT_USER_DATA);
     }
 
     return err;

@@ -14,7 +14,7 @@ FT_NAMESPACE_BEGIN
 // construct empty ft_map_stat
 template<typename T>
 ft_map_stat<T>::ft_map_stat()
-    : super_type(), fm_total_count(0), fm_used_count(0)
+    : super_type(), this_total_count(0), this_used_count(0)
 { }
 
 // destroy ft_map_stat
@@ -27,13 +27,13 @@ ft_map_stat<T>::~ft_map_stat()
 // duplicate a ft_map_stat, i.e. initialize this ft_map_stat as a copy of other.
 template<typename T>
 ft_map_stat<T>::ft_map_stat(const ft_map<T> & other)
-    : super_type(other), fm_total_count(0), fm_used_count(0)
+    : super_type(other), this_total_count(0), this_used_count(0)
 { }
 
 // duplicate a ft_map_stat, i.e. initialize this ft_map_stat as a copy of other.
 template<typename T>
 ft_map_stat<T>::ft_map_stat(const ft_map_stat<T> & other)
-    : super_type(other), fm_total_count(other.fm_total_count), fm_used_count(other.fm_used_count)
+    : super_type(other), this_total_count(other.this_total_count), this_used_count(other.this_used_count)
 { }
 
 
@@ -44,7 +44,7 @@ template<typename T>
 const ft_map_stat<T> & ft_map_stat<T>::operator=(const ft_map<T> & other)
 {
     super_type::operator=(other);
-    fm_total_count = fm_used_count = 0;
+    this_total_count = this_used_count = 0;
     return * this;
 }
 
@@ -53,8 +53,8 @@ template<typename T>
 const ft_map_stat<T> & ft_map_stat<T>::operator=(const ft_map_stat<T> & other)
 {
     super_type::operator=(other);
-    fm_total_count = other.fm_total_count;
-    fm_used_count = other.fm_used_count;
+    this_total_count = other.this_total_count;
+    this_used_count = other.this_used_count;
     return * this;
 }
 
@@ -64,7 +64,7 @@ template<typename T>
 void ft_map_stat<T>::clear()
 {
     super_type::clear();
-    fm_total_count = fm_used_count = 0;
+    this_total_count = this_used_count = 0;
 }
 
 FT_NAMESPACE_END

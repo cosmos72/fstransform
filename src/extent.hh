@@ -8,9 +8,9 @@
 #ifndef FSTRANSLATE_EXTENT_HH
 #define FSTRANSLATE_EXTENT_HH
 
-#include "check.hh"
+#include "types.hh" // for ft_size
 
-#include <utility>  // for std_pair<T1,T2> */
+#include <utility>  // for std_pair<T1,T2>
 
 FT_NAMESPACE_BEGIN
 
@@ -32,8 +32,8 @@ enum ft_dir {
 FT_INLINE ft_from ff_from(ft_dir dir) { return (ft_from)(dir & 1); }
 FT_INLINE ft_to   ff_to  (ft_dir dir) { return (ft_to)  (dir & 2); }
 
-FT_INLINE bool ff_from_dev(ft_dir dir) { return ff_from(dir) == FC_FROM_DEV; }
-FT_INLINE bool ff_to_dev  (ft_dir dir) { return ff_to  (dir) == FC_TO_DEV;   }
+FT_INLINE bool ff_is_from_dev(ft_dir dir) { return ff_from(dir) == FC_FROM_DEV; }
+FT_INLINE bool ff_is_to_dev  (ft_dir dir) { return ff_to  (dir) == FC_TO_DEV;   }
 
 
 

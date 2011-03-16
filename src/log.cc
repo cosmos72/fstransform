@@ -29,23 +29,23 @@ FT_NAMESPACE_BEGIN
 
 
 /* by default, all messages less serious than 'FC_DEBUG' are suppressed on all streams */
-static ft_log_level fm_log_threshold = FC_DEBUG;
+static ft_log_level this_log_threshold = FC_DEBUG;
 
-static std::map<FILE *, ft_log_fmt> fm_log_stream[FC_FATAL+1];
+static std::map<FILE *, ft_log_fmt> this_log_stream[FC_FATAL+1];
 
-static char const* const fm_log_label[FC_FATAL+1] =
+static char const* const this_log_label[FC_FATAL+1] =
 {
      "TRACE ", "DEBUG ", "INFO  ", "NOTICE", "WARN  ", "ERROR ", "FATAL ",
 };
 
-static char const* const fm_log_label_always[FC_FATAL+1] =
+static char const* const this_log_label_always[FC_FATAL+1] =
 {
     "", "", "", "", "WARN: ", "ERROR: ", "FATAL: ",
 };
 
 
 
-static bool fm_log_initialized = false;
+static bool this_log_initialized = false;
 
 /**
  * initialize log subsystem. automatic configuration is:
@@ -55,8 +55,8 @@ static bool fm_log_initialized = false;
  */
 static void ff_log_init()
 {
-    if (!fm_log_initialized) {
-        fm_log_initialized = true;
+    if (!this_log_initialized) {
+        this_log_initialized = true;
 #ifdef FT_HAVE_LOCALTIME_R
         tzset();
 #endif
@@ -74,7 +74,7 @@ static void ff_log_init()
  */
 bool ff_log_is_enabled(ft_log_level level)
 {
-    return level >= fm_log_threshold && !fm_log_stream[level].empty();
+    return level >= this_log_threshold && !this_log_stream[level].empty();
 }
 
 
@@ -83,7 +83,7 @@ bool ff_log_is_enabled(ft_log_level level)
  * by default, all messages less serious than 'FC_DEBUG' are suppressed on all streams
  */
 ft_log_level ff_log_get_threshold() {
-    return fm_log_threshold;
+    return this_log_threshold;
 }
 
 /**
@@ -98,10 +98,10 @@ void ff_log_set_threshold(ft_log_level level)
      * log subsystem is automatically initialized upon first call to
      * ff_log(), ff_vlog(), ff_log_register() or ff_log_set_threshold().
      */
-    if (!fm_log_initialized)
+    if (!this_log_initialized)
         ff_log_init();
 
-    fm_log_threshold = level;
+    this_log_threshold = level;
 }
 
 
@@ -120,12 +120,12 @@ void ff_log_register(FILE * f, ft_log_fmt format, ft_log_level min_level, ft_log
      * log subsystem is automatically initialized upon first call to
      * ff_log(), ff_vlog(), ff_log_register() or ff_log_set_threshold().
      */
-    if (!fm_log_initialized)
+    if (!this_log_initialized)
         ff_log_init();
 
     ft_size i = (ft_size) min_level, n = (ft_size) max_level;
     while (i <= n)
-        fm_log_stream[i++][f] = format;
+        this_log_stream[i++][f] = format;
 }
 
 
@@ -137,7 +137,7 @@ void ff_log_unregister(FILE * f, ft_log_level min_level, ft_log_level max_level)
 {
     ft_size i = (ft_size) min_level, n = (ft_size) max_level;
     while (i <= n)
-        fm_log_stream[i++].erase(f);
+        this_log_stream[i++].erase(f);
 }
 
 
@@ -158,19 +158,19 @@ static void ff_log0(FILE * f, ft_log_fmt format, ft_log_args & args)
 {
     switch (format) {
         case FC_FMT_DATETIME_LEVEL_CALLER_MSG:
-            fprintf(f, "%s %s [%.*s%s.%s(%d)] ", args.str_now, fm_log_label[args.level],
+            fprintf(f, "%s %s [%.*s%s.%s(%d)] ", args.str_now, this_log_label[args.level],
                     args.file_len, args.file, args.file_suffix, args.function, args.line);
             break;
         case FC_FMT_DATETIME_LEVEL_MSG:
-            fprintf(f, "%s %s ", args.str_now, fm_log_label[args.level]);
+            fprintf(f, "%s %s ", args.str_now, this_log_label[args.level]);
             break;
         case FC_FMT_LEVEL_MSG:
-            fprintf(f, "%s ", fm_log_label[args.level]);
+            fprintf(f, "%s ", this_log_label[args.level]);
             break;
         case FC_FMT_MSG:
         default:
             /* always mark warnings, errors and fatal errors as such */
-            fprintf(f, "%s", fm_log_label_always[args.level]);
+            fprintf(f, "%s", this_log_label_always[args.level]);
             break;
     }
 
@@ -203,16 +203,16 @@ int ff_logl(const char * file, const char * func, int line, ft_log_level level, 
      * log subsystem is automatically initialized upon first call to
      * ff_log(), ff_vlog(), ff_log_register() or ff_log_set_threshold().
      */
-    if (!fm_log_initialized)
+    if (!this_log_initialized)
         ff_log_init();
 
     do {
-        if (level < fm_log_threshold)
+        if (level < this_log_threshold)
             break;
 
         std::map<FILE *, ft_log_fmt>::const_iterator
-            iter = fm_log_stream[level].begin(),
-            end  = fm_log_stream[level].end();
+            iter = this_log_stream[level].begin(),
+            end  = this_log_stream[level].end();
         if (iter == end)
             break;
 
@@ -253,16 +253,16 @@ int ff_logv(const char * file, const char * func, int line, ft_log_level level, 
      * log subsystem is automatically initialized upon first call to
      * ff_log(), ff_vlog(), ff_log_register() or ff_log_set_threshold().
      */
-    if (!fm_log_initialized)
+    if (!this_log_initialized)
         ff_log_init();
 
     do {
-        if (level < fm_log_threshold)
+        if (level < this_log_threshold)
             break;
 
         std::map<FILE *, ft_log_fmt>::const_iterator
-            iter = fm_log_stream[level].begin(),
-            end  = fm_log_stream[level].end();
+            iter = this_log_stream[level].begin(),
+            end  = this_log_stream[level].end();
         if (iter == end)
             break;
 
@@ -296,10 +296,10 @@ int ff_logv(const char * file, const char * func, int line, ft_log_level level, 
  */
 void ff_log_flush(ft_log_level level)
 {
-    if (level >= fm_log_threshold) {
+    if (level >= this_log_threshold) {
         std::map<FILE *, ft_log_fmt>::const_iterator
-            iter = fm_log_stream[level].begin(),
-            end  = fm_log_stream[level].end();
+            iter = this_log_stream[level].begin(),
+            end  = this_log_stream[level].end();
 
         /* iterate on streams configured for 'level' */
         for (; iter != end; ++iter) {
@@ -311,8 +311,8 @@ void ff_log_flush(ft_log_level level)
 
 enum { FC_SIZEOF_STR_NOW = 21 + 3*(sizeof(time_t)-4) };
 
-static char fm_str_now[FC_SIZEOF_STR_NOW];
-static time_t fm_time_now;
+static char this_str_now[FC_SIZEOF_STR_NOW];
+static time_t this_time_now;
 
 
 /**
@@ -322,20 +322,20 @@ static time_t fm_time_now;
 static const char * ff_strftime()
 {
     time_t now = time(NULL);
-    if (now != fm_time_now) {
+    if (now != this_time_now) {
 #ifdef FT_HAVE_LOCALTIME_R
         struct tm tm_buf, * tm_now = & tm_buf;
         localtime_r(& now, tm_now);
 #else
         struct tm * tm_now = localtime(& now);
 #endif
-        strftime(fm_str_now, FC_SIZEOF_STR_NOW, "%Y-%m-%d %H:%M:%S", tm_now);
-        fm_str_now[FC_SIZEOF_STR_NOW - 1] = '\0';
-        fm_time_now = now;
+        strftime(this_str_now, FC_SIZEOF_STR_NOW, "%Y-%m-%d %H:%M:%S", tm_now);
+        this_str_now[FC_SIZEOF_STR_NOW - 1] = '\0';
+        this_time_now = now;
     } else {
-        // cached fm_str_now is still good
+        // cached this_str_now is still good
     }
-    return fm_str_now;
+    return this_str_now;
 }
 
 /**

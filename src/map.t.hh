@@ -543,7 +543,7 @@ void ft_map<T>::remove_all(const ft_map<T> & map)
  * returns iterator to new, smaller extent, or end() if the whole extent was removed
  */
 template<typename T>
-typename ft_map<T>::iterator ft_map<T>::shrink_front(iterator iter, T shrink_length)
+typename ft_map<T>::iterator ft_map<T>::remove_front(iterator iter, T shrink_length)
 {
     ff_assert(iter != end());
     value_type & extent = *iter;
