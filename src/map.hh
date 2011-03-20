@@ -152,43 +152,34 @@ public:
     void bounds(key_type & min_key, key_type & max_key) const;
 
     /**
-     * find the intersection (matching physical, logical or both)
+     * find the intersection (matching physical, or both physical and logical)
      * between the two specified extents, insert it into this map and return true.
      * if no intersections, return false and this will be unchanged
      *
 	 * note: if the intersection is only physical,
 	 * the intersection will contain the appropriate subrange of extent[which] -> logical
-	 *
-	 * note: if the intersection is only logical,
-	 * the intersection will contain the appropriate subrange of extent[which] -> physical
      */
     bool intersect(const value_type & extent1, const value_type & extent2, ft_match match);
 
     /**
-     * find the intersections (matching physical, logical or both)
+     * find the intersections (matching physical, or both physical and logical)
      * between specified map and extent.
      * insert list of intersections into this map and return true.
      * if no intersections, return false and this will be unchanged
      *
 	 * note: if the intersection is only physical,
 	 * the intersection will contain the appropriate subrange of {map1,extent2}[which] -> logical
-	 *
-	 * note: if the intersection is only logical,
-	 * the intersection will contain the appropriate subrange of {map1,extent2}[which] -> physical
      */
     bool intersect_all(const ft_map<T> & map1, const value_type & extent2, ft_match match);
 
     /**
-     * find the intersections (matching physical, logical or both)
+     * find the intersections (matching physical, or both physical and logical)
      * between specified map1 and map2.
      * insert list of intersections into this map and return true.
      * if no intersections, return false and this map will be unchanged
      *
 	 * note: if the intersection is only physical,
 	 * the intersection will contain the appropriate subrange of map[which] -> logical
-	 *
-	 * note: if the intersection is only logical,
-	 * the intersection will contain the appropriate subrange of map[which] -> physical
      */
     bool intersect_all_all(const ft_map<T> & map1, const ft_map<T> & map2, ft_match match);
 

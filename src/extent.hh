@@ -40,11 +40,9 @@ FT_INLINE bool ff_is_to_dev  (ft_dir dir) { return ff_to  (dir) == FC_TO_DEV;   
  * ft_match enumerates the kinds of matches/intersections between extents or maps:
  * FC_PHYSICAL1: match/intersection of extents ->physical ranges. select subrange of extent1 -> logical
  * FC_PHYSICAL2: match/intersection of extents ->physical ranges. select subrange of extent2 -> logical
- * FC_LOGICAL1: match/intersection of extents ->logical ranges. select subrange of extent1 -> physical
- * FC_LOGICAL2: match/intersection of extents ->logical ranges. select subrange of extent2 -> physical
  * FC_BOTH: simultaneous match/intersection of extents ->physical and ->logical ranges
  */
-enum ft_match { FC_BOTH = 0, FC_PHYSICAL1 = 1, FC_PHYSICAL2 = -1, FC_LOGICAL1 = 2, FC_LOGICAL2 = -2 };
+enum ft_match { FC_BOTH = 0, FC_PHYSICAL1 = 1, FC_PHYSICAL2 = -1, };
 
 /** swap FC_PHYSICAL1 <-> FC_PHYSICAL2 and FC_LOGICAL1 <-> FC_LOGICAL2 */
 FT_INLINE ft_match ff_match_transpose(ft_match match) { return (ft_match)-match; }

@@ -42,7 +42,7 @@ char const* const label_LOOP_HOLES = "loop-holes";
 
 template<typename T>
 void ft_work<T>::show(const char * label1, const char * label2, ft_uoff effective_block_size,
-					  const ft_map<T> & map, ft_log_level level) const
+					  const ft_map<T> & map, ft_log_level level)
 {
     ft_log_level header_level = level <= FC_TRACE ? FC_DEBUG : level;
 
@@ -71,14 +71,14 @@ void ft_work<T>::show(const char * label1, const char * label2, ft_uoff effectiv
 
 /** print extents header to log */
 template<typename T>
-void ft_work<T>::show(ft_log_level level) const
+void ft_work<T>::show(ft_log_level level)
 {
     ff_log(level, 0, "#  extent\t\tphysical\t\t logical\t  length\tuser_data");
 }
 
 /** print extent contents to log */
 template<typename T>
-void ft_work<T>::show(ft_size i, T physical, T logical, T length, ft_size user_data, ft_log_level level) const
+void ft_work<T>::show(ft_size i, T physical, T logical, T length, ft_size user_data, ft_log_level level)
 {
     ff_log(level, 0, "#%8"FS_ULL"\t%12"FS_ULL"\t%12"FS_ULL"\t%8"FS_ULL"\t(%"FS_ULL")", (ft_ull)i,
            (ft_ull) physical, (ft_ull) logical, (ft_ull) length, (ft_ull) user_data);
@@ -291,16 +291,23 @@ int ft_work<T>::analyze(ft_vector<ft_uoff> & loop_file_extents,
      */
     {
         ft_vector<ft_uoff>::const_iterator iter = free_space_extents.begin(), end = free_space_extents.end();
-        T physical, length;
+        T physical, logical, length;
         for (; iter != end; ++iter) {
             physical = iter->first.physical >> eff_block_size_log2;
+            logical = iter->second.logical >> eff_block_size_log2;
             length = iter->second.length >> eff_block_size_log2;
             dev_free.insert(physical, physical, length, FC_DEFAULT_USER_DATA);
         }
         show(label[FC_FREE_SPACE], "", eff_block_size, dev_free);
     }
 
-
+    /* sanity check: LOOP-FILE and FREE-SPACE extents ->physical must NOT intersect */
+    renumbered_map.intersect_all_all(loop_map, dev_free, FC_PHYSICAL1);
+    if (!renumbered_map.empty()) {
+    	ff_log(FC_FATAL, 0, "inconsistent %s and %s: they share common blocks on %s !", label[FC_LOOP_FILE], label[FC_FREE_SPACE], label[FC_DEVICE]);
+    	show(label[FC_LOOP_FILE], " intersection with free-space", eff_block_size, renumbered_map, FC_DEBUG);
+    	return -EFAULT;
+    }
 
 
 
@@ -478,7 +485,7 @@ int ft_work<T>::analyze(ft_vector<ft_uoff> & loop_file_extents,
     while (iter != end) {
         map_value_type & extent = *iter;
 
-        if ((ft_uoff) iter->second.length >= hole_threshold) {
+        if ((ft_uoff) (hole_len = iter->second.length) >= hole_threshold) {
             /* trim hole on both ends to align it to PAGE_SIZE */
             if (page_size_blocks <= 1 || (ft_uoff) (hole_len = ff_extent_align(extent, page_size_blocks - 1)) >= hole_threshold) {
                 /*
@@ -813,33 +820,24 @@ int ft_work<T>::relocate()
 template<typename T>
 void ft_work<T>::show_progress() const
 {
-	map_stat_type const* const map[] = { & dev_map, & storage_map };
-	char const* const label_map[] = { label[FC_DEVICE], label[FC_STORAGE] };
-	ft_size i, n = sizeof(map)/sizeof(map[0]);
 	const ft_uoff eff_block_size_log2 = io->effective_block_size_log2();
-	ft_uoff used_len, free_len;
-	double pretty_used_len = 0.0, pretty_free_len = 0.0;
-
-	for (i = 0; i < n; i++) {
-		used_len = (ft_uoff)map[i]->used_count() << eff_block_size_log2;
-		free_len = (ft_uoff)map[i]->free_count() << eff_block_size_log2;
-
-		pretty_used_len = pretty_free_len = 0.0;
-		const char * pretty_used_label = ff_pretty_size(used_len, & pretty_used_len);
-		const char * pretty_free_label = ff_pretty_size(free_len, & pretty_free_len);
-		ff_log(FC_INFO, 0, "progress: %s has %.2f %sbytes to relocate and %.2f %sbytes free",
-				label_map[i], pretty_used_len, pretty_used_label, pretty_free_len, pretty_free_label);
-	}
-
 	const ft_uoff eff_block_size = (ft_uoff)1 << eff_block_size_log2;
 
-	show(label[FC_DEVICE], " free space", eff_block_size, dev_free);
-	show(label[FC_DEVICE], "", eff_block_size, dev_map);
-	show(label[FC_DEVICE], " transposed", eff_block_size, dev_transpose);
+	ft_uoff used_len = (ft_uoff)(dev_map.used_count() + storage_map.used_count()) << eff_block_size_log2;
+	ft_uoff free_len = (ft_uoff)(dev_map.free_count() + storage_map.free_count()) << eff_block_size_log2;
 
-	show(label[FC_STORAGE], " free space", eff_block_size, storage_free);
+	double pretty_used_len = 0.0, pretty_free_len = 0.0;
+	const char * pretty_used_label = ff_pretty_size(used_len, & pretty_used_len);
+	const char * pretty_free_label = ff_pretty_size(free_len, & pretty_free_len);
+
+	ff_log(FC_INFO, 0, "progress: %.2f %sbytes left to relocate, %.2f %sbytes free",
+			pretty_used_len, pretty_used_label, pretty_free_len, pretty_free_label);
+
+	show(label[FC_DEVICE], "", eff_block_size, dev_map);
+	show(label[FC_DEVICE], " free space", eff_block_size, dev_free);
+
 	show(label[FC_STORAGE], "", eff_block_size, storage_map);
-	show(label[FC_STORAGE], " transposed", eff_block_size, storage_transpose);
+	show(label[FC_STORAGE], " free space", eff_block_size, storage_free);
 }
 
 

@@ -52,19 +52,19 @@ private:
     enum { FC_SHOW_DEFAULT_LEVEL = FC_TRACE };
 
     /** print extents header to log */
-    void show(ft_log_level level = (ft_log_level)FC_SHOW_DEFAULT_LEVEL) const;
+    static void show(ft_log_level level = (ft_log_level)FC_SHOW_DEFAULT_LEVEL);
 
     /** print extent contents to log */
-    void show(ft_size i, T physical, T logical, T length, ft_size user_data, ft_log_level level = (ft_log_level)FC_SHOW_DEFAULT_LEVEL) const;
+    static void show(ft_size i, T physical, T logical, T length, ft_size user_data, ft_log_level level = (ft_log_level)FC_SHOW_DEFAULT_LEVEL);
 
     /** print extent contents to log */
-    FT_INLINE void show(ft_size i, const map_value_type & extent, ft_log_level level = (ft_log_level)FC_SHOW_DEFAULT_LEVEL) const {
+    static FT_INLINE void show(ft_size i, const map_value_type & extent, ft_log_level level = (ft_log_level)FC_SHOW_DEFAULT_LEVEL) {
         show(i, extent.first.physical, extent.second.logical, extent.second.length, extent.second.user_data, level);
     }
-
+public:
     /** print map contents to log */
-    void show(const char * label1, const char * label2, ft_uoff effective_block_size, const ft_map<T> & map, ft_log_level level = (ft_log_level)FC_SHOW_DEFAULT_LEVEL) const;
-
+    static void show(const char * label1, const char * label2, ft_uoff effective_block_size, const ft_map<T> & map, ft_log_level level = (ft_log_level)FC_SHOW_DEFAULT_LEVEL);
+private:
     /**
      * call check(io) to ensure that io.dev_length() can be represented by T,
      * then checks that I/O is open.

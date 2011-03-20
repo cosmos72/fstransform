@@ -74,6 +74,9 @@ static void ff_log_init()
  */
 bool ff_log_is_enabled(ft_log_level level)
 {
+    if (!this_log_initialized)
+        ff_log_init();
+
     return level >= this_log_threshold && !this_log_stream[level].empty();
 }
 

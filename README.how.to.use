@@ -1,0 +1,104 @@
+fstransform is functional, but still quite crude.
+
+
+
+At the moment, the user needs to manually perform several steps as root,
+invoking existing toos (mount, umount, dd, losetup, mv, mkfs.*, fsck.*)
+
+Also, the algorithm used by fstransform creates a larger (sometimes much larger)
+backup file ("secondary storage") than necessary, and it is quite slow due
+to unoptimized disk access patterns.
+
+
+
+If you are still reading, let's see to how to actually use fstransform:
+
+1) mount read-write the device you want to transform to a different file-system
+
+   /bin/mount {device} {device-mount-point} [your-options]
+
+   if the device is already mounted, check that it is mounted read-write
+   and that no process is using it.
+
+2) create a sparse file inside the device to be used as loop-file,
+   with the same length as the device itself
+   
+   /bin/dd if=/dev/zero of={device-mount-point}/{loop-file} bs=1 count=1 seek=$(( {device-size-in-bytes} - 1 ))
+
+3) format the loop-file with the new file system you want to use
+
+   /sbin/mkfs.[ext2,ext3,ext4,reiserfs,reiser4,xfs...] {device-mount-point}/{loop-file}
+
+   if you create an ext2/ext3/ext4 file-system, the option "-m 0" will help you
+   to detect more precisely if/when the file-system inside the loop-file becomes full
+
+4) mount the loop-file read-write
+
+   /bin/mount {device-mount-point}/{loop-file} {loop-file-mount-point} -o loop {your-options}
+
+   this will find a free /dev/loop{n}, setup it and mount it.
+
+   if you have an old mount which does not understand "-o loop", you will need
+   to manually find and setup a free loop-device:
+
+   /sbin/losetup /dev/loop{n} {device-mount-point}/{loop-file} [your-options]
+   /bin/mount /dev/loop{n} {loop-file-mount-point} [your-options]
+
+5) manually and recursively move all files, directories, links and so on
+   from {device-mount-point} to {loop-file-mount-point},
+   reproducing inside {loop-file-mount-point} the original tree that was in {device-mount-point}.
+
+   Quite obviously, you should not move {loop-file} itself
+
+   this part is the most delicate, because {loop-file} disk usage will grow while
+   you copy files inside it, and {device} or /dev/loop{n} - or both - can become full.
+
+6) once all your files are inside the file-system in {loop-file}, things get less delicate.
+   now you just need to create a file full with zeros (not sparse) inside {device-mount-point}
+   to help fstransform to locate any free disk space inside {device}:
+
+   /bin/dd if=/dev/zero of={device-mount-point}/{zero-file} bs=512
+
+   this command will exit with the error "no space left on device",
+   but that's expected and not a problem.
+
+7) the initial setup is almost complete.
+   just umount {loop-file} and remount {device} read-only to be sure no process will write into them
+
+   /bin/umount {loop-file-mount-point}
+   # if you used losetup before, you will need also:
+   /sbin/losetup -d /dev/loop{n}
+
+   in any case, also remount {device} read-only
+
+   /bin/mount {device} -o remount,ro
+
+8) choose a folder with some free space (NOT inside {device}) where fstransform
+   can write its (small) backup data and log files, and name it {storage-dir}
+
+9) start fstransform:
+
+   fstransform -t {storage-dir} {device} {device-mount-point}/{loop-file} {device-mount-point}/{zero-file}
+
+   if {device} has very little free space, fstransform will create a file
+   {storage-dir}/.fstransform/job.{x}/storage.bin and use it to store blocks
+   while moving them around.
+
+10) after an analysis phase, fstransform will ask you to umount {device}. just do as asked:
+
+   /bin/umount {device}
+
+11) fstransform will now relocate blocks from {loop-file} to {device}
+   and it will report its progress.
+
+   once finished, check that the transformation actually worked:
+
+   /sbin/fsck -f {device}
+   /bin/mount {device} {device-mount-point} [your-options]
+
+   if everything worked, you can delete the file {storage-dir}/.fstransform/job.{x}/storage.bin
+
+
+
+
+
