@@ -9,6 +9,10 @@
 #include <cerrno>         // for errno, EFBIG
 #include <cstdio>         // for fprintf(), stdout, stderr
 
+#ifdef FT_HAVE_UMOUNT
+#  include <sys/mount.h>  // for umount()
+#endif
+
 #include "assert.hh"      // for ff_assert()
 #include "log.hh"         // for ff_log()
 #include "vector.hh"      // for ft_vector<T>
@@ -37,7 +41,8 @@ char const* const label_LOOP_HOLES = "loop-holes";
 
 
 template<typename T>
-void ft_work<T>::show(const char * label1, const char * label2, ft_uoff effective_block_size, const ft_map<T> & map, ft_log_level level)
+void ft_work<T>::show(const char * label1, const char * label2, ft_uoff effective_block_size,
+					  const ft_map<T> & map, ft_log_level level) const
 {
     ft_log_level header_level = level <= FC_TRACE ? FC_DEBUG : level;
 
@@ -66,14 +71,14 @@ void ft_work<T>::show(const char * label1, const char * label2, ft_uoff effectiv
 
 /** print extents header to log */
 template<typename T>
-void ft_work<T>::show(ft_log_level level)
+void ft_work<T>::show(ft_log_level level) const
 {
     ff_log(level, 0, "#  extent\t\tphysical\t\t logical\t  length\tuser_data");
 }
 
 /** print extent contents to log */
 template<typename T>
-void ft_work<T>::show(ft_size i, T physical, T logical, T length, ft_size user_data, ft_log_level level)
+void ft_work<T>::show(ft_size i, T physical, T logical, T length, ft_size user_data, ft_log_level level) const
 {
     ff_log(level, 0, "#%8"FS_ULL"\t%12"FS_ULL"\t%12"FS_ULL"\t%8"FS_ULL"\t(%"FS_ULL")", (ft_ull)i,
            (ft_ull) physical, (ft_ull) logical, (ft_ull) length, (ft_ull) user_data);
@@ -254,7 +259,7 @@ int ft_work<T>::analyze(ft_vector<ft_uoff> & loop_file_extents,
     // cleanup in case dev_map, storage_map or storage_map are not empty, or work_count != 0
     cleanup();
 
-    ft_map<T> loop_map, loop_holes_map, renumbered_map;
+    map_type loop_map, loop_holes_map, renumbered_map;
 
     ft_uoff eff_block_size_log2 = io->effective_block_size_log2();
     ft_uoff eff_block_size      = (ft_uoff)1 << eff_block_size_log2;
@@ -276,10 +281,10 @@ int ft_work<T>::analyze(ft_vector<ft_uoff> & loop_file_extents,
     show(label[FC_LOOP_FILE], "", eff_block_size, loop_map);
 
 
-    /* algorithm: 0) compute FREE-SPACE extents and store in storage_map, sorted by physical
+    /* algorithm: 0) compute FREE-SPACE extents and store in dev_free, sorted by physical
      *
      * we must manually set ->logical = ->physical for all free_space_extents:
-     * here storage_map is just free space, but for I/O that computed it
+     * here dev_free is just free space, but for I/O that computed it
      * it could have been a ZERO-FILE with its own ->logical,
      *
      * note: changing ->logical may also allow merging extents!
@@ -290,9 +295,9 @@ int ft_work<T>::analyze(ft_vector<ft_uoff> & loop_file_extents,
         for (; iter != end; ++iter) {
             physical = iter->first.physical >> eff_block_size_log2;
             length = iter->second.length >> eff_block_size_log2;
-            storage_map.insert(physical, physical, length, FC_DEFAULT_USER_DATA);
+            dev_free.insert(physical, physical, length, FC_DEFAULT_USER_DATA);
         }
-        show(label[FC_FREE_SPACE], "", eff_block_size, storage_map);
+        show(label[FC_FREE_SPACE], "", eff_block_size, dev_free);
     }
 
 
@@ -330,7 +335,7 @@ int ft_work<T>::analyze(ft_vector<ft_uoff> & loop_file_extents,
      * b) spread the remaining ->logical across rest of holes (use best-fit allocation)
      */
     /* how: intersect dev_map and loop_holes_map and put result into renumbered_map */
-    renumbered_map.intersect_all_all(dev_map, loop_holes_map);
+    renumbered_map.intersect_all_all(dev_map, loop_holes_map, FC_BOTH);
     /* show DEVICE INVARIANT extents (i.e. already in their final destination), sorted by physical */
     show(label[FC_DEVICE], " (invariant)", eff_block_size, renumbered_map);
     /* remove from dev_map all the INVARIANT extents in renumbered_map */
@@ -453,7 +458,8 @@ int ft_work<T>::analyze(ft_vector<ft_uoff> & loop_file_extents,
      * forget the rest of LOOP-HOLES extents, we will not need them anymore
      */
     /* how: intersect storage_map and loop_holes_map and put result into renumbered_map */
-    renumbered_map.intersect_all_all(storage_map, loop_holes_map);
+    renumbered_map.clear();
+    renumbered_map.intersect_all_all(dev_free, loop_holes_map, FC_BOTH);
     /* then discard extents smaller than either work_count / 1024 or page_size*/
 
     /* page_size_blocks = number of blocks in one RAM page. will be zero if page_size < block_size */
@@ -470,15 +476,23 @@ int ft_work<T>::analyze(ft_vector<ft_uoff> & loop_file_extents,
     end = renumbered_map.end();
     show(label[FC_FREE_SPACE], " (invariant)", eff_block_size, renumbered_map);
     while (iter != end) {
+        map_value_type & extent = *iter;
+
         if ((ft_uoff) iter->second.length >= hole_threshold) {
             /* trim hole on both ends to align it to PAGE_SIZE */
-            if (page_size_blocks <= 1 || (ft_uoff) (hole_len = ff_extent_align(*iter, page_size_blocks - 1)) >= hole_threshold) {
-                /* hole is large enough to be useful */
+            if (page_size_blocks <= 1 || (ft_uoff) (hole_len = ff_extent_align(extent, page_size_blocks - 1)) >= hole_threshold) {
+                /*
+                 * this hole (extent from dev_free) is large enough to be useful:
+                 * let's use it for primary storage, so it's NOT free anymore
+                 */
+                dev_free.remove(extent);
+
                 hole_total_len += hole_len;
                 ++iter;
                 continue;
             }
         }
+        /* extent is small, keep it in dev_free */
         tmp = iter;
         ++iter;
         renumbered_map.remove(tmp);
@@ -494,12 +508,14 @@ int ft_work<T>::analyze(ft_vector<ft_uoff> & loop_file_extents,
 
     pretty_len = 0.0;
     pretty_unit = ff_pretty_size((ft_uoff) hole_total_len << eff_block_size_log2, & pretty_len);
-    ft_size dev_free_map_n = storage_map.size();
+    ft_size storage_map_n = storage_map.size();
 
     ff_log(FC_INFO, 0, "%s: located %.2f %sbytes (%"FS_ULL" fragment%s) usable in %s (free, invariant, contiguous and aligned)",
-           label[FC_PRIMARY_STORAGE], pretty_len, pretty_unit, (ft_ull)dev_free_map_n, (dev_free_map_n == 1 ? "" : "s"), label[FC_DEVICE]);
+           label[FC_PRIMARY_STORAGE], pretty_len, pretty_unit, (ft_ull)storage_map_n, (storage_map_n == 1 ? "" : "s"), label[FC_DEVICE]);
 
     storage_map.total_count(hole_total_len);
+
+    /* all done */
 
     return 0;
 }
@@ -507,7 +523,7 @@ int ft_work<T>::analyze(ft_vector<ft_uoff> & loop_file_extents,
 
 static int unusable_storage_size(ft_uoff requested_len, const char * type_descr, ft_ull type_bytes, const char * msg)
 {
-	ff_log(FC_FATAL, 0, "fatal error: cannot reuse job %s size %"FS_ULL" bytes: this %s is %"FS_ULL" bytes,"
+	ff_log(FC_FATAL, 0, "fatal error: cannot use job %s length = %"FS_ULL" bytes: this %s is %"FS_ULL" bytes,"
 			" original job was probably created on a platform with %s",
 			label[FC_STORAGE], (ft_ull) requested_len, type_descr, type_bytes, msg);
 	/* mark error as reported */
@@ -729,7 +745,28 @@ void ft_work<T>::fill_io_primary_storage(ft_uoff primary_len)
 template<typename T>
 int ft_work<T>::relocate()
 {
-    ff_log(FC_NOTICE, 0, "");
+	const char * dev_path = io->dev_path();
+    int err;
+
+	ff_log(FC_NOTICE, 0, "everything ready for relocation, umounting %s '%s' ... ", label[FC_DEVICE], dev_path);
+
+#ifdef FT_HAVE_UMOUNT
+    /* TODO: move this stuff to ff_posix_umount(), and call umount(8) instead of umount(2) to correctly update /etc/mtab */
+	if ((err = umount(dev_path)) == 0)
+		ff_log(FC_INFO, 0, "successful umount() %s '%s'", label[FC_DEVICE], dev_path);
+	else
+		err = ff_log(FC_ERROR, errno, "failed to umount() %s '%s'", label[FC_DEVICE], dev_path);
+#else
+    err = ff_log(FC_WARN, ENOSYS, "umount() not supported on this platform");
+#endif
+    if (err != 0) {
+    	ff_log(FC_WARN, 0, "please manually umount %s '%s' before continuing."
+    			" press RETURN when done, or CTRL+C to quit", label[FC_DEVICE], dev_path);
+    	char ch;
+    	(void) read(0, &ch, 1);
+    	err = 0;
+    }
+
     ff_log(FC_NOTICE, 0, "relocation starting. this may take a LONG time ...");
 
     ft_uoff eff_block_size_log2 = io->effective_block_size_log2();
@@ -740,22 +777,71 @@ int ft_work<T>::relocate()
     /* storage starts free */
     storage_map.clear();
     storage_map.total_count(storage_count);
+    storage_transpose.clear();
     storage_free.insert0(0, 0, storage_count, FC_DEFAULT_USER_DATA);
 
+    /* device starts (almost) full */
+    T dev_free_count = 0;
+    map_const_iterator iter = dev_free.begin(), end = dev_free.end();
+    for (; iter != end; ++iter)
+    	dev_free_count += iter->second.length;
+    dev_map.total_count(dev_map.total_count() + dev_free_count);
+    dev_transpose.transpose(dev_map);
 
-    int err = 0;
+
     while (err == 0 && !(dev_map.empty() && storage_map.empty())) {
-        if (storage_map.empty())
+        if (!dev_map.empty() && !storage_free.empty()) {
+        	show_progress();
             err = fill_storage();
-        /* TODO: progress report and E.T.A. estimation */
-        if (err == 0)
-            err = move_to_target();
-        /* TODO: progress report and E.T.A. estimation */
+        }
+        if (err == 0 && !dev_map.empty()) {
+        	show_progress();
+            err = move_to_target(FC_FROM_DEV);
+        }    /** TODO: move buffering to work<T> */
+
+        if (err == 0 && !storage_map.empty()) {
+        	show_progress();
+            err = move_to_target(FC_FROM_STORAGE);
+        }
     }
     if (err == 0)
         ff_log(FC_NOTICE, 0, "relocation completed");
     return err;
 }
+
+/* show progress status. TODO: E.T.A. estimation */
+template<typename T>
+void ft_work<T>::show_progress() const
+{
+	map_stat_type const* const map[] = { & dev_map, & storage_map };
+	char const* const label_map[] = { label[FC_DEVICE], label[FC_STORAGE] };
+	ft_size i, n = sizeof(map)/sizeof(map[0]);
+	const ft_uoff eff_block_size_log2 = io->effective_block_size_log2();
+	ft_uoff used_len, free_len;
+	double pretty_used_len = 0.0, pretty_free_len = 0.0;
+
+	for (i = 0; i < n; i++) {
+		used_len = (ft_uoff)map[i]->used_count() << eff_block_size_log2;
+		free_len = (ft_uoff)map[i]->free_count() << eff_block_size_log2;
+
+		pretty_used_len = pretty_free_len = 0.0;
+		const char * pretty_used_label = ff_pretty_size(used_len, & pretty_used_len);
+		const char * pretty_free_label = ff_pretty_size(free_len, & pretty_free_len);
+		ff_log(FC_INFO, 0, "progress: %s has %.2f %sbytes to relocate and %.2f %sbytes free",
+				label_map[i], pretty_used_len, pretty_used_label, pretty_free_len, pretty_free_label);
+	}
+
+	const ft_uoff eff_block_size = (ft_uoff)1 << eff_block_size_log2;
+
+	show(label[FC_DEVICE], " free space", eff_block_size, dev_free);
+	show(label[FC_DEVICE], "", eff_block_size, dev_map);
+	show(label[FC_DEVICE], " transposed", eff_block_size, dev_transpose);
+
+	show(label[FC_STORAGE], " free space", eff_block_size, storage_free);
+	show(label[FC_STORAGE], "", eff_block_size, storage_map);
+	show(label[FC_STORAGE], " transposed", eff_block_size, storage_transpose);
+}
+
 
 
 /** called by relocate(). move as many extents as possible from DEVICE to STORAGE */
@@ -768,7 +854,7 @@ int ft_work<T>::fill_storage()
     double pretty_len = 0.0;
     const char * pretty_label = ff_pretty_size((ft_uoff)ff_min2<T>(from_used_count, to_free_count)
                                                << io->effective_block_size_log2(), & pretty_len);
-    ff_log(FC_DEBUG, 0, "filling %s by reading %.2f %sbytes from %s ...",
+    ff_log(FC_DEBUG, 0, "filling %s by moving %.2f %sbytes from %s ...",
            label[FC_STORAGE], pretty_len, pretty_label, label[FC_DEVICE]);
     show(); /* show extents header */
 
@@ -778,16 +864,16 @@ int ft_work<T>::fill_storage()
         /* fully or partially move this extent to STORAGE */
         from_pos = from_iter;
         ++from_iter;
-        /* note: some blocks may be moved even in case of errors! */
+        /* note: some blocks may have been moved even in case of errors! */
         err = move(counter++, from_pos, FC_DEV2STORAGE, moved);
     }
     if (err == 0) {
         if ((err = io->flush()) == 0)
             ff_log(FC_DEBUG, 0, "storage filled");
         else {
-            /* error should has been reported by io->flush<T>() */
+            /* error should has been reported by io->flush() */
             if (!ff_log_is_reported(err))
-                err = ff_log(FC_ERROR, err, "io->flush<T>() failed with unreported error");
+                err = ff_log(FC_ERROR, err, "io->flush() failed with unreported error");
         }
     }
     return err;
@@ -860,9 +946,9 @@ int ft_work<T>::move_fragment(map_iterator from_iter, map_iterator to_free_iter,
     /** io->copy() returned success. trust that it copied exactly 'length' blocks */
     ret_queued += length;
     /*
-     * some blocks were moved.
+     * some blocks were copied (or queued for copying).
      * update 'from' and 'to' maps also in case of errors,
-     * since we know how many blocks were actually queued
+     * since we know how many blocks were actually copied
      */
     T logical = from_value.logical;
     ft_size user_data = from_extent.second.user_data;
@@ -890,10 +976,11 @@ int ft_work<T>::move_fragment(map_iterator from_iter, map_iterator to_free_iter,
         const bool is_from_dev = ff_is_from_dev(dir);
 
         map_stat_type & from_map = is_from_dev ? dev_map : storage_map;
-        from_map.stat_remove(from_iter); /* invalidates from_iter, from_extent, from_value */
+        /* beware: this could be a _partial_ remove! */
+        from_map.stat_remove_front(from_iter, length); /* can invalidate from_iter, from_extent, from_value */
 
         map_type & from_transpose = is_from_dev ? dev_transpose : storage_transpose;
-        from_transpose.remove(logical, from_physical, length, user_data);
+        from_transpose.remove(logical, from_physical, length);
 
         map_type & from_free = is_from_dev ? dev_free : storage_free;
         from_free.insert(from_physical, from_physical, length, FC_DEFAULT_USER_DATA);
@@ -905,11 +992,74 @@ int ft_work<T>::move_fragment(map_iterator from_iter, map_iterator to_free_iter,
 
 
 
-/** called by relocate(). move as many extents as possible from DEVICE and STORAGE directly to their final destination */
+/** called by relocate(). move as many extents as possible from DEVICE or STORAGE directly to their final destination */
 template<typename T>
-int ft_work<T>::move_to_target()
+int ft_work<T>::move_to_target(ft_from from)
 {
-    return 1;
+	map_type movable;
+
+	map_stat_type & from_map = from == FC_FROM_DEV ? dev_map: storage_map;
+	map_type & from_free = from == FC_FROM_DEV ? dev_free: storage_free;
+	map_type & from_transpose = from == FC_FROM_DEV ? dev_transpose : storage_transpose;
+
+	const char * label_from = label[from == FC_FROM_DEV ? FC_DEVICE : FC_STORAGE];
+	const ft_dir dir = from == FC_FROM_DEV ? FC_DEV2DEV : FC_STORAGE2DEV;
+	int err = 0;
+
+	/* find all DEVICE or STORAGE extents that can be moved to their final destination into DEVICE free space */
+	movable.intersect_all_all(from_transpose, dev_free, FC_PHYSICAL1);
+
+	if (movable.empty()) {
+		ff_log(FC_DEBUG, 0, "moved 0 bytes from %s to target (not so useful)", label_from);
+		ft_uoff eff_block_size = (ft_uoff)1 << io->effective_block_size_log2();
+		show(label_from, " transposed", eff_block_size, from_transpose);
+		show(label[FC_DEVICE], " free space", eff_block_size, dev_free);
+		return err;
+	}
+	if (ff_log_is_enabled(FC_DEBUG)) {
+		map_const_iterator iter = movable.begin(), end = movable.end();
+		ft_uoff movable_length = 0;
+		for (; iter != end; ++iter)
+			movable_length += iter->second.length;
+		movable_length <<= io->effective_block_size_log2();
+
+		double pretty_len = 0.0;
+		const char * pretty_label = ff_pretty_size(movable_length, & pretty_len);
+		ff_log(FC_DEBUG, 0, "moving %.2f %sbytes from %s to target ...",
+				pretty_len, pretty_label, label_from);
+		show(); /* show extents header */
+	}
+
+	/* move them */
+	map_const_iterator iter = movable.begin(), end = movable.end();
+	T from_physical, to_physical, length;
+	ft_size counter = 0;
+	for (; iter != end; ++iter) {
+		const map_value_type & extent = *iter;
+		from_physical = extent.second.logical;
+		to_physical = extent.first.physical;
+		length = extent.second.length;
+
+		err = io->copy(from_physical, to_physical, length, dir);
+		show(counter++, from_physical, to_physical, length, extent.second.user_data);
+		if (err != 0)
+			return err;
+		from_transpose.remove(extent);
+		from_map.stat_remove(from_physical, to_physical, length);
+		from_free.insert(from_physical, from_physical, length, FC_DEFAULT_USER_DATA);
+		/* completely forget final destination extent: it's NOT free anymore, but nothing to do there */
+		dev_free.remove(to_physical, to_physical, length);
+		dev_map.total_count(dev_map.total_count() - length);
+	}
+
+	if ((err = io->flush()) == 0)
+		ff_log(FC_DEBUG, 0, "finished moving from %s to target", label_from);
+	else {
+		/* error should has been reported by io->flush() */
+		if (!ff_log_is_reported(err))
+			err = ff_log(FC_ERROR, err, "%s move_to_target(): io->flush() failed with unreported error", label_from);
+	}
+	return err;
 }
 
 

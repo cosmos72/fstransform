@@ -120,13 +120,17 @@ int ft_io::write_extents(const ft_vector<ft_uoff> & loop_file_extents,
  */
 int ft_io::copy_queue(ft_uoff from_physical, ft_uoff to_physical, ft_uoff length, ft_dir dir)
 {
-    /** TODO: add here an if() to choose between lazy I/O and unbuffered I/O */
     int err = request.coalesce(from_physical, to_physical, length, dir);
-    if (err != 0) {
+    while (err != 0) {
         /* cannot coalesce request, let's flush first */
-        err = flush_queue();
-        if (err == 0)
-            err = request.assign(from_physical, to_physical, length, dir);
+        if ((err = flush_queue()) != 0)
+        	break;
+
+        if ((err = request.assign(from_physical, to_physical, length, dir)) != 0) {
+        	err = ff_log(FC_FATAL, err, "internal error! request.assign(from = %"FS_ULL", to = %"FS_ULL", length = %"FS_ULL", dir = %d) failed",
+        			(ft_ull)from_physical, (ft_ull)to_physical, (ft_ull)length, (int)dir);
+        }
+        break;
     }
     return err;
 }

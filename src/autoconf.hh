@@ -37,6 +37,12 @@
 #  endif
 #endif /* FT_HAVE_POSIX_FALLOCATE */
 
+/** define if umount() is supported */
+#ifndef FT_HAVE_UMOUNT
+# if defined(__linux__)
+#    define FT_HAVE_UMOUNT
+# endif
+#endif
 
 /** define if va_copy() macro is supported (copies va_list variadic arguments) */
 #ifndef FT_HAVE_VA_COPY

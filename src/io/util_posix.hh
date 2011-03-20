@@ -48,7 +48,7 @@ int ff_posix_lseek(int fd, ft_uoff pos);
  * keep retrying in case of EINTR or short reads.
  * on return, ret_length will be increased by the number of bytes actually read
  */
-int ff_posix_read(int fd, void * mem, ft_uoff length, ft_uoff * ret_length);
+int ff_posix_read(int fd, void * mem, ft_uoff length);
 
 
 /**
@@ -56,7 +56,7 @@ int ff_posix_read(int fd, void * mem, ft_uoff length, ft_uoff * ret_length);
  * keep retrying in case of EINTR or short writes.
  * on return, ret_length will be increased by the number of bytes actually written
  */
-int ff_posix_write(int fd, const void * mem, ft_uoff length, ft_uoff * ret_length);
+int ff_posix_write(int fd, const void * mem, ft_uoff length);
 
 
 FT_IO_NAMESPACE_END

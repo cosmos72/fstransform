@@ -241,45 +241,89 @@ void ft_map<T>::bounds(key_type & min_key, key_type & max_key) const
 
 
 /**
- * find the intersection (matching physical and logical) between the two specified extents,
+ * find the intersection (matching physical, logical or both) between the two specified extents,
  * insert it into 'result' (with user_data = FC_DEFAULT_USER_DATA) and return true.
- * if no intersections, return false and 'result' will be unchanged
+ * if no intersections, return false and 'result' will be unchanged.
+ *
+ * note: if the intersection is only physical,
+ * the intersection will contain the appropriate subrange of extent[which] -> logical
+ *
+ * note: if the intersection is only logical,
+ * the intersection will contain the appropriate subrange of extent[which] -> physical
  */
 template<typename T>
-bool ft_map<T>::intersect(const value_type & extent1, const value_type & extent2)
+bool ft_map<T>::intersect(const value_type & extent1, const value_type & extent2, ft_match match)
 {
     const key_type & key1 = extent1.first;
     const mapped_type & value1 = extent1.second;
 
     T physical1 = key1.physical;
     T logical1 = value1.logical;
-    T end1 = value1.length + physical1;
+    T physical_end1 = value1.length + physical1;
+    T logical_end1 = value1.length + logical1;
 
     const key_type & key2 = extent2.first;
     const mapped_type & value2 = extent2.second;
 
     T physical2 = key2.physical;
     T logical2 = value2.logical;
-    T end2 = value2.length + physical2;
+    T physical_end2 = value2.length + physical2;
+    T logical_end2 = value2.length + logical2;
 
-    if (end1 > physical2 && physical1 < end2
-            && physical1 - physical2 == logical1 - logical2)
-    {
-        key_type key = { ff_max2(physical1, physical2) };
-        mapped_type value = { ff_max2(logical1, logical2), ff_min2(end1, end2) - key.physical, FC_DEFAULT_USER_DATA };
-        this->insert(key, value);
-        return true;
+    key_type key = { 0 };
+    mapped_type value = { 0, 0, extent1.second.user_data };
+
+    switch (match) {
+		case FC_PHYSICAL1:
+		case FC_PHYSICAL2:
+			if (physical_end1 > physical2 && physical1 < physical_end2)
+			{
+				key.physical = ff_max2(physical1, physical2);
+				value.logical = match == FC_PHYSICAL1 ? logical1 + (key.physical - physical1) : logical2 + (key.physical - physical2);
+				value.length = ff_min2(physical_end1, physical_end2) - key.physical;
+			} else
+				return false;
+			break;
+		case FC_LOGICAL1:
+		case FC_LOGICAL2:
+			if (logical_end1 > logical2 && logical1 < logical_end2)
+			{
+				value.logical = ff_max2(logical1, logical2);
+				value.length = ff_min2(logical_end1, logical_end2) - value.logical;
+				key.physical = match == FC_LOGICAL1 ? physical1 + (value.logical - logical1) : physical2 + (value.logical - logical2);
+			} else
+				return false;
+			break;
+		case FC_BOTH:
+			if (physical_end1 > physical2 && physical1 < physical_end2
+				&& logical2 - logical1 == physical2 - physical1)
+			{
+				key.physical = ff_max2(physical1, physical2);
+		        value.logical = ff_max2(logical1, logical2);
+		        value.length = ff_min2(physical_end1, physical_end2) - key.physical;
+			} else
+				return false;
+			break;
+		default:
+			return false;
     }
-    return false;
+    this->insert(key, value);
+    return true;
 }
 
 /**
  * find the intersections (matching physical and logical) between specified map and extent.
  * insert list of intersections into this and return true.
  * if no intersections, return false and this will be unchanged
+ *
+ * note: if the intersection is only physical,
+ * the intersection will contain the appropriate subrange of {map,extent}[which] -> logical
+ *
+ * note: if the intersection is only logical,
+ * the intersection will contain the appropriate subrange of {map,extent}[which] -> physical
  */
 template<typename T>
-bool ft_map<T>::intersect_all(const ft_map<T> & map, const value_type & extent)
+bool ft_map<T>::intersect_all(const ft_map<T> & map, const value_type & extent, ft_match match)
 {
     const key_type & key1 = extent.first;
     const_iterator pos = map.super_type::upper_bound(key1), begin = map.begin(), end = map.end();
@@ -288,11 +332,11 @@ bool ft_map<T>::intersect_all(const ft_map<T> & map, const value_type & extent)
     if (pos != begin) {
         --pos;
         /* pos is now last extent starting before key */
-        ret |= intersect(*pos, extent);
+        ret |= intersect(*pos, extent, match);
         ++pos;
     }
     for (; pos != end; ++pos) {
-        if (intersect(*pos, extent))
+        if (intersect(*pos, extent, match))
             ret = true;
         else
             break;
@@ -305,9 +349,15 @@ bool ft_map<T>::intersect_all(const ft_map<T> & map, const value_type & extent)
  * find the intersections (matching physical and logical) between specified map1 and map2.
  * insert list of intersections into this map and return true.
  * if no intersections, return false and this map will be unchanged
+ *
+ * note: if the intersection is only physical,
+ * the intersection will contain the appropriate subrange of extent1 -> logical
+ *
+ * note: if the intersection is only logical,
+ * the intersection will contain the appropriate subrange of extent1 -> physical
  */
 template<typename T>
-bool ft_map<T>::intersect_all_all(const ft_map<T> & map1, const ft_map<T> & map2)
+bool ft_map<T>::intersect_all_all(const ft_map<T> & map1, const ft_map<T> & map2, ft_match match)
 {
     ft_size size1 = map1.size(), size2 = map2.size();
     if (size1 == 0 || size2 == 0)
@@ -315,6 +365,8 @@ bool ft_map<T>::intersect_all_all(const ft_map<T> & map1, const ft_map<T> & map2
 
     const ft_map<T> & map_iterate = size1 < size2 ? map1 : map2;
     const ft_map<T> & map_other   = size1 < size2 ? map2 : map1;
+    if (size1 < size2)
+    	match = ff_match_transpose(match);
 
     key_type bound_lo, bound_hi;
     map_other.bounds(bound_lo, bound_hi);
@@ -327,7 +379,7 @@ bool ft_map<T>::intersect_all_all(const ft_map<T> & map1, const ft_map<T> & map2
     bool ret = false;
 
     for (; iter != end; ++iter)
-        ret |= intersect_all(map_other, *iter);
+        ret |= intersect_all(map_other, *iter, match);
     return ret;
 }
 
@@ -485,7 +537,7 @@ template<typename T>
 void ft_map<T>::remove(const value_type & extent)
 {
     ft_map<T> intersect_list;
-    intersect_list.intersect_all(*this, extent);
+    intersect_list.intersect_all(*this, extent, FC_BOTH);
     const_iterator iter = intersect_list.begin(), end = intersect_list.end();
     for (; iter != end; ++iter)
         remove1(*iter);
@@ -496,10 +548,10 @@ void ft_map<T>::remove(const value_type & extent)
  * from this ft_map, splitting the existing extents if needed.
  */
 template<typename T>
-void ft_map<T>::remove(T physical, T logical, T length, ft_size user_data)
+void ft_map<T>::remove(T physical, T logical, T length)
 {
     key_type key = { physical };
-    mapped_type value = { logical, length, user_data };
+    mapped_type value = { logical, length, FC_DEFAULT_USER_DATA };
     value_type extent(key, value);
     remove(extent);
 }

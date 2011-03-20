@@ -226,6 +226,7 @@ public:
     template<typename T>
     int copy(T from_physical, T to_physical, T length, ft_dir dir)
     {
+        /** TODO: move buffering to work<T> */
         return copy_queue((ft_uoff)from_physical << this_eff_block_size_log2,
                           (ft_uoff)to_physical << this_eff_block_size_log2,
                           (ft_uoff)length  << this_eff_block_size_log2,

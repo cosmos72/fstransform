@@ -1,0 +1,1647 @@
+2011-03-17 20:03:45 NOTICE [job.init(97)] starting job 5
+2011-03-17 20:03:45 INFO   [job.init(98)] job persistent data and logs will be in './.fstransform/job.5'
+2011-03-17 20:03:45 DEBUG  [io/io_posix.open(131)] device length is 2.00 megabytes
+2011-03-17 20:03:45 INFO   [transform.run(398)] analyzing device '/dev/loop0', this may take some minutes ...
+2011-03-17 20:03:45 DEBUG  [io/extent_posix.ff_linux_fiemap_ioctl(149)] ioctl(5, FS_IOC_FIEMAP, extents[0]) failed (Operation not supported), falling back on ioctl(FIBMAP) ...
+2011-03-17 20:03:45 DEBUG  [io/extent_posix.ff_posix_fibmap(121)] ioctl(5, FIBMAP) succeeded
+2011-03-17 20:03:45 DEBUG  [io/extent_posix.ff_linux_fiemap_ioctl(149)] ioctl(6, FS_IOC_FIEMAP, extents[0]) failed (Operation not supported), falling back on ioctl(FIBMAP) ...
+2011-03-17 20:03:45 DEBUG  [io/extent_posix.ff_posix_fibmap(121)] ioctl(6, FIBMAP) succeeded
+2011-03-17 20:03:45 DEBUG  [io/io.read_extents(79)] device effective block size = 1024
+2011-03-17 20:03:45 DEBUG  [dispatch.main(29)] using reduced (32 bit) relocation algorithm: lower memory usage
+2011-03-17 20:03:45 DEBUG  [work<T>.show(57)] #  105 extents in loop-file
+2011-03-17 20:03:45 TRACE  [work<T>.show(60)] # effective block size = 1024
+2011-03-17 20:03:45 TRACE  [work<T>.show(76)] #  extent		physical		 logical	  length	user_data
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #       0	          48	           1	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #       1	          51	        2047	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #       2	          52	           2	       2	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #       3	          54	           0	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #       4	          55	        1984	      63	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #       5	         119	          12	      32	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #       6	         151	          45	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #       7	         152	          44	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #       8	         153	          46	      11	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #       9	         164	           4	       3	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      10	         167	          10	       2	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      11	         169	           7	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      12	         170	          57	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      13	         171	           9	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      14	         172	           8	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      15	         173	          68	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      16	         174	          96	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      17	         175	         113	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      18	         176	         148	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      19	         177	         216	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      20	         178	         238	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      21	         180	         294	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      22	         181	         335	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      23	         182	         390	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      24	         183	         404	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      25	         184	         477	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      26	         185	         504	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      27	         187	         530	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      28	         188	         584	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      29	         189	         606	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      30	         190	         639	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      31	         191	         688	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      32	         192	         705	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      33	         193	         762	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      34	         195	         786	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      35	         196	         830	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      36	         197	         851	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      37	         198	         882	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      38	         199	         943	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      39	         200	         967	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      40	         201	         994	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      41	         202	        1015	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      42	         204	        1083	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      43	         205	        1100	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      44	         206	        1125	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      45	         208	        1552	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      46	         209	        1606	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      47	         210	        1644	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      48	         211	        1689	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      49	         212	        1725	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      50	         213	        1756	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      51	         214	        1818	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      52	         215	        1855	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      53	         216	        1899	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      54	         217	        1936	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      55	         218	        1973	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      56	         220	        1537	       3	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      57	         223	        1631	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      58	         224	        1540	      12	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      59	         236	        1553	      53	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      60	         289	        1607	      24	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      61	         313	        1632	      12	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      62	         325	        1645	      44	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      63	         369	        1690	      35	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      64	         404	        1726	      30	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      65	         434	        1757	      43	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      66	         477	         356	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      67	         478	        1800	      18	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      68	         496	        1819	      36	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      69	         532	        1856	      43	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      70	         575	        1900	      36	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      71	         611	        1937	      36	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      72	         647	        1974	      10	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      73	         657	          58	      10	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      74	         667	          69	      27	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      75	         694	          97	      16	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      76	         710	         114	      34	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      77	         744	         149	      67	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      78	         811	         217	      21	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      79	         832	         239	      55	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      80	         887	         295	      40	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      81	         927	         336	      20	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      82	         947	         357	      33	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      83	         980	         391	      13	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      84	         993	         405	      72	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      85	        1065	         478	      26	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      86	        1091	         505	      25	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      87	        1116	         531	      53	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      88	        1169	         585	      21	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      89	        1190	         607	      32	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      90	        1222	         640	      48	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      91	        1270	         689	      16	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      92	        1286	         706	      56	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      93	        1342	         763	      23	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      94	        1365	         787	      43	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      95	        1408	         831	      20	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      96	        1428	         852	      30	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      97	        1458	         883	      60	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      98	        1518	         944	      23	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      99	        1541	         968	      26	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #     100	        1567	         995	      20	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #     101	        1587	        1016	      67	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #     102	        1654	        1084	      16	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #     103	        1670	        1101	      24	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #     104	        1694	        1126	      12	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(69)] 
+2011-03-17 20:03:45 DEBUG  [work<T>.show(57)] #    3 extents in free-space
+2011-03-17 20:03:45 TRACE  [work<T>.show(60)] # effective block size = 1024
+2011-03-17 20:03:45 TRACE  [work<T>.show(76)] #  extent		physical		 logical	  length	user_data
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #       0	        1706	        1706	       7	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #       1	        1714	        1714	     256	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #       2	        1972	        1972	      76	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(69)] 
+2011-03-17 20:03:45 DEBUG  [work<T>.show(57)] #   11 extents in device
+2011-03-17 20:03:45 TRACE  [work<T>.show(60)] # effective block size = 1024
+2011-03-17 20:03:45 TRACE  [work<T>.show(76)] #  extent		physical		 logical	  length	user_data
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #       0	           0	           0	      48	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #       1	          49	          49	       2	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #       2	         118	         118	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #       3	         179	         179	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #       4	         186	         186	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #       5	         194	         194	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #       6	         203	         203	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #       7	         207	         207	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #       8	         219	         219	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #       9	        1713	        1713	       1	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #      10	        1970	        1970	       2	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(69)] 
+2011-03-17 20:03:45 DEBUG  [work<T>.show(57)] #    1 extent  in loop-holes (initial)
+2011-03-17 20:03:45 TRACE  [work<T>.show(60)] # effective block size = 1024
+2011-03-17 20:03:45 TRACE  [work<T>.show(76)] #  extent		physical		 logical	  length	user_data
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #       0	        1138	        1138	     399	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(69)] 
+2011-03-17 20:03:45 DEBUG  [work<T>.show(67)] #   no extents in device (invariant)
+2011-03-17 20:03:45 TRACE  [work<T>.show(69)] 
+2011-03-17 20:03:45 DEBUG  [work<T>.show(57)] #    1 extent  in loop-holes after device (invariant)
+2011-03-17 20:03:45 TRACE  [work<T>.show(60)] # effective block size = 1024
+2011-03-17 20:03:45 TRACE  [work<T>.show(76)] #  extent		physical		 logical	  length	user_data
+2011-03-17 20:03:45 TRACE  [work<T>.show(84)] #       0	        1138	        1138	     399	(0)
+2011-03-17 20:03:45 TRACE  [work<T>.show(69)] 
+2011-03-17 20:03:50 DEBUG  [work<T>.show(57)] #   11 extents in device (renumbered)
+2011-03-17 20:03:50 TRACE  [work<T>.show(60)] # effective block size = 1024
+2011-03-17 20:03:50 TRACE  [work<T>.show(76)] #  extent		physical		 logical	  length	user_data
+2011-03-17 20:03:50 TRACE  [work<T>.show(84)] #       0	           0	        1138	      48	(0)
+2011-03-17 20:03:50 TRACE  [work<T>.show(84)] #       1	          49	        1186	       2	(0)
+2011-03-17 20:03:50 TRACE  [work<T>.show(84)] #       2	         118	        1188	       1	(0)
+2011-03-17 20:03:50 TRACE  [work<T>.show(84)] #       3	         179	        1189	       1	(0)
+2011-03-17 20:03:50 TRACE  [work<T>.show(84)] #       4	         186	        1190	       1	(0)
+2011-03-17 20:03:50 TRACE  [work<T>.show(84)] #       5	         194	        1191	       1	(0)
+2011-03-17 20:03:50 TRACE  [work<T>.show(84)] #       6	         203	        1192	       1	(0)
+2011-03-17 20:03:50 TRACE  [work<T>.show(84)] #       7	         207	        1193	       1	(0)
+2011-03-17 20:03:50 TRACE  [work<T>.show(84)] #       8	         219	        1194	       1	(0)
+2011-03-17 20:03:50 TRACE  [work<T>.show(84)] #       9	        1713	        1195	       1	(0)
+2011-03-17 20:03:50 TRACE  [work<T>.show(84)] #      10	        1970	        1196	       2	(0)
+2011-03-17 20:03:50 TRACE  [work<T>.show(69)] 
+2011-03-17 20:03:51 DEBUG  [work<T>.show(57)] #    1 extent  in loop-holes (final)
+2011-03-17 20:03:51 TRACE  [work<T>.show(60)] # effective block size = 1024
+2011-03-17 20:03:51 TRACE  [work<T>.show(76)] #  extent		physical		 logical	  length	user_data
+2011-03-17 20:03:51 TRACE  [work<T>.show(84)] #       0	        1198	        1198	     339	(0)
+2011-03-17 20:03:51 TRACE  [work<T>.show(69)] 
+2011-03-17 20:04:12 DEBUG  [work<T>.show(67)] #   no extents in loop-file (invariant)
+2011-03-17 20:04:12 TRACE  [work<T>.show(69)] 
+2011-03-17 20:04:41 DEBUG  [work<T>.show(57)] #  116 extents in device + loop-file (merged)
+2011-03-17 20:04:41 TRACE  [work<T>.show(60)] # effective block size = 1024
+2011-03-17 20:04:41 TRACE  [work<T>.show(76)] #  extent		physical		 logical	  length	user_data
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #       0	           0	        1138	      48	(0)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #       1	          48	           1	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #       2	          49	        1186	       2	(0)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #       3	          51	        2047	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #       4	          52	           2	       2	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #       5	          54	           0	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #       6	          55	        1984	      63	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #       7	         118	        1188	       1	(0)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #       8	         119	          12	      32	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #       9	         151	          45	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      10	         152	          44	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      11	         153	          46	      11	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      12	         164	           4	       3	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      13	         167	          10	       2	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      14	         169	           7	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      15	         170	          57	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      16	         171	           9	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      17	         172	           8	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      18	         173	          68	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      19	         174	          96	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      20	         175	         113	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      21	         176	         148	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      22	         177	         216	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      23	         178	         238	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      24	         179	        1189	       1	(0)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      25	         180	         294	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      26	         181	         335	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      27	         182	         390	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      28	         183	         404	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      29	         184	         477	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      30	         185	         504	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      31	         186	        1190	       1	(0)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      32	         187	         530	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      33	         188	         584	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      34	         189	         606	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      35	         190	         639	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      36	         191	         688	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      37	         192	         705	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      38	         193	         762	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      39	         194	        1191	       1	(0)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      40	         195	         786	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      41	         196	         830	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      42	         197	         851	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      43	         198	         882	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      44	         199	         943	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      45	         200	         967	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      46	         201	         994	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      47	         202	        1015	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      48	         203	        1192	       1	(0)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      49	         204	        1083	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      50	         205	        1100	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      51	         206	        1125	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      52	         207	        1193	       1	(0)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      53	         208	        1552	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      54	         209	        1606	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      55	         210	        1644	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      56	         211	        1689	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      57	         212	        1725	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      58	         213	        1756	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      59	         214	        1818	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      60	         215	        1855	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      61	         216	        1899	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      62	         217	        1936	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      63	         218	        1973	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      64	         219	        1194	       1	(0)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      65	         220	        1537	       3	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      66	         223	        1631	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      67	         224	        1540	      12	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      68	         236	        1553	      53	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      69	         289	        1607	      24	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      70	         313	        1632	      12	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      71	         325	        1645	      44	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      72	         369	        1690	      35	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      73	         404	        1726	      30	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      74	         434	        1757	      43	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      75	         477	         356	       1	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      76	         478	        1800	      18	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      77	         496	        1819	      36	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      78	         532	        1856	      43	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      79	         575	        1900	      36	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      80	         611	        1937	      36	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      81	         647	        1974	      10	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      82	         657	          58	      10	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      83	         667	          69	      27	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      84	         694	          97	      16	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      85	         710	         114	      34	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      86	         744	         149	      67	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      87	         811	         217	      21	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      88	         832	         239	      55	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      89	         887	         295	      40	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      90	         927	         336	      20	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      91	         947	         357	      33	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      92	         980	         391	      13	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      93	         993	         405	      72	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      94	        1065	         478	      26	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      95	        1091	         505	      25	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      96	        1116	         531	      53	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      97	        1169	         585	      21	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      98	        1190	         607	      32	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #      99	        1222	         640	      48	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #     100	        1270	         689	      16	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #     101	        1286	         706	      56	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #     102	        1342	         763	      23	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #     103	        1365	         787	      43	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #     104	        1408	         831	      20	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #     105	        1428	         852	      30	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #     106	        1458	         883	      60	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #     107	        1518	         944	      23	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #     108	        1541	         968	      26	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #     109	        1567	         995	      20	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #     110	        1587	        1016	      67	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #     111	        1654	        1084	      16	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #     112	        1670	        1101	      24	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #     113	        1694	        1126	      12	(1)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #     114	        1713	        1195	       1	(0)
+2011-03-17 20:04:41 TRACE  [work<T>.show(84)] #     115	        1970	        1196	       2	(0)
+2011-03-17 20:04:41 TRACE  [work<T>.show(69)] 
+2011-03-17 20:04:43 NOTICE [work<T>.analyze(450)] analysis completed: 1.67 megabytes must be relocated
+2011-03-17 20:04:49 DEBUG  [work<T>.show(67)] #   no extents in free-space (invariant)
+2011-03-17 20:04:49 TRACE  [work<T>.show(69)] 
+2011-03-17 20:05:01 DEBUG  [work<T>.show(67)] #   no extents in primary-storage (= free-space, invariant, contiguous, aligned)
+2011-03-17 20:05:01 TRACE  [work<T>.show(69)] 
+2011-03-17 20:05:05 INFO   [work<T>.analyze(514)] primary-storage: located 0.00 bytes (3 fragments) usable in device (free, invariant, contiguous and aligned)
+2011-03-17 20:05:46 INFO   [work<T>.fill_io_primary_storage(738)] primary-storage: actually using 0.00 bytes (0 fragments) from device
+2011-03-17 20:05:46 DEBUG  [work<T>.show(67)] #   no extents in primary-storage (actually used)
+2011-03-17 20:05:46 TRACE  [work<T>.show(69)] 
+2011-03-17 20:05:46 DEBUG  [io/io_posix.create_storage(325)] storage: preemptively reserved contiguous RAM, mmap(length = 1048576, PROT_NONE, MAP_PRIVATE|MAP_ANONYMOUS, -1) = ok
+2011-03-17 20:05:46 NOTICE [io/io_posix.create_storage(343)] storage: allocated 1.00 megabytes RAM as memory buffer
+2011-03-17 20:05:46 INFO   [io/io_posix.create_secondary_storage(500)] secondary-storage: writing 1.00 megabytes to './.fstransform/job.5/storage.bin' ...
+2011-03-17 20:05:46 INFO   [io/io_posix.create_secondary_storage(531)] secondary-storage file created
+2011-03-17 20:05:46 TRACE  [io/io_posix.replace_storage_mmap(450)] secondary-storage extent #0 mapped in RAM, mmap(address + 0, length = 1048576, MAP_FIXED) = ok
+2011-03-17 20:05:46 NOTICE [io/io_posix.create_storage(389)] secondary-storage initialized and mmapped() to 1.00 megabytes of contiguous RAM
+2011-03-17 20:05:46 NOTICE [work<T>.relocate(751)] everything ready for relocation, umounting device '/dev/loop0' ... 
+2011-03-17 20:05:46 ERROR  [work<T>.relocate(758)] failed to umount() device '/dev/loop0': Invalid argument
+2011-03-17 20:05:46 WARN   [work<T>.relocate(764)] please manually umount device '/dev/loop0' before continuing. press RETURN when done, or CTRL+C to quit
+2011-03-17 20:06:47 NOTICE [work<T>.relocate(770)] relocation starting. this may take a LONG time ...
+2011-03-17 20:15:20 INFO   [work<T>.show_progress(831)] progress: device has 1.67 megabytes to relocate and 339.00 kilobytes free
+2011-03-17 20:15:20 INFO   [work<T>.show_progress(831)] progress: storage has 0.00 bytes to relocate and 1.00 megabytes free
+2011-03-17 20:15:20 DEBUG  [work<T>.show(57)] #    3 extents in device free space
+2011-03-17 20:15:20 TRACE  [work<T>.show(60)] # effective block size = 1024
+2011-03-17 20:15:20 TRACE  [work<T>.show(76)] #  extent		physical		 logical	  length	user_data
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #       0	        1706	        1706	       7	(0)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #       1	        1714	        1714	     256	(0)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #       2	        1972	        1972	      76	(0)
+2011-03-17 20:15:20 TRACE  [work<T>.show(69)] 
+2011-03-17 20:15:20 DEBUG  [work<T>.show(57)] #  116 extents in device
+2011-03-17 20:15:20 TRACE  [work<T>.show(60)] # effective block size = 1024
+2011-03-17 20:15:20 TRACE  [work<T>.show(76)] #  extent		physical		 logical	  length	user_data
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #       0	           0	        1138	      48	(0)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #       1	          48	           1	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #       2	          49	        1186	       2	(0)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #       3	          51	        2047	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #       4	          52	           2	       2	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #       5	          54	           0	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #       6	          55	        1984	      63	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #       7	         118	        1188	       1	(0)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #       8	         119	          12	      32	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #       9	         151	          45	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      10	         152	          44	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      11	         153	          46	      11	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      12	         164	           4	       3	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      13	         167	          10	       2	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      14	         169	           7	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      15	         170	          57	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      16	         171	           9	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      17	         172	           8	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      18	         173	          68	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      19	         174	          96	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      20	         175	         113	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      21	         176	         148	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      22	         177	         216	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      23	         178	         238	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      24	         179	        1189	       1	(0)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      25	         180	         294	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      26	         181	         335	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      27	         182	         390	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      28	         183	         404	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      29	         184	         477	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      30	         185	         504	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      31	         186	        1190	       1	(0)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      32	         187	         530	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      33	         188	         584	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      34	         189	         606	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      35	         190	         639	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      36	         191	         688	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      37	         192	         705	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      38	         193	         762	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      39	         194	        1191	       1	(0)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      40	         195	         786	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      41	         196	         830	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      42	         197	         851	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      43	         198	         882	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      44	         199	         943	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      45	         200	         967	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      46	         201	         994	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      47	         202	        1015	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      48	         203	        1192	       1	(0)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      49	         204	        1083	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      50	         205	        1100	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      51	         206	        1125	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      52	         207	        1193	       1	(0)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      53	         208	        1552	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      54	         209	        1606	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      55	         210	        1644	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      56	         211	        1689	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      57	         212	        1725	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      58	         213	        1756	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      59	         214	        1818	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      60	         215	        1855	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      61	         216	        1899	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      62	         217	        1936	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      63	         218	        1973	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      64	         219	        1194	       1	(0)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      65	         220	        1537	       3	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      66	         223	        1631	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      67	         224	        1540	      12	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      68	         236	        1553	      53	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      69	         289	        1607	      24	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      70	         313	        1632	      12	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      71	         325	        1645	      44	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      72	         369	        1690	      35	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      73	         404	        1726	      30	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      74	         434	        1757	      43	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      75	         477	         356	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      76	         478	        1800	      18	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      77	         496	        1819	      36	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      78	         532	        1856	      43	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      79	         575	        1900	      36	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      80	         611	        1937	      36	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      81	         647	        1974	      10	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      82	         657	          58	      10	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      83	         667	          69	      27	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      84	         694	          97	      16	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      85	         710	         114	      34	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      86	         744	         149	      67	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      87	         811	         217	      21	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      88	         832	         239	      55	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      89	         887	         295	      40	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      90	         927	         336	      20	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      91	         947	         357	      33	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      92	         980	         391	      13	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      93	         993	         405	      72	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      94	        1065	         478	      26	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      95	        1091	         505	      25	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      96	        1116	         531	      53	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      97	        1169	         585	      21	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      98	        1190	         607	      32	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      99	        1222	         640	      48	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #     100	        1270	         689	      16	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #     101	        1286	         706	      56	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #     102	        1342	         763	      23	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #     103	        1365	         787	      43	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #     104	        1408	         831	      20	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #     105	        1428	         852	      30	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #     106	        1458	         883	      60	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #     107	        1518	         944	      23	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #     108	        1541	         968	      26	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #     109	        1567	         995	      20	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #     110	        1587	        1016	      67	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #     111	        1654	        1084	      16	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #     112	        1670	        1101	      24	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #     113	        1694	        1126	      12	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #     114	        1713	        1195	       1	(0)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #     115	        1970	        1196	       2	(0)
+2011-03-17 20:15:20 TRACE  [work<T>.show(69)] 
+2011-03-17 20:15:20 DEBUG  [work<T>.show(57)] #  116 extents in device transposed
+2011-03-17 20:15:20 TRACE  [work<T>.show(60)] # effective block size = 1024
+2011-03-17 20:15:20 TRACE  [work<T>.show(76)] #  extent		physical		 logical	  length	user_data
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #       0	           0	          54	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #       1	           1	          48	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #       2	           2	          52	       2	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #       3	           4	         164	       3	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #       4	           7	         169	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #       5	           8	         172	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #       6	           9	         171	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #       7	          10	         167	       2	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #       8	          12	         119	      32	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #       9	          44	         152	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      10	          45	         151	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      11	          46	         153	      11	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      12	          57	         170	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      13	          58	         657	      10	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      14	          68	         173	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      15	          69	         667	      27	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      16	          96	         174	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      17	          97	         694	      16	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      18	         113	         175	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      19	         114	         710	      34	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      20	         148	         176	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      21	         149	         744	      67	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      22	         216	         177	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      23	         217	         811	      21	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      24	         238	         178	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      25	         239	         832	      55	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      26	         294	         180	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      27	         295	         887	      40	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      28	         335	         181	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      29	         336	         927	      20	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      30	         356	         477	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      31	         357	         947	      33	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      32	         390	         182	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      33	         391	         980	      13	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      34	         404	         183	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      35	         405	         993	      72	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      36	         477	         184	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      37	         478	        1065	      26	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      38	         504	         185	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      39	         505	        1091	      25	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      40	         530	         187	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      41	         531	        1116	      53	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      42	         584	         188	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      43	         585	        1169	      21	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      44	         606	         189	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      45	         607	        1190	      32	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      46	         639	         190	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      47	         640	        1222	      48	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      48	         688	         191	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      49	         689	        1270	      16	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      50	         705	         192	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      51	         706	        1286	      56	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      52	         762	         193	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      53	         763	        1342	      23	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      54	         786	         195	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      55	         787	        1365	      43	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      56	         830	         196	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      57	         831	        1408	      20	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      58	         851	         197	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      59	         852	        1428	      30	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      60	         882	         198	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      61	         883	        1458	      60	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      62	         943	         199	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      63	         944	        1518	      23	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      64	         967	         200	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      65	         968	        1541	      26	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      66	         994	         201	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      67	         995	        1567	      20	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      68	        1015	         202	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      69	        1016	        1587	      67	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      70	        1083	         204	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      71	        1084	        1654	      16	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      72	        1100	         205	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      73	        1101	        1670	      24	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      74	        1125	         206	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      75	        1126	        1694	      12	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      76	        1138	           0	      48	(0)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      77	        1186	          49	       2	(0)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      78	        1188	         118	       1	(0)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      79	        1189	         179	       1	(0)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      80	        1190	         186	       1	(0)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      81	        1191	         194	       1	(0)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      82	        1192	         203	       1	(0)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      83	        1193	         207	       1	(0)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      84	        1194	         219	       1	(0)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      85	        1195	        1713	       1	(0)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      86	        1196	        1970	       2	(0)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      87	        1537	         220	       3	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      88	        1540	         224	      12	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      89	        1552	         208	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      90	        1553	         236	      53	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      91	        1606	         209	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      92	        1607	         289	      24	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      93	        1631	         223	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      94	        1632	         313	      12	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      95	        1644	         210	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      96	        1645	         325	      44	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      97	        1689	         211	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      98	        1690	         369	      35	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #      99	        1725	         212	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #     100	        1726	         404	      30	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #     101	        1756	         213	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #     102	        1757	         434	      43	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #     103	        1800	         478	      18	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #     104	        1818	         214	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #     105	        1819	         496	      36	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #     106	        1855	         215	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #     107	        1856	         532	      43	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #     108	        1899	         216	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #     109	        1900	         575	      36	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #     110	        1936	         217	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #     111	        1937	         611	      36	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #     112	        1973	         218	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #     113	        1974	         647	      10	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #     114	        1984	          55	      63	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #     115	        2047	          51	       1	(1)
+2011-03-17 20:15:20 TRACE  [work<T>.show(69)] 
+2011-03-17 20:15:20 DEBUG  [work<T>.show(57)] #    1 extent  in storage free space
+2011-03-17 20:15:20 TRACE  [work<T>.show(60)] # effective block size = 1024
+2011-03-17 20:15:20 TRACE  [work<T>.show(76)] #  extent		physical		 logical	  length	user_data
+2011-03-17 20:15:20 TRACE  [work<T>.show(84)] #       0	           0	           0	    1024	(0)
+2011-03-17 20:15:20 TRACE  [work<T>.show(69)] 
+2011-03-17 20:15:20 DEBUG  [work<T>.show(67)] #   no extents in storage
+2011-03-17 20:15:20 TRACE  [work<T>.show(69)] 
+2011-03-17 20:15:20 DEBUG  [work<T>.show(67)] #   no extents in storage transposed
+2011-03-17 20:15:20 TRACE  [work<T>.show(69)] 
+2011-03-17 20:15:41 DEBUG  [work<T>.fill_storage(858)] filling storage by moving 1.00 megabytes from device ...
+2011-03-17 20:15:41 TRACE  [work<T>.show(76)] #  extent		physical		 logical	  length	user_data
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #       0	           0	        1138	      48	(0)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #       1	          48	           1	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #       2	          49	        1186	       2	(0)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #       3	          51	        2047	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #       4	          52	           2	       2	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #       5	          54	           0	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #       6	          55	        1984	      63	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #       7	         118	        1188	       1	(0)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #       8	         119	          12	      32	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #       9	         151	          45	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      10	         152	          44	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      11	         153	          46	      11	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      12	         164	           4	       3	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      13	         167	          10	       2	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      14	         169	           7	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      15	         170	          57	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      16	         171	           9	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      17	         172	           8	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      18	         173	          68	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      19	         174	          96	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      20	         175	         113	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      21	         176	         148	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      22	         177	         216	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      23	         178	         238	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      24	         179	        1189	       1	(0)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      25	         180	         294	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      26	         181	         335	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      27	         182	         390	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      28	         183	         404	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      29	         184	         477	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      30	         185	         504	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      31	         186	        1190	       1	(0)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      32	         187	         530	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      33	         188	         584	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      34	         189	         606	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      35	         190	         639	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      36	         191	         688	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      37	         192	         705	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      38	         193	         762	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      39	         194	        1191	       1	(0)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      40	         195	         786	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      41	         196	         830	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      42	         197	         851	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      43	         198	         882	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      44	         199	         943	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      45	         200	         967	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      46	         201	         994	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      47	         202	        1015	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      48	         203	        1192	       1	(0)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      49	         204	        1083	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      50	         205	        1100	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      51	         206	        1125	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      52	         207	        1193	       1	(0)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      53	         208	        1552	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      54	         209	        1606	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      55	         210	        1644	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      56	         211	        1689	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      57	         212	        1725	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      58	         213	        1756	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      59	         214	        1818	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      60	         215	        1855	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      61	         216	        1899	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      62	         217	        1936	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      63	         218	        1973	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      64	         219	        1194	       1	(0)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      65	         220	        1537	       3	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      66	         223	        1631	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      67	         224	        1540	      12	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      68	         236	        1553	      53	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      69	         289	        1607	      24	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      70	         313	        1632	      12	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      71	         325	        1645	      44	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      72	         369	        1690	      35	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      73	         404	        1726	      30	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      74	         434	        1757	      43	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      75	         477	         356	       1	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      76	         478	        1800	      18	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      77	         496	        1819	      36	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      78	         532	        1856	      43	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      79	         575	        1900	      36	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      80	         611	        1937	      36	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      81	         647	        1974	      10	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      82	         657	          58	      10	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      83	         667	          69	      27	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      84	         694	          97	      16	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      85	         710	         114	      34	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      86	         744	         149	      67	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      87	         811	         217	      21	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      88	         832	         239	      55	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      89	         887	         295	      40	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      90	         927	         336	      20	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      91	         947	         357	      33	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      92	         980	         391	      13	(1)
+2011-03-17 20:15:41 TRACE  [work<T>.show(84)] #      93	         993	         405	      31	(1)
+2011-03-17 20:15:41 TRACE  [io/io_posix.read_bytes(647)] device to storage read({fd = 4, offset = 0}, address + 0, length = 1048576) = ok
+2011-03-17 20:15:41 DEBUG  [work<T>.fill_storage(872)] storage filled
+2011-03-17 20:15:43 INFO   [work<T>.show_progress(831)] progress: device has 685.00 kilobytes to relocate and 1.33 megabytes free
+2011-03-17 20:15:43 INFO   [work<T>.show_progress(831)] progress: storage has 1.00 megabytes to relocate and 0.00 bytes free
+2011-03-17 20:15:43 DEBUG  [work<T>.show(57)] #    4 extents in device free space
+2011-03-17 20:15:43 TRACE  [work<T>.show(60)] # effective block size = 1024
+2011-03-17 20:15:43 TRACE  [work<T>.show(76)] #  extent		physical		 logical	  length	user_data
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       0	           0	           0	    1024	(0)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       1	        1706	        1706	       7	(0)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       2	        1714	        1714	     256	(0)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       3	        1972	        1972	      76	(0)
+2011-03-17 20:15:43 TRACE  [work<T>.show(69)] 
+2011-03-17 20:15:43 DEBUG  [work<T>.show(57)] #   23 extents in device
+2011-03-17 20:15:43 TRACE  [work<T>.show(60)] # effective block size = 1024
+2011-03-17 20:15:43 TRACE  [work<T>.show(76)] #  extent		physical		 logical	  length	user_data
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       0	        1024	         436	      41	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       1	        1065	         478	      26	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       2	        1091	         505	      25	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       3	        1116	         531	      53	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       4	        1169	         585	      21	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       5	        1190	         607	      32	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       6	        1222	         640	      48	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       7	        1270	         689	      16	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       8	        1286	         706	      56	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       9	        1342	         763	      23	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      10	        1365	         787	      43	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      11	        1408	         831	      20	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      12	        1428	         852	      30	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      13	        1458	         883	      60	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      14	        1518	         944	      23	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      15	        1541	         968	      26	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      16	        1567	         995	      20	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      17	        1587	        1016	      67	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      18	        1654	        1084	      16	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      19	        1670	        1101	      24	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      20	        1694	        1126	      12	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      21	        1713	        1195	       1	(0)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      22	        1970	        1196	       2	(0)
+2011-03-17 20:15:43 TRACE  [work<T>.show(69)] 
+2011-03-17 20:15:43 DEBUG  [work<T>.show(57)] #   23 extents in device transposed
+2011-03-17 20:15:43 TRACE  [work<T>.show(60)] # effective block size = 1024
+2011-03-17 20:15:43 TRACE  [work<T>.show(76)] #  extent		physical		 logical	  length	user_data
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       0	         436	        1024	      41	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       1	         478	        1065	      26	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       2	         505	        1091	      25	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       3	         531	        1116	      53	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       4	         585	        1169	      21	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       5	         607	        1190	      32	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       6	         640	        1222	      48	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       7	         689	        1270	      16	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       8	         706	        1286	      56	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       9	         763	        1342	      23	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      10	         787	        1365	      43	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      11	         831	        1408	      20	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      12	         852	        1428	      30	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      13	         883	        1458	      60	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      14	         944	        1518	      23	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      15	         968	        1541	      26	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      16	         995	        1567	      20	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      17	        1016	        1587	      67	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      18	        1084	        1654	      16	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      19	        1101	        1670	      24	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      20	        1126	        1694	      12	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      21	        1195	        1713	       1	(0)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      22	        1196	        1970	       2	(0)
+2011-03-17 20:15:43 TRACE  [work<T>.show(69)] 
+2011-03-17 20:15:43 DEBUG  [work<T>.show(67)] #   no extents in storage free space
+2011-03-17 20:15:43 TRACE  [work<T>.show(69)] 
+2011-03-17 20:15:43 DEBUG  [work<T>.show(57)] #   94 extents in storage
+2011-03-17 20:15:43 TRACE  [work<T>.show(60)] # effective block size = 1024
+2011-03-17 20:15:43 TRACE  [work<T>.show(76)] #  extent		physical		 logical	  length	user_data
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       0	           0	        1138	      48	(0)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       1	          48	           1	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       2	          49	        1186	       2	(0)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       3	          51	        2047	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       4	          52	           2	       2	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       5	          54	           0	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       6	          55	        1984	      63	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       7	         118	        1188	       1	(0)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       8	         119	          12	      32	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       9	         151	          45	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      10	         152	          44	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      11	         153	          46	      11	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      12	         164	           4	       3	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      13	         167	          10	       2	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      14	         169	           7	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      15	         170	          57	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      16	         171	           9	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      17	         172	           8	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      18	         173	          68	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      19	         174	          96	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      20	         175	         113	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      21	         176	         148	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      22	         177	         216	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      23	         178	         238	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      24	         179	        1189	       1	(0)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      25	         180	         294	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      26	         181	         335	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      27	         182	         390	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      28	         183	         404	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      29	         184	         477	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      30	         185	         504	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      31	         186	        1190	       1	(0)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      32	         187	         530	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      33	         188	         584	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      34	         189	         606	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      35	         190	         639	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      36	         191	         688	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      37	         192	         705	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      38	         193	         762	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      39	         194	        1191	       1	(0)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      40	         195	         786	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      41	         196	         830	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      42	         197	         851	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      43	         198	         882	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      44	         199	         943	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      45	         200	         967	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      46	         201	         994	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      47	         202	        1015	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      48	         203	        1192	       1	(0)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      49	         204	        1083	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      50	         205	        1100	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      51	         206	        1125	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      52	         207	        1193	       1	(0)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      53	         208	        1552	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      54	         209	        1606	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      55	         210	        1644	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      56	         211	        1689	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      57	         212	        1725	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      58	         213	        1756	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      59	         214	        1818	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      60	         215	        1855	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      61	         216	        1899	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      62	         217	        1936	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      63	         218	        1973	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      64	         219	        1194	       1	(0)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      65	         220	        1537	       3	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      66	         223	        1631	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      67	         224	        1540	      12	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      68	         236	        1553	      53	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      69	         289	        1607	      24	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      70	         313	        1632	      12	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      71	         325	        1645	      44	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      72	         369	        1690	      35	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      73	         404	        1726	      30	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      74	         434	        1757	      43	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      75	         477	         356	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      76	         478	        1800	      18	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      77	         496	        1819	      36	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      78	         532	        1856	      43	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      79	         575	        1900	      36	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      80	         611	        1937	      36	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      81	         647	        1974	      10	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      82	         657	          58	      10	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      83	         667	          69	      27	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      84	         694	          97	      16	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      85	         710	         114	      34	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      86	         744	         149	      67	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      87	         811	         217	      21	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      88	         832	         239	      55	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      89	         887	         295	      40	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      90	         927	         336	      20	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      91	         947	         357	      33	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      92	         980	         391	      13	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      93	         993	         405	      31	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(69)] 
+2011-03-17 20:15:43 DEBUG  [work<T>.show(57)] #   94 extents in storage transposed
+2011-03-17 20:15:43 TRACE  [work<T>.show(60)] # effective block size = 1024
+2011-03-17 20:15:43 TRACE  [work<T>.show(76)] #  extent		physical		 logical	  length	user_data
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       0	           0	          54	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       1	           1	          48	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       2	           2	          52	       2	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       3	           4	         164	       3	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       4	           7	         169	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       5	           8	         172	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       6	           9	         171	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       7	          10	         167	       2	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       8	          12	         119	      32	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #       9	          44	         152	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      10	          45	         151	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      11	          46	         153	      11	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      12	          57	         170	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      13	          58	         657	      10	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      14	          68	         173	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      15	          69	         667	      27	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      16	          96	         174	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      17	          97	         694	      16	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      18	         113	         175	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      19	         114	         710	      34	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      20	         148	         176	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      21	         149	         744	      67	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      22	         216	         177	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      23	         217	         811	      21	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      24	         238	         178	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      25	         239	         832	      55	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      26	         294	         180	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      27	         295	         887	      40	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      28	         335	         181	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      29	         336	         927	      20	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      30	         356	         477	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      31	         357	         947	      33	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      32	         390	         182	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      33	         391	         980	      13	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      34	         404	         183	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      35	         405	         993	      31	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      36	         477	         184	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      37	         504	         185	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      38	         530	         187	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      39	         584	         188	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      40	         606	         189	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      41	         639	         190	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      42	         688	         191	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      43	         705	         192	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      44	         762	         193	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      45	         786	         195	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      46	         830	         196	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      47	         851	         197	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      48	         882	         198	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      49	         943	         199	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      50	         967	         200	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      51	         994	         201	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      52	        1015	         202	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      53	        1083	         204	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      54	        1100	         205	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      55	        1125	         206	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      56	        1138	           0	      48	(0)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      57	        1186	          49	       2	(0)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      58	        1188	         118	       1	(0)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      59	        1189	         179	       1	(0)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      60	        1190	         186	       1	(0)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      61	        1191	         194	       1	(0)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      62	        1192	         203	       1	(0)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      63	        1193	         207	       1	(0)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      64	        1194	         219	       1	(0)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      65	        1537	         220	       3	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      66	        1540	         224	      12	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      67	        1552	         208	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      68	        1553	         236	      53	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      69	        1606	         209	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      70	        1607	         289	      24	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      71	        1631	         223	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      72	        1632	         313	      12	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      73	        1644	         210	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      74	        1645	         325	      44	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      75	        1689	         211	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      76	        1690	         369	      35	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      77	        1725	         212	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      78	        1726	         404	      30	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      79	        1756	         213	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      80	        1757	         434	      43	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      81	        1800	         478	      18	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      82	        1818	         214	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      83	        1819	         496	      36	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      84	        1855	         215	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      85	        1856	         532	      43	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      86	        1899	         216	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      87	        1900	         575	      36	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      88	        1936	         217	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      89	        1937	         611	      36	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      90	        1973	         218	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      91	        1974	         647	      10	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      92	        1984	          55	      63	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(84)] #      93	        2047	          51	       1	(1)
+2011-03-17 20:15:43 TRACE  [work<T>.show(69)] 
+2011-03-17 20:17:03 DEBUG  [work<T>.move_to_target(1029)] moving 571.00 kilobytes from device to target ...
+2011-03-17 20:17:03 TRACE  [work<T>.show(76)] #  extent		physical		 logical	  length	user_data
+2011-03-17 20:17:11 TRACE  [work<T>.show(84)] #       0	        1024	         436	      41	(1)
+2011-03-17 20:17:16 TRACE  [io/io_posix.read_bytes(647)] device to buffer read({fd = 4, offset = 1048576}, address + 0, length = 41984) = ok
+2011-03-17 20:17:16 TRACE  [io/io_posix.write_bytes(697)] buffer to device write({fd = 4, offset = 446464}, address + 0, length = 41984) = ok
+2011-03-17 20:17:16 TRACE  [work<T>.show(84)] #       1	        1065	         478	      26	(1)
+2011-03-17 20:17:21 TRACE  [io/io_posix.read_bytes(647)] device to buffer read({fd = 4, offset = 1090560}, address + 0, length = 26624) = ok
+2011-03-17 20:17:21 TRACE  [io/io_posix.write_bytes(697)] buffer to device write({fd = 4, offset = 489472}, address + 0, length = 26624) = ok
+2011-03-17 20:17:21 TRACE  [work<T>.show(84)] #       2	        1091	         505	      25	(1)
+2011-03-17 20:17:21 TRACE  [io/io_posix.read_bytes(647)] device to buffer read({fd = 4, offset = 1117184}, address + 0, length = 25600) = ok
+2011-03-17 20:17:21 TRACE  [io/io_posix.write_bytes(697)] buffer to device write({fd = 4, offset = 517120}, address + 0, length = 25600) = ok
+2011-03-17 20:17:21 TRACE  [work<T>.show(84)] #       3	        1116	         531	      53	(1)
+2011-03-17 20:17:21 TRACE  [io/io_posix.read_bytes(647)] device to buffer read({fd = 4, offset = 1142784}, address + 0, length = 54272) = ok
+2011-03-17 20:17:21 TRACE  [io/io_posix.write_bytes(697)] buffer to device write({fd = 4, offset = 543744}, address + 0, length = 54272) = ok
+2011-03-17 20:17:21 TRACE  [work<T>.show(84)] #       4	        1169	         585	      21	(1)
+2011-03-17 20:17:21 TRACE  [io/io_posix.read_bytes(647)] device to buffer read({fd = 4, offset = 1197056}, address + 0, length = 21504) = ok
+2011-03-17 20:17:21 TRACE  [io/io_posix.write_bytes(697)] buffer to device write({fd = 4, offset = 599040}, address + 0, length = 21504) = ok
+2011-03-17 20:17:21 TRACE  [work<T>.show(84)] #       5	        1190	         607	      32	(1)
+2011-03-17 20:17:21 TRACE  [io/io_posix.read_bytes(647)] device to buffer read({fd = 4, offset = 1218560}, address + 0, length = 32768) = ok
+2011-03-17 20:17:21 TRACE  [io/io_posix.write_bytes(697)] buffer to device write({fd = 4, offset = 621568}, address + 0, length = 32768) = ok
+2011-03-17 20:17:21 TRACE  [work<T>.show(84)] #       6	        1222	         640	      48	(1)
+2011-03-17 20:17:21 TRACE  [io/io_posix.read_bytes(647)] device to buffer read({fd = 4, offset = 1251328}, address + 0, length = 49152) = ok
+2011-03-17 20:17:21 TRACE  [io/io_posix.write_bytes(697)] buffer to device write({fd = 4, offset = 655360}, address + 0, length = 49152) = ok
+2011-03-17 20:17:21 TRACE  [work<T>.show(84)] #       7	        1270	         689	      16	(1)
+2011-03-17 20:17:21 TRACE  [io/io_posix.read_bytes(647)] device to buffer read({fd = 4, offset = 1300480}, address + 0, length = 16384) = ok
+2011-03-17 20:17:21 TRACE  [io/io_posix.write_bytes(697)] buffer to device write({fd = 4, offset = 705536}, address + 0, length = 16384) = ok
+2011-03-17 20:17:21 TRACE  [work<T>.show(84)] #       8	        1286	         706	      56	(1)
+2011-03-17 20:17:21 TRACE  [io/io_posix.read_bytes(647)] device to buffer read({fd = 4, offset = 1316864}, address + 0, length = 57344) = ok
+2011-03-17 20:17:21 TRACE  [io/io_posix.write_bytes(697)] buffer to device write({fd = 4, offset = 722944}, address + 0, length = 57344) = ok
+2011-03-17 20:17:21 TRACE  [work<T>.show(84)] #       9	        1342	         763	      23	(1)
+2011-03-17 20:17:21 TRACE  [io/io_posix.read_bytes(647)] device to buffer read({fd = 4, offset = 1374208}, address + 0, length = 23552) = ok
+2011-03-17 20:17:21 TRACE  [io/io_posix.write_bytes(697)] buffer to device write({fd = 4, offset = 781312}, address + 0, length = 23552) = ok
+2011-03-17 20:17:21 TRACE  [work<T>.show(84)] #      10	        1365	         787	      43	(1)
+2011-03-17 20:17:21 TRACE  [io/io_posix.read_bytes(647)] device to buffer read({fd = 4, offset = 1397760}, address + 0, length = 44032) = ok
+2011-03-17 20:17:21 TRACE  [io/io_posix.write_bytes(697)] buffer to device write({fd = 4, offset = 805888}, address + 0, length = 44032) = ok
+2011-03-17 20:17:21 TRACE  [work<T>.show(84)] #      11	        1408	         831	      20	(1)
+2011-03-17 20:17:21 TRACE  [io/io_posix.read_bytes(647)] device to buffer read({fd = 4, offset = 1441792}, address + 0, length = 20480) = ok
+2011-03-17 20:17:21 TRACE  [io/io_posix.write_bytes(697)] buffer to device write({fd = 4, offset = 850944}, address + 0, length = 20480) = ok
+2011-03-17 20:17:21 TRACE  [work<T>.show(84)] #      12	        1428	         852	      30	(1)
+2011-03-17 20:17:21 TRACE  [io/io_posix.read_bytes(647)] device to buffer read({fd = 4, offset = 1462272}, address + 0, length = 30720) = ok
+2011-03-17 20:17:21 TRACE  [io/io_posix.write_bytes(697)] buffer to device write({fd = 4, offset = 872448}, address + 0, length = 30720) = ok
+2011-03-17 20:17:21 TRACE  [work<T>.show(84)] #      13	        1458	         883	      60	(1)
+2011-03-17 20:17:21 TRACE  [io/io_posix.read_bytes(647)] device to buffer read({fd = 4, offset = 1492992}, address + 0, length = 61440) = ok
+2011-03-17 20:17:21 TRACE  [io/io_posix.write_bytes(697)] buffer to device write({fd = 4, offset = 904192}, address + 0, length = 61440) = ok
+2011-03-17 20:17:21 TRACE  [work<T>.show(84)] #      14	        1518	         944	      23	(1)
+2011-03-17 20:17:21 TRACE  [io/io_posix.read_bytes(647)] device to buffer read({fd = 4, offset = 1554432}, address + 0, length = 23552) = ok
+2011-03-17 20:17:21 TRACE  [io/io_posix.write_bytes(697)] buffer to device write({fd = 4, offset = 966656}, address + 0, length = 23552) = ok
+2011-03-17 20:17:21 TRACE  [work<T>.show(84)] #      15	        1541	         968	      26	(1)
+2011-03-17 20:17:21 TRACE  [io/io_posix.read_bytes(647)] device to buffer read({fd = 4, offset = 1577984}, address + 0, length = 26624) = ok
+2011-03-17 20:17:21 TRACE  [io/io_posix.write_bytes(697)] buffer to device write({fd = 4, offset = 991232}, address + 0, length = 26624) = ok
+2011-03-17 20:17:21 TRACE  [work<T>.show(84)] #      16	        1567	         995	      20	(1)
+2011-03-17 20:17:21 TRACE  [io/io_posix.read_bytes(647)] device to buffer read({fd = 4, offset = 1604608}, address + 0, length = 20480) = ok
+2011-03-17 20:17:21 TRACE  [io/io_posix.write_bytes(697)] buffer to device write({fd = 4, offset = 1018880}, address + 0, length = 20480) = ok
+2011-03-17 20:17:21 TRACE  [work<T>.show(84)] #      17	        1587	        1016	       8	(1)
+2011-03-17 20:18:03 TRACE  [io/io_posix.read_bytes(647)] device to buffer read({fd = 4, offset = 1625088}, address + 0, length = 8192) = ok
+2011-03-17 20:18:03 TRACE  [io/io_posix.write_bytes(697)] buffer to device write({fd = 4, offset = 1040384}, address + 0, length = 8192) = ok
+2011-03-17 20:18:03 DEBUG  [work<T>.move_to_target(1056)] finished moving from device to target
+2011-03-17 20:18:09 INFO   [work<T>.show_progress(831)] progress: device has 114.00 kilobytes to relocate and 1.33 megabytes free
+2011-03-17 20:18:09 INFO   [work<T>.show_progress(831)] progress: storage has 1.00 megabytes to relocate and 0.00 bytes free
+2011-03-17 20:18:09 DEBUG  [work<T>.show(57)] #   22 extents in device free space
+2011-03-17 20:18:09 TRACE  [work<T>.show(60)] # effective block size = 1024
+2011-03-17 20:18:09 TRACE  [work<T>.show(76)] #  extent		physical		 logical	  length	user_data
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       0	           0	           0	     436	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       1	         477	         477	       1	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       2	         504	         504	       1	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       3	         530	         530	       1	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       4	         584	         584	       1	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       5	         606	         606	       1	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       6	         639	         639	       1	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       7	         688	         688	       1	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       8	         705	         705	       1	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       9	         762	         762	       1	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      10	         786	         786	       1	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      11	         830	         830	       1	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      12	         851	         851	       1	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      13	         882	         882	       1	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      14	         943	         943	       1	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      15	         967	         967	       1	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      16	         994	         994	       1	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      17	        1015	        1015	       1	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      18	        1024	        1024	     571	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      19	        1706	        1706	       7	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      20	        1714	        1714	     256	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      21	        1972	        1972	      76	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(69)] 
+2011-03-17 20:18:09 DEBUG  [work<T>.show(57)] #    6 extents in device
+2011-03-17 20:18:09 TRACE  [work<T>.show(60)] # effective block size = 1024
+2011-03-17 20:18:09 TRACE  [work<T>.show(76)] #  extent		physical		 logical	  length	user_data
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       0	        1595	        1024	      59	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       1	        1654	        1084	      16	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       2	        1670	        1101	      24	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       3	        1694	        1126	      12	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       4	        1713	        1195	       1	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       5	        1970	        1196	       2	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(69)] 
+2011-03-17 20:18:09 DEBUG  [work<T>.show(57)] #    6 extents in device transposed
+2011-03-17 20:18:09 TRACE  [work<T>.show(60)] # effective block size = 1024
+2011-03-17 20:18:09 TRACE  [work<T>.show(76)] #  extent		physical		 logical	  length	user_data
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       0	        1024	        1595	      59	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       1	        1084	        1654	      16	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       2	        1101	        1670	      24	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       3	        1126	        1694	      12	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       4	        1195	        1713	       1	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       5	        1196	        1970	       2	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(69)] 
+2011-03-17 20:18:09 DEBUG  [work<T>.show(67)] #   no extents in storage free space
+2011-03-17 20:18:09 TRACE  [work<T>.show(69)] 
+2011-03-17 20:18:09 DEBUG  [work<T>.show(57)] #   94 extents in storage
+2011-03-17 20:18:09 TRACE  [work<T>.show(60)] # effective block size = 1024
+2011-03-17 20:18:09 TRACE  [work<T>.show(76)] #  extent		physical		 logical	  length	user_data
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       0	           0	        1138	      48	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       1	          48	           1	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       2	          49	        1186	       2	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       3	          51	        2047	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       4	          52	           2	       2	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       5	          54	           0	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       6	          55	        1984	      63	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       7	         118	        1188	       1	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       8	         119	          12	      32	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       9	         151	          45	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      10	         152	          44	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      11	         153	          46	      11	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      12	         164	           4	       3	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      13	         167	          10	       2	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      14	         169	           7	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      15	         170	          57	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      16	         171	           9	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      17	         172	           8	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      18	         173	          68	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      19	         174	          96	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      20	         175	         113	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      21	         176	         148	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      22	         177	         216	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      23	         178	         238	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      24	         179	        1189	       1	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      25	         180	         294	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      26	         181	         335	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      27	         182	         390	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      28	         183	         404	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      29	         184	         477	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      30	         185	         504	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      31	         186	        1190	       1	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      32	         187	         530	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      33	         188	         584	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      34	         189	         606	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      35	         190	         639	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      36	         191	         688	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      37	         192	         705	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      38	         193	         762	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      39	         194	        1191	       1	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      40	         195	         786	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      41	         196	         830	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      42	         197	         851	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      43	         198	         882	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      44	         199	         943	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      45	         200	         967	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      46	         201	         994	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      47	         202	        1015	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      48	         203	        1192	       1	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      49	         204	        1083	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      50	         205	        1100	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      51	         206	        1125	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      52	         207	        1193	       1	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      53	         208	        1552	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      54	         209	        1606	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      55	         210	        1644	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      56	         211	        1689	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      57	         212	        1725	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      58	         213	        1756	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      59	         214	        1818	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      60	         215	        1855	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      61	         216	        1899	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      62	         217	        1936	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      63	         218	        1973	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      64	         219	        1194	       1	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      65	         220	        1537	       3	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      66	         223	        1631	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      67	         224	        1540	      12	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      68	         236	        1553	      53	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      69	         289	        1607	      24	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      70	         313	        1632	      12	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      71	         325	        1645	      44	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      72	         369	        1690	      35	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      73	         404	        1726	      30	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      74	         434	        1757	      43	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      75	         477	         356	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      76	         478	        1800	      18	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      77	         496	        1819	      36	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      78	         532	        1856	      43	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      79	         575	        1900	      36	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      80	         611	        1937	      36	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      81	         647	        1974	      10	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      82	         657	          58	      10	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      83	         667	          69	      27	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      84	         694	          97	      16	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      85	         710	         114	      34	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      86	         744	         149	      67	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      87	         811	         217	      21	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      88	         832	         239	      55	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      89	         887	         295	      40	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      90	         927	         336	      20	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      91	         947	         357	      33	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      92	         980	         391	      13	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      93	         993	         405	      31	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(69)] 
+2011-03-17 20:18:09 DEBUG  [work<T>.show(57)] #   94 extents in storage transposed
+2011-03-17 20:18:09 TRACE  [work<T>.show(60)] # effective block size = 1024
+2011-03-17 20:18:09 TRACE  [work<T>.show(76)] #  extent		physical		 logical	  length	user_data
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       0	           0	          54	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       1	           1	          48	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       2	           2	          52	       2	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       3	           4	         164	       3	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       4	           7	         169	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       5	           8	         172	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       6	           9	         171	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       7	          10	         167	       2	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       8	          12	         119	      32	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #       9	          44	         152	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      10	          45	         151	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      11	          46	         153	      11	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      12	          57	         170	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      13	          58	         657	      10	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      14	          68	         173	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      15	          69	         667	      27	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      16	          96	         174	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      17	          97	         694	      16	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      18	         113	         175	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      19	         114	         710	      34	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      20	         148	         176	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      21	         149	         744	      67	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      22	         216	         177	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      23	         217	         811	      21	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      24	         238	         178	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      25	         239	         832	      55	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      26	         294	         180	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      27	         295	         887	      40	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      28	         335	         181	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      29	         336	         927	      20	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      30	         356	         477	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      31	         357	         947	      33	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      32	         390	         182	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      33	         391	         980	      13	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      34	         404	         183	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      35	         405	         993	      31	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      36	         477	         184	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      37	         504	         185	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      38	         530	         187	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      39	         584	         188	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      40	         606	         189	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      41	         639	         190	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      42	         688	         191	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      43	         705	         192	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      44	         762	         193	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      45	         786	         195	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      46	         830	         196	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      47	         851	         197	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      48	         882	         198	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      49	         943	         199	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      50	         967	         200	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      51	         994	         201	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      52	        1015	         202	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      53	        1083	         204	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      54	        1100	         205	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      55	        1125	         206	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      56	        1138	           0	      48	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      57	        1186	          49	       2	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      58	        1188	         118	       1	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      59	        1189	         179	       1	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      60	        1190	         186	       1	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      61	        1191	         194	       1	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      62	        1192	         203	       1	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      63	        1193	         207	       1	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      64	        1194	         219	       1	(0)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      65	        1537	         220	       3	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      66	        1540	         224	      12	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      67	        1552	         208	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      68	        1553	         236	      53	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      69	        1606	         209	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      70	        1607	         289	      24	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      71	        1631	         223	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      72	        1632	         313	      12	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      73	        1644	         210	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      74	        1645	         325	      44	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      75	        1689	         211	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      76	        1690	         369	      35	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      77	        1725	         212	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      78	        1726	         404	      30	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      79	        1756	         213	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      80	        1757	         434	      43	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      81	        1800	         478	      18	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      82	        1818	         214	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      83	        1819	         496	      36	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      84	        1855	         215	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      85	        1856	         532	      43	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      86	        1899	         216	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      87	        1900	         575	      36	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      88	        1936	         217	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      89	        1937	         611	      36	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      90	        1973	         218	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      91	        1974	         647	      10	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      92	        1984	          55	      63	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(84)] #      93	        2047	          51	       1	(1)
+2011-03-17 20:18:09 TRACE  [work<T>.show(69)] 
+2011-03-17 20:18:20 DEBUG  [work<T>.move_to_target(1029)] moving 910.00 kilobytes from storage to target ...
+2011-03-17 20:18:20 TRACE  [work<T>.show(76)] #  extent		physical		 logical	  length	user_data
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #       0	          54	           0	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 0}, address + 55296, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #       1	          48	           1	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1024}, address + 49152, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #       2	          52	           2	       2	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 2048}, address + 53248, length = 2048) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #       3	         164	           4	       3	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 4096}, address + 167936, length = 3072) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #       4	         169	           7	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 7168}, address + 173056, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #       5	         172	           8	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 8192}, address + 176128, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #       6	         171	           9	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 9216}, address + 175104, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #       7	         167	          10	       2	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 10240}, address + 171008, length = 2048) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #       8	         119	          12	      32	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 12288}, address + 121856, length = 32768) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #       9	         152	          44	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 45056}, address + 155648, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      10	         151	          45	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 46080}, address + 154624, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      11	         153	          46	      11	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 47104}, address + 156672, length = 11264) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      12	         170	          57	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 58368}, address + 174080, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      13	         657	          58	      10	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 59392}, address + 672768, length = 10240) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      14	         173	          68	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 69632}, address + 177152, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      15	         667	          69	      27	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 70656}, address + 683008, length = 27648) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      16	         174	          96	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 98304}, address + 178176, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      17	         694	          97	      16	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 99328}, address + 710656, length = 16384) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      18	         175	         113	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 115712}, address + 179200, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      19	         710	         114	      34	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 116736}, address + 727040, length = 34816) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      20	         176	         148	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 151552}, address + 180224, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      21	         744	         149	      67	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 152576}, address + 761856, length = 68608) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      22	         177	         216	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 221184}, address + 181248, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      23	         811	         217	      21	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 222208}, address + 830464, length = 21504) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      24	         178	         238	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 243712}, address + 182272, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      25	         832	         239	      55	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 244736}, address + 851968, length = 56320) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      26	         180	         294	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 301056}, address + 184320, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      27	         887	         295	      40	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 302080}, address + 908288, length = 40960) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      28	         181	         335	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 343040}, address + 185344, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      29	         927	         336	      20	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 344064}, address + 949248, length = 20480) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      30	         477	         356	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 364544}, address + 488448, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      31	         947	         357	      33	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 365568}, address + 969728, length = 33792) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      32	         182	         390	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 399360}, address + 186368, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      33	         980	         391	      13	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 400384}, address + 1003520, length = 13312) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      34	         183	         404	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 413696}, address + 187392, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      35	         993	         405	      31	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 414720}, address + 1016832, length = 31744) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      36	         184	         477	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 488448}, address + 188416, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      37	         185	         504	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 516096}, address + 189440, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      38	         187	         530	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 542720}, address + 191488, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      39	         188	         584	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 598016}, address + 192512, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      40	         189	         606	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 620544}, address + 193536, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      41	         190	         639	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 654336}, address + 194560, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      42	         191	         688	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 704512}, address + 195584, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      43	         192	         705	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 721920}, address + 196608, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      44	         193	         762	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 780288}, address + 197632, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      45	         195	         786	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 804864}, address + 199680, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      46	         196	         830	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 849920}, address + 200704, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      47	         197	         851	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 871424}, address + 201728, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      48	         198	         882	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 903168}, address + 202752, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      49	         199	         943	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 965632}, address + 203776, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      50	         200	         967	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 990208}, address + 204800, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      51	         201	         994	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1017856}, address + 205824, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      52	         202	        1015	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1039360}, address + 206848, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      53	         204	        1083	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1108992}, address + 208896, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      54	         205	        1100	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1126400}, address + 209920, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      55	         206	        1125	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1152000}, address + 210944, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      56	           0	        1138	      48	(0)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1165312}, address + 0, length = 49152) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      57	          49	        1186	       2	(0)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1214464}, address + 50176, length = 2048) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      58	         118	        1188	       1	(0)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1216512}, address + 120832, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      59	         179	        1189	       1	(0)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1217536}, address + 183296, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      60	         186	        1190	       1	(0)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1218560}, address + 190464, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      61	         194	        1191	       1	(0)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1219584}, address + 198656, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      62	         203	        1192	       1	(0)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1220608}, address + 207872, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      63	         207	        1193	       1	(0)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1221632}, address + 211968, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      64	         219	        1194	       1	(0)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1222656}, address + 224256, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      65	         220	        1537	       3	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1573888}, address + 225280, length = 3072) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      66	         224	        1540	      12	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1576960}, address + 229376, length = 12288) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      67	         208	        1552	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1589248}, address + 212992, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      68	         236	        1553	      42	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1590272}, address + 241664, length = 43008) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      69	         385	        1706	       7	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1746944}, address + 394240, length = 7168) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      70	         393	        1714	      11	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1755136}, address + 402432, length = 11264) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      71	         212	        1725	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1766400}, address + 217088, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      72	         404	        1726	      30	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1767424}, address + 413696, length = 30720) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      73	         213	        1756	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1798144}, address + 218112, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      74	         434	        1757	      43	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1799168}, address + 444416, length = 44032) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      75	         478	        1800	      18	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1843200}, address + 489472, length = 18432) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      76	         214	        1818	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1861632}, address + 219136, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      77	         496	        1819	      36	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1862656}, address + 507904, length = 36864) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      78	         215	        1855	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1899520}, address + 220160, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      79	         532	        1856	      43	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1900544}, address + 544768, length = 44032) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      80	         216	        1899	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1944576}, address + 221184, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      81	         575	        1900	      36	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1945600}, address + 588800, length = 36864) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      82	         217	        1936	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1982464}, address + 222208, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      83	         611	        1937	      33	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1983488}, address + 625664, length = 33792) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      84	         646	        1972	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 2019328}, address + 661504, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      85	         218	        1973	       1	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 2020352}, address + 223232, length = 1024) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      86	         647	        1974	      10	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 2021376}, address + 662528, length = 10240) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      87	          55	        1984	      63	(1)
+2011-03-17 20:18:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 2031616}, address + 56320, length = 64512) = ok
+2011-03-17 20:18:20 TRACE  [work<T>.show(84)] #      88	          51	        2047	       1	(1)
+2011-03-17 20:18:48 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 2096128}, address + 52224, length = 1024) = ok
+2011-03-17 20:18:48 DEBUG  [work<T>.move_to_target(1056)] finished moving from storage to target
+2011-03-17 20:18:52 INFO   [work<T>.show_progress(831)] progress: device has 114.00 kilobytes to relocate and 453.00 kilobytes free
+2011-03-17 20:18:52 INFO   [work<T>.show_progress(831)] progress: storage has 114.00 kilobytes to relocate and 910.00 kilobytes free
+2011-03-17 20:18:52 DEBUG  [work<T>.show(57)] #    5 extents in device free space
+2011-03-17 20:18:52 TRACE  [work<T>.show(60)] # effective block size = 1024
+2011-03-17 20:18:52 TRACE  [work<T>.show(76)] #  extent		physical		 logical	  length	user_data
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       0	        1024	        1024	      59	(0)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       1	        1084	        1084	      16	(0)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       2	        1101	        1101	      24	(0)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       3	        1126	        1126	      12	(0)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       4	        1195	        1195	     342	(0)
+2011-03-17 20:18:52 TRACE  [work<T>.show(69)] 
+2011-03-17 20:18:52 DEBUG  [work<T>.show(57)] #    6 extents in device
+2011-03-17 20:18:52 TRACE  [work<T>.show(60)] # effective block size = 1024
+2011-03-17 20:18:52 TRACE  [work<T>.show(76)] #  extent		physical		 logical	  length	user_data
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       0	        1595	        1024	      59	(1)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       1	        1654	        1084	      16	(1)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       2	        1670	        1101	      24	(1)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       3	        1694	        1126	      12	(1)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       4	        1713	        1195	       1	(0)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       5	        1970	        1196	       2	(0)
+2011-03-17 20:18:52 TRACE  [work<T>.show(69)] 
+2011-03-17 20:18:52 DEBUG  [work<T>.show(57)] #    6 extents in device transposed
+2011-03-17 20:18:52 TRACE  [work<T>.show(60)] # effective block size = 1024
+2011-03-17 20:18:52 TRACE  [work<T>.show(76)] #  extent		physical		 logical	  length	user_data
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       0	        1024	        1595	      59	(1)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       1	        1084	        1654	      16	(1)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       2	        1101	        1670	      24	(1)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       3	        1126	        1694	      12	(1)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       4	        1195	        1713	       1	(0)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       5	        1196	        1970	       2	(0)
+2011-03-17 20:18:52 TRACE  [work<T>.show(69)] 
+2011-03-17 20:18:52 DEBUG  [work<T>.show(57)] #   22 extents in storage free space
+2011-03-17 20:18:52 TRACE  [work<T>.show(60)] # effective block size = 1024
+2011-03-17 20:18:52 TRACE  [work<T>.show(76)] #  extent		physical		 logical	  length	user_data
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       0	          48	          48	      49	(0)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       1	          49	          49	       3	(0)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       2	          54	          54	       3	(0)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       3	          55	          55	      63	(0)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       4	         119	         119	      33	(0)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       5	         152	         152	       2	(0)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       6	         164	         164	      14	(0)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       7	         169	         169	       3	(0)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       8	         170	         170	       1	(0)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       9	         172	         172	       2	(0)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #      10	         173	         173	       6	(0)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #      11	         180	         180	      28	(0)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #      12	         207	         207	       2	(0)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #      13	         212	         212	       6	(0)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #      14	         219	         219	       5	(0)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #      15	         224	         224	      54	(0)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #      16	         385	         385	       7	(0)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #      17	         393	         393	      41	(0)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #      18	         477	         477	      44	(0)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #      19	         478	         478	     166	(0)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #      20	         646	         646	       1	(0)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #      21	         657	         657	     377	(0)
+2011-03-17 20:18:52 TRACE  [work<T>.show(69)] 
+2011-03-17 20:18:52 DEBUG  [work<T>.show(57)] #   11 extents in storage
+2011-03-17 20:18:52 TRACE  [work<T>.show(60)] # effective block size = 1024
+2011-03-17 20:18:52 TRACE  [work<T>.show(76)] #  extent		physical		 logical	  length	user_data
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       0	         209	        1606	       1	(1)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       1	         210	        1644	       1	(1)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       2	         211	        1689	       1	(1)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       3	         223	        1631	       1	(1)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       4	         278	        1595	      11	(1)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       5	         289	        1607	      24	(1)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       6	         313	        1632	      12	(1)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       7	         325	        1645	      44	(1)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       8	         369	        1690	      16	(1)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       9	         392	        1713	       1	(1)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #      10	         644	        1970	       2	(1)
+2011-03-17 20:18:52 TRACE  [work<T>.show(69)] 
+2011-03-17 20:18:52 DEBUG  [work<T>.show(57)] #   11 extents in storage transposed
+2011-03-17 20:18:52 TRACE  [work<T>.show(60)] # effective block size = 1024
+2011-03-17 20:18:52 TRACE  [work<T>.show(76)] #  extent		physical		 logical	  length	user_data
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       0	        1595	         278	      11	(1)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       1	        1606	         209	       1	(1)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       2	        1607	         289	      24	(1)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       3	        1631	         223	       1	(1)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       4	        1632	         313	      12	(1)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       5	        1644	         210	       1	(1)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       6	        1645	         325	      44	(1)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       7	        1689	         211	       1	(1)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       8	        1690	         369	      16	(1)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #       9	        1713	         392	       1	(1)
+2011-03-17 20:18:52 TRACE  [work<T>.show(84)] #      10	        1970	         644	       2	(1)
+2011-03-17 20:18:52 TRACE  [work<T>.show(69)] 
+2011-03-17 20:19:46 DEBUG  [work<T>.fill_storage(858)] filling storage by moving 114.00 kilobytes from device ...
+2011-03-17 20:19:46 TRACE  [work<T>.show(76)] #  extent		physical		 logical	  length	user_data
+2011-03-17 20:19:46 TRACE  [work<T>.show(84)] #       0	        1595	        1024	      59	(1)
+2011-03-17 20:19:46 TRACE  [io/io_posix.read_bytes(647)] device to storage read({fd = 4, offset = 1633280}, address + 49152, length = 50176) = ok
+2011-03-17 20:19:46 TRACE  [io/io_posix.read_bytes(647)] device to storage read({fd = 4, offset = 1683456}, address + 50176, length = 3072) = ok
+2011-03-17 20:19:46 TRACE  [io/io_posix.read_bytes(647)] device to storage read({fd = 4, offset = 1686528}, address + 55296, length = 3072) = ok
+2011-03-17 20:19:46 TRACE  [work<T>.show(84)] #       1	        1654	        1084	      16	(1)
+2011-03-17 20:19:46 TRACE  [work<T>.show(84)] #       2	        1670	        1101	      24	(1)
+2011-03-17 20:19:46 TRACE  [work<T>.show(84)] #       3	        1694	        1126	      12	(1)
+2011-03-17 20:19:46 TRACE  [work<T>.show(84)] #       4	        1713	        1195	       1	(0)
+2011-03-17 20:19:46 TRACE  [io/io_posix.read_bytes(647)] device to storage read({fd = 4, offset = 1689600}, address + 56320, length = 57344) = ok
+2011-03-17 20:19:46 TRACE  [work<T>.show(84)] #       5	        1970	        1196	       2	(0)
+2011-03-17 20:19:46 TRACE  [io/io_posix.read_bytes(647)] device to storage read({fd = 4, offset = 1754112}, address + 113664, length = 1024) = ok
+2011-03-17 20:19:46 TRACE  [io/io_posix.read_bytes(647)] device to storage read({fd = 4, offset = 2017280}, address + 114688, length = 2048) = ok
+2011-03-17 20:19:46 DEBUG  [work<T>.fill_storage(872)] storage filled
+2011-03-17 20:19:50 INFO   [work<T>.show_progress(831)] progress: device has 0.00 bytes to relocate and 567.00 kilobytes free
+2011-03-17 20:19:50 INFO   [work<T>.show_progress(831)] progress: storage has 228.00 kilobytes to relocate and 796.00 kilobytes free
+2011-03-17 20:19:50 DEBUG  [work<T>.show(57)] #    8 extents in device free space
+2011-03-17 20:19:50 TRACE  [work<T>.show(60)] # effective block size = 1024
+2011-03-17 20:19:50 TRACE  [work<T>.show(76)] #  extent		physical		 logical	  length	user_data
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #       0	        1024	        1024	      59	(0)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #       1	        1084	        1084	      16	(0)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #       2	        1101	        1101	      24	(0)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #       3	        1126	        1126	      12	(0)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #       4	        1195	        1195	     342	(0)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #       5	        1595	        1595	     111	(0)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #       6	        1713	        1713	       1	(0)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #       7	        1970	        1970	       2	(0)
+2011-03-17 20:19:50 TRACE  [work<T>.show(69)] 
+2011-03-17 20:19:50 DEBUG  [work<T>.show(67)] #   no extents in device
+2011-03-17 20:19:50 TRACE  [work<T>.show(69)] 
+2011-03-17 20:19:50 DEBUG  [work<T>.show(67)] #   no extents in device transposed
+2011-03-17 20:19:50 TRACE  [work<T>.show(69)] 
+2011-03-17 20:19:50 DEBUG  [work<T>.show(57)] #   19 extents in storage free space
+2011-03-17 20:19:50 TRACE  [work<T>.show(60)] # effective block size = 1024
+2011-03-17 20:19:50 TRACE  [work<T>.show(76)] #  extent		physical		 logical	  length	user_data
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #       0	         114	         114	       4	(0)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #       1	         119	         119	      33	(0)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #       2	         152	         152	       2	(0)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #       3	         164	         164	      14	(0)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #       4	         169	         169	       3	(0)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #       5	         170	         170	       1	(0)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #       6	         172	         172	       2	(0)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #       7	         173	         173	       6	(0)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #       8	         180	         180	      28	(0)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #       9	         207	         207	       2	(0)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #      10	         212	         212	       6	(0)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #      11	         219	         219	       5	(0)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #      12	         224	         224	      54	(0)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #      13	         385	         385	       7	(0)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #      14	         393	         393	      41	(0)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #      15	         477	         477	      44	(0)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #      16	         478	         478	     166	(0)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #      17	         646	         646	       1	(0)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #      18	         657	         657	     377	(0)
+2011-03-17 20:19:50 TRACE  [work<T>.show(69)] 
+2011-03-17 20:19:50 DEBUG  [work<T>.show(57)] #   19 extents in storage
+2011-03-17 20:19:50 TRACE  [work<T>.show(60)] # effective block size = 1024
+2011-03-17 20:19:50 TRACE  [work<T>.show(76)] #  extent		physical		 logical	  length	user_data
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #       0	          48	        1024	      49	(1)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #       1	          49	        1073	       3	(1)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #       2	          54	        1076	       3	(1)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #       3	          55	        1079	       4	(1)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #       4	          59	        1084	      16	(1)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #       5	          75	        1101	      24	(1)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #       6	          99	        1126	      12	(1)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #       7	         111	        1195	       3	(0)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #       8	         209	        1606	       1	(1)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #       9	         210	        1644	       1	(1)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #      10	         211	        1689	       1	(1)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #      11	         223	        1631	       1	(1)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #      12	         278	        1595	      11	(1)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #      13	         289	        1607	      24	(1)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #      14	         313	        1632	      12	(1)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #      15	         325	        1645	      44	(1)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #      16	         369	        1690	      16	(1)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #      17	         392	        1713	       1	(1)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #      18	         644	        1970	       2	(1)
+2011-03-17 20:19:50 TRACE  [work<T>.show(69)] 
+2011-03-17 20:19:50 DEBUG  [work<T>.show(57)] #   19 extents in storage transposed
+2011-03-17 20:19:50 TRACE  [work<T>.show(60)] # effective block size = 1024
+2011-03-17 20:19:50 TRACE  [work<T>.show(76)] #  extent		physical		 logical	  length	user_data
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #       0	        1024	          48	      49	(1)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #       1	        1073	          49	       3	(1)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #       2	        1076	          54	       3	(1)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #       3	        1079	          55	       4	(1)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #       4	        1084	          59	      16	(1)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #       5	        1101	          75	      24	(1)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #       6	        1126	          99	      12	(1)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #       7	        1195	         111	       3	(0)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #       8	        1595	         278	      11	(1)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #       9	        1606	         209	       1	(1)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #      10	        1607	         289	      24	(1)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #      11	        1631	         223	       1	(1)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #      12	        1632	         313	      12	(1)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #      13	        1644	         210	       1	(1)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #      14	        1645	         325	      44	(1)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #      15	        1689	         211	       1	(1)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #      16	        1690	         369	      16	(1)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #      17	        1713	         392	       1	(1)
+2011-03-17 20:19:50 TRACE  [work<T>.show(84)] #      18	        1970	         644	       2	(1)
+2011-03-17 20:19:50 TRACE  [work<T>.show(69)] 
+2011-03-17 20:21:05 DEBUG  [work<T>.move_to_target(1029)] moving 228.00 kilobytes from storage to target ...
+2011-03-17 20:21:05 TRACE  [work<T>.show(76)] #  extent		physical		 logical	  length	user_data
+2011-03-17 20:21:11 TRACE  [work<T>.show(84)] #       0	          48	        1024	      49	(1)
+2011-03-17 20:21:20 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1048576}, address + 49152, length = 50176) = ok
+2011-03-17 20:21:20 TRACE  [work<T>.show(84)] #       1	          49	        1073	       3	(1)
+2011-03-17 20:21:21 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1098752}, address + 50176, length = 3072) = ok
+2011-03-17 20:21:21 TRACE  [work<T>.show(84)] #       2	          54	        1076	       3	(1)
+2011-03-17 20:21:22 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1101824}, address + 55296, length = 3072) = ok
+2011-03-17 20:21:22 TRACE  [work<T>.show(84)] #       3	          55	        1079	       4	(1)
+2011-03-17 20:21:24 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1104896}, address + 56320, length = 4096) = ok
+2011-03-17 20:21:24 TRACE  [work<T>.show(84)] #       4	          59	        1084	      16	(1)
+2011-03-17 20:21:25 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1110016}, address + 60416, length = 16384) = ok
+2011-03-17 20:21:25 TRACE  [work<T>.show(84)] #       5	          75	        1101	      24	(1)
+2011-03-17 20:21:26 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1127424}, address + 76800, length = 24576) = ok
+2011-03-17 20:21:26 TRACE  [work<T>.show(84)] #       6	          99	        1126	      12	(1)
+2011-03-17 20:21:26 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1153024}, address + 101376, length = 12288) = ok
+2011-03-17 20:21:26 TRACE  [work<T>.show(84)] #       7	         111	        1195	       3	(0)
+2011-03-17 20:21:27 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1223680}, address + 113664, length = 3072) = ok
+2011-03-17 20:21:27 TRACE  [work<T>.show(84)] #       8	         278	        1595	      11	(1)
+2011-03-17 20:21:27 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1633280}, address + 284672, length = 11264) = ok
+2011-03-17 20:21:27 TRACE  [work<T>.show(84)] #       9	         209	        1606	       1	(1)
+2011-03-17 20:21:28 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1644544}, address + 214016, length = 1024) = ok
+2011-03-17 20:21:28 TRACE  [work<T>.show(84)] #      10	         289	        1607	      24	(1)
+2011-03-17 20:21:28 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1645568}, address + 295936, length = 24576) = ok
+2011-03-17 20:21:28 TRACE  [work<T>.show(84)] #      11	         223	        1631	       1	(1)
+2011-03-17 20:21:29 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1670144}, address + 228352, length = 1024) = ok
+2011-03-17 20:21:29 TRACE  [work<T>.show(84)] #      12	         313	        1632	      12	(1)
+2011-03-17 20:21:30 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1671168}, address + 320512, length = 12288) = ok
+2011-03-17 20:21:30 TRACE  [work<T>.show(84)] #      13	         210	        1644	       1	(1)
+2011-03-17 20:21:30 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1683456}, address + 215040, length = 1024) = ok
+2011-03-17 20:21:30 TRACE  [work<T>.show(84)] #      14	         325	        1645	      44	(1)
+2011-03-17 20:21:31 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1684480}, address + 332800, length = 45056) = ok
+2011-03-17 20:21:31 TRACE  [work<T>.show(84)] #      15	         211	        1689	       1	(1)
+2011-03-17 20:21:31 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1729536}, address + 216064, length = 1024) = ok
+2011-03-17 20:21:31 TRACE  [work<T>.show(84)] #      16	         369	        1690	      16	(1)
+2011-03-17 20:21:32 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1730560}, address + 377856, length = 16384) = ok
+2011-03-17 20:21:32 TRACE  [work<T>.show(84)] #      17	         392	        1713	       1	(1)
+2011-03-17 20:21:32 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 1754112}, address + 401408, length = 1024) = ok
+2011-03-17 20:21:32 TRACE  [work<T>.show(84)] #      18	         644	        1970	       2	(1)
+2011-03-17 20:21:38 TRACE  [io/io_posix.write_bytes(697)] storage to device write({fd = 4, offset = 2017280}, address + 659456, length = 2048) = ok
+2011-03-17 20:21:39 DEBUG  [work<T>.move_to_target(1056)] finished moving from storage to target
+2011-03-17 20:21:42 NOTICE [work<T>.relocate(808)] relocation completed

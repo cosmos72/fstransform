@@ -14,7 +14,7 @@
 
 #include "types.hh"  // for ft_uoff */
 #include "fwd.hh"    // for ft_map<T> and ft_vector<T> forward declarations */
-#include "extent.hh" // for ft_extent_key<T>, ft_extent_payload<T> */
+#include "extent.hh" // for ft_extent_key<T>, ft_extent_payload<T>, ft_match */
 
 FT_NAMESPACE_BEGIN
 
@@ -152,25 +152,45 @@ public:
     void bounds(key_type & min_key, key_type & max_key) const;
 
     /**
-     * find the intersection (matching physical and logical) between the two specified extents,
-     * insert it into this map and return true.
+     * find the intersection (matching physical, logical or both)
+     * between the two specified extents, insert it into this map and return true.
      * if no intersections, return false and this will be unchanged
+     *
+	 * note: if the intersection is only physical,
+	 * the intersection will contain the appropriate subrange of extent[which] -> logical
+	 *
+	 * note: if the intersection is only logical,
+	 * the intersection will contain the appropriate subrange of extent[which] -> physical
      */
-    bool intersect(const value_type & extent1, const value_type & extent2);
+    bool intersect(const value_type & extent1, const value_type & extent2, ft_match match);
 
     /**
-     * find the intersections (matching physical and logical) between specified map and extent.
+     * find the intersections (matching physical, logical or both)
+     * between specified map and extent.
      * insert list of intersections into this map and return true.
      * if no intersections, return false and this will be unchanged
+     *
+	 * note: if the intersection is only physical,
+	 * the intersection will contain the appropriate subrange of {map1,extent2}[which] -> logical
+	 *
+	 * note: if the intersection is only logical,
+	 * the intersection will contain the appropriate subrange of {map1,extent2}[which] -> physical
      */
-    bool intersect_all(const ft_map<T> & map, const value_type & extent);
+    bool intersect_all(const ft_map<T> & map1, const value_type & extent2, ft_match match);
 
     /**
-     * find the intersections (matching physical and logical) between specified map1 and map2.
+     * find the intersections (matching physical, logical or both)
+     * between specified map1 and map2.
      * insert list of intersections into this map and return true.
      * if no intersections, return false and this map will be unchanged
+     *
+	 * note: if the intersection is only physical,
+	 * the intersection will contain the appropriate subrange of map[which] -> logical
+	 *
+	 * note: if the intersection is only logical,
+	 * the intersection will contain the appropriate subrange of map[which] -> physical
      */
-    bool intersect_all_all(const ft_map<T> & map1, const ft_map<T> & map2);
+    bool intersect_all_all(const ft_map<T> & map1, const ft_map<T> & map2, ft_match match);
 
     /**
      * add a single extent the ft_map
@@ -229,7 +249,7 @@ public:
      * remove a part of an existing extent (or one or more existing extents)
      * from this ft_map, splitting the existing extents if needed.
      */
-    void remove(T physical, T logical, T length, ft_size user_data);
+    void remove(T physical, T logical, T length);
 
     /**
      * remove any (partial or full) intersection with existing extents from this ft_map,

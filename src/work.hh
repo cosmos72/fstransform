@@ -52,18 +52,18 @@ private:
     enum { FC_SHOW_DEFAULT_LEVEL = FC_TRACE };
 
     /** print extents header to log */
-    void show(ft_log_level level = (ft_log_level)FC_SHOW_DEFAULT_LEVEL);
+    void show(ft_log_level level = (ft_log_level)FC_SHOW_DEFAULT_LEVEL) const;
 
     /** print extent contents to log */
-    void show(ft_size i, T physical, T logical, T length, ft_size user_data, ft_log_level level = (ft_log_level)FC_SHOW_DEFAULT_LEVEL);
+    void show(ft_size i, T physical, T logical, T length, ft_size user_data, ft_log_level level = (ft_log_level)FC_SHOW_DEFAULT_LEVEL) const;
 
     /** print extent contents to log */
-    FT_INLINE void show(ft_size i, const map_value_type & extent, ft_log_level level = (ft_log_level)FC_SHOW_DEFAULT_LEVEL) {
+    FT_INLINE void show(ft_size i, const map_value_type & extent, ft_log_level level = (ft_log_level)FC_SHOW_DEFAULT_LEVEL) const {
         show(i, extent.first.physical, extent.second.logical, extent.second.length, extent.second.user_data, level);
     }
 
     /** print map contents to log */
-    void show(const char * label1, const char * label2, ft_uoff effective_block_size, const ft_map<T> & map, ft_log_level level = (ft_log_level)FC_SHOW_DEFAULT_LEVEL);
+    void show(const char * label1, const char * label2, ft_uoff effective_block_size, const ft_map<T> & map, ft_log_level level = (ft_log_level)FC_SHOW_DEFAULT_LEVEL) const;
 
     /**
      * call check(io) to ensure that io.dev_length() can be represented by T,
@@ -112,8 +112,8 @@ private:
     /** called by relocate(). move as many extents as possible from DEVICE to STORAGE */
     int fill_storage();
 
-    /** called by relocate(). move as many extents as possible from DEVICE and from STORAGE directly to their final destination */
-    int move_to_target();
+    /** called by relocate(). move as many extents as possible from DEVICE or STORAGE directly to their final destination */
+    int move_to_target(ft_from from);
 
     /**
      * called by fill_storage().
@@ -139,6 +139,10 @@ private:
      * note: some blocks may be moved even in case of errors!
      */
     int move_fragment(map_iterator from_iter, map_iterator to_free_iter, ft_dir dir, T & ret_moved);
+
+
+    /** show progress status */
+    void show_progress() const;
 
 public:
     /** default constructor */

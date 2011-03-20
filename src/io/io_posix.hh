@@ -37,8 +37,8 @@ private:
 
 
     int fd[FC_ALL_FILE_COUNT];
-    void * storage_mmap;
-    ft_size storage_mmap_size;
+    void * storage_mmap, * buffer_mmap;
+    ft_size storage_mmap_size, buffer_mmap_size;
 
 protected:
 
@@ -103,8 +103,11 @@ protected:
      */
     virtual int copy_bytes(const ft_request & request);
 
-    /** internal method called by copy(const ft_request &) to perform the work */
-    int copy_mmap(ft_dir dir, ft_uoff device_offset, ft_size mem_offset, ft_size mem_length);
+    /** internal method called by copy_bytes() to read from DEVICE to mmapped() memory (either BUFFER or STORAGE) */
+    int read_bytes(ft_dir dir, ft_uoff from_offset, ft_uoff to_offset, ft_uoff length);
+
+    /** internal method called by copy_bytes() to write from mmapped() memory (either BUFFER or STORAGE) to DEVICE */
+    int write_bytes(ft_dir dir, ft_uoff from_offset, ft_uoff to_offset, ft_uoff length);
 
     /**
      * flush any I/O specific buffer
@@ -113,6 +116,9 @@ protected:
      * and call sync() because we write() to DEVICE
      */
     virtual int flush_bytes();
+
+    /** internal method, called by flush_bytes() to perform msync() on mmapped storage */
+    int msync_bytes(const ft_extent<ft_uoff> & extent) const;
 
 public:
     /** constructor */
