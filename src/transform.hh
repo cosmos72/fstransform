@@ -12,6 +12,7 @@
 
 #include <cstdio>          // for FILE *
 
+#include "args.hh"         // for ft_args
 #include "io/io.hh"        // for ft_io
 #include "io/io_posix.hh"  // for ft_io_posix
 #include "io/io_null.hh"   // for ft_io_null
@@ -35,18 +36,9 @@ private:
     int check_is_open();
 
     /** initialize job/persistence subsystem */
-    int init_job(const char * root_dir, ft_uint job_id, ft_size storage_size);
+    int init_job(const ft_args & argsd);
 
 public:
-
-    struct ft_args
-    {
-        const char * root_dir;   // if NULL, will autodetect
-        const char * io_name;    // if NULL, will autodetect
-        const char * io_args[3]; // some I/O will need less than 3 arguments
-        ft_size storage_size;    // if 0, will autodetect
-        ft_uint job_id;          // if 0, will autodetect
-    };
 
     /** constructor */
     ft_transform();
@@ -102,13 +94,6 @@ public:
      * return 0 if success, else error.
      */
     int init_io_posix(char const* const path[FT_IO_NS ft_io_posix::FC_FILE_COUNT]);
-
-    /**
-     * initialize transformer to use I/O emulation. requires two arguments to be passed in path[]:
-     * file path containing LOOP-FILE extents and file path containing FREE-SPACE extents.
-     * return 0 if success, else error.
-     */
-    int init_io_emul(char const* const path[FT_IO_NS ft_io_null::FC_FILE_COUNT]);
 
     /**
      * perform actual work using configured I/O

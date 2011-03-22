@@ -15,16 +15,24 @@
 #include <string>          // for std::string
 
 #include "../log.hh"       // for ff_log()
+#include "../util.hh"      // for ff_can_sum()
 #include "io.hh"           // for ft_io
 #include "extent_file.hh"  // for ff_write_extents_file()
 
 FT_IO_NAMESPACE_BEGIN
 
 
+char const * const ft_io::label[] = {
+        "device", "loop-file", "zero-file", "secondary-storage", "primary-storage", "storage", "free-space"
+};
+
+
+
+
 /** constructor */
 ft_io::ft_io(ft_job & job)
-    : this_primary_storage(), this_dev_length(0), this_eff_block_size_log2(0),
-      this_dev_path(NULL), this_job(job), request()
+    : this_primary_storage(), request_vec(), this_dev_length(0), this_eff_block_size_log2(0),
+      this_dev_path(NULL), this_job(job), request_dir(FC_INVALID2INVALID)
 {
     this_secondary_storage.clear();
 }
@@ -45,11 +53,11 @@ void ft_io::close()
 {
     this_primary_storage.clear();
     this_secondary_storage.clear();
+    request_vec.clear();
+    request_dir = FC_INVALID2INVALID;
 
     this_dev_length = this_eff_block_size_log2 = 0;
     this_dev_path = NULL;
-
-    request.clear();
 }
 
 /** compute and return log2() of effective block size and remember it */
@@ -63,6 +71,20 @@ ft_uoff ft_io::effective_block_size_log2(ft_uoff block_size_bitmask)
         }
     }
     return this_eff_block_size_log2 = block_size_log2;
+}
+
+/* return (-)EOVERFLOW if request from/to + length overflow specified maximum value */
+int ft_io::validate(const char * type_name, ft_uoff type_max, ft_dir dir, ft_uoff from, ft_uoff to, ft_uoff length)
+{
+    to = ff_max2(from, to);
+    if (!ff_can_sum(to, length) || length > type_max || to > type_max - length) {
+        return ff_log(FC_FATAL, EOVERFLOW, "internal error! %s to %s io.copy(dir = %d, from_physical = %"FS_ULL", to_physical = %"FS_ULL", length = %"FS_ULL")"
+                      " overflows configured maximum (%s)%"FS_ULL"",
+                      ff_is_from_dev(dir) ? label[FC_DEVICE] : label[FC_STORAGE],
+                      ff_is_to_dev(dir) ? label[FC_DEVICE] : label[FC_STORAGE],
+                      (int)dir, (ft_ull)from, (ft_ull)to, (ft_ull)length, type_name, (ft_ull)type_max);
+    }
+    return 0;
 }
 
 /**
@@ -118,20 +140,18 @@ int ft_io::write_extents(const ft_vector<ft_uoff> & loop_file_extents,
  * note: parameters are in bytes!
  * return 0 if success, else error
  */
-int ft_io::copy_queue(ft_uoff from_physical, ft_uoff to_physical, ft_uoff length, ft_dir dir)
+int ft_io::copy_queue(ft_dir dir, ft_uoff from_physical, ft_uoff to_physical, ft_uoff length)
 {
-    int err = request.coalesce(from_physical, to_physical, length, dir);
-    while (err != 0) {
-        /* cannot coalesce request, let's flush first */
+    int err = 0;
+    if (!request_vec.empty() && request_dir != dir) {
         if ((err = flush_queue()) != 0)
-        	break;
-
-        if ((err = request.assign(from_physical, to_physical, length, dir)) != 0) {
-        	err = ff_log(FC_FATAL, err, "internal error! request.assign(from = %"FS_ULL", to = %"FS_ULL", length = %"FS_ULL", dir = %d) failed",
-        			(ft_ull)from_physical, (ft_ull)to_physical, (ft_ull)length, (int)dir);
-        }
-        break;
+            return err;
     }
+    if ((err = validate("ft_uoff", (ft_uoff)-1, dir, from_physical, to_physical, length)) != 0)
+        return err;
+
+    request_dir = dir;
+    request_vec.append(from_physical, to_physical, length, FC_DEFAULT_USER_DATA);
     return err;
 }
 
@@ -145,9 +165,10 @@ int ft_io::copy_queue(ft_uoff from_physical, ft_uoff to_physical, ft_uoff length
 int ft_io::flush_queue()
 {
     int err = 0;
-    if (!request.empty()) {
-        if ((err = copy_bytes(request)) == 0)
-            request.clear();
+    if (!request_vec.empty()) {
+        err = copy_bytes(request_dir, request_vec);
+        request_vec.clear();
+        request_dir = FC_INVALID2INVALID;
     }
     return err;
 }

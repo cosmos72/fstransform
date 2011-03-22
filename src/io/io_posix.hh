@@ -23,17 +23,25 @@ public:
     enum {
         FC_DEVICE = ft_io::FC_DEVICE,
         FC_LOOP_FILE = ft_io::FC_LOOP_FILE,
-        FC_ZERO_FILE,
-        FC_FILE_COUNT, // must be equal to count of preceding enum constants,
-        FC_SECONDARY_STORAGE = FC_FILE_COUNT,
-        FC_ALL_FILE_COUNT,
-        FC_PRIMARY_STORAGE = FC_ALL_FILE_COUNT,
-        FC_STORAGE,
-        FC_FREE_SPACE,
+        FC_ZERO_FILE = ft_io::FC_ZERO_FILE,
+        FC_FILE_COUNT = 3, // must be equal to count of preceding enum constants,
+        FC_SECONDARY_STORAGE = ft_io::FC_SECONDARY_STORAGE,
+        FC_ALL_FILE_COUNT = 4,
+        FC_PRIMARY_STORAGE = ft_io::FC_PRIMARY_STORAGE,
+        FC_STORAGE = ft_io::FC_STORAGE,
+        FC_FREE_SPACE = ft_io::FC_FREE_SPACE,
     };
 
 private:
     typedef ft_io super_type;
+
+    /** direction of copy_bytes() operations */
+    enum ft_dir_posix {
+        FC_POSIX_STORAGE2DEV,
+        FC_POSIX_DEV2STORAGE,
+        FC_POSIX_DEV2BUFFER,
+        FC_POSIX_BUFFER2DEV,
+    };
 
 
     int fd[FC_ALL_FILE_COUNT];
@@ -50,6 +58,9 @@ protected:
 
     /** return true if this I/O has open descriptors/streams to LOOP-FILE and FREE-SPACE */
     bool is_open_extents() const;
+
+    /* return (-)EOVERFLOW if request from/to + length overflow specified maximum value */
+    static int validate(const char * type_name, ft_uoff type_max, ft_dir_posix dir, ft_uoff from, ft_uoff to, ft_uoff length);
 
     /**
      * retrieve LOOP-FILE extents and FREE-SPACE extents and insert them into
@@ -90,24 +101,26 @@ protected:
      * and fill it with 'secondary_len' bytes of zeros. do not mmap() it.
      * return 0 if success, else error
      */
-    int create_secondary_storage(ft_uoff secondary_len);
+    int create_secondary_storage(ft_size secondary_len);
 
     /** close and munmap() PRIMARY-STORAGE and SECONDARY-STORAGE. called by close() */
     void close_storage();
 
 
     /**
-     * actually copy a single fragment from DEVICE or FREE-STORAGE, to STORAGE to FREE-DEVICE.
+     * actually copy a list of fragments from DEVICE or FREE-STORAGE, to STORAGE to FREE-DEVICE.
      * note: parameters are in bytes!
      * return 0 if success, else error.
      */
-    virtual int copy_bytes(const ft_request & request);
+    virtual int copy_bytes(ft_dir dir, ft_vector<ft_uoff> & request_vec);
 
-    /** internal method called by copy_bytes() to read from DEVICE to mmapped() memory (either BUFFER or STORAGE) */
-    int read_bytes(ft_dir dir, ft_uoff from_offset, ft_uoff to_offset, ft_uoff length);
+    /** internal method called by copy_bytes() to read/write from DEVICE to mmapped() memory (either BUFFER or STORAGE) */
+    int copy_bytes(ft_dir_posix dir2, const ft_extent<ft_uoff> & request);
 
-    /** internal method called by copy_bytes() to write from mmapped() memory (either BUFFER or STORAGE) to DEVICE */
-    int write_bytes(ft_dir dir, ft_uoff from_offset, ft_uoff to_offset, ft_uoff length);
+    /** internal method called by copy_bytes() to read/write from DEVICE to mmapped() memory (either BUFFER or STORAGE) */
+    int copy_bytes(ft_dir_posix dir, ft_uoff from, ft_uoff to, ft_uoff length);
+
+
 
     /**
      * flush any I/O specific buffer
@@ -149,7 +162,7 @@ public:
      *
      * return 0 if success, else error
      */
-    virtual int create_storage(ft_uoff secondary_len);
+    virtual int create_storage(ft_size secondary_len, ft_size mem_buffer_len);
 };
 
 FT_IO_NAMESPACE_END

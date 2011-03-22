@@ -86,7 +86,33 @@ int ft_transform::main(int argc, char const* const* argv)
 
 /** print command-line usage to stdout and return 0 */
 int ft_transform::usage(const char * program_name) {
-    return ff_log(FC_NOTICE, 0, "Usage: %s %s %s %s\n", program_name, label[0], label[1], label[2]);
+    ff_log(FC_NOTICE, 0, "Usage: %s [OPTION]... %s %s %s\n", program_name, label[0], label[1], label[2]);
+    ff_log(FC_NOTICE, 0, "");
+    return ff_log
+    (FC_NOTICE, 0, "Supported options:\n"
+     "  --help               Print this help and exit\n"
+     "  --                   End of options. treat subsequent parameters as arguments\n"
+     "                         even if they start with '-'\n"
+     "  -q, --quiet          Be quiet, print less output\n"
+     "  -qq                  Be extremely quiet, only print warnings or errors\n"
+     "  -v, --verbose        Be verbose, print in detail what is being done\n"
+     "  -vv                  Be very verbose\n"
+     "  -vvv                 Be extremely verbose (warning: prints TONS of output)\n"
+     "  -f, --force-run      Run even if some sanity checks fail\n"
+     "  -n, --no-action\n"
+     "      --simulate-run   Do not actually read or write any disk block\n"
+     "  -t, --dir DIRECTORY  Save persistent data and logs to DIRECTORY\n"
+     "  -j, --job JOB_ID     Set JOB_ID to use (default: autodetect)\n"
+     "  -m, --mem-buffer SIZE[k|M|G|T|P|E|Z|Y]\n"
+     "                       Set RAM buffer size (default: autodetect)\n"
+     "  -s, --secondary-storage SIZE[k|M|G|T|P|E|Z|Y]\n"
+     "                       Set SECONDARY STORAGE file length (default: autodetect)\n"
+     "  -xp, --exact-primary-storage SIZE[k|M|G|T|P|E|Z|Y]\n"
+     "                       Set *exact* PRIMARY STORAGE length or fail\n"
+     "                       (default: autodetect)\n"
+     "  -xs, --exact-secondary-storage SECONDARY_SIZE[k|M|G|T|P|E|Z|Y]\n"
+     "                       Set *exact* SECONDART STORAGE length or fail\n"
+     "                       (default: autodetect)\n");
 }
 
 
@@ -146,17 +172,9 @@ int ft_transform::check_is_open()
  */
 int ft_transform::init(int argc, char const* const* argv)
 {
+    ft_args args;
     int err;
-
-    ft_args args = {
-            NULL, /* root_dir */
-            NULL, /* io_name */
-            { NULL, NULL, NULL }, /* io_args[3] */
-            0,    /* secondary_storage_size */
-            0,    /* job_id */
-    };
-
-    ft_log_level level = FC_INFO;
+    ft_log_level level = FC_INFO, new_level;
 
     do {
         if ((err = check_is_closed()) != 0)
@@ -181,57 +199,71 @@ int ft_transform::init(int argc, char const* const* argv)
                     allow_opts = false;
 
                 /* -q, --quiet decrease verbosity by one */
-                else if (!strcmp(arg, "-q") || !strcmp(arg, "--quiet")) {
-                    if (level == FC_INFO)
-                        level = FC_NOTICE;
-                    else {
-                        err = invalid_verbosity(program_name);
-                        break;
-                    }
-                }
                 /* -qq decrease verbosity by two */
-                else if (!strcmp(arg, "-qq")) {
-                    if (level == FC_INFO)
-                        level = FC_WARN;
-                    else {
-                        err = invalid_verbosity(program_name);
-                        break;
-                    }
-                }
                 /* -v, --verbose increase verbosity by one */
-                else if (!strcmp(arg, "-v") || !strcmp(arg, "--verbose")) {
+                /* -vv increase verbosity by two */
+                /* -vvv increase verbosity by three */
+                else if ((new_level = FC_NOTICE, !strcmp(arg, "-q") || !strcmp(arg, "--quiet"))
+                    || (new_level = FC_WARN, !strcmp(arg, "-qq"))
+                    || (new_level = FC_DEBUG, !strcmp(arg, "-v") || !strcmp(arg, "--verbose"))
+                    || (new_level = FC_TRACE, !strcmp(arg, "-vv"))
+                    || (new_level = FC_DUMP, !strcmp(arg, "-vvv")))
+                {
                     if (level == FC_INFO)
-                        level = FC_DEBUG;
+                        level = new_level;
                     else {
                         err = invalid_verbosity(program_name);
                         break;
                     }
                 }
-                /* -vv increase verbosity by two */
-                else if (!strcmp(arg, "-vv")) {
-                    if (level == FC_INFO)
-                        level = FC_TRACE;
-                    else {
-                        err = invalid_verbosity(program_name);
-                        break;
-                    }
+                /* -f force run: degrade failed sanity checks from ERRORS (which stop execution) to WARNINGS (which let execution continue) */
+                else if (!strcmp(arg, "-f") || !strcmp(arg, "--force-run")) {
+                    args.force_run = true;
+                }
+                /* -n simulate run: do not read or write device blocks  */
+                else if (!strcmp(arg, "-n") || !strcmp(arg, "--no-action") || !strcmp(arg, "--simulate-run")) {
+                    args.simulate_run = true;
                 }
                 /* -t directory */
-                else if (argc > 1 && (!strcmp(arg, "-t") || !strcmp(arg, "--dir")))
+                else if (argc > 1 && (!strcmp(arg, "-t") || !strcmp(arg, "--dir"))) {
                     --argc, args.root_dir = *++argv;
-
-                /* -m storage_size[k|M|G|T|P|E|Z|Y] */
-                else if (argc > 1 && (!strcmp(arg, "-m") || !strcmp(arg, "--mmap-storage"))) {
-                    if ((err = ff_str2un_scaled(argv[1], & args.storage_size)) != 0) {
-                        err = invalid_cmdline(program_name, err, "invalid storage size '%s'", argv[1]);
-                        break;
-                    }
-                    --argc, ++argv;
                 }
                 /* -j job_id */
                 else if (argc > 1 && (!strcmp(arg, "-j") || !strcmp(arg, "--job"))) {
                     if ((err = ff_str2un(argv[1], & args.job_id)) != 0) {
                         err = invalid_cmdline(program_name, err, "invalid job id '%s'", argv[1]);
+                        break;
+                    }
+                    --argc, ++argv;
+                }
+                /* -m mem-buffer-size[k|M|G|T|P|E|Z|Y] */
+                else if (argc > 1 && (!strcmp(arg, "-m") || !strcmp(arg, "--mem-buffer"))) {
+                    if ((err = ff_str2un_scaled(argv[1], & args.storage_size[FC_MEM_BUFFER_SIZE])) != 0) {
+                        err = invalid_cmdline(program_name, err, "invalid memory buffer size '%s'", argv[1]);
+                        break;
+                    }
+                    --argc, ++argv;
+                }
+                /* -s secondary-storage-size[k|M|G|T|P|E|Z|Y] */
+                else if (argc > 1 && (!strcmp(arg, "-s") || !strcmp(arg, "--secondary-storage"))) {
+                    if ((err = ff_str2un_scaled(argv[1], & args.storage_size[FC_SECONDARY_STORAGE_SIZE])) != 0) {
+                        err = invalid_cmdline(program_name, err, "invalid secondary storage size '%s'", argv[1]);
+                        break;
+                    }
+                    --argc, ++argv;
+                }
+                /* -xp exact-primary-storage-size[k|M|G|T|P|E|Z|Y] */
+                else if (argc > 1 && (!strcmp(arg, "-xp") || !strcmp(arg, "--exact-primary-storage"))) {
+                    if ((err = ff_str2un_scaled(argv[1], & args.storage_size[FC_PRIMARY_STORAGE_EXACT_SIZE])) != 0) {
+                        err = invalid_cmdline(program_name, err, "invalid primary storage exact size '%s'", argv[1]);
+                        break;
+                    }
+                    --argc, ++argv;
+                }
+                /* -xs exact-secondary-storage-size[k|M|G|T|P|E|Z|Y] */
+                else if (argc > 1 && (!strcmp(arg, "-xs") || !strcmp(arg, "--exact-primary-storage"))) {
+                    if ((err = ff_str2un_scaled(argv[1], & args.storage_size[FC_SECONDARY_STORAGE_EXACT_SIZE])) != 0) {
+                        err = invalid_cmdline(program_name, err, "invalid secondary storage exact size '%s'", argv[1]);
                         break;
                     }
                     --argc, ++argv;
@@ -291,7 +323,7 @@ int ft_transform::init(const ft_args & args)
 {
     int err;
     do {
-        if ((err = init_job(args.root_dir, args.job_id, args.storage_size)) != 0)
+        if ((err = init_job(args)) != 0)
             break;
 
         if ((err = init_io_posix(args.io_args)) != 0)
@@ -303,13 +335,13 @@ int ft_transform::init(const ft_args & args)
 
 
 /** initialize job/persistence subsystem */
-int ft_transform::init_job(const char * root_dir, ft_uint job_id, ft_size storage_size)
+int ft_transform::init_job(const ft_args & args)
 {
     if (this_job != NULL)
         return 0;
 
     ft_job * job = new ft_job();
-    int err = job->init(root_dir, job_id, storage_size);
+    int err = job->init(args);
     if (err == 0)
         this_job = job;
     else

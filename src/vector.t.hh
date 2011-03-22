@@ -75,12 +75,50 @@ void ft_vector<T>::sort_by_physical()
 }
 
 /**
+ * reorder this vector in-place, sorting by physical
+ */
+template<typename T>
+void ft_vector<T>::sort_by_physical(iterator from, iterator to)
+{
+    std::sort(from, to, typename value_type::comparator_physical());
+}
+
+
+/**
+ * reorder this vector in-place, sorting by logical
+ */
+template<typename T>
+void ft_vector<T>::sort_by_logical()
+{
+    std::sort(this->begin(), this->end(), typename value_type::comparator_logical());
+}
+
+/**
+ * reorder this vector in-place, sorting by logical
+ */
+template<typename T>
+void ft_vector<T>::sort_by_logical(iterator from, iterator to)
+{
+    std::sort(from, to, typename value_type::comparator_logical());
+}
+
+
+/**
  * reorder this vector in-place, sorting by reverse length (largest extents will be first)
  */
 template<typename T>
 void ft_vector<T>::sort_by_reverse_length()
 {
     std::sort(this->begin(), this->end(), typename value_type::reverse_comparator_length());
+}
+
+/**
+ * reorder this vector in-place, sorting by reverse length (largest extents will be first)
+ */
+template<typename T>
+void ft_vector<T>::sort_by_reverse_length(iterator from, iterator to)
+{
+    std::sort(from, to, typename value_type::reverse_comparator_length());
 }
 
 FT_NAMESPACE_END

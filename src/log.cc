@@ -35,12 +35,12 @@ static std::map<FILE *, ft_log_fmt> this_log_stream[FC_FATAL+1];
 
 static char const* const this_log_label[FC_FATAL+1] =
 {
-     "TRACE ", "DEBUG ", "INFO  ", "NOTICE", "WARN  ", "ERROR ", "FATAL ",
+     "DUMP  ", "TRACE ", "DEBUG ", "INFO  ", "NOTICE", "WARN  ", "ERROR ", "FATAL ",
 };
 
 static char const* const this_log_label_always[FC_FATAL+1] =
 {
-    "", "", "", "", "WARN: ", "ERROR: ", "FATAL: ",
+    "", "", "", "", "", "WARN: ", "ERROR: ", "FATAL: ",
 };
 
 

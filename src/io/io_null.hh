@@ -67,22 +67,14 @@ protected:
                              ft_uoff & ret_block_size_bitmask);
 
     /**
-     * copy a single fragment from DEVICE to FREE-STORAGE, or from STORAGE to FREE-DEVICE or from DEVICE to FREE-DEVICE
-     * (STORAGE to FREE-STORAGE copies could be supported easily, but are not considered useful)
+     * actually copy a list of fragments from DEVICE or FREE-STORAGE, to STORAGE to FREE-DEVICE.
+     * must be implemented by sub-classes.
      * note: parameters are in bytes!
-     * note: this implementation will do nothing, increase ret_copied by length, and return success
+     * return 0 if success, else error.
      *
-     * return 0 if success, else error
-     *
-     * on return, 'ret_queued' will be increased by the number of bytes actually copied or queued for copying,
-     * which could be > 0 even in case of errors
+     * implementation: do nothing and return success
      */
-    virtual int copy_bytes(ft_uoff from_physical, ft_uoff to_physical, ft_uoff length, ft_uoff & ret_queued, ft_dir dir);
-
-    /**
-     * return number of blocks queued for copying.
-     */
-    virtual ft_uoff queued_bytes() const;
+    virtual int copy_bytes(ft_dir dir, ft_vector<ft_uoff> & request_vec);
 
     /**
      * flush any pending copy, i.e. actually perform all queued copies.
@@ -91,7 +83,7 @@ protected:
      *
      * implementation: do nothing and return success
      */
-    virtual int flush_bytes(ft_uoff & ret_copied);
+    virtual int flush_bytes();
 
 
 public:
@@ -122,7 +114,7 @@ public:
      *
      * implementation: do nothing and return success
      */
-    virtual int create_secondary_storage(ft_uoff len);
+    virtual int create_secondary_storage(ft_uoff secondary_len, ft_uoff buffer_len);
 };
 
 FT_IO_NAMESPACE_END

@@ -35,11 +35,6 @@ FT_IO_NAMESPACE_BEGIN
 #endif
 
 
-char const * const ft_io::label[] = {
-		"device", "loop-file", "zero-file", "secondary-storage", "primary-storage", "storage", "free-space"
-};
-
-
 /** default constructor */
 ft_io_posix::ft_io_posix(ft_job & job)
 : super_type(job), storage_mmap(MAP_FAILED), buffer_mmap(MAP_FAILED),
@@ -65,7 +60,7 @@ bool ft_io_posix::is_open0(ft_size i) const
 /** close a single descriptor/stream */
 void ft_io_posix::close0(ft_size i)
 {
-    if (fd[i] >= 0) {
+    if (i < FC_ALL_FILE_COUNT && fd[i] >= 0) {
         if (::close(fd[i]) != 0)
             ff_log(FC_WARN, errno, "closing %s file descriptor [%d] failed", label[i], fd[i]);
         fd[i] = -1;
@@ -91,6 +86,8 @@ int ft_io_posix::open(char const* const path[FC_FILE_COUNT])
     ft_size i;
     int err = 0;
     ft_dev dev[FC_FILE_COUNT];
+    const bool force = force_run();
+    const char * force_msg = force ? ", continuing due to '-f'" : ", use '-f' to override";
 
     for (i = 0; i < FC_FILE_COUNT; i++)
         dev[i] = 0;
@@ -110,8 +107,12 @@ int ft_io_posix::open(char const* const path[FC_FILE_COUNT])
                 err = ff_posix_dev(fd[i], & dev[i]);
 
             if (err != 0) {
-                err = ff_log(FC_ERROR, err, "error in %s fstat('%s')", label[i], path[i]);
-                break;
+                err = ff_log((force ? FC_WARN : FC_ERROR), err, "%s %s fstat('%s')%s",
+                             (force ? "WARNING: failed" : "error in"), label[i], path[i], force_msg);
+                if (force)
+                    err = 0;
+                else
+                    break;
             }
 
             if (i == FC_DEVICE) {
@@ -134,9 +135,12 @@ int ft_io_posix::open(char const* const path[FC_FILE_COUNT])
             } else {
                 /* for LOOP-FILE and ZERO-FILE, we check they are actually contained in DEVICE */
                 if (dev[FC_DEVICE] != dev[i]) {
-                    err = ff_log(FC_ERROR, EINVAL, "'%s' is device 0x%04x, but %s '%s' is contained in device 0x%04x\n",
-                                 path[FC_DEVICE], (unsigned)dev[FC_DEVICE], label[i], path[i], (unsigned)dev[i]);
-                    break;
+                    err = ff_log((force ? FC_WARN : FC_ERROR), EINVAL, "%s: '%s' is device 0x%04x, but %s '%s' is contained in device 0x%04x%s",
+                        (force ? "WARNING" : "error"), path[FC_DEVICE], (unsigned)dev[FC_DEVICE], label[i], path[i], (unsigned)dev[i], force_msg);
+                    if (force)
+                        err = 0;
+                    else
+                        break;
                 }
             }
         }
@@ -271,7 +275,7 @@ void ft_io_posix::close_storage()
  *
  * return 0 if success, else error
  */
-int ft_io_posix::create_storage(ft_uoff secondary_len)
+int ft_io_posix::create_storage(ft_size secondary_size, ft_size mem_buffer_size)
 {
     /*
      * how to get a contiguous mmapped() memory for all the extents in primary_storage and secondary_storage:
@@ -303,10 +307,10 @@ int ft_io_posix::create_storage(ft_uoff secondary_len)
     const char * pretty_label;
     int err = 0;
     do {
-        ft_uoff total_len = primary_len + secondary_len;
-        const ft_size mem_len = (ft_size) total_len;
-        if (mem_len < 0 || total_len != (ft_uoff) mem_len) {
-            err = ff_log(FC_FATAL, EOVERFLOW, "internal error, %s + %s total length = %"FS_ULL" is larger than addressable memory", label[i], label[j], (ft_ull) total_len);
+        const ft_size mmap_size = (ft_size) primary_len + secondary_size;
+        if (primary_len > (ft_size)-1 - secondary_size) {
+            err = ff_log(FC_FATAL, EOVERFLOW, "internal error, %s + %s total length = %"FS_ULL" is larger than addressable memory",
+                         label[i], label[j], (ft_ull) primary_len + secondary_size);
             break;
         }
         /*
@@ -314,46 +318,47 @@ int ft_io_posix::create_storage(ft_uoff secondary_len)
          * used to reserve a large enough contiguous memory area
          * to mmap() PRIMARY STORAGE and SECONDARY STORAGE
          */
-        storage_mmap = mmap(NULL, mem_len, PROT_NONE, MAP_PRIVATE|FC_MAP_ANONYMOUS, -1, 0);
+        storage_mmap = mmap(NULL, mmap_size, PROT_NONE, MAP_PRIVATE|FC_MAP_ANONYMOUS, -1, 0);
         if (storage_mmap == MAP_FAILED) {
-        	err = ff_log(FC_ERROR, errno, "%s: error in mmap(%"FS_ULL", PROT_NONE, MAP_PRIVATE|MAP_ANONYMOUS, -1)",
-        			label[FC_STORAGE], (ft_ull) mem_len);
+        	err = ff_log(FC_ERROR, errno, "%s: error preemptively reserving contiguous RAM: mmap(length = %"FS_ULL", PROT_NONE, MAP_PRIVATE|MAP_ANONYMOUS, -1) failed",
+        			label[FC_STORAGE], (ft_ull) mmap_size);
             break;
         } else
             ff_log(FC_DEBUG, 0, "%s: preemptively reserved contiguous RAM,"
             		" mmap(length = %"FS_ULL", PROT_NONE, MAP_PRIVATE|MAP_ANONYMOUS, -1) = ok",
-            		label[FC_STORAGE], (ft_ull) mem_len);
-        storage_mmap_size = mem_len;
+            		label[FC_STORAGE], (ft_ull) mmap_size);
+        storage_mmap_size = mmap_size;
         /*
-         * mmap() another area, again total length bytes, as PROT_READ|PROT_WRITE, FC_MAP_ANONYMOUS.
+         * mmap() another area, mem_buffer_size bytes long, as PROT_READ|PROT_WRITE, FC_MAP_ANONYMOUS.
          * used as memory buffer during DEV2DEV copies
          */
-        buffer_mmap = mmap(NULL, mem_len, PROT_READ|PROT_WRITE, MAP_PRIVATE|FC_MAP_ANONYMOUS, -1, 0);
+        buffer_mmap = mmap(NULL, mem_buffer_size, PROT_READ|PROT_WRITE, MAP_PRIVATE|FC_MAP_ANONYMOUS, -1, 0);
         if (buffer_mmap == MAP_FAILED) {
-        	err = ff_log(FC_ERROR, errno, "%s: error in buffer mmap(%"FS_ULL", PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1)",
-        			label[FC_STORAGE], (ft_ull) mem_len);
+        	err = ff_log(FC_ERROR, errno, "%s: error allocating memory buffer: mmap(length = %"FS_ULL", PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1) failed",
+        			label[FC_STORAGE], (ft_ull) mem_buffer_size);
             break;
         }
-        memset(buffer_mmap, '\0', buffer_mmap_size = mem_len);
-
-        pretty_len = 0.0;
-        pretty_label = ff_pretty_size(storage_mmap_size, & pretty_len);
-
-        ff_log(FC_NOTICE, 0, "%s: allocated %.2f %sbytes RAM as memory buffer",
-        		label[FC_STORAGE], pretty_len, pretty_label);
-
         /*
          * we could mlock(buffer_mmap), but it's probably excessive
          * as it constraints too much the kernel in deciding the memory to swap to disk.
          *
          * instead, we opt for a simple memset(), which forces the kernel to actually allocate
          * the RAM for us (we do not want memory overcommit errors later on),
-         * but still let the kernel decide the memory to swap to disk
+         * but still let the kernel decide what to swap to disk
          */
+        memset(buffer_mmap, '\0', buffer_mmap_size = mem_buffer_size);
+
+        pretty_len = 0.0;
+        pretty_label = ff_pretty_size(buffer_mmap_size, & pretty_len);
+
+        ff_log(FC_NOTICE, 0, "%s: allocated %.2f %sbytes RAM as memory buffer",
+        		label[FC_STORAGE], pretty_len, pretty_label);
 
 
-        if (secondary_len != 0) {
-            if ((err = create_secondary_storage(secondary_len)) != 0)
+
+
+        if (secondary_size != 0) {
+            if ((err = create_secondary_storage(secondary_size)) != 0)
                 break;
         } else
             ff_log(FC_INFO, 0, "not creating %s, %s is large enough", label[j], label[i]);
@@ -367,7 +372,7 @@ int ft_io_posix::create_storage(ft_uoff secondary_len)
         if (err != 0)
             break;
 
-        if (secondary_len != 0) {
+        if (secondary_size != 0) {
         	if ((err = replace_storage_mmap(fd[j], label[j], secondary_storage(), 0, mem_offset)) != 0)
         		break;
         }
@@ -382,10 +387,10 @@ int ft_io_posix::create_storage(ft_uoff secondary_len)
         pretty_len = 0.0;
         pretty_label = ff_pretty_size(storage_mmap_size, & pretty_len);
 
-        ff_log(FC_NOTICE, 0, "%s%s%s initialized and mmapped() to %.2f %sbytes of contiguous RAM",
+        ff_log(FC_NOTICE, 0, "%s%s%s is %.2f %sbytes, initialized and mmapped() to contiguous RAM",
         		(primary_len != 0 ? label[i] : ""),
-        		(primary_len != 0 && secondary_len != 0 ? " and " : ""),
-        		(secondary_len != 0 ? label[j] : ""),
+        		(primary_len != 0 && secondary_size != 0 ? " and " : ""),
+        		(secondary_size != 0 ? label[j] : ""),
         		pretty_len, pretty_label);
     } else
         close_storage();
@@ -466,7 +471,7 @@ int ft_io_posix::replace_storage_mmap(int fd, const char * label_i,
  * and fill it with 'secondary_len' bytes of zeros. do not mmap() it.
  * return 0 if success, else error
  */
-int ft_io_posix::create_secondary_storage(ft_uoff secondary_len)
+int ft_io_posix::create_secondary_storage(ft_size len)
 {
     enum { j = FC_SECONDARY_STORAGE };
 
@@ -476,20 +481,12 @@ int ft_io_posix::create_secondary_storage(ft_uoff secondary_len)
     int err = 0;
 
     do {
-        const ft_uoff len = secondary_len;
-
         const ft_off s_len = (ft_off) len;
-        if (s_len < 0 || len != (ft_uoff) s_len) {
+        if (s_len < 0 || len != (ft_size) s_len) {
             err = ff_log(FC_FATAL, EOVERFLOW, "internal error, %s length = %"FS_ULL" overflows type (off_t)", label[j], (ft_ull) len);
             break;
         }
         
-        const ft_size mem_len = (ft_size) len;
-        if (mem_len < 0 || len != (ft_uoff) mem_len) {
-            err = ff_log(FC_FATAL, EOVERFLOW, "internal error, %s length = %"FS_ULL" is larger than addressable memory", label[j], (ft_ull) len);
-            break;
-        }
-
         if ((fd[j] = ::open(path, O_RDWR|O_CREAT|O_TRUNC, 0600)) < 0) {
             err = ff_log(FC_ERROR, errno, "error in %s open('%s')", label[j], path);
             break;
@@ -497,27 +494,39 @@ int ft_io_posix::create_secondary_storage(ft_uoff secondary_len)
 
         double pretty_len = 0.0;
         const char * pretty_label = ff_pretty_size(len, & pretty_len);
-        ff_log(FC_INFO, 0, "%s: writing %.2f %sbytes to '%s' ...", label[j], pretty_len, pretty_label, path);
+        const bool simulated = simulate_run();
+
+        ff_log(FC_INFO, 0, "%s:%s writing %.2f %sbytes to '%s' ...", label[j], (simulated ? " SIMULATED" : ""), pretty_len, pretty_label, path);
+
+        if (simulated) {
+            if ((err = ff_posix_lseek(fd[j], len - 1)) != 0) {
+                err = ff_log(FC_ERROR, errno, "error in %s lseek('%s', offset = %"FS_ULL" - 1)", label[j], path, (ft_ull)len);
+                break;
+            }
+            char zero = '\0';
+            if ((err = ff_posix_write(fd[j], & zero, 1)) != 0) {
+                err = ff_log(FC_ERROR, errno, "error in %s write('%s', '\\0', length = 1)", label[j], path);
+                break;
+            }
+        } else
 
 #ifdef FT_HAVE_POSIX_FALLOCATE
         /* try with posix_fallocate() */
-        if ((err = posix_fallocate(fd[j], 0, (ft_off) len)) != 0) {
+        if ((err = posix_fallocate(fd[j], 0, s_len)) != 0) {
 #endif /* FT_HAVE_POSIX_FALLOCATE */
 
             /* else fall back on write() */
             enum { zero_len = 64*1024 };
             char zero[zero_len];
-            ft_size pos = 0, chunk, written;
+            ft_size pos = 0, chunk;
 
-            while (pos < mem_len) {
-                chunk = ff_min2<ft_size>(zero_len, mem_len - pos);
-                while ((written = ::write(fd[j], zero, chunk)) == (ft_size)-1 && errno == EINTR)
-                    ;
-                if (written == (ft_size)-1 || written == 0) {
+            while (pos < len) {
+                chunk = ff_min2<ft_size>(zero_len, len - pos);
+                if ((err = ff_posix_write(fd[j], zero, chunk)) != 0) {
                     err = ff_log(FC_ERROR, errno, "error in %s write('%s')", label[j], path);
                     break;
                 }
-                pos += written;
+                pos += chunk;
             }
 #ifdef FT_HAVE_POSIX_FALLOCATE
         }
@@ -528,7 +537,7 @@ int ft_io_posix::create_secondary_storage(ft_uoff secondary_len)
         extent.physical() = extent.logical() = 0;
         extent.length() = len;
 
-        ff_log(FC_INFO, 0, "%s file created");
+        ff_log(FC_INFO, 0, "%s:%s file created", label[j], (simulated ? " SIMULATED" : ""));
 
     } while (0);
 
@@ -541,56 +550,97 @@ int ft_io_posix::create_secondary_storage(ft_uoff secondary_len)
     return err;
 }
 
-/* ugly, but effective and concise */
-#define FC_DEV2BUF FC_DEV2DEV
-#define FC_BUF2DEV FC_DEV2DEV
-
-
 /**
- * copy a single fragment from DEVICE to FREE-STORAGE, or from STORAGE to FREE-DEVICE or from DEVICE to FREE-DEVICE
- * (STORAGE to FREE-STORAGE copies could be supported easily, but are not considered useful)
+ * actually copy a list of fragments from DEVICE or FREE-STORAGE, to STORAGE to FREE-DEVICE.
  * note: parameters are in bytes!
+ * return 0 if success, else error.
  *
- * return 0 if success, else error
- *
- * on return, 'ret_queued' will be increased by the number of bytes actually copied or queued for copying,
- * which could be > 0 even in case of errors
+ * we expect request_vec to be sorted by ->physical (i.e. ->from_physical)
  */
-int ft_io_posix::copy_bytes(const ft_request & request)
+int ft_io_posix::copy_bytes(ft_dir dir, ft_vector<ft_uoff> & request_vec)
 {
     int err = 0;
-    const ft_dir dir = request.dir();
-    ft_off from_offset = request.from(), to_offset = request.to(), length = request.length();
+
 
     switch (dir) {
-    case FC_DEV2STORAGE:
+    case FC_DEV2STORAGE: {
         /* from DEVICE to memory-mapped STORAGE */
-    	err = read_bytes(dir, from_offset, to_offset, length);
-    	break;
-    case FC_STORAGE2DEV:
-        /* from memory-mapped STORAGE to DEVICE */
-    	err = write_bytes(dir, from_offset, to_offset, length);
-    	break;
-    case FC_DEV2DEV:
-    {   /* from DEVICE to DEVICE, using RAM buffer */
-
-    	// once we do queueing and lazy copying, this will need to be computed
-    	ft_uoff buf_offset = 0;
-    	ft_size buf_free = buffer_mmap_size, buf_length;
-
-    	// perform a loop if 'length' does not fit available RAM buffer
-    	while (length != 0) {
-    		buf_length = (ft_size) ff_min2<ft_uoff>(length, buf_free);
-
-        	if ((err = read_bytes(FC_DEV2BUF, from_offset, buf_offset, buf_length)) != 0
-        		|| (err = write_bytes(FC_BUF2DEV, buf_offset, to_offset, buf_length)) != 0)
-        		break;
-
-        	length -= (ft_uoff) buf_length;
-    	}
+        /* sequential disk access: request_vec is supposed to be already sorted by device from_offset, i.e. extent->physical */
+        ft_vector<ft_uoff>::const_iterator iter = request_vec.begin(), end = request_vec.end();
+        for (; err == 0 && iter != end; ++iter)
+            err = copy_bytes(FC_POSIX_DEV2STORAGE, *iter);
     	break;
     }
-    case FC_STORAGE2STORAGE:
+    case FC_STORAGE2DEV: {
+        /* from memory-mapped STORAGE to DEVICE */
+        /* sequential disk access: request_vec is supposed to be already sorted by device to_offset, i.e. extent->logical */
+        ft_vector<ft_uoff>::const_iterator iter = request_vec.begin(), end = request_vec.end();
+        for (; err == 0 && iter != end; ++iter)
+            err = copy_bytes(FC_POSIX_STORAGE2DEV, *iter);
+        break;
+    }
+    case FC_DEV2DEV: {
+        /* from DEVICE to DEVICE, using RAM buffer */
+        /* sequential disk access: request_vec is supposed to be sorted by device to_offset, i.e. extent->logical */
+
+        request_vec.sort_by_physical(); /* sort by device from_offset, i.e. extent->physical */
+
+        ft_uoff from_offset, to_offset, length;
+        ft_size buf_offset = 0, buf_free = buffer_mmap_size, buf_length;
+
+        ft_size start = 0, i = start, save_i, n = request_vec.size();
+
+        do {
+            /* iterate and fill buffer_mmap */
+            for (; err == 0 && buf_free != 0 && i < n; ++i) {
+                ft_extent<ft_uoff> & extent = request_vec[i];
+                if ((length = extent.length()) > (ft_uoff) buf_free)
+                    break;
+                if ((err = copy_bytes(FC_POSIX_DEV2BUFFER, extent.physical(), (ft_uoff)(extent.user_data() = buf_offset), length)) != 0)
+                    break;
+                buf_offset += (ft_size) length;
+                buf_free -= (ft_size) length;
+            }
+            if (err != 0)
+                break;
+
+            /* buffer_mmap is now (almost) full. sort buffered data by device to_offset (i.e. extent->logical) and write it to target */
+            if ((save_i = i) != start) {
+                request_vec.sort_by_logical(request_vec.begin() + start, request_vec.begin() + i);
+
+                for (i = start; err == 0 && i != save_i; ++i) {
+                    ft_extent<ft_uoff> & extent = request_vec[i];
+                    if ((err = copy_bytes(FC_POSIX_BUFFER2DEV, (ft_uoff) extent.user_data(), extent.logical(), extent.length())) != 0)
+                        break;
+                }
+                if (err != 0)
+                    break;
+            }
+
+            /* buffered data written to target. now there may be one or more extents NOT fitting into buffer_mmap */
+            buf_offset = 0, buf_free = buffer_mmap_size;
+            for (i = save_i; err == 0 && i != n; ++i) {
+                ft_extent<ft_uoff> & extent = request_vec[i];
+                if ((length = extent.length()) <= buf_free)
+                    break;
+
+                from_offset = extent.physical();
+                to_offset = extent.logical();
+                while (length != 0) {
+                    buf_length = (ft_size) ff_min2<ft_uoff>(length, buf_free);
+
+                    if ((err = copy_bytes(FC_POSIX_DEV2BUFFER, from_offset, buf_offset, buf_length)) != 0
+                        || (err = copy_bytes(FC_POSIX_BUFFER2DEV, buf_offset, to_offset, buf_length)) != 0)
+                        break;
+
+                    length -= (ft_uoff) buf_length;
+                }
+                if (err != 0)
+                    break;
+            }
+        } while (err == 0 && (start = i) != n);
+    	break;
+    }
     default:
         /* from STORAGE to STORAGE */
         err = ff_log(FC_FATAL, ENOSYS, "internal error! unexpected call to io_posix.copy_bytes(), STORAGE to STORAGE copies are not supposed to be used");
@@ -600,103 +650,78 @@ int ft_io_posix::copy_bytes(const ft_request & request)
 }
 
 
-
-
-int ft_io_posix::read_bytes(ft_dir dir, ft_uoff from_offset, ft_uoff to_offset, ft_uoff length)
+int ft_io_posix::copy_bytes(ft_dir_posix dir, const ft_extent<ft_uoff> & request)
 {
-	if (dir != FC_DEV2STORAGE && dir != FC_DEV2BUF) {
-		ff_log(FC_FATAL, 0, "internal error! called read_bytes() with unsupported direction %d", (int)dir);
-		/* mark error as reported */
-		return -ENOSYS;
-	}
+    return copy_bytes(dir, request.physical(), request.logical(), request.length());
+}
 
-	const char * label_from = label[FC_DEVICE];
-	const char * label_to = dir == FC_DEV2BUF ? "buffer" : label[FC_STORAGE];
 
-	const ft_size mem_offset = (ft_size)to_offset;
+int ft_io_posix::copy_bytes(ft_dir_posix dir, ft_uoff from_offset, ft_uoff to_offset, ft_uoff length)
+{
+	const bool use_storage = dir == FC_POSIX_DEV2STORAGE || dir == FC_POSIX_STORAGE2DEV;
+    const bool read_dev = dir == FC_POSIX_DEV2STORAGE || dir == FC_POSIX_DEV2BUFFER;
+
+	const char * label_dev   = label[FC_DEVICE];
+	const char * label_other = use_storage ? label[FC_STORAGE] : "buffer";
+	const char * label_from = read_dev ? label_dev : label_other;
+    const char * label_to = read_dev ? label_other : label_dev;
+
+    const ft_size mmap_size = use_storage ? storage_mmap_size : buffer_mmap_size;
+
+    const ft_uoff dev_offset = read_dev ? from_offset : to_offset;
+    const ft_uoff other_offset = read_dev ? to_offset : from_offset;
+
+    /* validate("label", N, ...) also checks if from/to + length overflows (ft_size)-1 */
+    int err = validate("ft_size", (ft_uoff)(ft_size)-1, dir, from_offset, to_offset, length);
+    if (err == 0)
+        err = validate("ft_size", (ft_uoff)mmap_size, dir, 0, other_offset, length);
+    if (err != 0)
+        return err;
+
+	const ft_size mem_offset = (ft_size)other_offset;
 	const ft_size mem_length = (ft_size)length;
-	const ft_size mmap_size = dir == FC_DEV2BUF ? buffer_mmap_size : storage_mmap_size;
 
-	char * mmap_address = dir == FC_DEV2BUF ? (char *)buffer_mmap : (char *)storage_mmap;
-	const int fd_from = fd[FC_DEVICE];
+	char * mmap_address = use_storage ? (char *)storage_mmap : (char *)buffer_mmap;
+	const int fd = this->fd[FC_DEVICE];
+	const bool simulated = simulate_run();
 
-	int err = 0;
 	do {
-		if (mem_offset < 0 || mem_length < 0 || to_offset != (ft_uoff)mem_offset || length != (ft_uoff)mem_length) {
-			err = ff_log(FC_FATAL, EOVERFLOW, "internal error! tried %s to %s read_bytes() outside addressable memory: offset = 0x%"FS_XLL", length = 0x%"FS_XLL,
-				         label_from, label_to, (ft_ull)to_offset, (ft_ull)length);
-			break;
-		}
-		if (mem_offset >= mmap_size || mem_length > mmap_size - mem_offset) {
-			err = ff_log(FC_FATAL, EFAULT, "internal error! tried %s to %s read_bytes() outside mmapped() %s (length = %"FS_ULL"): offset = 0x%"FS_ULL", length = 0x%"FS_ULL,
-				         label_from, label_to, label_to, (ft_ull)mmap_size, (ft_ull)mem_offset, (ft_ull)mem_length);
-			break;
-		}
+	    if (!simulated) {
+            if ((err = ff_posix_lseek(fd, dev_offset)) != 0) {
+                err = ff_log(FC_ERROR, err, "I/O error in %s lseek(fd = %d, offset = %"FS_ULL", SEEK_SET)",
+                        label_dev, fd, (ft_ull)dev_offset);
+                break;
+            }
+            if (read_dev)
+                err = ff_posix_read(fd, mmap_address + mem_offset, mem_length);
+            else
+                err = ff_posix_write(fd, mmap_address + mem_offset, mem_length);
 
-		if ((err = ff_posix_lseek(fd_from, from_offset)) != 0) {
-			err = ff_log(FC_ERROR, err, "I/O error in %s lseek(fd = %d, offset = %"FS_ULL", SEEK_SET)",
-					label_from, fd_from, (ft_ull)from_offset);
-			break;
-		}
-		if ((err = ff_posix_read(fd_from, mmap_address + mem_offset, mem_length)) != 0) {
-			err = ff_log(FC_ERROR, err, "I/O error in %s to %s read({fd = %d, offset = %"FS_ULL"}, address + %"FS_ULL", length = %"FS_ULL")",
-					label_from, label_to, fd_from, (ft_ull)from_offset, (ft_ull)mem_offset, (ft_ull)mem_length);
-			break;
-		}
-		ff_log(FC_TRACE, 0, "%s to %s read({fd = %d, offset = %"FS_ULL"}, address + %"FS_ULL", length = %"FS_ULL") = ok",
-					label_from, label_to, fd_from, (ft_ull)from_offset, (ft_ull)mem_offset, (ft_ull)mem_length);
+            if (err != 0) {
+                err = ff_log(FC_ERROR, err, "I/O error in %s to %s %s({fd = %d, offset = %"FS_ULL"}, address + %"FS_ULL", length = %"FS_ULL")",
+                             label_from, label_to, (read_dev ? "read" : "write"), fd, (ft_ull)dev_offset, (ft_ull)mem_offset, (ft_ull)mem_length);
+                break;
+            }
+	    }
+		ff_log(FC_TRACE, 0, "%s%s to %s %s({fd = %d, offset = %"FS_ULL"}, address + %"FS_ULL", length = %"FS_ULL") = ok",
+		       (simulated ? "SIMULATED " : ""), label_from, label_to, (read_dev ? "read" : "write"), fd, (ft_ull)dev_offset, (ft_ull)mem_offset, (ft_ull)mem_length);
 	} while (0);
 	return err;
 }
 
 
-
-
-int ft_io_posix::write_bytes(ft_dir dir, ft_uoff from_offset, ft_uoff to_offset, ft_uoff length)
+/* return (-)EOVERFLOW if request from/to + length overflow specified maximum value */
+int ft_io_posix::validate(const char * type_name, ft_uoff type_max, ft_dir_posix dir2, ft_uoff from, ft_uoff to, ft_uoff length)
 {
-	if (dir != FC_STORAGE2DEV && dir != FC_BUF2DEV) {
-		ff_log(FC_FATAL, 0, "internal error! called write_bytes() with unsupported direction %d", (int)dir);
-		/* mark error as reported */
-		return -ENOSYS;
-	}
-
-	const char * label_from = dir == FC_BUF2DEV ? "buffer" : label[FC_STORAGE];
-	const char * label_to = label[FC_DEVICE];
-
-	const ft_size mem_offset = (ft_size)from_offset;
-	const ft_size mem_length = (ft_size)length;
-	const ft_size mmap_size = dir == FC_BUF2DEV ? buffer_mmap_size : storage_mmap_size;
-
-	const char * mmap_address = dir == FC_BUF2DEV ? (char *)buffer_mmap : (char *)storage_mmap;
-	const int fd_to = fd[FC_DEVICE];
-
-	int err = 0;
-	do {
-		if (mem_offset < 0 || mem_length < 0 || from_offset != (ft_uoff)mem_offset || length != (ft_uoff)mem_length) {
-			err = ff_log(FC_FATAL, EOVERFLOW, "internal error! tried %s to %s write_bytes() outside addressable memory: offset = 0x%"FS_XLL", length = 0x%"FS_XLL,
-				         label_from, label_to, (ft_ull)from_offset, (ft_ull)length);
-			break;
-		}
-		if (mem_offset >= mmap_size || mem_length > mmap_size - mem_offset) {
-			err = ff_log(FC_FATAL, EFAULT, "internal error! tried %s to %s write_bytes() outside mmapped() %s (length = %"FS_ULL"): offset = 0x%"FS_ULL", length = 0x%"FS_ULL,
-				         label_from, label_to, label_from, (ft_ull)mmap_size, (ft_ull)mem_offset, (ft_ull)mem_length);
-			break;
-		}
-
-		if ((err = ff_posix_lseek(fd_to, to_offset)) != 0) {
-			err = ff_log(FC_ERROR, err, "I/O error in %s lseek(fd = %d, offset = %"FS_ULL", SEEK_SET)",
-					label_to, fd_to, (ft_ull)to_offset);
-			break;
-		}
-		if ((err = ff_posix_write(fd_to, mmap_address + mem_offset, mem_length)) != 0) {
-			err = ff_log(FC_ERROR, err, "I/O error in %s to %s write({fd = %d, offset = %"FS_ULL"}, address + %"FS_ULL", length = %"FS_ULL")",
-					label_from, label_to, fd_to, (ft_ull)to_offset, (ft_ull)mem_offset, (ft_ull)mem_length);
-			break;
-		}
-		ff_log(FC_TRACE, 0, "%s to %s write({fd = %d, offset = %"FS_ULL"}, address + %"FS_ULL", length = %"FS_ULL") = ok",
-					label_from, label_to, fd_to, (ft_ull)to_offset, (ft_ull)mem_offset, (ft_ull)mem_length);
-	} while (0);
-	return err;
+    ft_dir dir;
+    switch (dir2) {
+        case FC_POSIX_STORAGE2DEV: dir = FC_STORAGE2DEV; break;
+        case FC_POSIX_DEV2STORAGE: dir = FC_DEV2STORAGE; break;
+        case FC_POSIX_DEV2BUFFER:
+        case FC_POSIX_BUFFER2DEV:  dir = FC_DEV2DEV;     break;
+        default:                   dir = FC_INVALID2INVALID; break;
+    }
+    return super_type::validate(type_name, type_max, dir, from, to, length);
 }
 
 
@@ -710,6 +735,9 @@ int ft_io_posix::flush_bytes()
 {
     int err = 0;
     do {
+        if (simulate_run())
+            break;
+
 #if 0
     	if ((err = msync(storage_mmap, storage_mmap_size, MS_SYNC)) != 0) {
     		ff_log(FC_WARN, errno, "I/O error in %s msync(address + %"FS_ULL", length = %"FS_ULL")",

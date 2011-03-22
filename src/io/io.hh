@@ -27,16 +27,22 @@ FT_IO_NAMESPACE_BEGIN
  */
 class ft_io
 {
+public:
+    enum {
+        FC_DEVICE = 0, FC_LOOP_FILE
+    };
+
+    static char const * const label[]; // DEVICE, LOOP-FILE (and also others, but don't tell)
+
 private:
 	ft_vector<ft_uoff> this_primary_storage;
     ft_extent<ft_uoff> this_secondary_storage;
+    ft_vector<ft_uoff> request_vec;
 
     ft_uoff this_dev_length, this_eff_block_size_log2;
     const char * this_dev_path;
-
     ft_job & this_job;
-
-    ft_request request;
+    ft_dir request_dir;
 
 
     /* cannot call copy constructor */
@@ -46,6 +52,14 @@ private:
     const ft_io & operator=(const ft_io &);
 
 protected:
+    enum {
+        FC_ZERO_FILE = FC_LOOP_FILE + 1,
+        FC_SECONDARY_STORAGE,
+        FC_PRIMARY_STORAGE,
+        FC_STORAGE,
+        FC_FREE_SPACE,
+    };
+
     /** remember device length */
     FT_INLINE void dev_length(ft_uoff dev_length) { this_dev_length = dev_length; }
 
@@ -54,6 +68,15 @@ protected:
 
     /** compute and return log2() of effective block size and remember it */
     ft_uoff effective_block_size_log2(ft_uoff block_size_bitmask);
+
+    /* return (-)EOVERFLOW if request from/to + length overflow specified maximum value */
+    static int validate(const char * type_name, ft_uoff type_max, ft_dir dir, ft_uoff from, ft_uoff to, ft_uoff length);
+
+    /* return (-)EOVERFLOW if request from/to + length overflow specified maximum value */
+    FT_INLINE static int validate(const char * type_name, ft_uoff type_max, ft_dir dir, const ft_extent<ft_uoff> & extent)
+    {
+        return validate(type_name, type_max, dir, extent.physical(), extent.logical(), extent.length());
+    }
 
     /**
      * retrieve LOOP-FILE extents and FREE-SPACE extents and insert them into
@@ -92,7 +115,7 @@ protected:
      * note: parameters are in bytes!
      * return 0 if success, else error
      */
-    int copy_queue(ft_uoff from_physical, ft_uoff to_physical, ft_uoff length, ft_dir dir);
+    int copy_queue(ft_dir dir, ft_uoff from_physical, ft_uoff to_physical, ft_uoff length);
 
     /**
      * flush any pending copy, i.e. actually call copy_bytes(request).
@@ -104,12 +127,12 @@ protected:
 
 
     /**
-     * actually copy a single fragment from DEVICE or FREE-STORAGE, to STORAGE to FREE-DEVICE.
+     * actually copy a list of fragments from DEVICE or FREE-STORAGE, to STORAGE to FREE-DEVICE.
      * must be implemented by sub-classes.
      * note: parameters are in bytes!
      * return 0 if success, else error.
      */
-    virtual int copy_bytes(const ft_request & request) = 0;
+    virtual int copy_bytes(ft_dir dir, ft_vector<ft_uoff> & request_vec) = 0;
 
     /**
      * flush any I/O specific buffer
@@ -118,13 +141,8 @@ protected:
      */
     virtual int flush_bytes();
 
+
 public:
-    enum {
-        FC_DEVICE = 0, FC_LOOP_FILE
-    };
-
-    static char const * const label[]; // DEVICE, LOOP-FILE (and also others, but don't tell)
-
     /** constructor */
     ft_io(ft_job & job);
 
@@ -164,16 +182,20 @@ public:
     FT_INLINE const std::string & job_dir() const { return this_job.job_dir(); }
 
     /** return storage_size to use (in bytes), or 0 if not set */
-    FT_INLINE ft_size job_storage_length() const { return this_job.job_storage_length(); }
+    FT_INLINE ft_size job_storage_size(ft_storage_size which) const { return this_job.job_storage_size(which); }
 
     /** set storage_size to use (in bytes), or 0 to unset it */
-    FT_INLINE void job_storage_length(ft_size len) { this_job.job_storage_length(len); }
+    FT_INLINE void job_storage_size(ft_storage_size which, ft_size len) { this_job.job_storage_size(which, len); }
 
-    /** return true if storage_size must be honored EXACTLY (to resume an existent job) */
-    FT_INLINE bool job_storage_length_exact() const { return this_job.job_storage_length_exact(); }
+    /**
+     * return true if I/O classes should be less strict on sanity checks
+     * and generate WARNINGS (and keep going) for failed sanity checks
+     * instead of generating ERRORS (and quitting)
+     */
+    FT_INLINE bool force_run() const { return this_job.force_run(); }
 
-    /** set whether storage_size must be honored EXACTLY (to resume an existent job) */
-    FT_INLINE void job_storage_length_exact(bool flag) { this_job.job_storage_length_exact(flag); }
+    /** return true if subclasses should simulate run, i.e. run WITHOUT reading or writing device blocks */
+    FT_INLINE bool simulate_run() const { return this_job.simulate_run(); }
 
     /**
      * calls the 3-argument version of read_extents() and, if it succeeds,
@@ -210,7 +232,7 @@ public:
      * setup a virtual storage composed by this->primary_storage extents inside DEVICE, plus secondary-storage extents.
      * return 0 if success, else error
      */
-    virtual int create_storage(ft_uoff secondary_len) = 0;
+    virtual int create_storage(ft_size secondary_len, ft_size mem_buffer_len) = 0;
 
     /**
      * copy a single fragment from DEVICE to FREE-STORAGE, or from STORAGE to FREE-DEVICE or from DEVICE to FREE-DEVICE
@@ -224,13 +246,13 @@ public:
      * which could be > 0 even in case of errors
      */
     template<typename T>
-    int copy(T from_physical, T to_physical, T length, ft_dir dir)
+    int copy(ft_dir dir, T from_physical, T to_physical, T length)
     {
         /** TODO: move buffering to work<T> */
-        return copy_queue((ft_uoff)from_physical << this_eff_block_size_log2,
+        return copy_queue(dir,
+                          (ft_uoff)from_physical << this_eff_block_size_log2,
                           (ft_uoff)to_physical << this_eff_block_size_log2,
-                          (ft_uoff)length  << this_eff_block_size_log2,
-                          dir);
+                          (ft_uoff)length  << this_eff_block_size_log2);
     }
 
     /**

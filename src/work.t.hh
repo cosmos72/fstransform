@@ -7,6 +7,7 @@
 #include "first.hh"
 
 #include <cerrno>         // for errno, EFBIG
+#include <cstring>        // for memmove()
 #include <cstdio>         // for fprintf(), stdout, stderr
 
 #ifdef FT_HAVE_UMOUNT
@@ -32,6 +33,7 @@ enum {
     FC_FREE_SPACE = FT_IO_NS ft_io_posix::FC_FREE_SPACE,
     FC_STORAGE = FT_IO_NS ft_io_posix::FC_STORAGE,
     FC_PRIMARY_STORAGE = FT_IO_NS ft_io_posix::FC_PRIMARY_STORAGE,
+    FC_SECONDARY_STORAGE = FT_IO_NS ft_io_posix::FC_SECONDARY_STORAGE,
 };
 
 char const* const* const label = FT_IO_NS ft_io_posix::label;
@@ -44,7 +46,7 @@ template<typename T>
 void ft_work<T>::show(const char * label1, const char * label2, ft_uoff effective_block_size,
 					  const ft_map<T> & map, ft_log_level level)
 {
-    ft_log_level header_level = level <= FC_TRACE ? FC_DEBUG : level;
+    ft_log_level header_level = level >= FC_DEBUG ? level : (ft_log_level)(level + 1);
 
     if (!ff_log_is_enabled(header_level) && !ff_log_is_enabled(level))
         return;
@@ -88,7 +90,8 @@ void ft_work<T>::show(ft_size i, T physical, T logical, T length, ft_size user_d
 /** default constructor */
 template<typename T>
 ft_work<T>::ft_work()
-    : dev_map(), storage_map(), dev_free(), dev_transpose(), storage_free(), storage_transpose()
+    : dev_map(), storage_map(), dev_free(), dev_transpose(), storage_free(), storage_transpose(),
+      eta(), work_total(0)
 { }
 
 
@@ -110,6 +113,8 @@ void ft_work<T>::cleanup()
     dev_transpose.clear();
     storage_free.clear();
     storage_transpose.clear();
+    eta.clear();
+    work_total = 0;
 }
 
 
@@ -473,10 +478,10 @@ int ft_work<T>::analyze(ft_vector<ft_uoff> & loop_file_extents,
     const T page_size_blocks = (T) (ff_mem_page_size() >> eff_block_size_log2);
 
     /* consider for PRIMARY-STORAGE only "relatively large" blocks, i.e.
-     * 1) at least 4096 * PAGE_SIZE bytes long, or at least work_count / 1024 blocks long
+     * 1) at least 256 * PAGE_SIZE bytes long, and at least work_count / 1024 blocks long
      * 2) in any case, at least 1 * PAGE_SIZE bytes long
      */
-    ft_uoff hole_threshold = ff_min2((ft_uoff) work_count >> 10, (ft_uoff) page_size_blocks << 12);
+    ft_uoff hole_threshold = ff_max2((ft_uoff) work_count >> 10, (ft_uoff) page_size_blocks << 8);
     T hole_len, hole_total_len = 0;
 
     iter = renumbered_map.begin();
@@ -484,16 +489,16 @@ int ft_work<T>::analyze(ft_vector<ft_uoff> & loop_file_extents,
     show(label[FC_FREE_SPACE], " (invariant)", eff_block_size, renumbered_map);
     while (iter != end) {
         map_value_type & extent = *iter;
+        /*
+         * whether this hole (extent from dev_free) is large enough to be useful or not,
+         * it is invariant free space. the current relocation algorithm will never use it,
+         * so remove it from free space to get accurate calculation of usable free space.
+         */
+        dev_free.remove(extent);
 
         if ((ft_uoff) (hole_len = iter->second.length) >= hole_threshold) {
             /* trim hole on both ends to align it to PAGE_SIZE */
             if (page_size_blocks <= 1 || (ft_uoff) (hole_len = ff_extent_align(extent, page_size_blocks - 1)) >= hole_threshold) {
-                /*
-                 * this hole (extent from dev_free) is large enough to be useful:
-                 * let's use it for primary storage, so it's NOT free anymore
-                 */
-                dev_free.remove(extent);
-
                 hole_total_len += hole_len;
                 ++iter;
                 continue;
@@ -528,11 +533,11 @@ int ft_work<T>::analyze(ft_vector<ft_uoff> & loop_file_extents,
 }
 
 
-static int unusable_storage_size(ft_uoff requested_len, const char * type_descr, ft_ull type_bytes, const char * msg)
+static int unusable_storage_size(const char * label, ft_uoff requested_len, const char * type_descr, ft_ull type_bytes)
 {
-	ff_log(FC_FATAL, 0, "fatal error: cannot use job %s length = %"FS_ULL" bytes: this %s is %"FS_ULL" bytes,"
+	ff_log(FC_FATAL, 0, "fatal error: cannot use job %s length = %"FS_ULL" bytes, it is incompatible with %s = %"FS_ULL" bytes,"
 			" original job was probably created on a platform with %s",
-			label[FC_STORAGE], (ft_ull) requested_len, type_descr, type_bytes, msg);
+			label, (ft_ull) requested_len, type_descr, type_bytes);
 	/* mark error as reported */
 	return -EOVERFLOW;
 }
@@ -553,123 +558,197 @@ int ft_work<T>::create_storage()
 	const ft_uoff eff_block_size_log2 = io->effective_block_size_log2();
 	const ft_uoff eff_block_size_minus_1 = ((ft_uoff)1 << eff_block_size_log2) - 1;
 
-	const ft_uoff free_ram = FT_ARCH_NS ff_arch_mem_system_free();
-	const ft_uoff page_size_minus_1 = (ft_uoff) ff_mem_page_size() - 1;
+    const ft_uoff free_ram_or_0 = FT_ARCH_NS ff_arch_mem_system_free();
+    const ft_uoff free_ram_or_min = free_ram_or_0 != 0 ? free_ram_or_0
+        : sizeof(ft_size) <= 4 ? (ft_uoff) 48*1024*1024 : (ft_uoff) 768*1024*1024;
+    const ft_uoff free_ram_3 = free_ram_or_min / 3;
 
-	ft_uoff primary_len = (ft_uoff) storage_map.total_count() << eff_block_size_log2;
-	ft_uoff total_len = (ft_uoff) io->job_storage_length(), requested_len = total_len;
-	bool exact = io->job_storage_length_exact();
+    ft_uoff avail_primary_len = (ft_uoff) storage_map.total_count() << eff_block_size_log2;
 
-	if (exact && requested_len == 0) {
-		ff_log(FC_FATAL, 0, "fatal error: resumed job STORAGE is 0 bytes. impossible!");
-		return -EINVAL;
-	}
+    ft_size avail_primary_size = (ft_size) ff_min2<ft_uoff>(avail_primary_len, (ft_size)-1);
+    ft_size auto_total_size = 0, mem_buffer_size;
 
-	if (total_len != 0) {
-		/* honor requested storage size, but check for possible problems */
+    const ft_size page_size_minus_1 = ff_mem_page_size() - 1;
 
-		double free_pretty_len = 0.0;
-		const char * free_pretty_unit = ff_pretty_size(free_ram, & free_pretty_len);
+    ft_size req_mem_buffer_size = io->job_storage_size(FC_MEM_BUFFER_SIZE);
+    ft_size req_secondary_size = io->job_storage_size(FC_SECONDARY_STORAGE_SIZE);
+    const ft_size req_primary_size_exact = io->job_storage_size(FC_PRIMARY_STORAGE_EXACT_SIZE);
+    const ft_size req_secondary_size_exact = io->job_storage_size(FC_SECONDARY_STORAGE_EXACT_SIZE);
+    const ft_size req_total_size_exact = req_primary_size_exact + req_secondary_size_exact;
 
-		if (free_ram == 0) {
-			ff_log(FC_WARN, 0, "cannot detect free RAM amount."
-					" no idea if the %.2f %sbytes requested for mmapped() %s will fit into free RAM."
-					" continuing, but troubles (memory exhaustion) are possible",
-					free_pretty_len, free_pretty_unit, label[FC_STORAGE]);
+    double free_pretty_len = 0.0;
+    const char * free_pretty_unit = ff_pretty_size(free_ram_or_min, & free_pretty_len);
 
-		} else if (total_len > free_ram / 3 * 2) {
-			double total_pretty_len = 0.0;
-			const char * total_pretty_unit = ff_pretty_size(total_len, & total_pretty_len);
+    if (req_primary_size_exact != 0 && req_secondary_size_exact != 0 &&
+        req_secondary_size_exact > (ft_size)-1 - req_primary_size_exact)
+    {
+        double req_p_pretty_len = 0.0, req_s_pretty_len = 0.0;
+        const char * req_p_pretty_unit = ff_pretty_size(req_primary_size_exact, & req_p_pretty_len);
+        const char * req_s_pretty_unit = ff_pretty_size(req_secondary_size_exact, & req_s_pretty_len);
 
-			ff_log(FC_WARN, 0, "requested %.2f %sbytes for mmapped() %s, but only %.2f %sbytes RAM are free."
-					" honoring the request, but expect troubles (memory exhaustion)",
-					total_pretty_len, total_pretty_unit, label[FC_STORAGE], free_pretty_len, free_pretty_unit);
-		}
+        return ff_log(FC_ERROR, EOVERFLOW, "requested %s + %s exact size (%.2f %sbytes + %.2f %sbytes) overflow addressable memory",
+                      label[FC_PRIMARY_STORAGE], label[FC_SECONDARY_STORAGE],
+                      req_p_pretty_len, req_p_pretty_unit, req_s_pretty_len, req_s_pretty_unit);
+    }
+
+    if (free_ram_or_0 == 0)
+        ff_log(FC_WARN, 0, "cannot detect free RAM amount");
+
+	if (req_total_size_exact != 0 || req_secondary_size != 0) {
+        /* honor requested storage size, but warn if it may exhaust free RAM */
+
+	    const ft_size req_len = req_total_size_exact != 0 ? req_total_size_exact : req_secondary_size;
+	    const char * req_label = label[req_total_size_exact != 0 ? FC_STORAGE : FC_SECONDARY_STORAGE];
+
+	    double req_pretty_len = 0.0;
+	    const char * req_pretty_unit = ff_pretty_size(req_len, & req_pretty_len);
+
+        if (free_ram_or_0 == 0) {
+            ff_log(FC_WARN, 0, "no idea if the %.2f %sbytes requested for %s%s will fit into free RAM."
+                    " continuing, but troubles (memory exhaustion) are possible",
+                    req_pretty_len, req_pretty_unit, "mmapped() ", req_label);
+        } else if ((ft_uoff) req_len >= free_ram_or_0 / 2) {
+            ff_log(FC_WARN, 0, "using %.2f %sbytes as requested for %s%s, but only %.2f %sbytes RAM are free."
+                    " honoring the request, but expect troubles (memory exhaustion)",
+                    req_pretty_len, req_pretty_unit, req_label, free_pretty_len, free_pretty_unit);
+        }
 	} else {
 		/*
 		 * auto-detect total storage size to use:
 		 * we want it to be the smallest between
-		 *   33% of free RAM (if free RAM cannot be determined, use 16 MB if 32bit platform, else use 256MB)
-		 *   10% of bytes to relocate
+		 *   33% of free RAM (if free RAM cannot be determined, use 16 MB on 32bit platforms, and 256MB on 64bit+ platforms)
+		 *   12.5% of bytes to relocate
 		 */
-		ft_uoff free_ram_3;
-
-		if (free_ram != 0) {
-			free_ram_3 = (free_ram + 2) / 3;
-		} else {
-			free_ram_3 = sizeof(ft_size) <= 4 ? (ft_uoff) 16*1024*1024 : (ft_uoff) 256*1024*1024;
-
-			double free_pretty_len = 0.0;
-			const char * free_pretty_unit  = ff_pretty_size(free_ram_3 * 3,  & free_pretty_len);
-
-			ff_log(FC_WARN, 0, "cannot detect free RAM amount. assuming at least %.2f %sbytes RAM are free."
-					" expect troubles (memory exhaustion) if not true",
-					free_pretty_len, free_pretty_unit);
+		if (free_ram_or_0 == 0) {
+			ff_log(FC_WARN, 0, "assuming at least %.2f %sbytes RAM are free. expect troubles (memory exhaustion) if not true",
+			       free_pretty_len, free_pretty_unit);
 		}
 		T work_count = dev_map.used_count();
-		ft_uoff work_length_10 = (((ft_uoff) work_count << eff_block_size_log2) + 9) / 10;
-		total_len = ff_min2(free_ram_3, work_length_10);
+		ft_uoff work_length_10 = (((ft_uoff) work_count << eff_block_size_log2) + 7) / 8;
+		ft_uoff total_len = ff_min2(free_ram_3, work_length_10);
 
 		/* round up to multiples of 1M */
 		total_len = ff_round_up<ft_uoff>(total_len, _1M_minus_1);
+		/* truncate to ft_size */
+		auto_total_size = (ft_size) ff_min2<ft_uoff>(total_len, (ft_uoff)(ft_size)-1);
 	}
 
-	/* round up total_len to a multiple of PAGE_SIZE */
-	total_len = ff_round_up<ft_uoff>(total_len, page_size_minus_1);
-	if (exact && total_len != requested_len)
-		return unusable_storage_size(requested_len, "system PAGE_SIZE", (ft_ull)(page_size_minus_1 + 1), "smaller RAM page size" );
 
-	/* round up total_len to a multiple of effective block size */
-	total_len = ff_round_up<ft_uoff>(total_len, eff_block_size_minus_1);
-	if (exact && total_len != requested_len)
-		return unusable_storage_size(requested_len, "device effective block size", (ft_ull)(eff_block_size_minus_1 + 1), "smaller file-system block size" );
+	if (req_mem_buffer_size != 0) {
+        const ft_size req_len = req_mem_buffer_size;
 
-	const ft_uoff aligment_size_minus_1 = eff_block_size_minus_1 | page_size_minus_1;
+        double req_pretty_len = 0.0;
+        const char * req_pretty_unit = ff_pretty_size(req_len, & req_pretty_len);
 
-	/* round down primary_len to a multiple of PAGE_SIZE */
-	/* round down primary_len to a multiple of effective block size */
-	primary_len &= ~aligment_size_minus_1;
+        if (free_ram_or_0 == 0) {
+            ff_log(FC_WARN, 0, "no idea if the %.2f %sbytes requested for %s%s will fit into free RAM."
+                    " continuing, but troubles (memory exhaustion) are possible",
+                    req_pretty_len, req_pretty_unit, "memory ", "buffer");
+        } else if ((ft_uoff) req_len >= free_ram_or_0 / 2) {
+            ff_log(FC_WARN, 0, "using %.2f %sbytes as requested for %s%s, but only %.2f %sbytes RAM are free."
+                    " honoring the request, but expect troubles (memory exhaustion)",
+                    req_pretty_len, req_pretty_unit, "memory ", "buffer", free_pretty_len, free_pretty_unit);
+        }
+        mem_buffer_size = req_mem_buffer_size;
+	} else {
+	    /*
+	     * autodect RAM buffer size:
+	     * it will be the smallest between free RAM / 3 and number of bytes to relocate
+	     * (and truncated to fit addressable RAM)
+	     */
+        ft_uoff work_bytes = (ft_uoff)dev_map.used_count() << eff_block_size_log2;
+	    mem_buffer_size = (ft_size) ff_min2((ft_uoff)(ft_size)-1, ff_min2(free_ram_3, work_bytes));
+	}
+
+	bool flag;
+
+	/* round down all parameters to a multiple of PAGE_SIZE */
+	mem_buffer_size &= ~page_size_minus_1;
+    auto_total_size &= ~page_size_minus_1;
+	avail_primary_size &= ~page_size_minus_1;
+	req_secondary_size &= ~page_size_minus_1;
+    if ((flag = ((req_primary_size_exact & page_size_minus_1) != 0)) || (req_secondary_size_exact & page_size_minus_1))
+        return unusable_storage_size(label[flag ? FC_PRIMARY_STORAGE : FC_SECONDARY_STORAGE],
+                                     flag ? req_primary_size_exact : req_secondary_size_exact, "system PAGE_SIZE",
+            (ft_ull)(page_size_minus_1 + 1));
+
+	/* round down all parameters to a multiple of effective block size */
+    mem_buffer_size &= ~eff_block_size_minus_1;
+    auto_total_size &= ~eff_block_size_minus_1;
+    avail_primary_size &= ~eff_block_size_minus_1;
+    req_secondary_size &= ~eff_block_size_minus_1;
+    if ((flag = ((req_primary_size_exact & eff_block_size_minus_1) != 0)) || (req_secondary_size_exact & eff_block_size_minus_1))
+		return unusable_storage_size(label[flag ? FC_PRIMARY_STORAGE : FC_SECONDARY_STORAGE],
+                                     flag ? req_primary_size_exact : req_secondary_size_exact, "device effective block size",
+		    (ft_ull)(eff_block_size_minus_1 + 1));
 
 	/*
-	 * adjust both total_len and primary_len as follows:
-	 * truncate to fit off_t (== ft_off, signed version of ft_uoff)
-	 * truncate to 1/4 of addressable RAM (= 1GB on 32-bit machines), or to whole addressable RAM if job_storage_length_exact()
+	 * truncate all non-mandatory parameters to 1/4 of addressable RAM (= 1GB on 32-bit machines)
 	 * keep alignment to PAGE_SIZE and effective block size!
 	 */
-	const ft_uoff off_max = ((ft_uoff)(ft_off)-1 >> 1) & ~aligment_size_minus_1;
-	primary_len = ff_min2<ft_uoff>(primary_len, off_max);
-	total_len =   ff_min2<ft_uoff>(total_len,   off_max);
-	if (exact && total_len != requested_len)
-		return unusable_storage_size(requested_len, "system (off_t)", (ft_ull)sizeof(ft_size), "larger maximum file size");
+	const ft_size mem_max = (((ft_size)-1 >> 2) + 1) & ~page_size_minus_1 & ~eff_block_size_minus_1;
+	mem_buffer_size = ff_min2(mem_buffer_size, mem_max);
+	auto_total_size = ff_min2(auto_total_size, mem_max);
+	avail_primary_size = ff_min2(avail_primary_size, mem_max);
+	req_secondary_size = ff_min2(req_secondary_size, mem_max);
 
-	const ft_size mem_max = (((ft_uoff)(ft_size)-1 >> (exact ? 0 : 2)) + 1) & ~aligment_size_minus_1;
-	primary_len = ff_min2<ft_uoff>(primary_len, mem_max);
-	total_len   = ff_min2<ft_uoff>(total_len,   mem_max);
-	if (exact && total_len != requested_len)
-		return unusable_storage_size(requested_len, "system (size_t)", (ft_ull)sizeof(ft_size), "larger addressable memory");
 
-	if (total_len == 0) {
-		total_len = aligment_size_minus_1 + 1;
+	if (req_total_size_exact == 0 && auto_total_size == 0) {
+	    auto_total_size = (page_size_minus_1 | eff_block_size_minus_1) + 1;
 
 		double total_pretty_len = 0.0;
-		const char * total_pretty_unit = ff_pretty_size(total_len, & total_pretty_len);
+		const char * total_pretty_unit = ff_pretty_size(auto_total_size, & total_pretty_len);
 
 		ff_log(FC_WARN, 0, "%s size to use would be 0 bytes, increasing to %.2f %sbytes",
 				label[FC_STORAGE], total_pretty_len, total_pretty_unit);
 	}
+    if (mem_buffer_size == 0) {
+        mem_buffer_size = (page_size_minus_1 | eff_block_size_minus_1) + 1;
+
+        double mem_pretty_len = 0.0;
+        const char * mem_pretty_unit = ff_pretty_size(mem_buffer_size, & mem_pretty_len);
+
+        ff_log(FC_WARN, 0, "%s size to use would be 0 bytes, increasing to %.2f %sbytes",
+                "memory buffer", mem_pretty_len, mem_pretty_unit);
+    }
+
+    ft_size primary_size;
+    if (req_primary_size_exact > avail_primary_size) {
+        double avail_pretty_len = 0.0, req_pretty_len = 0.0;
+        const char * avail_pretty_unit = ff_pretty_size(avail_primary_size, & avail_pretty_len);
+        const char * req_pretty_unit = ff_pretty_size(req_primary_size_exact, & req_pretty_len);
+
+        ff_log(FC_ERROR, 0, "available %s is only %"FS_ULL" bytes (%.2f %sbytes),"
+               " too small for requested %"FS_ULL" bytes (%.2f %sbytes)", label[FC_PRIMARY_STORAGE],
+               (ft_ull)avail_primary_size, avail_pretty_len, avail_pretty_unit,
+               (ft_ull) req_primary_size_exact, req_pretty_len, req_pretty_unit);
+        /* mark error as reported */
+        return -ENOSPC;
+    } else if (req_primary_size_exact != 0)
+        primary_size = req_primary_size_exact;
+    else
+        primary_size = ff_min2(avail_primary_size, auto_total_size);
 
 
-	if (primary_len > total_len)
-		primary_len = total_len;
-	ft_uoff secondary_len = total_len - primary_len;
+    ft_size secondary_size;
+    if (req_secondary_size_exact != 0)
+        secondary_size = req_secondary_size_exact;
+    else if (req_secondary_size != 0)
+        secondary_size = req_secondary_size;
+    else if (auto_total_size > primary_size)
+        secondary_size = auto_total_size - primary_size;
+    else
+        secondary_size = 0;
 
-	/* remember storage_size */
-	io->job_storage_length((ft_size) total_len);
+    /* remember storage sizes */
+	io->job_storage_size(FC_MEM_BUFFER_SIZE, mem_buffer_size);
+    io->job_storage_size(FC_PRIMARY_STORAGE_EXACT_SIZE, primary_size);
+    io->job_storage_size(FC_SECONDARY_STORAGE_EXACT_SIZE, secondary_size);
 
 	/* fill io->primary_storage() with PRIMARY-STORAGE extents actually used */
-	fill_io_primary_storage(primary_len);
+	fill_io_primary_storage(primary_size);
 
-	return io->create_storage(secondary_len);
+	return io->create_storage(secondary_size, mem_buffer_size);
 }
 
 /**
@@ -682,8 +761,9 @@ int ft_work<T>::create_storage()
  * updates storage_map to contain the PRIMARY-STORAGE extents actually used.
  */
 template<typename T>
-void ft_work<T>::fill_io_primary_storage(ft_uoff primary_len)
+void ft_work<T>::fill_io_primary_storage(ft_size primary_size)
 {
+    const ft_uoff primary_len = (ft_uoff) primary_size;
 	const ft_uoff eff_block_size_log2 = io->effective_block_size_log2();
 	const ft_uoff eff_block_size_minus_1 = ((ft_uoff)1 << eff_block_size_log2) - 1;
 
@@ -753,33 +833,37 @@ template<typename T>
 int ft_work<T>::relocate()
 {
 	const char * dev_path = io->dev_path();
-    int err;
+    int err = 0;
+    const bool simulated = io->simulate_run();
 
-	ff_log(FC_NOTICE, 0, "everything ready for relocation, umounting %s '%s' ... ", label[FC_DEVICE], dev_path);
+    if (!simulated) {
+        ff_log(FC_NOTICE, 0, "everything ready for relocation, umounting %s '%s' ... ", label[FC_DEVICE], dev_path);
 
 #ifdef FT_HAVE_UMOUNT
-    /* TODO: move this stuff to ff_posix_umount(), and call umount(8) instead of umount(2) to correctly update /etc/mtab */
-	if ((err = umount(dev_path)) == 0)
-		ff_log(FC_INFO, 0, "successful umount() %s '%s'", label[FC_DEVICE], dev_path);
-	else
-		err = ff_log(FC_ERROR, errno, "failed to umount() %s '%s'", label[FC_DEVICE], dev_path);
+        /* TODO: move this stuff to ff_posix_umount(), and call umount(8) instead of umount(2) to correctly update /etc/mtab */
+        if ((err = umount(dev_path)) == 0)
+            ff_log(FC_INFO, 0, "successful umount() %s '%s'", label[FC_DEVICE], dev_path);
+        else
+            err = ff_log(FC_ERROR, errno, "failed to umount() %s '%s'", label[FC_DEVICE], dev_path);
 #else
-    err = ff_log(FC_WARN, ENOSYS, "umount() not supported on this platform");
+        err = ff_log(FC_WARN, ENOSYS, "umount() not supported on this platform");
 #endif
-    if (err != 0) {
-    	ff_log(FC_WARN, 0, "please manually umount %s '%s' before continuing."
-    			" press RETURN when done, or CTRL+C to quit", label[FC_DEVICE], dev_path);
-    	char ch;
-    	(void) read(0, &ch, 1);
-    	err = 0;
+        if (err != 0) {
+            ff_log(FC_WARN, 0, "please manually umount %s '%s' before continuing.", label[FC_DEVICE], dev_path);
+            ff_log(FC_WARN, 0, "press RETURN when done, or CTRL+C to quit");
+            char ch;
+            (void) read(0, &ch, 1);
+            err = 0;
+        }
     }
 
-    ff_log(FC_NOTICE, 0, "relocation starting. this may take a LONG time ...");
+    ff_log(FC_NOTICE, 0, "%srelocation starting. this may take a LONG time ...", (simulated ? "SIMULATED " : ""));
 
     ft_uoff eff_block_size_log2 = io->effective_block_size_log2();
 
     /* storage_count = number of storage blocks */
-    T storage_count = (T) (io->job_storage_length() >> eff_block_size_log2);
+    T storage_count = (T) ((io->job_storage_size(FC_PRIMARY_STORAGE_EXACT_SIZE) +
+                            io->job_storage_size(FC_SECONDARY_STORAGE_EXACT_SIZE)) >> eff_block_size_log2);
 
     /* storage starts free */
     storage_map.clear();
@@ -787,12 +871,17 @@ int ft_work<T>::relocate()
     storage_transpose.clear();
     storage_free.insert0(0, 0, storage_count, FC_DEFAULT_USER_DATA);
 
+    /* initialize progress report */
+    work_total = dev_map.used_count();
+    eta.clear();
+    eta.init();
+
     /* device starts (almost) full */
     T dev_free_count = 0;
     map_const_iterator iter = dev_free.begin(), end = dev_free.end();
     for (; iter != end; ++iter)
     	dev_free_count += iter->second.length;
-    dev_map.total_count(dev_map.total_count() + dev_free_count);
+    dev_map.total_count(work_total + dev_free_count);
     dev_transpose.transpose(dev_map);
 
 
@@ -816,28 +905,43 @@ int ft_work<T>::relocate()
     return err;
 }
 
-/* show progress status. TODO: E.T.A. estimation */
+/* show progress status and E.T.A. */
 template<typename T>
-void ft_work<T>::show_progress() const
+void ft_work<T>::show_progress()
 {
 	const ft_uoff eff_block_size_log2 = io->effective_block_size_log2();
-	const ft_uoff eff_block_size = (ft_uoff)1 << eff_block_size_log2;
 
-	ft_uoff used_len = (ft_uoff)(dev_map.used_count() + storage_map.used_count()) << eff_block_size_log2;
-	ft_uoff free_len = (ft_uoff)(dev_map.free_count() + storage_map.free_count()) << eff_block_size_log2;
+	T dev_used = dev_map.used_count(), storage_used = storage_map.used_count();
+    ft_uoff len = ((ft_uoff)dev_used + (ft_uoff)storage_used) << eff_block_size_log2;
 
-	double pretty_used_len = 0.0, pretty_free_len = 0.0;
-	const char * pretty_used_label = ff_pretty_size(used_len, & pretty_used_len);
-	const char * pretty_free_label = ff_pretty_size(free_len, & pretty_free_len);
+    double pretty_len = 0.0, percentage, eta_time = -1.0;
+    const char * pretty_label = ff_pretty_size(len, & pretty_len);
 
-	ff_log(FC_INFO, 0, "progress: %.2f %sbytes left to relocate, %.2f %sbytes free",
-			pretty_used_len, pretty_used_label, pretty_free_len, pretty_free_label);
+    if (work_total != 0) {
+        percentage = 1.0 - ((double)dev_used + storage_used / 2) / work_total;
+        eta_time = eta.add(percentage);
+        percentage *= 100.0;
 
-	show(label[FC_DEVICE], "", eff_block_size, dev_map);
-	show(label[FC_DEVICE], " free space", eff_block_size, dev_free);
+        if (eta_time >= 0) {
+            const char * eta_time_label = ff_pretty_time(eta_time, & eta_time);
+            ft_ull eta_time_ull = (ft_ull) (eta_time + 0.5);
 
-	show(label[FC_STORAGE], "", eff_block_size, storage_map);
-	show(label[FC_STORAGE], " free space", eff_block_size, storage_free);
+            ff_log(FC_INFO, 0, "progress: %4.1f%% done, %.2f %sbytes still to relocate, estimated %"FS_ULL" %s%s left",
+                   percentage, pretty_len, pretty_label, eta_time_ull, eta_time_label, (eta_time_ull == 1 ? "" : "s"));
+        } else
+            ff_log(FC_INFO, 0, "progress: %4.1f%% done, %.2f %sbytes still to relocate", percentage, pretty_len, pretty_label);
+
+    } else
+        ff_log(FC_INFO, 0, "progress: %.2f %sbytes left to relocate", pretty_len, pretty_label);
+
+
+    const ft_uoff eff_block_size = (ft_uoff)1 << eff_block_size_log2;
+
+    show(label[FC_DEVICE], "", eff_block_size, dev_map, FC_TRACE);
+	show(label[FC_DEVICE], " free space", eff_block_size, dev_free, FC_TRACE);
+
+	show(label[FC_STORAGE], "", eff_block_size, storage_map, FC_TRACE);
+	show(label[FC_STORAGE], " free space", eff_block_size, storage_free, FC_TRACE);
 }
 
 
@@ -867,7 +971,7 @@ int ft_work<T>::fill_storage()
     }
     if (err == 0) {
         if ((err = io->flush()) == 0)
-            ff_log(FC_DEBUG, 0, "storage filled");
+            ff_log(FC_DEBUG, 0, "%sstorage filled", (io->simulate_run() ? "SIMULATED " : ""));
         else {
             /* error should has been reported by io->flush() */
             if (!ff_log_is_reported(err))
@@ -938,7 +1042,7 @@ int ft_work<T>::move_fragment(map_iterator from_iter, map_iterator to_free_iter,
     T from_physical = from_extent.first.physical;
     T to_physical = to_free_extent.first.physical;
 
-    int err = io->copy(from_physical, to_physical, length, dir);
+    int err = io->copy(dir, from_physical, to_physical, length);
     if (err != 0)
         return err;
     /** io->copy() returned success. trust that it copied exactly 'length' blocks */
@@ -1038,7 +1142,8 @@ int ft_work<T>::move_to_target(ft_from from)
 		to_physical = extent.first.physical;
 		length = extent.second.length;
 
-		err = io->copy(from_physical, to_physical, length, dir);
+        /* sequential disk access: consecutive calls to io->copy() are sorted by to_physical, i.e. device to_offset */
+		err = io->copy(dir, from_physical, to_physical, length);
 		show(counter++, from_physical, to_physical, length, extent.second.user_data);
 		if (err != 0)
 			return err;

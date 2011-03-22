@@ -23,10 +23,10 @@ enum ft_to   { FC_TO_DEV = 0,   FC_TO_STORAGE = 2 };
 
 /** direction of ft_work<T>::move*() and io::ft_io::copy() operations */
 enum ft_dir {
-    FC_DEV2STORAGE = FC_FROM_DEV    |FC_TO_STORAGE,
     FC_DEV2DEV     = FC_FROM_DEV    |FC_TO_DEV,
     FC_STORAGE2DEV = FC_FROM_STORAGE|FC_TO_DEV,
-    FC_STORAGE2STORAGE = FC_FROM_STORAGE|FC_TO_STORAGE, /* not considered useful, except as 'invalid dir' marker */
+    FC_DEV2STORAGE = FC_FROM_DEV    |FC_TO_STORAGE,
+    FC_INVALID2INVALID = FC_FROM_STORAGE|FC_TO_STORAGE, /* 'invalid dir' marker */
 };
 
 FT_INLINE ft_from ff_from(ft_dir dir) { return (ft_from)(dir & 1); }

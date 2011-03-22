@@ -94,15 +94,27 @@ int ff_str2un_scaled(const char * str, T * ret_n)
 
 
 
-/**
- * return human-readable representation of len,
- * with [kilo|mega|giga|tera|peta|exa|zeta|yotta] scale as appropriate
- */
-const char * ff_pretty_size(ft_uoff len, double * ret_pretty_len);
 
 /** return p != NULL ? p : default_p */
 template<typename T>
 FT_INLINE T * ff_if_null(T * p, T * default_p) { return p != NULL ? p : default_p; }
+
+
+
+
+/**
+ * return human-readable representation of length,
+ * with [kilo|mega|giga|tera|peta|exa|zeta|yotta] scale as appropriate
+ */
+const char * ff_pretty_size(ft_uoff length, double * ret_pretty_len);
+
+
+/**
+ * return human-readable representation of time,
+ * with [second|minute|hour|day|month|year] scale as appropriate
+ */
+const char * ff_pretty_time(double time, double * ret_pretty_time);
+
 
 
 

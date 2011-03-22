@@ -30,7 +30,7 @@ FT_NAMESPACE_BEGIN
 
 
 /* FC_FATAL is reserved for things that should not happen, i.e. bugs in the program or in the operating system. */
-typedef enum ft_log_level_e { FC_TRACE, FC_DEBUG, FC_INFO, FC_NOTICE, FC_WARN, FC_ERROR, FC_FATAL } ft_log_level;
+typedef enum ft_log_level_e { FC_DUMP, FC_TRACE, FC_DEBUG, FC_INFO, FC_NOTICE, FC_WARN, FC_ERROR, FC_FATAL } ft_log_level;
 
 
 typedef enum ft_log_fmt_e {

@@ -83,11 +83,11 @@ int ff_str2ull_scaled(const char * str, ft_ull * ret_n)
 
 
 
-static char const* fc_pretty_size[] = {
-        "", "kilo", "mega", "giga", "tera", "peta", "exa", "zeta", "yotta"
+static char const* fc_pretty_size_unit[] = {
+    "", "kilo", "mega", "giga", "tera", "peta", "exa", "zeta", "yotta",
 };
 
-enum { fc_pretty_size_len = sizeof(fc_pretty_size)/sizeof(fc_pretty_size[0]) };
+enum { fc_pretty_size_len = sizeof(fc_pretty_size_unit)/sizeof(fc_pretty_size_unit[0]) };
 
 /**
  * return human-readable representation of len,
@@ -100,7 +100,36 @@ const char * ff_pretty_size(ft_uoff len, double * ret_pretty_len)
     for (i = 0; i < fc_pretty_size_len-1 && pretty_len >= 1024.0; i++)
         pretty_len *= .0009765625; // exactly 1/1024
     * ret_pretty_len = pretty_len;
-    return fc_pretty_size[i];
+    return fc_pretty_size_unit[i];
+}
+
+
+
+
+
+
+static char const* fc_pretty_time_unit[] = {
+    "second", "minute", "hour", "day" "month", "year",
+};
+static const double fc_pretty_time[] = {
+    1.0, 60.0, 3600.0, 86400.0, 86400.0 * 30, 86400.0 * 365,
+};
+
+enum { fc_pretty_time_len = sizeof(fc_pretty_time)/sizeof(fc_pretty_time[0]) };
+
+/**
+ * return human-readable representation of time,
+ * with [second|minute|hour|day|month|year] scale as appropriate
+ */
+const char * ff_pretty_time(double time, double * ret_pretty_time)
+{
+    ft_size i = 0;
+    for (; i < fc_pretty_time_len - 1; i++) {
+        if (time < fc_pretty_time[i+1])
+            break;
+    }
+    * ret_pretty_time = time / fc_pretty_time[i];
+    return fc_pretty_time_unit[i];
 }
 
 FT_NAMESPACE_END

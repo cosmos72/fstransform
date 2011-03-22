@@ -29,7 +29,9 @@ public:
     typedef ft_extent_key<T>      key_type;
     typedef ft_extent_payload<T>  mapped_type;
 
-    typedef typename super_type::value_type value_type;
+    typedef typename super_type::value_type     value_type;
+    typedef typename super_type::iterator       iterator;
+    typedef typename super_type::const_iterator const_iterator;
 
     /**
      * append a single extent to this vector.
@@ -71,11 +73,19 @@ public:
      * reorder this vector in-place, sorting by physical
      */
     void sort_by_physical();
+    void sort_by_physical(iterator from, iterator to);
+
+    /**
+     * reorder this vector in-place, sorting by logical
+     */
+    void sort_by_logical();
+    void sort_by_logical(iterator from, iterator to);
 
     /**
      * reorder this vector in-place, sorting by reverse length (largest extents will be first)
      */
     void sort_by_reverse_length();
+    void sort_by_reverse_length(iterator from, iterator to);
 };
 
 FT_NAMESPACE_END

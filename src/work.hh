@@ -10,6 +10,7 @@
 
 #include "types.hh"     // for ft_uoff
 #include "map_stat.hh"  // for ft_map_stat<T>
+#include "eta.hh"       // for ft_eta
 #include "log.hh"       // for ft_log_level
 #include "io/io.hh"     // for ft_io
 
@@ -42,6 +43,9 @@ private:
     map_type storage_free, storage_transpose;
 
     FT_IO_NS ft_io * io;
+
+    ft_eta eta;
+    T work_total;
 
     /** cannot call copy constructor */
     ft_work(const ft_work<T> &);
@@ -98,7 +102,7 @@ private:
      *
      * updates storage_map to contain the PRIMARY-STORAGE extents actually used.
      */
-    void fill_io_primary_storage(ft_uoff primary_len);
+    void fill_io_primary_storage(ft_size primary_size);
 
     /**
      * creates on-disk secondary storage, used as (small) backup area during relocate().
@@ -141,8 +145,8 @@ private:
     int move_fragment(map_iterator from_iter, map_iterator to_free_iter, ft_dir dir, T & ret_moved);
 
 
-    /** show progress status */
-    void show_progress() const;
+    /** show progress status and E.T.A. */
+    void show_progress();
 
 public:
     /** default constructor */
