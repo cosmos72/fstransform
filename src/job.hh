@@ -61,10 +61,20 @@ public:
      * and generate WARNINGS (and keep going) for failed sanity checks
      * instead of generating ERRORS (and quitting)
      */
+    FT_INLINE void force_run(bool force_flag) { this_force_run = force_flag; }
+
+    /**
+     * return true if I/O classes should be less strict on sanity checks
+     * and generate WARNINGS (and keep going) for failed sanity checks
+     * instead of generating ERRORS (and quitting)
+     */
     FT_INLINE bool force_run() const { return this_force_run; }
 
     /** return true if I/O classes should simulate run, i.e. run WITHOUT reading or writing device blocks */
     FT_INLINE bool simulate_run() const { return this_simulate_run; }
+
+    /** set to true if I/O classes should simulate run, i.e. run WITHOUT reading or writing device blocks */
+    FT_INLINE void simulate_run(bool simulate_flag) { this_simulate_run = simulate_flag; }
 };
 
 FT_NAMESPACE_END

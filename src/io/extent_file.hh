@@ -11,32 +11,32 @@
 #include "../fwd.hh"     // for ft_vector<T> forward declaration */
 #include "../types.hh"   // for ft_uoff
 
-#include <iosfwd>        // for std::istream forward declaration
+#include <cstdio>        // for FILE
 
 
 FT_IO_NAMESPACE_BEGIN
 
 /**
- * retrieves emulated file blocks allocation map (extents) from specified stream
+ * load file blocks allocation map (extents) previously saved into specified file
  * and appends them to ret_container (retrieves also user_data)
  * in case of failure returns errno-compatible error code, and ret_list contents will be UNDEFINED.
  *
  * implementation: simply reads the list of triplets (physical, logical, length)
  * stored in the stream as decimal numbers
  */
-int ff_read_extents_file(std::istream & is, ft_uoff dev_length, ft_vector<ft_uoff> & ret_list, ft_uoff & ret_block_size_bitmask);
+int ff_load_extents_file(FILE * f, ft_vector<ft_uoff> & ret_list, ft_uoff & ret_block_size_bitmask);
 
 /**
- * writes file blocks allocation map (extents) to specified stream (stores also user_data)
+ * writes file blocks allocation map (extents) to specified FILE (stores also user_data)
  * in case of failure returns errno-compatible error code.
  *
  * implementation: simply writes the list of triplets (physical, logical, length)
- * into the stream as decimal numbers
+ * into the FILE as decimal numbers
  */
-int ff_write_extents_file(std::ostream & os, const ft_vector<ft_uoff> & extent_list);
+int ff_save_extents_file(FILE * f, const ft_vector<ft_uoff> & extent_list);
 
 /**
- * write a 'length' bytes zeros '\0' into file descriptor and return 0.
+ * write 'length' bytes of zeros '\0' into file descriptor and return 0.
  * in case of failure returns errno-compatible error code.
  */
 int ff_write_zero_fd(int fd, ft_uoff length);

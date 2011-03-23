@@ -26,10 +26,10 @@ int ft_dispatch::main(ft_vector<ft_uoff> & loop_file_extents,
                            ft_vector<ft_uoff> & free_space_extents, FT_IO_NS ft_io & io)
 {
     if (ft_work<ft_uint>::check(io) == 0) {
-    	ff_log(FC_DEBUG, 0, "using reduced (%"FS_ULL" bit) relocation algorithm: lower memory usage", (ft_ull)8*sizeof(ft_uint));
+    	ff_log(FC_INFO, 0, "using reduced (%"FS_ULL" bit) relocation algorithm: lower memory usage", (ft_ull)8*sizeof(ft_uint));
         return ft_work<ft_uint>::main(loop_file_extents, free_space_extents, io);
     }
-	ff_log(FC_DEBUG, 0, "using full (%"FS_ULL" bit) relocation algorithm", (ft_ull)8*sizeof(ft_uoff));
+	ff_log(FC_INFO, 0, "using full (%"FS_ULL" bit) relocation algorithm", (ft_ull)8*sizeof(ft_uoff));
     return ft_work<ft_uoff>::main(loop_file_extents, free_space_extents, io);
 }
 

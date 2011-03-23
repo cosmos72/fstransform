@@ -16,16 +16,13 @@ FT_NAMESPACE_BEGIN
 class ft_eta
 {
 private:
-    enum { FC_ETA_N = 10, FC_ETA_MIN_N = 5 };
-    double this_y[FC_ETA_N];
+    enum { FC_ETA_N = 8, FC_ETA_MIN_N = 4 };
     double this_x[FC_ETA_N];
-    double this_x0;
+    double this_y[FC_ETA_N];
     ft_size this_n;
 
 public:
     ft_eta();
-
-    void init();
 
     /**
      * add percentage and {current timestamp} to the sliding window E.T.A. extrapolation.

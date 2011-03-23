@@ -14,7 +14,7 @@ FT_NAMESPACE_BEGIN
 
 /** default constructor */
 ft_args::ft_args()
-    : root_dir(NULL), io_name(NULL), io_args(), storage_size(), job_id(0), force_run(false), simulate_run(false)
+    : root_dir(NULL), io_args(), storage_size(), job_id(0), io_kind(FC_IO_AUTODETECT), force_run(false), simulate_run(false)
 {
     ft_size i, n;
     for (i = 0, n = sizeof(io_args)/sizeof(io_args[0]); i < n; i++)

@@ -94,7 +94,7 @@ int ft_io_posix::open(char const* const path[FC_FILE_COUNT])
 
     do {
         for (i = 0; i < FC_FILE_COUNT; i++) {
-            if ((fd[i] = ::open(path[i], i == FC_DEVICE ? O_RDWR|O_SYNC : O_RDONLY)) < 0) {
+            if ((fd[i] = ::open(path[i], i == FC_DEVICE ? O_RDWR : O_RDONLY)) < 0) {
                 err = ff_log(FC_ERROR, errno, "error opening %s '%s'", label[i], path[i]);
                 break;
             }
@@ -351,8 +351,8 @@ int ft_io_posix::create_storage(ft_size secondary_size, ft_size mem_buffer_size)
         pretty_len = 0.0;
         pretty_label = ff_pretty_size(buffer_mmap_size, & pretty_len);
 
-        ff_log(FC_NOTICE, 0, "%s: allocated %.2f %sbytes RAM as memory buffer",
-        		label[FC_STORAGE], pretty_len, pretty_label);
+        ff_log(FC_NOTICE, 0, "allocated %.2f %sbytes RAM as memory buffer",
+               pretty_len, pretty_label);
 
 
 
@@ -389,7 +389,7 @@ int ft_io_posix::create_storage(ft_size secondary_size, ft_size mem_buffer_size)
 
         ff_log(FC_NOTICE, 0, "%s%s%s is %.2f %sbytes, initialized and mmapped() to contiguous RAM",
         		(primary_len != 0 ? label[i] : ""),
-        		(primary_len != 0 && secondary_size != 0 ? " and " : ""),
+        		(primary_len != 0 && secondary_size != 0 ? "+" : ""),
         		(secondary_size != 0 ? label[j] : ""),
         		pretty_len, pretty_label);
     } else

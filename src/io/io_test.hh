@@ -1,5 +1,5 @@
 /*
- * io/io_posix.hh
+ * io/io_test.hh
  *
  *  Created on: Feb 28, 2011
  *      Author: max
@@ -8,19 +8,19 @@
 #ifndef FSTRANSFORM_IO_IO_EMUL_HH
 #define FSTRANSFORM_IO_IO_EMUL_HH
 
-#include "../types.hh"    // for ft_uoff */
+#include "../types.hh"    // for ft_uoff
 
-#include <iosfwd>         // for std::ifstream forward declaration
+#include <cstdio>         // for FILE
 
-#include "io.hh"          // for ft_io */
+#include "io.hh"          // for ft_io
 
 
 FT_IO_NAMESPACE_BEGIN
 
 /**
- * "dummy" class emulating I/O
+ * "test" class emulating I/O
  */
-class ft_io_null: public ft_io
+class ft_io_test: public ft_io
 {
 public:
     enum {
@@ -29,12 +29,12 @@ public:
         FC_FILE_COUNT // must be equal to count of preceding enum constants
     };
 
-    static char const * const label[]; // LOOP-EXTENTS and FREE-SPACE-EXTENTS
+    static char const * const extents_label[]; // LOOP-EXTENTS and FREE-SPACE-EXTENTS
 
 private:
     typedef ft_io super_type;
 
-    std::ifstream * is[FC_FILE_COUNT];
+    FILE * this_f[FC_FILE_COUNT];
 
 protected:
 
@@ -88,13 +88,13 @@ protected:
 
 public:
     /** constructor */
-    ft_io_null(ft_job & job);
+    ft_io_test(ft_job & job);
 
     /** destructor. calls close() */
-    virtual ~ft_io_null();
+    virtual ~ft_io_test();
 
-    /** check for consistency and open LOOP-FILE extents file and ZERO-FILE extents file */
-    int open(char const* const paths[FC_FILE_COUNT]);
+    /** check for consistency and load LOOP-FILE and ZERO-FILE extents list from files */
+    int open(char const* const path[FC_FILE_COUNT], ft_uoff dev_len);
 
     /** return true if this ft_io_posix is currently (and correctly) open */
     virtual bool is_open() const;

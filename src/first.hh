@@ -21,6 +21,9 @@
 #ifndef _GNU_SOURCE
 #  define _GNU_SOURCE
 #endif
+#ifndef _LARGEFILE_SOURCE
+#  define _LARGEFILE_SOURCE
+#endif
 
 
 /* put here any option/define/... affecting the whole program (headers and source files) */

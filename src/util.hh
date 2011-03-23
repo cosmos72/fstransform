@@ -94,6 +94,13 @@ int ff_str2un_scaled(const char * str, T * ret_n)
 
 
 
+void ff_init_random(ft_ull seed);
+
+/** return a random number in the range [0,max] */
+ft_ull ff_random(ft_ull max);
+
+
+
 
 /** return p != NULL ? p : default_p */
 template<typename T>

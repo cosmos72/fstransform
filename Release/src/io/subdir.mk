@@ -7,8 +7,9 @@ CC_SRCS += \
 ../src/io/extent_file.cc \
 ../src/io/extent_posix.cc \
 ../src/io/io.cc \
-../src/io/io_null.cc \
 ../src/io/io_posix.cc \
+../src/io/io_self_test.cc \
+../src/io/io_test.cc \
 ../src/io/persist.cc \
 ../src/io/util.cc \
 ../src/io/util_posix.cc 
@@ -17,8 +18,9 @@ OBJS += \
 ./src/io/extent_file.o \
 ./src/io/extent_posix.o \
 ./src/io/io.o \
-./src/io/io_null.o \
 ./src/io/io_posix.o \
+./src/io/io_self_test.o \
+./src/io/io_test.o \
 ./src/io/persist.o \
 ./src/io/util.o \
 ./src/io/util_posix.o 
@@ -27,8 +29,9 @@ CC_DEPS += \
 ./src/io/extent_file.d \
 ./src/io/extent_posix.d \
 ./src/io/io.d \
-./src/io/io_null.d \
 ./src/io/io_posix.d \
+./src/io/io_self_test.d \
+./src/io/io_test.d \
 ./src/io/persist.d \
 ./src/io/util.d \
 ./src/io/util_posix.d 

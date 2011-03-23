@@ -21,6 +21,7 @@
 
 #include "io/io.hh"         // for ft_io
 #include "io/io_posix.hh"   // for ft_io_posix
+#include "io/io_self_test.hh" // for ft_io_self_test
 #include "io/util.hh"       // for ff_mkdir()
 
 FT_NAMESPACE_BEGIN
@@ -94,14 +95,14 @@ int ft_transform::usage(const char * program_name) {
      "  --                   End of options. treat subsequent parameters as arguments\n"
      "                         even if they start with '-'\n"
      "  -q, --quiet          Be quiet, print less output\n"
-     "  -qq                  Be extremely quiet, only print warnings or errors\n"
-     "  -v, --verbose        Be verbose, print in detail what is being done\n"
-     "  -vv                  Be very verbose\n"
-     "  -vvv                 Be extremely verbose (warning: prints TONS of output)\n"
+     "  -qq                  Be very quiet, only print warnings or errors\n"
+     "  -v, --verbose        Be verbose, print what is being done\n"
+     "  -vv                  Be very verbose, print a lot of detailed output\n"
+     "  -vvv                 Be incredibly verbose (warning: prints TONS of output)\n"
      "  -f, --force-run      Run even if some sanity checks fail\n"
-     "  -n, --no-action\n"
-     "      --simulate-run   Do not actually read or write any disk block\n"
-     "  -t, --dir DIRECTORY  Save persistent data and logs to DIRECTORY\n"
+     "  -n, --no-action, --simulate-run\n"
+     "                       Do not actually read or write any disk block\n"
+     "  -t, --dir DIRECTORY  Write storage and logs inside DIRECTORY (default: $HOME)\n"
      "  -j, --job JOB_ID     Set JOB_ID to use (default: autodetect)\n"
      "  -m, --mem-buffer SIZE[k|M|G|T|P|E|Z|Y]\n"
      "                       Set RAM buffer size (default: autodetect)\n"
@@ -111,8 +112,10 @@ int ft_transform::usage(const char * program_name) {
      "                       Set *exact* PRIMARY STORAGE length or fail\n"
      "                       (default: autodetect)\n"
      "  -xs, --exact-secondary-storage SECONDARY_SIZE[k|M|G|T|P|E|Z|Y]\n"
-     "                       Set *exact* SECONDART STORAGE length or fail\n"
-     "                       (default: autodetect)\n");
+     "                       Set *exact* SECONDARY STORAGE length or fail\n"
+     "                       (default: autodetect)\n"
+     "  --posix              Use POSIX I/O (default)\n"
+     "  --self-test          Use self-test I/O. Performs self-test on random data\n");
 }
 
 
@@ -127,11 +130,6 @@ int ft_transform::invalid_cmdline(const char * program_name, int err, const char
     ff_log(FC_NOTICE, 0, "Try `%s --help' for more information", program_name);
     /* mark error as reported */
     return err ? err : -EINVAL;
-}
-
-int ft_transform::invalid_verbosity(const char * program_name)
-{
-    return invalid_cmdline(program_name, 0, "options -q, -qq, -v, -vv, --quiet, --verbose are mutually exclusive");
 }
 
 /** return EISCONN if transformer is initialized, else call quit_io() and return 0 */
@@ -175,6 +173,7 @@ int ft_transform::init(int argc, char const* const* argv)
     ft_args args;
     int err;
     ft_log_level level = FC_INFO, new_level;
+    ft_io_kind io_kind;
 
     do {
         if ((err = check_is_closed()) != 0)
@@ -212,7 +211,7 @@ int ft_transform::init(int argc, char const* const* argv)
                     if (level == FC_INFO)
                         level = new_level;
                     else {
-                        err = invalid_verbosity(program_name);
+                        err = invalid_cmdline(program_name, 0, "options -q, -qq, -v, -vv, --quiet, --verbose are mutually exclusive");
                         break;
                     }
                 }
@@ -261,12 +260,21 @@ int ft_transform::init(int argc, char const* const* argv)
                     --argc, ++argv;
                 }
                 /* -xs exact-secondary-storage-size[k|M|G|T|P|E|Z|Y] */
-                else if (argc > 1 && (!strcmp(arg, "-xs") || !strcmp(arg, "--exact-primary-storage"))) {
+                else if (argc > 1 && (!strcmp(arg, "-xs") || !strcmp(arg, "--exact-secondary-storage"))) {
                     if ((err = ff_str2un_scaled(argv[1], & args.storage_size[FC_SECONDARY_STORAGE_EXACT_SIZE])) != 0) {
                         err = invalid_cmdline(program_name, err, "invalid secondary storage exact size '%s'", argv[1]);
                         break;
                     }
                     --argc, ++argv;
+                }
+                /* --posix, --self-test */
+                else if ((io_kind = FC_IO_POSIX, !strcmp(arg, "--posix"))
+                    || (io_kind = FC_IO_SELF_TEST, !strcmp(arg, "--self-test")))
+                {
+                    if (args.io_kind == FC_IO_AUTODETECT)
+                        args.io_kind = io_kind;
+                    else
+                        err = invalid_cmdline(program_name, 0, "options --posix and --self-test are mutually exclusive");
                 } else {
                     err = invalid_cmdline(program_name, 0, "unknown option: '%s'", arg);
                     break;
@@ -280,24 +288,29 @@ int ft_transform::init(int argc, char const* const* argv)
                 err = invalid_cmdline(program_name, 0, "too many arguments");
         }
 
-        if (err == 0 && io_args_n < FC_FILE_COUNT) {
-            switch (io_args_n) {
-                case 0:
-                    err = invalid_cmdline(program_name, 0, "missing arguments: %s %s %s", label[0], label[1], label[2]);
-                    break;
-                case 1:
-                    err = invalid_cmdline(program_name, 0, "missing arguments: %s %s", label[1], label[2]);
-                    break;
-                case 2:
-                    err = invalid_cmdline(program_name, 0, "missing argument: %s", label[2]);
-                    break;
+        if (err == 0) {
+            if (args.io_kind == FC_IO_AUTODETECT)
+                args.io_kind = FC_IO_POSIX;
+
+            if (args.io_kind == FC_IO_POSIX && io_args_n < FC_FILE_COUNT) {
+                switch (io_args_n) {
+                    case 0:
+                        err = invalid_cmdline(program_name, 0, "missing arguments: %s %s %s", label[0], label[1], label[2]);
+                        break;
+                    case 1:
+                        err = invalid_cmdline(program_name, 0, "missing arguments: %s %s", label[1], label[2]);
+                        break;
+                    case 2:
+                        err = invalid_cmdline(program_name, 0, "missing argument: %s", label[2]);
+                        break;
+                }
             }
         }
 
     } while (0);
 
     if (err == 0) {
-        if (level < ff_log_get_threshold())
+        if (level != ff_log_get_threshold())
             ff_log_set_threshold(level);
 
         if (level <= FC_DEBUG) {
@@ -326,8 +339,9 @@ int ft_transform::init(const ft_args & args)
         if ((err = init_job(args)) != 0)
             break;
 
-        if ((err = init_io_posix(args.io_args)) != 0)
+        if ((err = init_io(args)) != 0)
             break;
+
     } while (0);
 
     return err;
@@ -350,19 +364,28 @@ int ft_transform::init_job(const ft_args & args)
 }
 
 /**
- * initialize transformer to use specified I/O. if success, stores a pointer to I/O object
- * destructor and quit_io() will delete ft_io object,
- *          so only pass I/O object created with new()
- *          and delete them yourself ONLY if this call returned error!
+ * choose the I/O to use, create and initialize it. if success, stores a pointer to I/O object.
  *
  * return 0 if success, else error.
  */
-int ft_transform::init_io(FT_IO_NS ft_io * io) {
+int ft_transform::init_io(const ft_args & args)
+{
     int err;
-    if ((err = check_is_closed()) == 0)
-        this_io = io;
+    switch (args.io_kind) {
+        case FC_IO_POSIX:
+            err = init_io_posix(args.io_args);
+            break;
+        case FC_IO_SELF_TEST:
+            err = init_io_self_test();
+            break;
+        default:
+            ff_log(FC_ERROR, 0, "tried to initialize unknown I/O '%d': not POSIX, not self-test", (int) args.io_kind);
+            err = -ENOSYS;
+            break;
+    }
     return err;
 }
+
 
 /**
  * initialize transformer to use POSIX I/O.
@@ -371,33 +394,54 @@ int ft_transform::init_io(FT_IO_NS ft_io * io) {
  */
 int ft_transform::init_io_posix(char const* const path[FT_IO_NS ft_io_posix::FC_FILE_COUNT])
 {
-    FT_IO_NS ft_io_posix * io_posix = NULL;
-    int err = 0;
-    do {
-        if ((err = check_is_closed()) != 0)
-            break;
-        if (this_job == NULL) {
-            ff_log(FC_ERROR, 0, "error: cannot start I/O subsystem, job must be initialized first");
-            err = -ENOTCONN;
-            break;
-        }
+    int err;
+    if ((err = pre_init_io()) == 0) {
 
-        io_posix = new FT_IO_NS ft_io_posix(* this_job);
+        FT_IO_NS ft_io_posix * io_posix = new FT_IO_NS ft_io_posix(* this_job);
 
-        if ((err = io_posix->open(path)) != 0)
-            break;
-
-        err = init_io(io_posix);
-
-    } while (0);
-
-    if (err != 0) {
-        if (io_posix != NULL)
+        if ((err = io_posix->open(path)) == 0)
+            post_init_io(io_posix);
+        else
             delete io_posix;
     }
     return err;
 }
 
+/**
+ * initialize transformer to use self-test I/O.
+ * return 0 if success, else error.
+ */
+int ft_transform::init_io_self_test()
+{
+    int err;
+    if ((err = pre_init_io()) == 0) {
+
+        FT_IO_NS ft_io_self_test * io_self_test = new FT_IO_NS ft_io_self_test(* this_job);
+
+        if ((err = io_self_test->open()) == 0)
+            post_init_io(io_self_test);
+        else
+            delete io_self_test;
+    }
+    return err;
+}
+
+int ft_transform::pre_init_io()
+{
+    int err;
+    if ((err = check_is_closed()) != 0)
+        ;
+    else if (this_job == NULL) {
+        ff_log(FC_ERROR, 0, "error: cannot start I/O subsystem, job must be initialized first");
+        err = -ENOTCONN;
+    }
+    return err;
+}
+
+void ft_transform::post_init_io(FT_IO_NS ft_io * io)
+{
+    this_io = io;
+}
 
 
 /** shutdown transformer. closes configured I/O and deletes it */
@@ -437,7 +481,7 @@ int ft_transform::run()
             break;
 
         /* persistence: save LOOP-FILE and FREE-SPACE extents to disk */
-        if ((err = io.write_extents(loop_file_extents, free_space_extents)) != 0)
+        if ((err = io.save_extents(loop_file_extents, free_space_extents)) != 0)
             break;
 
         io.close_extents();

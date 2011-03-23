@@ -7,6 +7,9 @@
 
 #include "first.hh"
 
+#include <cstdlib>    // for srandom(), random()
+#include <ctime>      // for time()
+
 #include "util.hh"    // for ff_pretty_size(), ff_strtoull()
 
 FT_NAMESPACE_BEGIN
@@ -80,6 +83,44 @@ int ff_str2ull_scaled(const char * str, ft_ull * ret_n)
     } while (0);
     return err;
 }
+
+
+
+
+
+/** return a random number in the range [0,n] */
+ft_ull ff_random(ft_ull n)
+{
+    static bool initialized = false;
+    if (!initialized) {
+        initialized = true;
+        srandom(time(NULL));
+    }
+
+    ft_ull r;
+    if (n == 0)
+        return 0;
+    if (n < RAND_MAX) {
+        ft_ull max = RAND_MAX - (RAND_MAX % n);
+        do {
+            r = random();
+        } while (r > max);
+        return r / (max / n);
+    }
+    if (n == RAND_MAX)
+        return random();
+    const ft_ull max_p_1 = (ft_ull)RAND_MAX + 1;
+    const ft_ull n_hi = (n + RAND_MAX) / max_p_1;
+    const ft_ull n_lo = n % max_p_1;
+    do {
+        r = ff_random(n_hi) * max_p_1 + ff_random(n_lo);
+    } while (r > n);
+    return r;
+}
+
+
+
+
 
 
 

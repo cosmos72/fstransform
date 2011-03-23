@@ -34,6 +34,12 @@ public:
 
     static char const * const label[]; // DEVICE, LOOP-FILE (and also others, but don't tell)
 
+    enum {
+        FC_IO_EXTENTS_FILE_COUNT = 2,
+    };
+    static char const* const extents_filename[]; // "/loop_extents.txt", "/free_space_extents.txt"
+
+
 private:
 	ft_vector<ft_uoff> this_primary_storage;
     ft_extent<ft_uoff> this_secondary_storage;
@@ -198,18 +204,27 @@ public:
     FT_INLINE bool simulate_run() const { return this_job.simulate_run(); }
 
     /**
-     * calls the 3-argument version of read_extents() and, if it succeeds,
+     * calls the 3-argument version of read_extents() and, if successful,
      * calls effective_block_size_log2() to compute and remember effective block size
      */
     int read_extents(ft_vector<ft_uoff> & loop_file_extents,
                      ft_vector<ft_uoff> & free_space_extents);
 
+
+    /**
+     * loads extents from file job.job_dir() + '/loop_extents.txt' and job.job_dir() + '/free_space_extents.txt'
+     * by calling the function ff_load_extents_file()
+     * if successful, calls effective_block_size_log2() to compute and remember effective block size
+     */
+    int load_extents(ft_vector<ft_uoff> & loop_file_extents,
+                     ft_vector<ft_uoff> & free_space_extents);
+
     /**
      * saves extents to files job.job_dir() + '/loop_extents.txt' and job.job_dir() + '/free_space_extents.txt'
-     * by calling the function ff_write_extents_file()
+     * by calling the function ff_save_extents_file()
      */
-    int write_extents(const ft_vector<ft_uoff> & loop_file_extents,
-                      const ft_vector<ft_uoff> & free_space_extents);
+    int save_extents(const ft_vector<ft_uoff> & loop_file_extents,
+                     const ft_vector<ft_uoff> & free_space_extents) const;
 
     /**
      * close the file descriptors for LOOP-FILE and ZERO-FILE

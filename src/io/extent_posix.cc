@@ -20,11 +20,15 @@
 #include <cstdlib>        // for qsort() */
 #include <cstring>        // for memset() */
 
-#include <utility>        // for std::pair<T1,T2> and std::make_pair() */
-#include <vector>         // for std::vector<T> */
+#include <utility>        // for std::pair<T1,T2> and std::make_pair()
+#include <vector>         // for std::vector<T>
 
 #include <linux/fs.h>     // for FS_IOC_FIEMAP, FIBMAP */
-#include <linux/fiemap.h> // for struct fiemap and struct fiemap_extent */
+
+/* if <linux/fs.h> defines FS_IOC_FIEMAP, we expect <linux/fiemap.h> to exist */
+#ifdef FS_IOC_FIEMAP
+# include <linux/fiemap.h> // for struct fiemap and struct fiemap_extent. 
+#endif
 
 #include "../log.hh"         // for ff_log() */
 #include "../traits.hh"      // for FT_TYPE_TO_UNSIGNED(T) */
@@ -35,7 +39,6 @@
 #include "util_posix.hh"     // for ff_posix_ioctl(), ff_posix_size() */
 
 FT_IO_NAMESPACE_BEGIN
-
 
 /**
  * retrieves file blocks allocation map (extents) for specified file descriptor
@@ -49,6 +52,7 @@ FT_IO_NAMESPACE_BEGIN
  */
 static int ff_posix_fibmap(int fd, ft_uoff dev_length, ft_vector<ft_uoff> & ret_list, ft_uoff & ret_block_size_bitmask)
 {
+#ifdef FIBMAP
     ft_uoff file_length, file_block_count, dev_block_count;
     ft_uoff block_size, logical_uoff, physical_uoff, block_size_bitmask = ret_block_size_bitmask;
 
@@ -122,8 +126,13 @@ static int ff_posix_fibmap(int fd, ft_uoff dev_length, ft_vector<ft_uoff> & ret_
         ret_block_size_bitmask = block_size_bitmask;
     }
     return err;
+#else
+    return ENOSYS;
+#endif /* FIBMAP */
 }
 
+
+#ifdef FS_IOC_FIEMAP
 static int ff_linux_fiemap_ioctl(int fd, ft_uoff file_length, ft_size extent_n, struct fiemap ** ret_k_map) {
     struct fiemap * k_map;
     ft_size k_len = sizeof(struct fiemap) + extent_n * sizeof(struct fiemap_extent);
@@ -160,6 +169,7 @@ static int ff_linux_fiemap_ioctl(int fd, ft_uoff file_length, ft_size extent_n, 
     * ret_k_map = k_map;
     return err;
 }
+#endif /* FS_IOC_FIEMAP */
 
 /*
  * retrieves file blocks allocation map (extents) for specified file descriptor
@@ -173,6 +183,7 @@ static int ff_linux_fiemap_ioctl(int fd, ft_uoff file_length, ft_size extent_n, 
  */
 static int ff_linux_fiemap(int fd, ft_vector<ft_uoff> & ret_list, ft_uoff & ret_block_size_bitmask)
 {
+#ifdef FS_IOC_FIEMAP
     struct fiemap * k_map = NULL;
     struct fiemap_extent * k_extent;
     ft_uoff file_length, block_size_bitmask = ret_block_size_bitmask;
@@ -244,6 +255,9 @@ static int ff_linux_fiemap(int fd, ft_vector<ft_uoff> & ret_list, ft_uoff & ret_
     }
 
     return err;
+#else
+    return ENOSYS;
+#endif /* FS_IOC_FIEMAP */
 }
 
 

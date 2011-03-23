@@ -23,21 +23,15 @@ static int ff_now(double & ret_now);
 
 /** default constructor */
 ft_eta::ft_eta()
-    : this_y(), this_x()
+    : this_x(), this_y()
 {
     clear();
-}
-
-void ft_eta::init()
-{
-    (void) ff_now(this_x0);
 }
 
 void ft_eta::clear()
 {
     for (ft_size i = 0; i < FC_ETA_N; i++)
         this_y[i] = this_x[i] = 0.0;
-    this_x0 = 0.0;
     this_n = 0;
 }
 
@@ -46,19 +40,19 @@ void ft_eta::clear()
  * add percentage and {current timestamp} to the sliding E.T.A. extrapolation.
  * return number of seconds to E.T.A., or < 0 if not enough data available yet.
  */
-double ft_eta::add(double percentage)
+double ft_eta::add(double y)
 {
-    double x = 0.0, y = percentage;
+    double x = 0.0;
     if (ff_now(x) != 0)
         return -1.0; /* error in gettimeofday */
 
     /* slide window */
     for (ft_size i = FC_ETA_N - 1; i != 0; i--) {
-        this_y[i] = this_y[i - 1];
         this_x[i] = this_x[i - 1];
+        this_y[i] = this_y[i - 1];
     }
-    this_y[0] = percentage;
-    this_x[0] = x -= this_x0;
+    this_x[0] = x;
+    this_y[0] = y;
     if (this_n < FC_ETA_N && ++this_n < FC_ETA_MIN_N)
         return -1.0; /* not enough data available yet */
 
@@ -101,10 +95,11 @@ static int ff_least_squares(ft_size N, const double x[], const double y[], doubl
     double X = 0, X2 = 0; /* X = sum(x[i]), X2 = sum(x[i]^2) */
     double Y = 0, Y2 = 0; /* Y = sum(y[i]), Y2 = sum(y[i]^2) */
     double XY = 0;       /* XY = sum(x[i]*y[i]) */
-    double x_, y_;
+    double x0 = x[0], y0 = y[0], x_, y_;
 
     for (ft_size i = 0; i < N; i++) {
-        x_ = x[i]; y_ = y[i];
+        x_ = x[i] - x0;
+        y_ = y[i] - y0;
         X  += x_; X2 += x_ * x_;
         Y  += y_; Y2 += y_ * y_;
         XY += x_ * y_;
@@ -114,7 +109,8 @@ static int ff_least_squares(ft_size N, const double x[], const double y[], doubl
         return -ERANGE;
     double c = XY - X*Y/N;
     ret_m = c / v;
-    ret_q = (Y - ret_m*X) / N;
+    /* adjust back for x0, y0 */
+    ret_q = (Y - ret_m*X) / N + (y0 - ret_m*x0);
     return 0;
 }
 

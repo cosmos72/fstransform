@@ -15,7 +15,7 @@
 #include "args.hh"         // for ft_args
 #include "io/io.hh"        // for ft_io
 #include "io/io_posix.hh"  // for ft_io_posix
-#include "io/io_null.hh"   // for ft_io_null
+#include "io/io_test.hh"   // for ft_io_test
 
 FT_NAMESPACE_BEGIN
 
@@ -27,8 +27,6 @@ private:
 
     static int invalid_cmdline(const char * program_name, int err, const char * fmt, ...);
 
-    static int invalid_verbosity(const char * program_name);
-
     /** return EISCONN if transformer is initialized, else call quit_io() and return 0 */
     int check_is_closed();
 
@@ -37,6 +35,10 @@ private:
 
     /** initialize job/persistence subsystem */
     int init_job(const ft_args & argsd);
+
+    int pre_init_io();
+
+    void post_init_io(FT_IO_NS ft_io * io);
 
 public:
 
@@ -79,14 +81,13 @@ public:
     int init(const ft_args & args);
 
     /**
-     * initialize transformer to use specified I/O. if success, stores a pointer to I/O object
-     * destructor and quit_io() will delete ft_io object,
-     *          so only pass I/O object created with new()
-     *          and delete them yourself ONLY if this call returned error!
+     * allocate, open and use I/O specified in args.
+     * if success, stores a pointer to I/O object
+     * destructor and quit_io() will delete ft_io object.
      *
      * return 0 if success, else error.
      */
-    int init_io(FT_IO_NS ft_io * io);
+    int init_io(const ft_args & args);
 
     /**
      * initialize transformer to use POSIX I/O.
@@ -94,6 +95,12 @@ public:
      * return 0 if success, else error.
      */
     int init_io_posix(char const* const path[FT_IO_NS ft_io_posix::FC_FILE_COUNT]);
+
+    /**
+     * initialize transformer to use self-test I/O.
+     * return 0 if success, else error.
+     */
+    int init_io_self_test();
 
     /**
      * perform actual work using configured I/O

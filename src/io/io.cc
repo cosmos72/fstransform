@@ -27,6 +27,9 @@ char const * const ft_io::label[] = {
 };
 
 
+char const* const ft_io::extents_filename[FC_IO_EXTENTS_FILE_COUNT] = {
+    "/loop_extents.txt", "/free_space_extents.txt"
+};
 
 
 /** constructor */
@@ -103,30 +106,73 @@ int ft_io::read_extents(ft_vector<ft_uoff> & loop_file_extents,
     return err;
 }
 
+
+
 /**
- * saves extents to files job.job_dir() + '/loop_extents.txt' and job.job_dir() + '/free_space_extents.txt'
- * by calling the function ff_write_extents_file()
+ * loads extents from file job.job_dir() + '/loop_extents.txt' and job.job_dir() + '/free_space_extents.txt'
+ * by calling the function ff_load_extents_file()
+ * if successful, calls effective_block_size_log2() to compute and remember effective block size
  */
-int ft_io::write_extents(const ft_vector<ft_uoff> & loop_file_extents,
-                         const ft_vector<ft_uoff> & free_space_extents)
+int ft_io::load_extents(ft_vector<ft_uoff> & loop_file_extents,
+                        ft_vector<ft_uoff> & free_space_extents)
 {
-    static char const* const filename[] = { "/loop_extents.txt", "/free_space_extents.txt" };
-    enum { FC_FILE_COUNT = sizeof(filename)/sizeof(filename[0]) };
     std::string path;
     const std::string & job_dir = this_job.job_dir();
+    FILE * f = NULL;
+    const char * path_cstr = NULL;
     int err = 0;
-    for (ft_size i = 0; i < FC_FILE_COUNT; i++) {
-        path = job_dir;
-        path += filename[i];
-        errno = 0;
-        std::ofstream os(path.c_str(), std::ios_base::out|std::ios_base::trunc);
 
-        if (!os.good()) {
-            err = errno ? errno : EINVAL;
+    ft_uoff eff_block_size_log2 = 0;
+
+    for (ft_size i = 0; err == 0 && i < FC_IO_EXTENTS_FILE_COUNT; i++) {
+        path = job_dir;
+        path += extents_filename[i];
+        path_cstr = path.c_str();
+        if ((f = fopen(path_cstr, "r")) == NULL) {
+            err = ff_log(FC_ERROR, errno, "error opening persistence file '%s'", path_cstr);
             break;
         }
-        if ((err = ff_write_extents_file(os, i == 0 ? loop_file_extents : free_space_extents)) != 0)
+        if ((err = ff_load_extents_file(f, (i == 0 ? loop_file_extents : free_space_extents), eff_block_size_log2)) != 0)
+            err = ff_log(FC_ERROR, err, "error reading persistence file '%s'", path_cstr);
+
+        if (fclose(f) != 0) {
+            ff_log(FC_WARN, errno, "warning: failed to close persistence file '%s'", path_cstr);
+            f = NULL;
+        }
+    }
+    if (err == 0)
+        this_eff_block_size_log2 = eff_block_size_log2;
+
+    return err;
+}
+
+/**
+ * saves extents to files job.job_dir() + '/loop_extents.txt' and job.job_dir() + '/free_space_extents.txt'
+ * by calling the function ff_save_extents_file()
+ */
+int ft_io::save_extents(const ft_vector<ft_uoff> & loop_file_extents,
+                        const ft_vector<ft_uoff> & free_space_extents) const
+{
+    std::string path;
+    const std::string & job_dir = this_job.job_dir();
+    FILE * f = NULL;
+    const char * path_cstr = NULL;
+    int err = 0;
+    for (ft_size i = 0; err == 0 && i < FC_IO_EXTENTS_FILE_COUNT; i++) {
+        path = job_dir;
+        path += extents_filename[i];
+        path_cstr = path.c_str();
+        if ((f = fopen(path_cstr, "w")) == NULL) {
+            err = ff_log(FC_ERROR, errno, "error opening persistence file '%s'", path_cstr);
             break;
+        }
+        if ((err = ff_save_extents_file(f, i == 0 ? loop_file_extents : free_space_extents)) != 0)
+            err = ff_log(FC_ERROR, err, "error writing to persistence file '%s'", path_cstr);
+
+        if (fclose(f) != 0) {
+            ff_log(FC_WARN, errno, "error closing persistence file '%s'", path_cstr);
+            f = NULL;
+        }
     }
     return err;
 }
