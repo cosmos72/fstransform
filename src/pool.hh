@@ -84,10 +84,10 @@ public:
     void allocate_all(ft_map<T> & map, ft_map<T> & map_allocated);
 
     /**
-	 * "allocate" using a best-fit strategy (and remove) extents from this pool
-	 * to store the single extent 'map_iter', which must belong to 'map'.
-	 * remove allocated (and renumbered) extent from map and write it into map_allocated,
-	 * fragmenting it if needed.
+     * "allocate" using a best-fit strategy (and remove) extents from this pool
+     * to store the single extent 'map_iter', which must belong to 'map'.
+     * remove allocated (and renumbered) extent from map and write it into map_allocated,
+     * fragmenting it if needed.
      */
     void allocate(map_iterator map_iter, ft_map<T> & map, ft_map<T> & map_allocated);
 };

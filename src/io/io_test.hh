@@ -114,7 +114,7 @@ public:
      *
      * implementation: do nothing and return success
      */
-    virtual int create_secondary_storage(ft_uoff secondary_len, ft_uoff buffer_len);
+    virtual int create_storage(ft_size secondary_len, ft_size buffer_len);
 };
 
 FT_IO_NAMESPACE_END

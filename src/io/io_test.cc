@@ -153,7 +153,7 @@ int ft_io_test::read_extents(ft_vector<ft_uoff> & loop_file_extents,
  *
  * implementation: do nothing and return success
  */
-int ft_io_test::create_secondary_storage(ft_uoff secondary_len, ft_uoff buffer_len)
+int ft_io_test::create_storage(ft_size secondary_len, ft_size buffer_len)
 {
     return 0;
 }

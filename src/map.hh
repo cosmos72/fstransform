@@ -156,8 +156,8 @@ public:
      * between the two specified extents, insert it into this map and return true.
      * if no intersections, return false and this will be unchanged
      *
-	 * note: if the intersection is only physical,
-	 * the intersection will contain the appropriate subrange of extent[which] -> logical
+     * note: if the intersection is only physical,
+     * the intersection will contain the appropriate subrange of extent[which] -> logical
      */
     bool intersect(const value_type & extent1, const value_type & extent2, ft_match match);
 
@@ -167,8 +167,8 @@ public:
      * insert list of intersections into this map and return true.
      * if no intersections, return false and this will be unchanged
      *
-	 * note: if the intersection is only physical,
-	 * the intersection will contain the appropriate subrange of {map1,extent2}[which] -> logical
+     * note: if the intersection is only physical,
+     * the intersection will contain the appropriate subrange of {map1,extent2}[which] -> logical
      */
     bool intersect_all(const ft_map<T> & map1, const value_type & extent2, ft_match match);
 
@@ -178,8 +178,8 @@ public:
      * insert list of intersections into this map and return true.
      * if no intersections, return false and this map will be unchanged
      *
-	 * note: if the intersection is only physical,
-	 * the intersection will contain the appropriate subrange of map[which] -> logical
+     * note: if the intersection is only physical,
+     * the intersection will contain the appropriate subrange of map[which] -> logical
      */
     bool intersect_all_all(const ft_map<T> & map1, const ft_map<T> & map2, ft_match match);
 

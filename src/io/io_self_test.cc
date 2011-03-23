@@ -14,6 +14,9 @@
 
 FT_IO_NAMESPACE_BEGIN
 
+
+static char const* const sim_msg = "SIMULATED ";
+
 /** constructor */
 ft_io_self_test::ft_io_self_test(ft_job & job)
 : super_type(job), this_block_size_log2(0)
@@ -44,23 +47,21 @@ int ft_io_self_test::open()
         return EISCONN;
     }
     /*
-     * block_size_log_2 is a random number in the range [0,16]
-     * thus block_size is one of 2^0, 2^1 ... 2^16
+     * block_size_log_2 is a random number in the range [4,16]
+     * thus block_size is one of 2^4, 2^5 ... 2^15, 2^16
      */
-    this_block_size_log2 = (ft_uoff) ff_random(16);
+    this_block_size_log2 = (ft_uoff) ff_random(12) + 4;
 
-    /* dev_len is a random number in the range [block_size, 4GB * block_size] */
-    ft_uoff dev_len = (1 + ff_random((ft_ull)0x100000000 - 1)) << this_block_size_log2;
+    /* dev_len is a random number in the range [block_size, 8GB * block_size] */
+    ft_uoff dev_len = (1 + ff_random(1 + 2 * (ft_ull)0xfffffffful)) << this_block_size_log2;
 
     dev_length(dev_len);
     dev_path("<self-test-device>");
 
-    if (ff_log_is_enabled(FC_DEBUG)) {
-        double pretty_len;
-        const char * pretty_label = ff_pretty_size(dev_len, & pretty_len);
-        ff_log(FC_DEBUG, 0, "%s length is %.2f %sbytes", label[FC_DEVICE], pretty_len, pretty_label);
-    }
-
+    double pretty_len;
+    const char * pretty_label = ff_pretty_size(dev_len, & pretty_len);
+    ff_log(FC_INFO, 0, "%s%s length is %.2f %sbytes", sim_msg, label[FC_DEVICE], pretty_len, pretty_label);
+    
     return 0;
 }
 
@@ -121,7 +122,7 @@ void ft_io_self_test::invent_extents(ft_map<ft_uoff> & extent_map, ft_uoff file_
     ft_vector<ft_uoff> extent_vec;
 
     file_len >>= this_block_size_log2;
-    ft_uoff pos = 0, hole, len, max_extent_len = ff_max2(file_len >> 20, (ft_uoff)0x100);
+    ft_uoff pos = 0, hole, len, max_extent_len = ff_max2(file_len >> 16, (ft_uoff)0x100);
     ft_extent<ft_uoff> extent;
     while (pos < file_len) {
         /* make some holes in physical layout */
@@ -168,9 +169,16 @@ void ft_io_self_test::invent_extents(ft_map<ft_uoff> & extent_map, ft_uoff file_
  *
  * implementation: do nothing and return success
  */
-int ft_io_self_test::create_storage(ft_uoff secondary_len, ft_uoff mem_buffer_len)
+int ft_io_self_test::create_storage(ft_size secondary_len, ft_size mem_buffer_len)
 {
-    return 0;
+   double pretty_len = 0.0;
+   const char * pretty_label = ff_pretty_size(secondary_len, & pretty_len);
+   ff_log(FC_INFO, 0, "%s%s is %.2f %sbytes", sim_msg, label[FC_SECONDARY_STORAGE], pretty_len, pretty_label);
+
+   pretty_label = ff_pretty_size(mem_buffer_len, & pretty_len);
+   ff_log(FC_NOTICE, 0, "%sRAM memory buffer is %.2f %sbytes", sim_msg, pretty_len, pretty_label);
+
+   return 0;
 }
 
 

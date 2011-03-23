@@ -30,7 +30,7 @@ ft_uoff ff_arch_mem_system_free() {
  */
 ft_size ff_arch_mem_page_size() {
 #if defined(__unix__)
-	return ff_arch_posix_mem_page_size();
+    return ff_arch_posix_mem_page_size();
 #else
     return 0;
 #endif

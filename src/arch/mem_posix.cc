@@ -20,16 +20,16 @@ FT_ARCH_NAMESPACE_BEGIN
  */
 ft_size ff_arch_posix_mem_page_size() {
 #if defined(_SC_PAGESIZE)
-	long n = sysconf(_SC_PAGESIZE);
-	if (n > 0)
-		return (ft_size) n;
+    long n = sysconf(_SC_PAGESIZE);
+    if (n > 0)
+        return (ft_size) n;
 #endif
 #if defined(PAGE_SIZE)
-	return PAGE_SIZE;
+    return PAGE_SIZE;
 #elif defined(PAGESIZE)
-	return PAGESIZE;
+    return PAGESIZE;
 #else
-	return 0;
+    return 0;
 #endif
 }
 

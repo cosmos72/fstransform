@@ -73,7 +73,7 @@ int ff_narrow(ft_ull ln, T * ret_n)
 template<typename T>
 int ff_str2un(const char * str, T * ret_n)
 {
-	ft_ull ln;
+    ft_ull ln;
     int err = ff_str2ull(str, & ln);
     if (err == 0)
         err = ff_narrow(ln, ret_n);

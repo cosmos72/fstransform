@@ -269,28 +269,28 @@ bool ft_map<T>::intersect(const value_type & extent1, const value_type & extent2
     mapped_type value = { 0, 0, extent1.second.user_data };
 
     switch (match) {
-		case FC_PHYSICAL1:
-		case FC_PHYSICAL2:
-			if (end1 > physical2 && physical1 < end2)
-			{
-				key.physical = ff_max2(physical1, physical2);
-				value.logical = match == FC_PHYSICAL1 ? logical1 + (key.physical - physical1) : logical2 + (key.physical - physical2);
-				value.length = ff_min2(end1, end2) - key.physical;
-			} else
-				return false;
-			break;
-		case FC_BOTH:
-			if (end1 > physical2 && physical1 < end2
-				&& logical2 - logical1 == physical2 - physical1)
-			{
-				key.physical = ff_max2(physical1, physical2);
-		        value.logical = ff_max2(logical1, logical2);
-		        value.length = ff_min2(end1, end2) - key.physical;
-			} else
-				return false;
-			break;
-		default:
-			return false;
+        case FC_PHYSICAL1:
+        case FC_PHYSICAL2:
+            if (end1 > physical2 && physical1 < end2)
+            {
+                key.physical = ff_max2(physical1, physical2);
+                value.logical = match == FC_PHYSICAL1 ? logical1 + (key.physical - physical1) : logical2 + (key.physical - physical2);
+                value.length = ff_min2(end1, end2) - key.physical;
+            } else
+                return false;
+            break;
+        case FC_BOTH:
+            if (end1 > physical2 && physical1 < end2
+                && logical2 - logical1 == physical2 - physical1)
+            {
+                key.physical = ff_max2(physical1, physical2);
+                value.logical = ff_max2(logical1, logical2);
+                value.length = ff_min2(end1, end2) - key.physical;
+            } else
+                return false;
+            break;
+        default:
+            return false;
     }
     /*
      * insert the intersection in this map, but do NOT try to merge it.
@@ -350,7 +350,7 @@ bool ft_map<T>::intersect_all_all(const ft_map<T> & map1, const ft_map<T> & map2
     const ft_map<T> & map_iterate = size1 < size2 ? map1 : map2;
     const ft_map<T> & map_other   = size1 < size2 ? map2 : map1;
     if (size1 < size2)
-    	match = ff_match_transpose(match);
+        match = ff_match_transpose(match);
 
     key_type bound_lo, bound_hi;
     map_other.bounds(bound_lo, bound_hi);

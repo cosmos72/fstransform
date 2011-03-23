@@ -19,16 +19,16 @@ const char max_n_rem_10 = (char)((ft_ull)-1 % 10);
 
 static int ff_str2ull_(const char *& str, ft_ull * ret_n)
 {
-	ft_ull n = 0;
+    ft_ull n = 0;
     char ch;
     while ((ch = *str) >= '0' && ch <= '9') {
-    	str++;
-    	ch -= '0';
-    	if (n < max_n_div_10 || (n == max_n_div_10 && ch <= max_n_rem_10)) {
-    		n *= 10;
-    		n += ch;
-    	} else
-    		return EOVERFLOW;
+        str++;
+        ch -= '0';
+        if (n < max_n_div_10 || (n == max_n_div_10 && ch <= max_n_rem_10)) {
+            n *= 10;
+            n += ch;
+        } else
+            return EOVERFLOW;
     }
     * ret_n = n;
     return 0;
@@ -39,9 +39,9 @@ int ff_str2ull(const char * str, ft_ull * ret_n)
     ft_ull n = 0;
     int err = ff_str2ull_(str, & n);
     if (err == 0 && *str != '\0')
-    	return EINVAL;
+        return EINVAL;
     if (err == 0)
-    	* ret_n = n;
+        * ret_n = n;
     return err;
 }
 
@@ -49,11 +49,11 @@ int ff_str2ull(const char * str, ft_ull * ret_n)
 /** convert string with optional [k|M|G|T|P|E|Z|Y] scale to unsigned number */
 int ff_str2ull_scaled(const char * str, ft_ull * ret_n)
 {
-	ft_ull scale, n = 0;
+    ft_ull scale, n = 0;
     int err;
     do {
-    	if ((err = ff_str2ull_(str, & n)) != 0)
-    		break;
+        if ((err = ff_str2ull_(str, & n)) != 0)
+            break;
 
         switch (*str) {
             case '\0': scale = 0; break;
@@ -70,14 +70,14 @@ int ff_str2ull_scaled(const char * str, ft_ull * ret_n)
         if (err != 0)
             break;
 
-    	/* no benefit in scaling 0 */
+        /* no benefit in scaling 0 */
         if (n != 0) {
             /* overflow? */
-        	if (scale >= 8*sizeof(ft_ull) || n > (ft_ull)-1 >> scale) {
-        		err = EOVERFLOW;
-        		break;
-        	}
-        	n <<= scale;
+            if (scale >= 8*sizeof(ft_ull) || n > (ft_ull)-1 >> scale) {
+                err = EOVERFLOW;
+                break;
+            }
+            n <<= scale;
         }
         * ret_n = n;
     } while (0);
@@ -101,19 +101,18 @@ ft_ull ff_random(ft_ull n)
     if (n == 0)
         return 0;
     if (n < RAND_MAX) {
-        ft_ull max = RAND_MAX - (RAND_MAX % n);
+        ft_ull max = RAND_MAX - (RAND_MAX % (n + 1));
         do {
             r = random();
         } while (r > max);
-        return r / (max / n);
+        return r / (max / (n + 1));
     }
     if (n == RAND_MAX)
         return random();
     const ft_ull max_p_1 = (ft_ull)RAND_MAX + 1;
     const ft_ull n_hi = (n + RAND_MAX) / max_p_1;
-    const ft_ull n_lo = n % max_p_1;
     do {
-        r = ff_random(n_hi) * max_p_1 + ff_random(n_lo);
+        r = ff_random(n_hi) * max_p_1 + random();
     } while (r > n);
     return r;
 }
@@ -150,7 +149,7 @@ const char * ff_pretty_size(ft_uoff len, double * ret_pretty_len)
 
 
 static char const* fc_pretty_time_unit[] = {
-    "second", "minute", "hour", "day" "month", "year",
+    "second", "minute", "hour", "day", "month", "year",
 };
 static const double fc_pretty_time[] = {
     1.0, 60.0, 3600.0, 86400.0, 86400.0 * 30, 86400.0 * 365,
