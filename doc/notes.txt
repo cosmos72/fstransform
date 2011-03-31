@@ -29,22 +29,34 @@
 
 1.5) more log(DEBUG) in io_posix.read_extents()
 
+2) io.copy() and io.flush() queueing is managed by io, not its subclasses,
+   Overflow checks must be performed by the queueing methods in io.
+
+3) -n, --dry-run options to run everything normally (including which I/O to use),
+   except that extents relocation does not read/write on disk
+   problem: still create secondary storage? yes, but create it sparse
+
+4) mlock(primary_storage). without it we get a lot of disk thrashing,
+   but even with it disk I/O is not fully sequential.
+   An alternative would be not to mmap() at all primary_storage,
+   and maybe neither secondary_storage  
+
 
 ###############################################
 ################### TO DO #####################
 ###############################################
 
-* io.copy() and io.flush() queueing must be managed by io, not its subclasses,
-  and it must be possible to disable it. Overflow checks must be performed by
-  the queueing methods in io, and also by flush_bytes() method in subclasses.
+* bug? primary storage sometimes too small
 
-* -n --dry-run option to run everything normally (including which I/O to use),
-  except that extents relocation does not read/write on disk
-  problem: still create secondary storage?
-  
-  
+* bug? when using primary storage, sometimes relocated file-system is corrupted!
+
+* fstransform does not correctly handle the case where device_len is not a multiple
+   of effective block size and file-system in loop_file uses a smaller block size
+
+
+
 * rename fstransform -> fsrelocate? needed only if it's not the main program
-  (fsmove must be written still)
+   (fsmove must be written still)
 
   
   

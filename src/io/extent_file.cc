@@ -38,6 +38,9 @@ int ff_load_extents_file(FILE * f, ft_vector<ft_uoff> & ret_list, ft_uoff & ret_
     if (fscanf(f, "count %"FS_ULL"\n", & length) != 1)
         return EPROTO;
 
+    if (fscanf(f, "physical\tlogical\tlength\tuser_data\n") < 0)
+        return EPROTO;
+
     ft_uoff block_size_bitmask = ret_block_size_bitmask;
     ft_size i = ret_list.size(), n = (ft_size) length;
 

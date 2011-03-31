@@ -15,6 +15,7 @@
 #include "../extent.hh"      // for ft_extent<T>
 #include "../vector.hh"      // for ft_vector<T>
 #include "../map.hh"         // for ft_map<T>
+#include "../ui/ui.hh"       // for ft_ui
 
 #include "request.hh"        // for ft_request
 
@@ -48,7 +49,9 @@ private:
     ft_uoff this_dev_length, this_eff_block_size_log2;
     const char * this_dev_path;
     ft_job & this_job;
+    FT_UI_NS ft_ui * this_ui;
     ft_dir request_dir;
+    bool this_delegate_ui;
 
 
     /* cannot call copy constructor */
@@ -75,14 +78,17 @@ protected:
     /** compute and return log2() of effective block size and remember it */
     ft_uoff effective_block_size_log2(ft_uoff block_size_bitmask);
 
-    /* return (-)EOVERFLOW if request from/to + length overflow specified maximum value */
+    /** return (-)EOVERFLOW if request from/to + length overflow specified maximum value */
     static int validate(const char * type_name, ft_uoff type_max, ft_dir dir, ft_uoff from, ft_uoff to, ft_uoff length);
 
-    /* return (-)EOVERFLOW if request from/to + length overflow specified maximum value */
+    /** return (-)EOVERFLOW if request from/to + length overflow specified maximum value */
     FT_INLINE static int validate(const char * type_name, ft_uoff type_max, ft_dir dir, const ft_extent<ft_uoff> & extent)
     {
         return validate(type_name, type_max, dir, extent.physical(), extent.logical(), extent.length());
     }
+
+    /** invoked by derived classes to tell whether they will invoke ui methods by themselves (default: false) */
+    FT_INLINE void delegate_ui(bool flag_delegate_ui) { this_delegate_ui = flag_delegate_ui; }
 
     /**
      * retrieve LOOP-FILE extents and FREE-SPACE extents and insert them into
@@ -147,6 +153,11 @@ protected:
      */
     virtual int flush_bytes();
 
+    /**
+     * write zeroes to device (or to storage).
+     * used to remove device-renumbered blocks once relocation is finished
+     */
+    virtual int zero_bytes(ft_to to, ft_uoff offset, ft_uoff length) = 0;
 
 public:
     /** constructor */
@@ -192,6 +203,26 @@ public:
 
     /** set storage_size to use (in bytes), or 0 to unset it */
     FT_INLINE void job_storage_size(ft_storage_size which, ft_size len) { this_job.job_storage_size(which, len); }
+
+    /**
+     * return which free blocks to clear after relocation:
+     * all, only blocks used as primary storage or renumbered device, or none
+     */
+    FT_INLINE ft_clear_free_space job_clear() const { return this_job.job_clear(); }
+
+    /**
+     * set which free blocks to clear after relocation:
+     * all, only blocks used as primary storage or renumbered device, or none
+     */
+    FT_INLINE void job_clear(ft_clear_free_space clear) { this_job.job_clear(clear); }
+
+
+    /* return the UI currently use, or NULL if not set */
+    FT_INLINE FT_UI_NS ft_ui * ui() const { return this_ui; }
+
+    /* set the UI to use. specify NULL to unset */
+    FT_INLINE void ui(FT_UI_NS ft_ui * ui) { this_ui = ui; }
+
 
     /**
      * return true if I/O classes should be less strict on sanity checks
@@ -263,7 +294,6 @@ public:
     template<typename T>
     int copy(ft_dir dir, T from_physical, T to_physical, T length)
     {
-        /** TODO: move buffering to work<T> */
         return copy_queue(dir,
                           (ft_uoff)from_physical << this_eff_block_size_log2,
                           (ft_uoff)to_physical << this_eff_block_size_log2,
@@ -276,6 +306,34 @@ public:
      * return 0 if success, else error
      */
     int flush();
+
+    /**
+     * write zeroes to device (or to storage).
+     * used to remove device-renumbered blocks once relocation is finished
+     * and clean the transformed file-system
+     */
+    template<typename T>
+    int zero(ft_to to, T offset, T length)
+    {
+        ft_uoff offset_bytes = (ft_uoff)offset << this_eff_block_size_log2;
+        ft_uoff length_bytes = (ft_uoff)length  << this_eff_block_size_log2;
+
+        if (this_ui != 0 && !this_delegate_ui)
+            this_ui->show_io_write(to, offset_bytes, length_bytes);
+
+        return zero_bytes(to, offset_bytes, length_bytes);
+    }
+
+    /**
+     * write zeroes to primary storage.
+     * used to remove primary-storage once relocation is finished
+     * and clean the transformed file-system
+     */
+    virtual int zero_primary_storage() = 0;
+
+
+    /** called after relocate() and clear_free_space(). closes storage */
+    virtual int close_storage() = 0;
 };
 
 

@@ -16,6 +16,7 @@
 
 #include "../log.hh"       // for ff_log()
 #include "../util.hh"      // for ff_can_sum()
+#include "../ui/ui.hh"     // for ft_ui
 #include "io.hh"           // for ft_io
 #include "extent_file.hh"  // for ff_write_extents_file()
 
@@ -35,7 +36,7 @@ char const* const ft_io::extents_filename[FC_IO_EXTENTS_FILE_COUNT] = {
 /** constructor */
 ft_io::ft_io(ft_job & job)
     : this_primary_storage(), request_vec(), this_dev_length(0), this_eff_block_size_log2(0),
-      this_dev_path(NULL), this_job(job), request_dir(FC_INVALID2INVALID)
+      this_dev_path(NULL), this_job(job), request_dir(FC_INVALID2INVALID), this_delegate_ui(false)
 {
     this_secondary_storage.clear();
 }
@@ -82,7 +83,7 @@ int ft_io::validate(const char * type_name, ft_uoff type_max, ft_dir dir, ft_uof
     to = ff_max2(from, to);
     if (!ff_can_sum(to, length) || length > type_max || to > type_max - length) {
         return ff_log(FC_FATAL, EOVERFLOW, "internal error! %s to %s io.copy(dir = %d, from_physical = %"FS_ULL", to_physical = %"FS_ULL", length = %"FS_ULL")"
-                      " overflows configured maximum (%s)%"FS_ULL"",
+                      " overflows maximum allowed (%s)%"FS_ULL,
                       ff_is_from_dev(dir) ? label[FC_DEVICE] : label[FC_STORAGE],
                       ff_is_to_dev(dir) ? label[FC_DEVICE] : label[FC_STORAGE],
                       (int)dir, (ft_ull)from, (ft_ull)to, (ft_ull)length, type_name, (ft_ull)type_max);
@@ -101,7 +102,7 @@ int ft_io::read_extents(ft_vector<ft_uoff> & loop_file_extents,
     int err = read_extents(loop_file_extents, free_space_extents, block_size_bitmask);
     if (err == 0) {
         ft_uoff eff_block_size_log2 = effective_block_size_log2(block_size_bitmask);
-        ff_log(FC_DEBUG, 0, "%s effective block size = %"FS_ULL, label[FC_DEVICE], (ft_ull) 1 << eff_block_size_log2);
+        ff_log(FC_INFO, 0, "%s effective block size = %"FS_ULL, label[FC_DEVICE], (ft_ull) 1 << eff_block_size_log2);
     }
     return err;
 }
@@ -196,6 +197,9 @@ int ft_io::copy_queue(ft_dir dir, ft_uoff from_physical, ft_uoff to_physical, ft
     if ((err = validate("ft_uoff", (ft_uoff)-1, dir, from_physical, to_physical, length)) != 0)
         return err;
 
+    if (this_ui != 0 && !this_delegate_ui)
+        this_ui->show_io_copy(dir, from_physical, to_physical, length);
+
     request_dir = dir;
     request_vec.append(from_physical, to_physical, length, FC_DEFAULT_USER_DATA);
     return err;
@@ -239,6 +243,8 @@ int ft_io::flush()
     int err = flush_queue();
     if (err == 0)
         err = flush_bytes();
+    if (err == 0 && this_ui != 0 && !this_delegate_ui)
+        this_ui->show_io_flush();
     return err;
 }
 

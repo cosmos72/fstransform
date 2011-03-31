@@ -5,34 +5,26 @@
  *      Author: max
  */
 
-#ifndef FSTRANSFORM_IO_IO_EMUL_HH
-#define FSTRANSFORM_IO_IO_EMUL_HH
+#ifndef FSTRANSFORM_IO_IO_TEST_HH
+#define FSTRANSFORM_IO_IO_TEST_HH
 
 #include "../types.hh"    // for ft_uoff
 
 #include <cstdio>         // for FILE
 
-#include "io.hh"          // for ft_io
+#include "io_null.hh"     // for ft_io_null
 
 
 FT_IO_NAMESPACE_BEGIN
 
 /**
- * "test" class emulating I/O
+ * "test" class emulating I/O.
+ * actually loads extents definition from persistence files
  */
-class ft_io_test: public ft_io
+class ft_io_test: public ft_io_null
 {
-public:
-    enum {
-        FC_LOOP_EXTENTS = 0,
-        FC_FREE_SPACE_EXTENTS,
-        FC_FILE_COUNT // must be equal to count of preceding enum constants
-    };
-
-    static char const * const extents_label[]; // LOOP-EXTENTS and FREE-SPACE-EXTENTS
-
 private:
-    typedef ft_io super_type;
+    typedef ft_io_null super_type;
 
     FILE * this_f[FC_FILE_COUNT];
 
@@ -66,26 +58,6 @@ protected:
                              ft_vector<ft_uoff> & free_space_extents,
                              ft_uoff & ret_block_size_bitmask);
 
-    /**
-     * actually copy a list of fragments from DEVICE or FREE-STORAGE, to STORAGE to FREE-DEVICE.
-     * must be implemented by sub-classes.
-     * note: parameters are in bytes!
-     * return 0 if success, else error.
-     *
-     * implementation: do nothing and return success
-     */
-    virtual int copy_bytes(ft_dir dir, ft_vector<ft_uoff> & request_vec);
-
-    /**
-     * flush any pending copy, i.e. actually perform all queued copies.
-     * return 0 if success, else error
-     * on return, 'ret_copied' will be increased by the number of blocks actually copied (NOT queued for copying),
-     *
-     * implementation: do nothing and return success
-     */
-    virtual int flush_bytes();
-
-
 public:
     /** constructor */
     ft_io_test(ft_job & job);
@@ -94,7 +66,7 @@ public:
     virtual ~ft_io_test();
 
     /** check for consistency and load LOOP-FILE and ZERO-FILE extents list from files */
-    int open(char const* const path[FC_FILE_COUNT], ft_uoff dev_len);
+    int open(char const* const args[FC_FILE_COUNT]);
 
     /** return true if this ft_io_posix is currently (and correctly) open */
     virtual bool is_open() const;
@@ -106,17 +78,8 @@ public:
      * close the file descriptors for LOOP-FILE and ZERO-FILE
      */
     virtual void close_extents();
-
-    /**
-     * create SECONDARY-STORAGE as job.job_dir() + '.storage' and fill it with 'len' bytes of zeros,
-     * setup a virtual storage composed by this->primary_storage extents inside DEVICE, plus secondary-storage extents.
-     * return 0 if success, else error
-     *
-     * implementation: do nothing and return success
-     */
-    virtual int create_storage(ft_size secondary_len, ft_size buffer_len);
 };
 
 FT_IO_NAMESPACE_END
 
-#endif /* FSTRANSFORM_IO_IO_EMUL_HH */
+#endif /* FSTRANSFORM_IO_IO_TEST_HH */

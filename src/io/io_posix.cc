@@ -19,6 +19,8 @@
 #include "../log.hh"      // for ff_log()
 #include "../util.hh"     // for ff_max2(), ff_min2()
 
+#include "../ui/ui.hh"    // for ft_ui
+
 #include "extent_posix.hh" // for ft_extent_posixs()
 #include "util_posix.hh"   // for ft_posix_*() misc functions
 #include "io_posix.hh"     // for ft_io_posix
@@ -43,6 +45,9 @@ ft_io_posix::ft_io_posix(ft_job & job)
     /* mark fd[] as invalid: they are not open yet */
     for (ft_size i = 0; i < FC_ALL_FILE_COUNT; i++)
         fd[i] = -1;
+
+    /* tell superclass that we will invoke ui methods by ourselves */
+    delegate_ui(true);
 }
 
 /** destructor. calls close() */
@@ -82,7 +87,11 @@ int ft_io_posix::open(char const* const path[FC_FILE_COUNT])
         return EISCONN;
     }
 
-    ft_uoff dev_len;
+    if (getuid() != 0) {
+        ff_log(FC_WARN, 0, "not running as root! expect '%s' errors", strerror(EPERM));
+    }
+
+    ft_uoff len[FC_FILE_COUNT];
     ft_size i;
     int err = 0;
     ft_dev dev[FC_FILE_COUNT];
@@ -117,23 +126,38 @@ int ft_io_posix::open(char const* const path[FC_FILE_COUNT])
 
             if (i == FC_DEVICE) {
                 /* for DEVICE, we also want to know its length */
-                if ((err = ff_posix_blkdev_size(fd[FC_DEVICE], & dev_len)) != 0) {
+                if ((err = ff_posix_blkdev_size(fd[i], & len[i])) != 0) {
                     err = ff_log(FC_ERROR, err, "error in %s ioctl('%s', BLKGETSIZE64)", label[i], path[i]);
                     break;
                 }
                 /* device length is retrieved ONLY here. we must remember it */
-                dev_length(dev_len);
+                dev_length(len[i]);
                 /* also remember device path */
                 dev_path(path[i]);
 
-                if (ff_log_is_enabled(FC_DEBUG)) {
-                    double pretty_len;
-                    const char * pretty_label = ff_pretty_size(dev_len, & pretty_len);
-                    ff_log(FC_DEBUG, 0, "%s length is %.2f %sbytes", label[i], pretty_len, pretty_label);
-                }
+                double pretty_len;
+                const char * pretty_label = ff_pretty_size(len[i], & pretty_len);
+                ff_log(FC_INFO, 0, "%s length is %.2f %sbytes", label[i], pretty_len, pretty_label);
 
             } else {
-                /* for LOOP-FILE and ZERO-FILE, we check they are actually contained in DEVICE */
+                /* for LOOP-FILE and ZERO-FILE, we check their length */
+                if ((err = ff_posix_size(fd[i], & len[i])) != 0) {
+                    err = ff_log((force ? FC_WARN : FC_ERROR), err, "%s %s fstat('%s')%s",
+                                 (force ? "WARNING: failed" : "error in"), label[i], path[i], force_msg);
+                    if (force)
+                        err = 0;
+                    else
+                        break;
+                } else if (len[i] > len[FC_DEVICE]) {
+                    err = ff_log(FC_ERROR, 0, "error: %s size = %"FS_ULL" bytes exceeds %s length = %"FS_ULL" bytes",
+                                 label[i], (ft_ull)len[i], label[FC_DEVICE], (ft_ull)len[FC_DEVICE]);
+                    break;
+                } else if (i == FC_LOOP_FILE && len[i] < len[FC_DEVICE]) {
+                    ff_log(FC_INFO, 0, "%s '%s' is shorter than %s, relocating will also shrink file-system",
+                                 label[i], path[i], label[FC_DEVICE]);
+                }
+
+                /* for LOOP-FILE and ZERO-FILE, we also check that they are actually contained in DEVICE */
                 if (dev[FC_DEVICE] != dev[i]) {
                     err = ff_log((force ? FC_WARN : FC_ERROR), EINVAL, "%s: '%s' is device 0x%04x, but %s '%s' is contained in device 0x%04x%s",
                         (force ? "WARNING" : "error"), path[FC_DEVICE], (unsigned)dev[FC_DEVICE], label[i], path[i], (unsigned)dev[i], force_msg);
@@ -241,29 +265,38 @@ void ft_io_posix::close_extents()
         close0(which[i]);
 }
 
-/** close and munmap() SECONDARY-STORAGE. called by close() */
-void ft_io_posix::close_storage()
+/** close and munmap() SECONDARY-STORAGE. called by close() and by work<T>::close_storage() */
+int ft_io_posix::close_storage()
 {
+    int err = 0;
     enum { i = FC_PRIMARY_STORAGE, j = FC_SECONDARY_STORAGE };
     if (storage_mmap != MAP_FAILED) {
-        if (munmap(storage_mmap, storage_mmap_size) != 0) {
+        if (munmap(storage_mmap, storage_mmap_size) == 0) {
+            storage_mmap = MAP_FAILED;
+            storage_mmap_size = 0;
+        } else {
+            bool flag_i = !primary_storage().empty();
             bool flag_j = secondary_storage().length() != 0;
-            ff_log(FC_WARN, errno, "%s%s%s munmap() failed", label[i],
-                   (flag_j ? " and" : ""),
-                   (flag_j ? label[j] : "")
+            err = ff_log(FC_WARN, errno, "warning: %s%s%s munmap() failed",
+                         (flag_i ? label[i] : ""),
+                         (flag_i && flag_j ? " and " : ""),
+                         (flag_j ? label[j] : "")
             );
         }
-        storage_mmap = MAP_FAILED;
-        storage_mmap_size = 0;
     }
-    if (buffer_mmap != MAP_FAILED) {
-        if (munmap(buffer_mmap, buffer_mmap_size) != 0) {
-            ff_log(FC_WARN, errno, "memory buffer munmap() failed");
+    if (err == 0 && buffer_mmap != MAP_FAILED) {
+        if (munmap(buffer_mmap, buffer_mmap_size) == 0) {
+            buffer_mmap = MAP_FAILED;
+            buffer_mmap_size = 0;
+        } else {
+            err = ff_log(FC_WARN, errno, "warning: memory buffer munmap() failed");
         }
-        buffer_mmap = MAP_FAILED;
-        buffer_mmap_size = 0;
     }
-    close0(i);
+    if (err == 0) {
+        close0(i);
+        close0(j);
+    }
+    return err;
 }
 
 /**
@@ -388,7 +421,7 @@ int ft_io_posix::create_storage(ft_size secondary_size, ft_size mem_buffer_size)
 
         ff_log(FC_NOTICE, 0, "%s%s%s is %.2f %sbytes, initialized and mmapped() to contiguous RAM",
                 (primary_len != 0 ? label[i] : ""),
-                (primary_len != 0 && secondary_size != 0 ? "+" : ""),
+                (primary_len != 0 && secondary_size != 0 ? " + " : ""),
                 (secondary_size != 0 ? label[j] : ""),
                 pretty_len, pretty_label);
     } else
@@ -452,6 +485,11 @@ int ft_io_posix::replace_storage_mmap(int fd, const char * label_i,
         ff_log(FC_TRACE, 0, "%s extent #%"FS_ULL" mapped in RAM,"
                 " mmap(address + %"FS_ULL", length = %"FS_ULL", MAP_FIXED) = ok",
                 label_i, (ft_ull) extent_index, (ft_ull) mem_start, (ft_ull) len);
+
+        if (!simulate_run() && mlock(addr_new, len) != 0) {
+            ff_log(FC_WARN, errno, "warning: %s extent #%"FS_ULL" mlock(address + %"FS_ULL", length = %"FS_ULL") failed",
+                   label_i, (ft_ull) extent_index, (ft_ull) mem_start, (ft_ull) len);
+        }
         /**
          * all ok, let's store mmapped() address offset into extent.user_data to remember it,
          * as msync() inside flush() and munmap() inside close_storage() could need it
@@ -507,29 +545,30 @@ int ft_io_posix::create_secondary_storage(ft_size len)
                 err = ff_log(FC_ERROR, errno, "error in %s write('%s', '\\0', length = 1)", label[j], path);
                 break;
             }
-        } else
-
+        } else {
+            
 #ifdef FT_HAVE_POSIX_FALLOCATE
-        /* try with posix_fallocate() */
-        if ((err = posix_fallocate(fd[j], 0, s_len)) != 0) {
+            /* try with posix_fallocate() */
+            if ((err = posix_fallocate(fd[j], 0, s_len)) != 0) {
 #endif /* FT_HAVE_POSIX_FALLOCATE */
-
-            /* else fall back on write() */
-            enum { zero_len = 64*1024 };
-            char zero[zero_len];
-            ft_size pos = 0, chunk;
-
-            while (pos < len) {
-                chunk = ff_min2<ft_size>(zero_len, len - pos);
-                if ((err = ff_posix_write(fd[j], zero, chunk)) != 0) {
-                    err = ff_log(FC_ERROR, errno, "error in %s write('%s')", label[j], path);
-                    break;
+                
+                /* else fall back on write() */
+                enum { zero_len = 64*1024 };
+                char zero[zero_len];
+                ft_size pos = 0, chunk;
+                
+                while (pos < len) {
+                    chunk = ff_min2<ft_size>(zero_len, len - pos);
+                    if ((err = ff_posix_write(fd[j], zero, chunk)) != 0) {
+                        err = ff_log(FC_ERROR, errno, "error in %s write('%s')", label[j], path);
+                        break;
+                    }
+                    pos += chunk;
                 }
-                pos += chunk;
-            }
 #ifdef FT_HAVE_POSIX_FALLOCATE
-        }
+            }
 #endif /* FT_HAVE_POSIX_FALLOCATE */
+        }
         
         /* remember secondary_storage details */
         ft_extent<ft_uoff> & extent = secondary_storage();
@@ -684,6 +723,16 @@ int ft_io_posix::copy_bytes(ft_dir_posix dir, ft_uoff from_offset, ft_uoff to_of
     const int fd = this->fd[FC_DEVICE];
     const bool simulated = simulate_run();
 
+    if (ui() != NULL) {
+        if (dir != FC_POSIX_BUFFER2DEV) {
+            ft_from from = dir == FC_POSIX_STORAGE2DEV ? FC_FROM_STORAGE : FC_FROM_DEV;
+            ui()->show_io_read(from, from_offset, length);
+        }
+        if (dir!= FC_POSIX_DEV2BUFFER) {
+            ft_to to = dir == FC_POSIX_DEV2STORAGE ? FC_TO_STORAGE : FC_TO_DEV;
+            ui()->show_io_write(to, to_offset, length);
+        }
+    }
     do {
         if (!simulated) {
             if ((err = ff_posix_lseek(fd, dev_offset)) != 0) {
@@ -734,6 +783,9 @@ int ft_io_posix::flush_bytes()
 {
     int err = 0;
     do {
+        if (ui() != NULL)
+            ui()->show_io_flush();
+
         if (simulate_run())
             break;
 
@@ -741,6 +793,7 @@ int ft_io_posix::flush_bytes()
         if ((err = msync(storage_mmap, storage_mmap_size, MS_SYNC)) != 0) {
             ff_log(FC_WARN, errno, "I/O error in %s msync(address + %"FS_ULL", length = %"FS_ULL")",
                     label[FC_STORAGE], (ft_ull)0, (ft_ull)storage_mmap_size);
+            err = 0;
         }
 #else
         ft_vector<ft_uoff>::const_iterator begin = primary_storage().begin(), iter, end = primary_storage().end();
@@ -753,8 +806,8 @@ int ft_io_posix::flush_bytes()
         (void) sync(); // sync() returns void
 #if 0
         if (err != 0) {
-            err = ff_log(FC_ERROR, errno, "I/O error in sync()");
-            break;
+            ff_log(FC_WARN, errno, "I/O error in sync()");
+            err = 0;
         }
 #endif
     } while (0);
@@ -770,8 +823,90 @@ int ft_io_posix::msync_bytes(const ft_extent<ft_uoff> & extent) const
     if ((err = msync((char *)storage_mmap + mem_offset, mem_length, MS_SYNC)) != 0) {
         ff_log(FC_WARN, errno, "I/O error in %s msync(address + %"FS_ULL", length = %"FS_ULL")",
                 label[FC_STORAGE], (ft_ull)mem_offset, (ft_ull)mem_length);
+        err = 0;
     }
     return err;
 }
+
+/**
+ * write zeroes to device (or to storage).
+ * used to remove device-renumbered blocks once relocation is finished
+ */
+int ft_io_posix::zero_bytes(ft_to to, ft_uoff offset, ft_uoff length)
+{
+    static char * zero_buf = NULL;
+    enum { ZERO_BUF_LEN = 1024*1024 };
+    ft_uoff max = to == FC_TO_DEV ? dev_length() : (ft_uoff) storage_mmap_size;
+    int err = 0;
+    do {
+        if (!ff_can_sum(offset, length) || length > max || offset > max - length) {
+            err = ff_log(FC_FATAL, EOVERFLOW, "internal error! %s io.zero(to = %d, offset = %"FS_ULL", length = %"FS_ULL")"
+                         " overflows maximum allowed %"FS_ULL,
+                         label[to == FC_TO_DEV ? FC_DEVICE : FC_STORAGE],
+                         (int)to, (ft_ull)offset, (ft_ull)length, (ft_ull)max);
+            break;
+        }
+        if (ui() != NULL)
+            ui()->show_io_write(to, offset, length);
+        if (simulate_run())
+            break;
+
+        if (to == FC_TO_STORAGE) {
+            memset((char *) storage_mmap + (ft_size)offset, '\0', (ft_size)length);
+            break;
+        }
+        /* else (to == FC_TO_DEVICE) */
+
+        if (zero_buf == NULL) {
+            if ((zero_buf = (char *) malloc(ZERO_BUF_LEN)) == NULL)
+                return ENOMEM;
+            memset(zero_buf, '\0', ZERO_BUF_LEN);
+        }
+        int dev_fd = fd[FC_DEVICE];
+        if ((err = ff_posix_lseek(dev_fd, offset)) != 0) {
+            err = ff_log(FC_ERROR, err, "error in %s lseek(fd = %d, offset = %"FS_ULL")", label[FC_DEVICE], dev_fd, (ft_ull) offset);
+            break;
+        }
+        ft_uoff chunk;
+        while (length != 0) {
+            chunk = ff_min2<ft_uoff>(length, ZERO_BUF_LEN);
+            if ((err = ff_posix_write(dev_fd, zero_buf, chunk)) != 0) {
+                err = ff_log(FC_ERROR, err, "error in %s write({fd = %d, offset = %"FS_ULL"}, zero_buffer, length = %"FS_ULL")",
+                             label[FC_DEVICE], dev_fd, (ft_ull) offset, (ft_ull) chunk);
+                break;
+            }
+            length -= chunk;
+        }
+    } while (0);
+    return err;
+}
+
+/**
+ * write zeroes to primary storage.
+ * used to remove primary-storage once relocation is finished
+ * and clean the transformed file-system
+ */
+int ft_io_posix::zero_primary_storage()
+{
+    ft_vector<ft_uoff>::const_iterator begin = primary_storage().begin(), iter, end = primary_storage().end();
+    ft_size mem_offset, mem_length;
+
+    const bool simulated = simulate_run();
+    FT_UI_NS ft_ui * this_ui = ui();
+
+    for (iter = begin; iter != end; ++iter) {
+        const ft_extent<ft_uoff> & extent = *iter;
+        mem_offset = extent.second.user_data;
+        mem_length = (ft_size) extent.second.length; // check for overflow?
+
+        if (this_ui != NULL)
+            this_ui->show_io_write(FC_TO_STORAGE, mem_offset, mem_length);
+
+        if (!simulated)
+            memset((char *) storage_mmap + mem_offset, '\0', mem_length);
+    }
+    return 0;
+}
+
 
 FT_IO_NAMESPACE_END

@@ -27,29 +27,37 @@
 #  define FT_NAMESPACE_BEGIN namespace ft {
 #  define FT_NAMESPACE_END   }
 
-#  define FT_IO_NAMESPACE_BEGIN FT_NAMESPACE_BEGIN namespace io {
-#  define FT_IO_NAMESPACE_END   } FT_NAMESPACE_END
-
 #  define FT_ARCH_NAMESPACE_BEGIN FT_NAMESPACE_BEGIN namespace arch {
 #  define FT_ARCH_NAMESPACE_END   } FT_NAMESPACE_END
 
+#  define FT_IO_NAMESPACE_BEGIN FT_NAMESPACE_BEGIN namespace io {
+#  define FT_IO_NAMESPACE_END   } FT_NAMESPACE_END
+
+#  define FT_UI_NAMESPACE_BEGIN FT_NAMESPACE_BEGIN namespace ui {
+#  define FT_UI_NAMESPACE_END   } FT_NAMESPACE_END
+
 #  define FT_NS              ft::
-#  define FT_IO_NS           FT_NS io::
 #  define FT_ARCH_NS         FT_NS arch::
+#  define FT_IO_NS           FT_NS io::
+#  define FT_UI_NS           FT_NS ui::
 #else
 
 #  define FT_NAMESPACE_BEGIN
 #  define FT_NAMESPACE_END
 
-#  define FT_IO_NAMESPACE_BEGIN
-#  define FT_IO_NAMESPACE_END
-
 #  define FT_ARCH_NAMESPACE_BEGIN
 #  define FT_ARCH_NAMESPACE_END
 
+#  define FT_IO_NAMESPACE_BEGIN
+#  define FT_IO_NAMESPACE_END
+
+#  define FT_UI_NAMESPACE_BEGIN
+#  define FT_UI_NAMESPACE_END
+
 #  define FT_NS
-#  define FT_IO_NS
 #  define FT_ARCH_NS
+#  define FT_IO_NS
+#  define FT_UI_NS
 
 #endif /* FT_HAVE_NAMESPACE */
 

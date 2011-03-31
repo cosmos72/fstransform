@@ -25,7 +25,7 @@ private:
 
     FILE * this_log_file;
     ft_uint this_id;
-
+    ft_clear_free_space this_clear;
     bool this_force_run, this_simulate_run;
 
     /** initialize logging subsystem */
@@ -55,6 +55,18 @@ public:
 
     /** set secondary storage, buffer, or primary/secondary exact length to use (in bytes), or 0 to activate autodetection */
     FT_INLINE void job_storage_size(ft_storage_size which, ft_size len) { this_storage_size[which] = len; }
+
+    /**
+     * return which free blocks to clear after relocation:
+     * all, only blocks used as primary storage or renumbered device, or none
+     */
+    FT_INLINE ft_clear_free_space job_clear() const { return this_clear; }
+
+    /**
+     * set which free blocks to clear after relocation:
+     * all, only blocks used as primary storage or renumbered device, or none
+     */
+    FT_INLINE void job_clear(ft_clear_free_space clear) { this_clear = clear; }
 
     /**
      * return true if I/O classes should be less strict on sanity checks

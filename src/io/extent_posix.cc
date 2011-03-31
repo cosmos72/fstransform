@@ -219,7 +219,7 @@ static int ff_linux_fiemap(int fd, ft_vector<ft_uoff> & ret_list, ft_uoff & ret_
                 ff_log(FC_DEBUG, 0, "ioctl(%d, FIEMAP, extents[%"FS_ULL"]) returned unsupported %s%s%s extents, falling back on ioctl(FIBMAP) ...",
                        fd, (ft_ull)extent_n,
                        (k_extent[i].fe_flags & FIEMAP_EXTENT_UNKNOWN ? "UNKNOWN" : ""),
-                       ((k_extent[i].fe_flags & (FIEMAP_EXTENT_UNKNOWN|FIEMAP_EXTENT_ENCODED)) == (FIEMAP_EXTENT_UNKNOWN|FIEMAP_EXTENT_ENCODED) ? "+" : ""),
+                       ((k_extent[i].fe_flags & (FIEMAP_EXTENT_UNKNOWN|FIEMAP_EXTENT_ENCODED)) == (FIEMAP_EXTENT_UNKNOWN|FIEMAP_EXTENT_ENCODED) ? " + " : ""),
                        (k_extent[i].fe_flags & FIEMAP_EXTENT_ENCODED ? "ENCODED" : "")
                 );
                 /* do not mark the error as reported, this is just a DEBUG message */
@@ -236,13 +236,10 @@ static int ff_linux_fiemap(int fd, ft_vector<ft_uoff> & ret_list, ft_uoff & ret_
 
         /* ok, no strange extents: we can now add them to ret_list */
         for (i = 0; i < extent_n; i++) {
-            if (k_extent[i].fe_flags & FIEMAP_EXTENT_UNWRITTEN)
-                continue;
-
             ret_list.append((ft_uoff) k_extent[i].fe_physical,
                             (ft_uoff) k_extent[i].fe_logical,
                             (ft_uoff) k_extent[i].fe_length,
-                            FC_DEFAULT_USER_DATA);
+                            (k_extent[i].fe_flags & FIEMAP_EXTENT_UNWRITTEN) ? FC_EXTENT_ZEROED : FC_DEFAULT_USER_DATA);
         }
     } while (0);
 

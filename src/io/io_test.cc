@@ -11,13 +11,12 @@
 #include <fstream>         // for std::ifstream
 
 #include "../log.hh"       // for ff_log()
+#include "../util.hh"      // for ff_str2un_scaled()
 #include "extent_file.hh"  // for ff_read_extents_file()
 #include "io_test.hh"      // for ft_io_test
 
 
 FT_IO_NAMESPACE_BEGIN
-
-char const * const ft_io_test::extents_label[ft_io_test::FC_FILE_COUNT] = { "LOOP-EXTENTS", "FREE-SPACE-EXTENTS" };
 
 /** constructor */
 ft_io_test::ft_io_test(ft_job & job)
@@ -41,7 +40,7 @@ bool ft_io_test::is_open() const
 }
 
 /** check for consistency and load LOOP-FILE and ZERO-FILE extents list from files */
-int ft_io_test::open(char const* const path[FC_FILE_COUNT], ft_uoff dev_len)
+int ft_io_test::open(char const* const args[FC_FILE_COUNT])
 {
     if (is_open()) {
         // already open!
@@ -49,11 +48,16 @@ int ft_io_test::open(char const* const path[FC_FILE_COUNT], ft_uoff dev_len)
         return EISCONN;
     }
 
-    int err = 0;
+    ft_uoff dev_len;
+    ft_size i = FC_DEVICE_LENGTH;
+    int err = ff_str2un_scaled(args[i], & dev_len);
+    if (err != 0) {
+        return ff_log(FC_ERROR, errno, "error parsing %s '%s'", extents_label[i], args[i]);
+    }
 
-    for (ft_size i = 0; i < FC_FILE_COUNT; i++) {
-        if ((this_f[i] = fopen(path[i], "r")) == NULL) {
-            err = ff_log(FC_ERROR, errno, "error opening %s '%s'", extents_label[i], path[i]);
+    for (i = FC_DEVICE_LENGTH+1; i < FC_FILE_COUNT; i++) {
+        if ((this_f[i] = fopen(args[i], "r")) == NULL) {
+            err = ff_log(FC_ERROR, errno, "error opening %s '%s'", extents_label[i], args[i]);
             break;
         }
     }
@@ -101,8 +105,8 @@ void ft_io_test::close_extents()
 /** return true if this I/O has open descriptors/streams to LOOP-FILE and FREE-SPACE */
 bool ft_io_test::is_open_extents() const
 {
-    ft_size i = 0, n = FC_FILE_COUNT;
-    for (i = 0; i < n; i++)
+    ft_size i, n = FC_FILE_COUNT;
+    for (i = FC_DEVICE_LENGTH+1; i < n; i++)
         if (this_f[i] == NULL)
             break;
     return i == n;
@@ -133,10 +137,14 @@ int ft_io_test::read_extents(ft_vector<ft_uoff> & loop_file_extents,
             break;
         }
         /* ff_load_extents_file() appends to ft_vector<ft_uoff>, does NOT overwrite it */
-        if ((err = ff_load_extents_file(this_f[FC_LOOP_EXTENTS], loop_file_extents, block_size_bitmask)) != 0)
+        if ((err = ff_load_extents_file(this_f[FC_LOOP_EXTENTS], loop_file_extents, block_size_bitmask)) != 0) {
+            err = ff_log(FC_ERROR, err, "error reading %s extents from save-file", label[FC_LOOP_FILE]);
             break;
-        if ((err = ff_load_extents_file(this_f[FC_FREE_SPACE_EXTENTS], free_space_extents, block_size_bitmask)) != 0)
+        }
+        if ((err = ff_load_extents_file(this_f[FC_FREE_SPACE_EXTENTS], free_space_extents, block_size_bitmask)) != 0) {
+            err = ff_log(FC_ERROR, err, "error reading %s extents from save-file", label[FC_FREE_SPACE]);
             break;
+        }
     } while (0);
 
     if (err == 0)
@@ -144,45 +152,5 @@ int ft_io_test::read_extents(ft_vector<ft_uoff> & loop_file_extents,
 
     return err;
 }
-
-
-/**
- * create SECONDARY-STORAGE as job.job_dir() + '.storage' and fill it with 'len' bytes of zeros,
- * setup a virtual storage composed by this->primary_storage extents inside DEVICE, plus secondary-storage extents.
- * return 0 if success, else error
- *
- * implementation: do nothing and return success
- */
-int ft_io_test::create_storage(ft_size secondary_len, ft_size buffer_len)
-{
-    return 0;
-}
-
-
-/**
- * actually copy a list of fragments from DEVICE or FREE-STORAGE, to STORAGE to FREE-DEVICE.
- * must be implemented by sub-classes.
- * note: parameters are in bytes!
- * return 0 if success, else error.
- *
- * implementation: do nothing and return success
- */
-int ft_io_test::copy_bytes(ft_dir dir, ft_vector<ft_uoff> & request_vec)
-{
-    return 0;
-}
-
-/**
- * flush any pending copy, i.e. actually perform all queued copies.
- * return 0 if success, else error
- *
- * implementation: do nothing and return success
- */
-int ft_io_test::flush_bytes()
-{
-    return 0;
-}
-
-
 
 FT_IO_NAMESPACE_END

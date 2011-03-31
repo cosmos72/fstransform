@@ -16,6 +16,8 @@
 #include "io/io.hh"        // for ft_io
 #include "io/io_posix.hh"  // for ft_io_posix
 #include "io/io_test.hh"   // for ft_io_test
+#include "ui/ui.hh"        // for ft_ui
+#include "ui/ui_tty.hh"    // for ft_ui_tty
 
 FT_NAMESPACE_BEGIN
 
@@ -24,6 +26,7 @@ class ft_transform
 private:
     ft_job * this_job;
     FT_IO_NS ft_io * this_io;
+    FT_UI_NS ft_ui * this_ui;
 
     static int invalid_cmdline(const char * program_name, int err, const char * fmt, ...);
 
@@ -36,8 +39,14 @@ private:
     /** initialize job/persistence subsystem */
     int init_job(const ft_args & argsd);
 
-    int pre_init_io();
 
+    /** initialize UI subsystem */
+    int init_ui(const ft_args & args);
+    /** initialize tty UI subsystem */
+    int init_ui_tty(const char * arg);
+
+
+    int pre_init_io();
     void post_init_io(FT_IO_NS ft_io * io);
 
 public:
@@ -95,6 +104,13 @@ public:
      * return 0 if success, else error.
      */
     int init_io_posix(char const* const path[FT_IO_NS ft_io_posix::FC_FILE_COUNT]);
+
+    /**
+     * initialize transformer to use test I/O.
+     * requires three arguments: DEVICE-LENGTH, LOOP-FILE-EXTENTS and ZERO-FILE-EXTENTS to be passed in arg[].
+     * return 0 if success, else error.
+     */
+    int init_io_test(char const* const arg[FT_IO_NS ft_io_posix::FC_FILE_COUNT]);
 
     /**
      * initialize transformer to use self-test I/O.

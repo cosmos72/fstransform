@@ -8,9 +8,9 @@
 #ifndef FSTRANSFORM_IO_IO_SELF_TEST_HH
 #define FSTRANSFORM_IO_IO_SELF_TEST_HH
 
-#include "../types.hh"    // for ft_uoff, ft_ull */
+#include "../types.hh"    // for ft_uoff, ft_ull
 
-#include "io.hh"          // for ft_io */
+#include "io_null.hh"     // for ft_io_null
 
 
 FT_IO_NAMESPACE_BEGIN
@@ -19,10 +19,10 @@ FT_IO_NAMESPACE_BEGIN
  * self-test class:
  * reports random LOOP-FILE and ZERO-FILE extents and emulates I/O
  */
-class ft_io_self_test: public ft_io
+class ft_io_self_test: public ft_io_null
 {
 private:
-    typedef ft_io super_type;
+    typedef ft_io_null super_type;
 
     ft_ull this_block_size_log2;
 
@@ -48,26 +48,6 @@ protected:
                              ft_vector<ft_uoff> & free_space_extents,
                              ft_uoff & ret_block_size_bitmask);
 
-    /**
-     * actually copy a list of fragments from DEVICE or FREE-STORAGE, to STORAGE to FREE-DEVICE.
-     * must be implemented by sub-classes.
-     * note: parameters are in bytes!
-     * return 0 if success, else error.
-     *
-     * implementation: do nothing and return success
-     */
-    virtual int copy_bytes(ft_dir dir, ft_vector<ft_uoff> & request_vec);
-
-    /**
-     * flush any pending copy, i.e. actually perform all queued copies.
-     * return 0 if success, else error
-     * on return, 'ret_copied' will be increased by the number of blocks actually copied (NOT queued for copying),
-     *
-     * implementation: do nothing and return success
-     */
-    virtual int flush_bytes();
-
-
 public:
     /** constructor */
     ft_io_self_test(ft_job & job);
@@ -86,15 +66,6 @@ public:
 
     /** close any resource associated to LOOP-FILE and ZERO-FILE extents */
     virtual void close_extents();
-
-    /**
-     * create and open SECONDARY-STORAGE job.job_dir() + '/storage.bin' and fill it with 'secondary_len' bytes of zeros.
-     * setup a virtual storage composed by this->primary_storage extents inside DEVICE, plus secondary-storage extents.
-     * return 0 if success, else error
-     *
-     * implementation: do nothing and return success
-     */
-    virtual int create_storage(ft_size secondary_len, ft_size mem_buffer_len);
 };
 
 FT_IO_NAMESPACE_END

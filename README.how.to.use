@@ -2,12 +2,20 @@ fstransform is functional, but still quite crude.
 
 
 
-At the moment, the user needs to manually perform several steps as root,
-invoking existing toos (mount, umount, dd, losetup, mv, mkfs.*, fsck.*)
+At the moment, the user needs to manually perform several steps _as_root_,
+invoking existing tools (mount, umount, dd, losetup, mv, mkfs.*, fsck.*)
 
-Also, the algorithm used by fstransform creates a larger (sometimes much larger)
-backup file ("secondary storage") than necessary, and it is quite slow due
-to unoptimized disk access patterns.
+These steps will be automated in a future version.
+
+
+Also, if the original device is almost full, the algorithm used by fstransform
+will create a quite large backup file ("secondary storage", it will be up to
+half your free RAM) in your $HOME directory.
+
+You can use the option '-s <size>[k|M|G|T|P|E|Y|Z]' to manually set the secondary storage size,
+but please understand that using a too small secondary storage can slow down fstransform.
+
+
 
 
 
@@ -24,10 +32,12 @@ If you are still reading, let's see to how to actually use fstransform:
    with the same length as the device itself
    
    /bin/dd if=/dev/zero of={device-mount-point}/{loop-file} bs=1 count=1 seek=$(( {device-size-in-bytes} - 1 ))
+   or, if you have truncate(1)
+   /usr/bin/truncate -s {device-size-in-bytes} {device-mount-point}/{loop-file}
 
 3) format the loop-file with the new file system you want to use
 
-   /sbin/mkfs.[ext2,ext3,ext4,reiserfs,reiser4,xfs...] {device-mount-point}/{loop-file}
+   /sbin/mkfs.[ext2,ext3,ext4,reiserfs,xfs,jfs...] {device-mount-point}/{loop-file}
 
    if you create an ext2/ext3/ext4 file-system, the option "-m 0" will help you
    to detect more precisely if/when the file-system inside the loop-file becomes full
@@ -52,6 +62,29 @@ If you are still reading, let's see to how to actually use fstransform:
 
    this part is the most delicate, because {loop-file} disk usage will grow while
    you copy files inside it, and {device} or /dev/loop{n} - or both - can become full.
+   
+   if you have find(1) and cpio(1), an effective but slow method is the following:
+   first recreate the directory tree inside loop-file with:
+   
+   ( cd {device-mount-point} && /usr/bin/find -xdev -type d ) | cpio -o | ( cd {loop-file-mount-point} && cpio -i )
+   
+   then move all the files one by one, except {loop-file} (note: {loop-file-mount-point} must be an absolute path)
+   
+   cd {device-mount-point} && /usr/bin/find . -xdev \! -type d \! -path ./{loop-file} | while read i; do mv "$i" {loop-file-mount-point}/"$i" || break; done
+   
+   
+   ################## WARNING ####### WARNING ####### WARNING ################
+   
+   The last command above can take a LONG time to complete. You MUST monitor its progress with something like
+   
+   /usr/bin/watch /bin/df {device-mount-point} {loop-file-mount-point}
+   
+   bceause, if {device-mount-point} becomes full and the copy receives an 'I/O error', you are in trouble:
+   the filesystem inside {loop-file} will become corrupted!
+   
+   So if you realize {device-mount-point} will become full, you MUST interrupt the copy BEFORE it happens
+   (and give up, sorry).
+   
 
 6) once all your files are inside the file-system in {loop-file}, things get less delicate.
    now you just need to create a file full with zeros (not sparse) inside {device-mount-point}
@@ -61,6 +94,9 @@ If you are still reading, let's see to how to actually use fstransform:
 
    this command will exit with the error "no space left on device",
    but that's expected and not a problem.
+
+   Note: if you have fallocate(1) and the file-system on {device} supports it,
+   you can use fallocate instead of dd as it's much faster.
 
 7) the initial setup is almost complete.
    just umount {loop-file} and remount {device} read-only to be sure no process will write into them

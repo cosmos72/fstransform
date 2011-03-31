@@ -15,15 +15,10 @@
 FT_IO_NAMESPACE_BEGIN
 
 
-static char const* const sim_msg = "SIMULATED ";
-
 /** constructor */
 ft_io_self_test::ft_io_self_test(ft_job & job)
 : super_type(job), this_block_size_log2(0)
-{
-    /* tell job that we're a simulation */
-    job.simulate_run(true);
-}
+{ }
 
 
 /** destructor. calls close() */
@@ -131,10 +126,14 @@ void ft_io_self_test::invent_extents(ft_map<ft_uoff> & extent_map, ft_uoff file_
         ret_block_size_bitmask |= extent.physical() = (pos + hole) << this_block_size_log2;
         extent.logical() = 0;
         ret_block_size_bitmask |= extent.length() = len << this_block_size_log2;
+
+        /* on average, one extent in 1024 is FC_EXTENT_ZEROED */
+        extent.user_data() = ff_random(1023) == 0 ? FC_EXTENT_ZEROED : FC_DEFAULT_USER_DATA;
+
         extent_vec.push_back(extent);
         pos += hole + len;
     }
-    /* shuffle the extents list */
+    /* shuffle the extents list and set ->logical */
     ft_size i, r, n = extent_vec.size();
     pos = 0;
     for (i = 0; i + 1 < n; i++) {
@@ -159,53 +158,5 @@ void ft_io_self_test::invent_extents(ft_map<ft_uoff> & extent_map, ft_uoff file_
         }
     }
 }
-
-
-
-/**
- * create and open SECONDARY-STORAGE job.job_dir() + '/storage.bin' and fill it with 'secondary_len' bytes of zeros.
- * setup a virtual storage composed by this->primary_storage extents inside DEVICE, plus secondary-storage extents.
- * return 0 if success, else error
- *
- * implementation: do nothing and return success
- */
-int ft_io_self_test::create_storage(ft_size secondary_len, ft_size mem_buffer_len)
-{
-   double pretty_len = 0.0;
-   const char * pretty_label = ff_pretty_size(secondary_len, & pretty_len);
-   ff_log(FC_INFO, 0, "%s%s is %.2f %sbytes", sim_msg, label[FC_SECONDARY_STORAGE], pretty_len, pretty_label);
-
-   pretty_label = ff_pretty_size(mem_buffer_len, & pretty_len);
-   ff_log(FC_NOTICE, 0, "%sRAM memory buffer is %.2f %sbytes", sim_msg, pretty_len, pretty_label);
-
-   return 0;
-}
-
-
-/**
- * actually copy a list of fragments from DEVICE or FREE-STORAGE, to STORAGE to FREE-DEVICE.
- * must be implemented by sub-classes.
- * note: parameters are in bytes!
- * return 0 if success, else error.
- *
- * implementation: do nothing and return success
- */
-int ft_io_self_test::copy_bytes(ft_dir dir, ft_vector<ft_uoff> & request_vec)
-{
-    return 0;
-}
-
-/**
- * flush any pending copy, i.e. actually perform all queued copies.
- * return 0 if success, else error
- *
- * implementation: do nothing and return success
- */
-int ft_io_self_test::flush_bytes()
-{
-    return 0;
-}
-
-
 
 FT_IO_NAMESPACE_END

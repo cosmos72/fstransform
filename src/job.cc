@@ -21,7 +21,8 @@ FT_NAMESPACE_BEGIN
 
 /** default constructor */
 ft_job::ft_job()
-    : this_dir(), this_log_file(NULL), this_id(0), this_force_run(false), this_simulate_run(false)
+    : this_dir(), this_log_file(NULL), this_id(0),
+      this_clear(FC_CLEAR_AUTODETECT), this_force_run(false), this_simulate_run(false)
 {
     for (ft_size i = 0; i < FC_STORAGE_SIZE_N; i++)
         this_storage_size[i] = 0;
@@ -112,6 +113,7 @@ int ft_job::init(const ft_args & args)
         for (ft_size l = 0; l < FC_STORAGE_SIZE_N; l++)
             this_storage_size[l] = args.storage_size[l];
         this_id = i;
+        this_clear = args.job_clear;
         this_simulate_run = args.simulate_run;
     } else
         quit();

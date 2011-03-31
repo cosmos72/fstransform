@@ -103,10 +103,6 @@ protected:
      */
     int create_secondary_storage(ft_size secondary_len);
 
-    /** close and munmap() PRIMARY-STORAGE and SECONDARY-STORAGE. called by close() */
-    void close_storage();
-
-
     /**
      * actually copy a list of fragments from DEVICE or FREE-STORAGE, to STORAGE to FREE-DEVICE.
      * note: parameters are in bytes!
@@ -132,6 +128,12 @@ protected:
 
     /** internal method, called by flush_bytes() to perform msync() on mmapped storage */
     int msync_bytes(const ft_extent<ft_uoff> & extent) const;
+
+    /**
+     * write zeroes to device (or to storage).
+     * used to remove device-renumbered blocks once relocation is finished
+     */
+    virtual int zero_bytes(ft_to to, ft_uoff offset, ft_uoff length);
 
 public:
     /** constructor */
@@ -163,6 +165,16 @@ public:
      * return 0 if success, else error
      */
     virtual int create_storage(ft_size secondary_len, ft_size mem_buffer_len);
+
+    /**
+     * write zeroes to primary storage.
+     * used to remove primary-storage once relocation is finished
+     * and clean the transformed file-system
+     */
+    virtual int zero_primary_storage();
+
+    /** close and munmap() PRIMARY-STORAGE and SECONDARY-STORAGE. called by close() and by work<T>::close_storage() */
+    virtual int close_storage();
 };
 
 FT_IO_NAMESPACE_END

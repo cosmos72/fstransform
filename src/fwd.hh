@@ -11,7 +11,6 @@
 #include "check.hh"
 
 FT_NAMESPACE_BEGIN
-
 class ft_transform;
 class ft_dispatch;
 class ft_job;
@@ -24,12 +23,19 @@ template<typename T> class  ft_map;
 template<typename T> class  ft_pool_entry;
 template<typename T> class  ft_pool;
 template<typename T> class  ft_work;
-
 FT_NAMESPACE_END
+
+
 FT_IO_NAMESPACE_BEGIN
-
 class ft_io;
-
+class ft_io_posix;
+class ft_io_test;
+class ft_io_self_test;
 FT_IO_NAMESPACE_END
+
+FT_UI_NAMESPACE_BEGIN
+class ft_ui;
+class ft_ui_tty;
+FT_UI_NAMESPACE_END
 
 #endif /* FSTRANSFORM_FWD_HH */

@@ -2,7 +2,7 @@
  * io/persist.hh
  *
  *  Created on: Mar 6, 2011
- *      Author: root
+ *      Author: max
  */
 
 #ifndef FSTRANSFORM_PERSIST_HH

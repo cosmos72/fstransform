@@ -10,6 +10,7 @@
 
 #undef FT_TEST_MAP
 #undef FT_TEST_RANDOM
+#undef FT_TEST_WRITE_ZEROES
 
 
 
@@ -66,6 +67,14 @@ static int test_random(int argc, char ** argv) {
    return 0;
 }
 FT_NAMESPACE_END
+
+#elif defined(FT_TEST_WRITE_ZEROES)
+
+FT_IO_NAMESPACE_BEGIN
+int ff_zero_loop_file_holes(int argc, char ** argv);
+FT_IO_NAMESPACE_END
+# define FT_MAIN(argc, argv) FT_IO_NS ff_zero_loop_file_holes(argc, argv)
+
 
 #else /* actual fstranform program */
 

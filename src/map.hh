@@ -222,6 +222,17 @@ public:
      */
     iterator insert(T physical, T logical, T length, ft_size user_data);
 
+    /** insert a list of extents into this ft_map, merging where possible. */
+    template<typename const_iter>
+    void insert_all(const_iter iter, const_iter end)
+    {
+        for (; iter != end; ++iter)
+            insert(*iter);
+    }
+
+    /** insert another extents map into this ft_map, merging where possible. */
+    void insert_all(const ft_map<T> & map);
+
     /**
      * remove an existing extent from this ft_map.
      * no need to check for splitting in this method, as it cannot happen:
@@ -247,7 +258,12 @@ public:
      * splitting the existing extents if needed.
      */
     template<typename const_iter>
-    void remove_all(const_iter iter, const_iter end);
+    void remove_all(const_iter iter, const_iter end)
+    {
+        for (; iter != end; ++iter)
+            remove(*iter);
+    }
+
 
 
     /**

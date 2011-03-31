@@ -71,7 +71,10 @@ struct ft_extent_payload
     ft_size user_data; /**< caller can store its own data here. used to track whether this extents contains LOOP-FILE blocks or DEVICE blocks */
 };
 
-enum { FC_DEFAULT_USER_DATA = 0 }; /**< stored into ft_extent_payload::user_data when caller cannot supply a value */
+enum {
+    FC_DEFAULT_USER_DATA = 0, /**< stored into ft_extent_payload::user_data when caller cannot supply a value */
+    FC_EXTENT_ZEROED = 1,     /**< stored into ft_extent_payload::user_data to indicate that on-disk extent only contains zeroes */
+};
 
 
 template<typename T>

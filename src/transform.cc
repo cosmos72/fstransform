@@ -37,7 +37,7 @@ static char const* const* label = FT_IO_NS ft_io_posix::label;
 
 /** constructor */
 ft_transform::ft_transform()
-    : this_job(NULL), this_io(NULL)
+    : this_job(NULL), this_io(NULL), this_ui(NULL)
 { }
 
 /** destructor. calls quit_io() */
@@ -47,6 +47,10 @@ ft_transform::~ft_transform()
     if (this_job != NULL) {
         delete this_job;
         this_job = NULL;
+    }
+    if (this_ui != NULL) {
+        delete this_ui;
+        this_ui = NULL;
     }
 }
 
@@ -99,23 +103,30 @@ int ft_transform::usage(const char * program_name) {
      "  -v, --verbose        Be verbose, print what is being done\n"
      "  -vv                  Be very verbose, print a lot of detailed output\n"
      "  -vvv                 Be incredibly verbose (warning: prints TONS of output)\n"
+     "  --progress-tty TTY   Show full-text progress in tty device TTY\n"
      "  -f, --force-run      Run even if some sanity checks fail\n"
      "  -n, --no-action, --simulate-run\n"
      "                       Do not actually read or write any disk block\n"
-     "  -t, --dir DIRECTORY  Write storage and logs inside DIRECTORY (default: $HOME)\n"
+     "  -t, --dir DIR        Write storage and logs inside DIR (default: $HOME)\n"
      "  -j, --job JOB_ID     Set JOB_ID to use (default: autodetect)\n"
      "  -m, --mem-buffer SIZE[k|M|G|T|P|E|Z|Y]\n"
      "                       Set RAM buffer size (default: autodetect)\n"
      "  -s, --secondary-storage SIZE[k|M|G|T|P|E|Z|Y]\n"
      "                       Set SECONDARY STORAGE file length (default: autodetect)\n"
      "  -xp, --exact-primary-storage SIZE[k|M|G|T|P|E|Z|Y]\n"
-     "                       Set *exact* PRIMARY STORAGE length or fail\n"
+     "                       Set *exact* PRIMARY STORAGE length, or fail\n"
      "                       (default: autodetect)\n"
      "  -xs, --exact-secondary-storage SECONDARY_SIZE[k|M|G|T|P|E|Z|Y]\n"
-     "                       Set *exact* SECONDARY STORAGE length or fail\n"
+     "                       Set *exact* SECONDARY STORAGE length, or fail\n"
      "                       (default: autodetect)\n"
+     "  --clear-all          Clear all free blocks after relocation (default)\n"
+     "  --clear-minimal      DANGEROUS! Clear only overwritten free blocks\n"
+     "                         after relocation\n"
+     "  --clear-none         DANGEROUS! Do not clear any free blocks after relocation\n"
      "  --posix              Use POSIX I/O (default)\n"
-     "  --self-test          Use self-test I/O. Performs self-test on random data\n");
+     "  --test               Use test I/O. Arguments are:\n"
+     "                         DEVICE-LENGTH LOOP-FILE-EXTENTS FREE-SPACE-EXTENTS\n"
+     "  --self-test          Use self-test I/O. Performs self-test with random data\n");
 }
 
 
@@ -174,6 +185,7 @@ int ft_transform::init(int argc, char const* const* argv)
     int err;
     ft_log_level level = FC_INFO, new_level;
     ft_io_kind io_kind;
+    ft_clear_free_space new_clear;
 
     do {
         if ((err = check_is_closed()) != 0)
@@ -202,8 +214,8 @@ int ft_transform::init(int argc, char const* const* argv)
                 /* -v, --verbose increase verbosity by one */
                 /* -vv increase verbosity by two */
                 /* -vvv increase verbosity by three */
-                else if ((new_level = FC_NOTICE, !strcmp(arg, "-q") || !strcmp(arg, "--quiet"))
-                    || (new_level = FC_WARN, !strcmp(arg, "-qq"))
+                else if ((new_level = FC_WARN, !strcmp(arg, "-qq"))
+                    || (new_level = FC_NOTICE, !strcmp(arg, "-q") || !strcmp(arg, "--quiet"))
                     || (new_level = FC_DEBUG, !strcmp(arg, "-v") || !strcmp(arg, "--verbose"))
                     || (new_level = FC_TRACE, !strcmp(arg, "-vv"))
                     || (new_level = FC_DUMP, !strcmp(arg, "-vvv")))
@@ -211,7 +223,7 @@ int ft_transform::init(int argc, char const* const* argv)
                     if (level == FC_INFO)
                         level = new_level;
                     else {
-                        err = invalid_cmdline(program_name, 0, "options -q, -qq, -v, -vv, --quiet, --verbose are mutually exclusive");
+                        err = invalid_cmdline(program_name, 0, "options -q, -qq, -v, -vv, -vvv, --quiet, --verbose are mutually exclusive");
                         break;
                     }
                 }
@@ -222,6 +234,11 @@ int ft_transform::init(int argc, char const* const* argv)
                 /* -n simulate run: do not read or write device blocks  */
                 else if (!strcmp(arg, "-n") || !strcmp(arg, "--no-action") || !strcmp(arg, "--simulate-run")) {
                     args.simulate_run = true;
+                }
+                /* --progress-tty */
+                else if (argc > 1 && (!strcmp(arg, "--progress-tty"))) {
+                    args.ui_kind = FC_UI_TTY;
+                    --argc, args.ui_arg = *++argv;
                 }
                 /* -t directory */
                 else if (argc > 1 && (!strcmp(arg, "-t") || !strcmp(arg, "--dir"))) {
@@ -267,14 +284,25 @@ int ft_transform::init(int argc, char const* const* argv)
                     }
                     --argc, ++argv;
                 }
-                /* --posix, --self-test */
-                else if ((io_kind = FC_IO_POSIX, !strcmp(arg, "--posix"))
+                /* --clear-all, --clear-minimal, --clear-none */
+                else if ((new_clear = FC_CLEAR_ALL,   !strcmp(arg, "--clear-all"))
+                    || (new_clear = FC_CLEAR_MINIMAL, !strcmp(arg, "--clear-minimal"))
+                    || (new_clear = FC_CLEAR_NONE,    !strcmp(arg, "--clear-none"))) {
+
+                    if (args.job_clear == FC_CLEAR_AUTODETECT)
+                        args.job_clear = new_clear;
+                    else
+                        err = invalid_cmdline(program_name, 0, "options --clear-all, --clear-minimal and --clear-none are mutually exclusive");
+                }
+                /* --posix, --test, --self-test */
+                else if ((io_kind = FC_IO_POSIX,   !strcmp(arg, "--posix"))
+                    || (io_kind = FC_IO_TEST,      !strcmp(arg, "--test"))
                     || (io_kind = FC_IO_SELF_TEST, !strcmp(arg, "--self-test")))
                 {
                     if (args.io_kind == FC_IO_AUTODETECT)
                         args.io_kind = io_kind;
                     else
-                        err = invalid_cmdline(program_name, 0, "options --posix and --self-test are mutually exclusive");
+                        err = invalid_cmdline(program_name, 0, "options --posix, --test and --self-test are mutually exclusive");
                 } else {
                     err = invalid_cmdline(program_name, 0, "unknown option: '%s'", arg);
                     break;
@@ -289,10 +317,15 @@ int ft_transform::init(int argc, char const* const* argv)
         }
 
         if (err == 0) {
+            /* if autodetect, clear all free blocks */
+            if (args.job_clear == FC_CLEAR_AUTODETECT)
+                args.job_clear = FC_CLEAR_ALL;
+
+            /* if autodetect, use POSIX I/O */
             if (args.io_kind == FC_IO_AUTODETECT)
                 args.io_kind = FC_IO_POSIX;
 
-            if (args.io_kind == FC_IO_POSIX && io_args_n < FC_FILE_COUNT) {
+            if ((args.io_kind == FC_IO_POSIX || args.io_kind == FC_IO_TEST) && io_args_n < FC_FILE_COUNT) {
                 switch (io_args_n) {
                     case 0:
                         err = invalid_cmdline(program_name, 0, "missing arguments: %s %s %s", label[0], label[1], label[2]);
@@ -310,9 +343,6 @@ int ft_transform::init(int argc, char const* const* argv)
     } while (0);
 
     if (err == 0) {
-        if (level != ff_log_get_threshold())
-            ff_log_set_threshold(level);
-
         if (level <= FC_DEBUG) {
             /* note 1.4.1) -v enables FC_FMT_LEVEL_MSG also for stdout/stderr */
             /* note 1.4.2) -vv enables FC_FMT_DATETIME_LEVEL_MSG also for stdout/stderr */
@@ -321,6 +351,12 @@ int ft_transform::init(int argc, char const* const* argv)
             ff_log_register(stdout, format, level,   FC_NOTICE);
             ff_log_register(stderr, format, FC_WARN, FC_FATAL);
         }
+        if (level > FC_INFO)
+            ff_log_unregister(stdout, FC_INFO, (ft_log_level)(level - 1));
+
+        /* always enable at least DEBUG level, to let fstransform.log collect all messages from DEBUG to FATAL */
+        ff_log_set_threshold(level < FC_DEBUG ? level : FC_DEBUG);
+        
         err = init(args);
     }
 
@@ -338,7 +374,8 @@ int ft_transform::init(const ft_args & args)
     do {
         if ((err = init_job(args)) != 0)
             break;
-
+        if ((err = init_ui(args)) != 0)
+            break;
         if ((err = init_io(args)) != 0)
             break;
 
@@ -363,6 +400,53 @@ int ft_transform::init_job(const ft_args & args)
     return err;
 }
 
+/** initialize UI subsystem */
+int ft_transform::init_ui(const ft_args & args)
+{
+    if (this_ui != NULL) {
+        ff_log(FC_ERROR, 0, "unexpected call to init_ui(): UI subsystem is already initialized");
+        /* mark error as reported */
+        return -EISCONN;
+    }
+
+    int err;
+    switch (args.ui_kind) {
+        case FC_UI_NONE:
+            err = 0;
+            break;
+        case FC_UI_TTY:
+            err = init_ui_tty(args.ui_arg);
+            break;
+        default:
+            ff_log(FC_ERROR, 0, "tried to initialize unknown UI '%d': not tty", (int) args.ui_kind);
+            err = -ENOSYS;
+            break;
+    }
+    return err;
+}
+
+/** initialize UI subsystem */
+int ft_transform::init_ui_tty(const char * arg)
+{
+    FT_UI_NS ft_ui_tty * ui_tty = NULL;
+    int err;
+
+    do {
+        ui_tty = new FT_UI_NS ft_ui_tty();
+
+        if ((err = ui_tty->init(arg)) != 0)
+            break;
+
+        this_ui = ui_tty;
+    } while (0);
+
+    if (err != 0 && ui_tty != NULL)
+        delete ui_tty;
+
+    return err;
+}
+
+
 /**
  * choose the I/O to use, create and initialize it. if success, stores a pointer to I/O object.
  *
@@ -374,6 +458,9 @@ int ft_transform::init_io(const ft_args & args)
     switch (args.io_kind) {
         case FC_IO_POSIX:
             err = init_io_posix(args.io_args);
+            break;
+        case FC_IO_TEST:
+            err = init_io_test(args.io_args);
             break;
         case FC_IO_SELF_TEST:
             err = init_io_self_test();
@@ -403,6 +490,26 @@ int ft_transform::init_io_posix(char const* const path[FT_IO_NS ft_io_posix::FC_
             post_init_io(io_posix);
         else
             delete io_posix;
+    }
+    return err;
+}
+
+/**
+ * initialize transformer to use test I/O.
+ * requires three arguments: DEVICE-LENGTH, LOOP-FILE-EXTENTS and ZERO-FILE-EXTENTS to be passed in arg[].
+ * return 0 if success, else error.
+ */
+int ft_transform::init_io_test(char const* const arg[FT_IO_NS ft_io_posix::FC_FILE_COUNT])
+{
+    int err;
+    if ((err = pre_init_io()) == 0) {
+
+        FT_IO_NS ft_io_test * io_test = new FT_IO_NS ft_io_test(* this_job);
+
+        if ((err = io_test->open(arg)) == 0)
+            post_init_io(io_test);
+        else
+            delete io_test;
     }
     return err;
 }
@@ -441,6 +548,7 @@ int ft_transform::pre_init_io()
 void ft_transform::post_init_io(FT_IO_NS ft_io * io)
 {
     this_io = io;
+    io->ui(this_ui);
 }
 
 

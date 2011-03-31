@@ -266,7 +266,7 @@ bool ft_map<T>::intersect(const value_type & extent1, const value_type & extent2
     T end2 = value2.length + physical2;
 
     key_type key = { 0 };
-    mapped_type value = { 0, 0, extent1.second.user_data };
+    mapped_type value = { 0, 0, (match == FC_PHYSICAL2 ? extent2 : extent1).second.user_data };
 
     switch (match) {
         case FC_PHYSICAL1:
@@ -413,6 +413,14 @@ typename ft_map<T>::iterator ft_map<T>::insert(T physical, T logical, T length, 
     return insert(key, value);
 }
 
+
+/** insert another extents map into this ft_map, merging where possible. */
+template<typename T>
+void ft_map<T>::insert_all(const ft_map<T> & map)
+{
+    insert_all(map.begin(), map.end());
+}
+
 /**
  * remove a part of an existing extent (or a whole existing extent)
  * from this ft_map, splitting the existing extent if needed.
@@ -539,19 +547,6 @@ void ft_map<T>::remove(T physical, T logical, T length)
     value_type extent(key, value);
     remove(extent);
 }
-
-/**
- * remove any (partial or full) intersection with existing extents from this ft_map,
- * splitting the existing extents if needed.
- */
-template<typename T>
-template<typename const_iter>
-void ft_map<T>::remove_all(const_iter iter, const_iter end)
-{
-    for (; iter != end; ++iter)
-        remove(*iter);
-}
-
 
 
 /**

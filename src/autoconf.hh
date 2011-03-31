@@ -22,6 +22,14 @@
 #endif /* FT_HAVE_LONG_LONG */
 
 
+/** define if <termios.h> exists and is usable */
+#ifndef FT_HAVE_TERMIOS_H
+#  if defined(__unix__)
+#    define FT_HAVE_TERMIOS_H
+#  endif
+#endif /* FT_HAVE_TERMIOS_H */
+
+
 /** define if localtime_r() is supported - otherwise, localtime() will be used */
 #ifndef FT_HAVE_LOCALTIME_R
 #  if _POSIX_C_SOURCE >= 1 || _XOPEN_SOURCE || _BSD_SOURCE || _SVID_SOURCE || _POSIX_SOURCE

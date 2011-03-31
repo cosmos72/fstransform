@@ -41,6 +41,7 @@ private:
     map_stat_type dev_map, storage_map;
     map_type dev_free, dev_transpose;
     map_type storage_free, storage_transpose;
+    map_type toclear_map;
 
     FT_IO_NS ft_io * io;
 
@@ -110,8 +111,24 @@ private:
      */
     int create_storage();
 
+    /** start UI, passing I/O object to it. requires I/O to know device length and storage size */
+    int start_ui();
+
     /** core of transformation algorithm, actually moves DEVICE blocks */
     int relocate();
+
+    /**
+     * called by run() after relocate(). depending on job_clear, it will:
+     * 1) if job_clear == FC_CLEAR_ALL, fill with zeroes all free space
+     * 2) if job_clear == FC_CLEAR_MINIMAL, fill with zeroes PRIMARY-STORAGE, DEVICE-RENUMBERED and LOOP-FILE "unwritten" extents
+     * 3) if job_clear == FC_CLEAR_NONE, only fill with zeroes LOOP-FILE "unwritten" extents
+     */
+    int clear_free_space();
+
+    /** called after relocate() and clear_free_space(). closes storage */
+    int close_storage();
+
+
 
     /** called by relocate(). move as many extents as possible from DEVICE to STORAGE */
     int fill_storage();
