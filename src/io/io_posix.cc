@@ -655,6 +655,9 @@ int ft_io_posix::copy_bytes(ft_dir dir, ft_vector<ft_uoff> & request_vec)
                     break;
             }
 
+            if (err != 0 || (err = flush_bytes()) != 0)
+                break;
+
             /* buffered data written to target. now there may be one or more extents NOT fitting into buffer_mmap */
             buf_offset = 0, buf_free = buffer_mmap_size;
             for (i = save_i; err == 0 && i != n; ++i) {
@@ -668,7 +671,8 @@ int ft_io_posix::copy_bytes(ft_dir dir, ft_vector<ft_uoff> & request_vec)
                     buf_length = (ft_size) ff_min2<ft_uoff>(length, buf_free);
 
                     if ((err = copy_bytes(FC_POSIX_DEV2BUFFER, from_offset, buf_offset, buf_length)) != 0
-                        || (err = copy_bytes(FC_POSIX_BUFFER2DEV, buf_offset, to_offset, buf_length)) != 0)
+                        || (err = copy_bytes(FC_POSIX_BUFFER2DEV, buf_offset, to_offset, buf_length)) != 0
+                        || (err = flush_bytes()) != 0)
                         break;
 
                     length -= (ft_uoff) buf_length;
