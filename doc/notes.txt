@@ -13,7 +13,7 @@
 
 1.2.1) ff_log() and ff_vlog() always return errors as reported (-EINVAL, -ENOMEM...)
   
-1.2.2) ft_transform.main() and other high-level *.main() methods
+1.2.2) ft_remap.main() and other high-level *.main() methods
    must check for unreported errors and log them them with message
    "failed with unreported error"
   
@@ -25,7 +25,7 @@
   
 1.4.1) -v enables FC_FMT_LEVEL_MSG also for stdout/stderr
 1.4.2) -vv enables FC_FMT_DATETIME_LEVEL_MSG also for stdout/stderr
-1.4.3) instead fstransform.log always uses FC_FMT_DATETIME_LEVEL_CALLER_MSG
+1.4.3) instead fsremap.log always uses FC_FMT_DATETIME_LEVEL_CALLER_MSG
 
 1.5) more log(DEBUG) in io_posix.read_extents()
 
@@ -50,12 +50,12 @@
 
 * bug? when using primary storage, sometimes relocated file-system is corrupted!
 
-* fstransform does not correctly handle the case where device_len is not a multiple
+* fsremap does not correctly handle the case where device_len is not a multiple
    of effective block size and file-system in loop_file uses a smaller block size
 
 
 
-* rename fstransform -> fsrelocate? needed only if it's not the main program
+* rename fsremap -> fsrelocate? needed only if it's not the main program
    (fsmove must be written still)
 
   

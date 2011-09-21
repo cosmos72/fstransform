@@ -1,4 +1,4 @@
-fstransform idea comes from convertfs (http://tzukanov.narod.ru/convertfs)
+fsremap idea comes from convertfs (http://tzukanov.narod.ru/convertfs)
 and from my desire to start programming again in C/C++.
 
 It is designed from scratch with safety in mind:
@@ -24,7 +24,7 @@ every reasonable precaution is taken in order not to lose/corrupt data.
    
 3) be able function with very limited free disk space
 
-4) be able to transform in-place a block device from any filesystem to any other,
+4) be able to remap in-place a block device from any filesystem to any other,
    preserving file, directories, soft links, hard links, special devices,
    timestamps and owner/group permissions if the following prerequisites
    are satisfied:
@@ -55,7 +55,7 @@ every reasonable precaution is taken in order not to lose/corrupt data.
 * move files inside loop file-system, monitoring available space on BOTH
   original device and loop file-system
   
-* at fstransform start, check that device is mounted read-only
+* at fsremap start, check that device is mounted read-only
 
 ################################## Design #####################################
 
@@ -143,7 +143,7 @@ merged blocks
    storage is the contatenation of primary-storage and secondary-storage.
    primary-storage is the intersection of FREE-SPACE and LOOP-HOLES,
    aligned to system PAGE_SIZE.
-   secondary storage is the file ${dir}/.fstransform/job.$$.storage
+   secondary storage is the file ${dir}/.fsremap/job.$$.storage
    
 +==============+
 |  |  |  |  |  |  storage (SMALL!)

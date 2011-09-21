@@ -1,4 +1,4 @@
-fstransform is functional, but still quite crude.
+fsremap is functional, but still quite crude.
 
 
 
@@ -8,20 +8,20 @@ invoking existing tools (mount, umount, dd, losetup, mv, mkfs.*, fsck.*)
 These steps will be automated in a future version.
 
 
-Also, if the original device is almost full, the algorithm used by fstransform
+Also, if the original device is almost full, the algorithm used by fsremap
 will create a quite large backup file ("secondary storage", it will be up to
 half your free RAM) in your $HOME directory.
 
 You can use the option '-s <size>[k|M|G|T|P|E|Y|Z]' to manually set the secondary storage size,
-but please understand that using a too small secondary storage can slow down fstransform.
+but please understand that using a too small secondary storage can slow down fsremap.
 
 
 
 
 
-If you are still reading, let's see to how to actually use fstransform:
+If you are still reading, let's see to how to actually use fsremap:
 
-1) mount read-write the device you want to transform to a different file-system
+1) mount read-write the device you want to remap to a different file-system
 
    /bin/mount {device} {device-mount-point} [your-options]
 
@@ -88,7 +88,7 @@ If you are still reading, let's see to how to actually use fstransform:
 
 6) once all your files are inside the file-system in {loop-file}, things get less delicate.
    now you just need to create a file full with zeros (not sparse) inside {device-mount-point}
-   to help fstransform to locate any free disk space inside {device}:
+   to help fsremap to locate any free disk space inside {device}:
 
    /bin/dd if=/dev/zero of={device-mount-point}/{zero-file} bs=512
 
@@ -109,30 +109,30 @@ If you are still reading, let's see to how to actually use fstransform:
 
    /bin/mount {device} -o remount,ro
 
-8) choose a folder with some free space (NOT inside {device}) where fstransform
+8) choose a folder with some free space (NOT inside {device}) where fsremap
    can write its (small) backup data and log files, and name it {storage-dir}
 
-9) start fstransform:
+9) start fsremap:
 
-   fstransform -t {storage-dir} {device} {device-mount-point}/{loop-file} {device-mount-point}/{zero-file}
+   fsremap -t {storage-dir} {device} {device-mount-point}/{loop-file} {device-mount-point}/{zero-file}
 
-   if {device} has very little free space, fstransform will create a file
-   {storage-dir}/.fstransform/job.{x}/storage.bin and use it to store blocks
+   if {device} has very little free space, fsremap will create a file
+   {storage-dir}/.fsremap/job.{x}/storage.bin and use it to store blocks
    while moving them around.
 
-10) after an analysis phase, fstransform will ask you to umount {device}. just do as asked:
+10) after an analysis phase, fsremap will ask you to umount {device}. just do as asked:
 
    /bin/umount {device}
 
-11) fstransform will now relocate blocks from {loop-file} to {device}
+11) fsremap will now relocate blocks from {loop-file} to {device}
    and it will report its progress.
 
-   once finished, check that the transformation actually worked:
+   once finished, check that the remapping actually worked:
 
    /sbin/fsck -f {device}
    /bin/mount {device} {device-mount-point} [your-options]
 
-   if everything worked, you can delete the file {storage-dir}/.fstransform/job.{x}/storage.bin
+   if everything worked, you can delete the file {storage-dir}/.fsremap/job.{x}/storage.bin
 
 
 

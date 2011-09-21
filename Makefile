@@ -1,5 +1,7 @@
 all:
-	$(MAKE) -C Debug $@
+	$(MAKE) -C fsremap/Debug $@
+	$(MAKE) -C fsmove/Debug $@
 
 %:
-	$(MAKE) -C Debug $@
+	$(MAKE) -C fsremap/Debug $@
+	$(MAKE) -C fsmove/Debug $@
