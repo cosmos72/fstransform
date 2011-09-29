@@ -26,6 +26,7 @@ class fm_io {
 
 private:
     ft_string this_source_root, this_target_root;
+    bool this_simulate_run;
 
 public:
     enum {
@@ -71,6 +72,11 @@ public:
      * return the top-most path to move to
      */
     FT_INLINE const ft_string & target_root() const { return this_target_root; }
+
+    /**
+     * return the simulate_run flag
+     */
+    FT_INLINE bool simulate_run() const { return this_simulate_run; }
 };
 
 

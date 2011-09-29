@@ -22,7 +22,7 @@ char const * const fm_io::label[] = {
 
 /** constructor */
 fm_io::fm_io()
-    : this_source_root(), this_target_root()
+    : this_source_root(), this_target_root(), this_simulate_run(false)
 { }
 
 /**
@@ -54,6 +54,7 @@ int fm_io::open(const fm_args & args)
         }
         this_source_root = arg1;
         this_target_root = arg2;
+        this_simulate_run = args.simulate_run;
     } while (0);
     return err;
 }
@@ -66,6 +67,7 @@ void fm_io::close()
 {
     this_source_root.clear();
     this_target_root.clear();
+    this_simulate_run = false;
 }
 
 FT_IO_NAMESPACE_END

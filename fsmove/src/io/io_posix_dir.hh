@@ -22,6 +22,7 @@ typedef struct dirent fm_io_posix_dirent;
 class fm_io_posix_dir
 {
 private:
+    ft_string this_path;
     DIR * this_dir;
 
     /** cannot call copy constructor */

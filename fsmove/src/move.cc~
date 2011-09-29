@@ -84,7 +84,7 @@ int fm_move::check_is_open()
     int err = 0;
     if (!is_initialized()) {
         ff_log(FC_ERROR, 0, "error: I/O subsystem not started");
-        // quit() to make sure we are not left in a half-initialized status
+        // quit_io() to make sure we are not left in a half-initialized status
         // (this_io != NULL && !this_io->is_open())
         quit();
         /* error is already reported, flip sign */

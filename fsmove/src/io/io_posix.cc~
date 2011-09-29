@@ -141,7 +141,7 @@ int fm_io_posix::move(const ft_string & source_path, const ft_string & target_pa
         }
         if (err != 0)
             break;
-        if ((err = this->copy_stat(target_path, stat)) != 0)
+        if ((err = copy_stat(target_path, stat)) != 0)
             break;
         if ((err = this->remove_dir(source_path)) != 0)
             break;

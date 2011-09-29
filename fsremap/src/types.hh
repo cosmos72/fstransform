@@ -53,9 +53,12 @@ typedef unsigned int ft_uint;
    typedef unsigned long long ft_ull;
 #  define FS_ULL "llu"
 #  define FS_XLL "llx"
+#  define FS_OLL "llo" /* octal */
 #else
    typedef unsigned long ft_ull;
 #  define FS_ULL "lu"
+#  define FS_XLL "lx"
+#  define FS_OLL "lo" /* octal */
 #endif
 
 // ft_stat is the same as 'struct stat'

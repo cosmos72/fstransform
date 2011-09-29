@@ -33,9 +33,29 @@ private:
     int move(const ft_string & source_path, const ft_string & target_path);
 
     /**
-     * move the single file or special-device 'source_path' to 'target_path'.
+     * move the single regurlar file 'source_path' to 'target_path'.
      */
-    int move_single(const ft_string & source_path, const ft_stat & source_stat, const ft_string & target_path);
+    int move_file(const ft_string & source_path, const ft_stat & source_stat, const ft_string & target_path);
+
+    /**
+     * move the single special-device 'source_path' to 'target_path'.
+     */
+    int move_special(const ft_string & source_path, const ft_stat & source_stat, const ft_string & target_path);
+
+    /**
+     * try to rename a file, directory or special-device from 'source_path' to 'target_path'.
+     */
+    int move_rename(const char * source, const char * target);
+
+    /**
+     * copy file/stream contents from in_fd to out_fd
+     */
+    int copy_stream(int in_fd, int out_fd, const char * source, const char * target);
+
+    /**
+     * copy the permission bits, owner/group and timestamps from 'stat' to 'target'
+     */
+    int copy_stat(const char * target, const ft_stat & stat);
 
     /** create a target directory, copying its mode and other meta-data from 'stat' */
     int create_dir(const ft_string & path, const ft_stat & stat);

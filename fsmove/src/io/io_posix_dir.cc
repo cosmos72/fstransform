@@ -19,7 +19,7 @@ FT_IO_NAMESPACE_BEGIN
 
 /** default constructor */
 fm_io_posix_dir::fm_io_posix_dir()
-    : this_dir(NULL)
+    : this_path(), this_dir(NULL)
 { }
 
 /** destructor. calls close() */
@@ -31,28 +31,33 @@ fm_io_posix_dir::~fm_io_posix_dir()
 /** open a directory */
 int fm_io_posix_dir::open(const ft_string & path)
 {
-    int err;
+    int err = 0;
     if (this_dir != NULL)
         err = EISCONN;
-    else if ((this_dir = opendir(path.c_str())) != NULL)
-        err = 0;
-    else
+    else if ((this_dir = opendir(path.c_str())) == NULL)
         err = errno;
-    // TODO log if err != 0
+    else {
+        this_path = path;
+        return err;
+    }
+    err = ff_log(FC_ERROR, err, "failed to open directory `%s'", path.c_str());
     return err;
 }
 
 /** close the currently open directory */
 int fm_io_posix_dir::close()
 {
-    int err;
+    int err = 0;
     if (this_dir == NULL)
         err = ENOTCONN;
-    else if ((err = closedir(this_dir)) == 0)
-        this_dir = NULL;
-    else
+    else if (closedir(this_dir) != 0)
         err = errno;
-    // TODO log if err != 0
+    else {
+        this_path.clear();
+        this_dir = NULL;
+        return err;
+    }
+    err = ff_log(FC_ERROR, err, "failed to close directory `%s'", this_path.c_str());
     return err;
 }
 
@@ -70,9 +75,10 @@ int fm_io_posix_dir::next(fm_io_posix_dirent * & result)
     else {
         errno = 0;
         result = readdir(this_dir);
-        err = errno; // 0 for success or end-of-dir
-        // TODO log if err != 0
+        if ((err = errno) == 0) // 0 for success or end-of-dir
+            return err;
     }
+    err = ff_log(FC_ERROR, err, "failed to read directory `%s'", this_path.c_str());
     return err;
 }
 
