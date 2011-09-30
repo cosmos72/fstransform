@@ -10,10 +10,11 @@
 
 #include "../check.hh"
 
-#include "../types.hh"     // for ft_string-
-#include "../fwd.hh"       // for fm_args
+#include "../types.hh"       // for ft_string-
+#include "../fwd.hh"         // for fm_args
+#include "../inode_cache.hh" // for fm_inode_cache
 
-#include <vector>          // for std::vector
+#include <set>               // for std::set
 
 
 FT_IO_NAMESPACE_BEGIN
@@ -25,8 +26,22 @@ FT_IO_NAMESPACE_BEGIN
 class fm_io {
 
 private:
+    fm_inode_cache this_inode_cache;
+    std::set<ft_string> this_exclude_set;
+
     ft_string this_source_root, this_target_root;
-    bool this_simulate_run;
+    bool this_force_run, this_simulate_run;
+
+protected:
+    FT_INLINE const ft_string * inode_cache_find_or_add(ft_inode inode, const ft_string & path) {
+        return this_inode_cache.find_or_add(inode, path);
+    }
+    FT_INLINE const ft_string * inode_cache_find(ft_inode inode, const ft_string & path) const {
+        return this_inode_cache.find(inode, path);
+    }
+    FT_INLINE void inode_cache_erase(ft_inode inode) {
+        return this_inode_cache.erase(inode);
+    }
 
 public:
     enum {
@@ -64,14 +79,24 @@ public:
     virtual void close();
 
     /**
-     * return the top-most path to move from
+     * return the set of source files NOT to move
+     */
+    FT_INLINE const std::set<ft_string> & exclude_set() const { return this_exclude_set; }
+
+    /**
+     * return the top-most source path to move from
      */
     FT_INLINE const ft_string & source_root() const { return this_source_root; }
 
     /**
-     * return the top-most path to move to
+     * return the top-most target path to move to
      */
     FT_INLINE const ft_string & target_root() const { return this_target_root; }
+
+    /**
+     * return the force_run flag
+     */
+    FT_INLINE bool force_run() const { return this_force_run; }
 
     /**
      * return the simulate_run flag

@@ -1,15 +1,15 @@
-fsremap is functional, but still quite crude.
+fsremap is functional, but still not very polished.
 
 
 
 At the moment, the user needs to manually perform several steps _as_root_,
-invoking existing tools (mount, umount, dd, losetup, mv, mkfs.*, fsck.*)
+invoking existing tools (mount, umount, dd, losetup, mkfs.*, fsck.*)
 
 These steps will be automated in a future version.
 
 
 Also, if the original device is almost full, the algorithm used by fsremap
-will create a quite large backup file ("secondary storage", it will be up to
+will create a backup file ("secondary storage", it will be up to
 half your free RAM) in your $HOME directory.
 
 You can use the option '-s <size>[k|M|G|T|P|E|Y|Z]' to manually set the secondary storage size,
@@ -58,20 +58,17 @@ If you are still reading, let's see to how to actually use fsremap:
    from {device-mount-point} to {loop-file-mount-point},
    reproducing inside {loop-file-mount-point} the original tree that was in {device-mount-point}.
 
-   Quite obviously, you should not move {loop-file} itself
+   Quite obviously, you should not move {loop-file} itself.
 
-   this part is the most delicate, because {loop-file} disk usage will grow while
-   you copy files inside it, and {device} or /dev/loop{n} - or both - can become full.
+   This part is the most delicate, because {loop-file} disk usage will grow while
+   you copy files inside it, and {device} or /dev/loop{n} - or both -
+   can become full: if it happens, you will be in BIG troubles.
    
-   if you have find(1) and cpio(1), an effective but slow method is the following:
-   first recreate the directory tree inside loop-file with:
+   Let's see how to perform this delicate recursive move.
    
-   ( cd {device-mount-point} && /usr/bin/find -xdev -type d ) | cpio -o | ( cd {loop-file-mount-point} && cpio -i )
+   You should have the fsmove program distributed with fsremap. If you have it, run:
    
-   then move all the files one by one, except {loop-file} (note: {loop-file-mount-point} must be an absolute path)
-   
-   cd {device-mount-point} && /usr/bin/find . -xdev \! -type d \! -path ./{loop-file} | while read i; do mv "$i" {loop-file-mount-point}/"$i" || break; done
-   
+   fsmove {device-mount-point} {loop-file-mount-point} --exclude {device-mount-point}/{loop-file}
    
    ################## WARNING ####### WARNING ####### WARNING ################
    
@@ -80,11 +77,22 @@ If you are still reading, let's see to how to actually use fsremap:
    /usr/bin/watch /bin/df {device-mount-point} {loop-file-mount-point}
    
    bceause, if {device-mount-point} becomes full and the copy receives an 'I/O error', you are in trouble:
-   the filesystem inside {loop-file} will become corrupted!
+   the filesystem inside {loop-file} will become CORRUPTED!
    
-   So if you realize {device-mount-point} will become full, you MUST interrupt the copy BEFORE it happens
+   So if you realize {device-mount-point} is going to become full, you MUST interrupt the copy BEFORE it happens
    (and give up, sorry).
    
+   ######################## ALTERNATIVE SOLUTION #############################
+   
+   If you don't have fsmove, things get a bit more ugly - and slow - and you need find(1), mv(1) and cpio(1)
+   This is how: first recreate the directory tree inside loop-file with:
+   
+   ( cd {device-mount-point} && /usr/bin/find -xdev -type d ) | cpio -o | ( cd {loop-file-mount-point} && cpio -i )
+   
+   then move all the files one by one, except {loop-file} (note: {loop-file-mount-point} must be an absolute path)
+   
+   cd {device-mount-point} && /usr/bin/find . -xdev \! -type d \! -path ./{loop-file} | while read i; do mv "$i" {loop-file-mount-point}/"$i" || break; done
+ 
 
 6) once all your files are inside the file-system in {loop-file}, things get less delicate.
    now you just need to create a file full with zeros (not sparse) inside {device-mount-point}
@@ -110,12 +118,17 @@ If you are still reading, let's see to how to actually use fsremap:
    /bin/mount {device} -o remount,ro
 
 8) choose a folder with some free space (NOT inside {device}) where fsremap
-   can write its (small) backup data and log files, and name it {storage-dir}
+   can write its (hopefully small) backup data and log files, and name it {storage-dir}
+   
+   If you skip this step, fsremap will use your home directory as {storage-dir}
 
 9) start fsremap:
 
    fsremap -t {storage-dir} {device} {device-mount-point}/{loop-file} {device-mount-point}/{zero-file}
 
+   if you did not choose a {storage-dir} folder, omit the arguments -t {storage-dir}
+   and fsremap will use your home directory as default
+   
    if {device} has very little free space, fsremap will create a file
    {storage-dir}/.fsremap/job.{x}/storage.bin and use it to store blocks
    while moving them around.
@@ -135,6 +148,6 @@ If you are still reading, let's see to how to actually use fsremap:
    if everything worked, you can delete the file {storage-dir}/.fsremap/job.{x}/storage.bin
 
 
-
+Good luck!
 
 

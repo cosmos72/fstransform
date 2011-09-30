@@ -22,7 +22,8 @@ char const * const fm_io::label[] = {
 
 /** constructor */
 fm_io::fm_io()
-    : this_source_root(), this_target_root(), this_simulate_run(false)
+    : this_inode_cache(), this_exclude_set(), this_source_root(), this_target_root(),
+      this_force_run(false), this_simulate_run(false)
 { }
 
 /**
@@ -54,7 +55,14 @@ int fm_io::open(const fm_args & args)
         }
         this_source_root = arg1;
         this_target_root = arg2;
+        this_force_run = args.force_run;
         this_simulate_run = args.simulate_run;
+
+        char const * const * exclude_list = args.exclude_list;
+        if (exclude_list != NULL) {
+            for (; * exclude_list != NULL; ++exclude_list)
+                this_exclude_set.insert(* exclude_list);
+        }
     } while (0);
     return err;
 }
@@ -65,8 +73,11 @@ int fm_io::open(const fm_args & args)
  */
 void fm_io::close()
 {
+    this_inode_cache.clear();
+    this_exclude_set.clear();
     this_source_root.clear();
     this_target_root.clear();
+    this_force_run = false;
     this_simulate_run = false;
 }
 

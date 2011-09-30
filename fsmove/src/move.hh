@@ -11,7 +11,6 @@
 #include "args.hh"        // for fm_args
 #include "eta.hh"         // for ft_eta
 #include "fwd.hh"         // for fm_io forward declaration
-#include "inode_cache.hh" // for fm_inode_cache
 #include "log.hh"         // for FC_TRACE
 
 
@@ -23,7 +22,6 @@ FT_NAMESPACE_BEGIN
 class fm_move
 {
 private:
-    fm_inode_cache this_inode_cache;
     FT_IO_NS fm_io * this_io;
     ft_eta this_eta;
     ft_uoff this_work_total;

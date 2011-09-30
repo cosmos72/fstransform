@@ -53,6 +53,14 @@ private:
     int copy_stream(int in_fd, int out_fd, const char * source, const char * target);
 
     /**
+     * check inode_cache for hard links and recreate them.
+     * must be called if and only if stat.st_nlink > 1.
+     *
+     * returns EAGAIN if inode was not in inode_cache
+     */
+    int hard_link(const ft_stat & stat, const ft_string & target_path);
+
+    /**
      * copy the permission bits, owner/group and timestamps from 'stat' to 'target'
      */
     int copy_stat(const char * target, const ft_stat & stat);

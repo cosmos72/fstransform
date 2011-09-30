@@ -24,7 +24,7 @@ static char const* const* label = FT_IO_NS fm_io::label;
 
 /** default constructor */
 fm_move::fm_move()
-  : this_inode_cache(), this_io(0), this_eta(), this_work_total(0)
+  : this_io(0), this_eta(), this_work_total(0)
 { }
 
 /** destructor. calls quit() */
@@ -122,22 +122,24 @@ int fm_move::main(int argc, char ** argv)
 
 /** print command-line usage to stdout and return 0 */
 int fm_move::usage(const char * program_name) {
-    ff_log(FC_NOTICE, 0, "Usage: %s [OPTION]... %s %s\n", program_name, label[0], label[1]);
+    ff_log(FC_NOTICE, 0, "Usage: %s [OPTION]... %s %s [--exclude FILE...]\n", program_name, label[0], label[1]);
     ff_log(FC_NOTICE, 0, "");
     return ff_log
     (FC_NOTICE, 0, "Supported options:\n"
-     "  --help               Print this help and exit\n"
-     "  --                   End of options. treat subsequent parameters as arguments\n"
-     "                         even if they start with '-'\n"
-     "  -q, --quiet          Be quiet, print less output\n"
-     "  -qq                  Be very quiet, only print warnings or errors\n"
-     "  -v, --verbose        Be verbose, print what is being done\n"
-     "  -vv                  Be very verbose, print a lot of detailed output\n"
-     "  -vvv                 Be incredibly verbose (warning: prints TONS of output)\n"
-     "  -f, --force-run      Run even if some sanity checks fail\n"
+     "  --help                Print this help and exit\n"
+     "  --                    End of options. treat subsequent parameters as arguments\n"
+     "                          even if they start with '-'\n"
+     "  -q, --quiet           Be quiet, print less output\n"
+     "  -qq                   Be very quiet, only print warnings or errors\n"
+     "  -v, --verbose         Be verbose, print what is being done\n"
+     "  -vv                   Be very verbose, print a lot of detailed output\n"
+     "  -vvv                  Be incredibly verbose (warning: prints TONS of output)\n"
+     "  -f, --force-run       Run even if some sanity checks fail\n"
      "  -n, --no-action, --simulate-run\n"
-     "                       Do not actually write any file or directory\n"
-     "  --posix              Use POSIX I/O (default)\n");
+     "                        Do not actually write any file or directory\n"
+     "  --posix               Use POSIX I/O (default)\n"
+     "  -e, --exclude FILE... Skip these files, i.e. do not move them.\n"
+     "                        Must be last argument\n");
 }
 
 int fm_move::invalid_cmdline(const char * program_name, int err, const char * fmt, ...)
@@ -183,6 +185,16 @@ int fm_move::init(int argc, char const* const* argv)
         // skip program_name
         while (err == 0 && --argc) {
             arg = * ++argv;
+
+            /* -e is allowed even after '--', but must be last argument */
+            if (io_args_n == FC_ARGS_COUNT && argc > 0 && arg[0] == '-'
+                && (!strcmp(arg, "-e") || !strcmp(arg, "--exclude")) )
+            {
+                args.exclude_list = argv;
+                // -e uses all remaining arguments, so stop processing them
+                break;
+            }
+
             if (allow_opts && arg[0] == '-') {
 
                 /* -- end of options*/
@@ -266,8 +278,7 @@ int fm_move::init(int argc, char const* const* argv)
         if (level > FC_INFO)
             ff_log_unregister_range(stdout, FC_INFO, (ft_log_level)(level - 1));
 
-        /* always enable at least DEBUG level, to let fsmove.log collect all messages from DEBUG to FATAL */
-        ff_log_set_threshold(level < FC_DEBUG ? level : FC_DEBUG);
+        ff_log_set_threshold(level);
 
         err = init(args);
     }

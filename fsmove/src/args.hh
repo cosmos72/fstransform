@@ -20,6 +20,7 @@ class fm_args
 {
 public:
     const char * io_args[FT_IO_NS fm_io::FC_ARGS_COUNT];
+    char const * const * exclude_list; // NULL-terminated array of files _not_ to move
     fm_io_kind io_kind;      // if FC_IO_AUTODETECT, will autodetect
     fm_ui_kind ui_kind;      // default is FC_UI_NONE
     bool force_run;          // if true, some sanity checks will be WARNINGS instead of ERRORS
