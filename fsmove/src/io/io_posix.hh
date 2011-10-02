@@ -22,6 +22,11 @@ class fm_io_posix: public fm_io
 private:
     typedef fm_io super_type;
 
+
+    // APPROX_BLOCK_SIZE is just for tuning creation of holes
+    // no need to find the exact value for the current file system
+    enum { APPROX_BLOCK_SIZE = 4096 };
+
     /**
      * fill 'stat' with information about the file/directory/special-device 'path'
      */
@@ -52,6 +57,26 @@ private:
      */
     int copy_stream(int in_fd, int out_fd, const char * source, const char * target);
 
+    /**
+     * scan memory for blocksize-length and blocksize-aligned sections full of zeroes
+     * return length of zeroed area at the beginning of scanned memory.
+     * returned length is rounded down to block_size
+     */
+    static size_t hole_length(const char * mem, ft_size mem_len);
+
+    /**
+     * scan memory for blocksize-length and blocksize-aligned sections NOT full of zeroes
+     * return length of NON-zeroed area at the beginning of scanned memory.
+     * returned length is rounded UP to block_size
+     */
+    static size_t nonhole_length(const char * mem, ft_size mem_len);
+
+    /**
+     * write bytes to out_fd, retrying in case of short writes or interrupted system calls.
+     * returns 0 for success, else error
+     */
+    static int full_write(int out_fd, const char * data, ft_size len, const char * target_path);
+    
     /**
      * check inode_cache for hard links and recreate them.
      * must be called if and only if stat.st_nlink > 1.

@@ -90,7 +90,7 @@ int fr_job::init(const fr_args & args)
     for (i = job_min; i != job_max; i++) {
         // 1 + 3*sizeof(ft_uint) chars are enough to safely print (ft_uint)
         this_dir.resize(len + 2 + 3*sizeof(ft_uint));
-        sprintf(& this_dir[len], "%"FS_ULL, (ft_ull) i);
+        sprintf(& this_dir[len], "%"FT_ULL, (ft_ull) i);
         this_dir.resize(len + strlen(& this_dir[len]));
 
         path = this_dir.c_str();
@@ -98,16 +98,16 @@ int fr_job::init(const fr_args & args)
         if ((err = FT_IO_NS ff_mkdir(path)) == 0
                 && (err = init_log()) == 0)
         {
-            ff_log(FC_NOTICE, 0, "starting job %"FS_ULL, (ft_ull)i);
+            ff_log(FC_NOTICE, 0, "starting job %"FT_ULL, (ft_ull)i);
             ff_log(FC_INFO, 0, "job persistent data and logs will be in '%s'", path);
             break;
         }
     }
     if (i == job_max) {
         if (args.job_id != 0)
-            err = ff_log(FC_ERROR, err, "failed to create persistent data folder '%s' for job id %"FS_ULL, path, (ft_ull) args.job_id);
+            err = ff_log(FC_ERROR, err, "failed to create persistent data folder '%s' for job id %"FT_ULL, path, (ft_ull) args.job_id);
         else
-            err = ff_log(FC_ERROR, err, "failed to locate a free job id, tried range %"FS_ULL"...%"FS_ULL, (ft_ull) job_min, (ft_ull) (job_max-1));
+            err = ff_log(FC_ERROR, err, "failed to locate a free job id, tried range %"FT_ULL"...%"FT_ULL, (ft_ull) job_min, (ft_ull) (job_max-1));
     }
     if (err == 0) {
         for (ft_size l = 0; l < FC_STORAGE_SIZE_N; l++)

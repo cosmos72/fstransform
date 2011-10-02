@@ -49,7 +49,7 @@ static int test_random(int argc, char ** argv) {
    
    if (max > 0x10000) {
        for (i = 0; i < n; i++)
-           ff_log(FC_INFO, 0, "ff_random(%20"FS_ULL") = %20"FS_ULL, max, ff_random(max));
+           ff_log(FC_INFO, 0, "ff_random(%20"FT_ULL") = %20"FT_ULL, max, ff_random(max));
    } else {
        ft_ull r;
        ft_size * hist = new ft_size[max + 1];
@@ -61,7 +61,7 @@ static int test_random(int argc, char ** argv) {
        ++hist[r];
        }
        for (i = 0; i <= max; i++)
-           ff_log(FC_INFO, 0, "histogram[%"FS_ULL"] = %"FS_ULL, i, (ft_ull)hist[i]);
+           ff_log(FC_INFO, 0, "histogram[%"FT_ULL"] = %"FT_ULL, i, (ft_ull)hist[i]);
        delete[] hist;
    }
    return 0;

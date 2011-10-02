@@ -6,53 +6,32 @@
 CC_SRCS += \
 ../src/args.cc \
 ../src/assert.cc \
-../src/dispatch.cc \
 ../src/eta.cc \
-../src/job.cc \
+../src/inode_cache.cc \
 ../src/log.cc \
 ../src/main.cc \
-../src/map.cc \
-../src/map_stat.cc \
-../src/pool.cc \
-../src/tmp_zero.cc \
-../src/remap.cc \
-../src/util.cc \
-../src/vector.cc \
-../src/work.cc 
+../src/move.cc \
+../src/util.cc 
 
 OBJS += \
 ./src/args.o \
 ./src/assert.o \
-./src/dispatch.o \
 ./src/eta.o \
-./src/job.o \
+./src/inode_cache.o \
 ./src/log.o \
 ./src/main.o \
-./src/map.o \
-./src/map_stat.o \
-./src/pool.o \
-./src/tmp_zero.o \
-./src/remap.o \
-./src/util.o \
-./src/vector.o \
-./src/work.o 
+./src/move.o \
+./src/util.o 
 
 CC_DEPS += \
 ./src/args.d \
 ./src/assert.d \
-./src/dispatch.d \
 ./src/eta.d \
-./src/job.d \
+./src/inode_cache.d \
 ./src/log.d \
 ./src/main.d \
-./src/map.d \
-./src/map_stat.d \
-./src/pool.d \
-./src/tmp_zero.d \
-./src/remap.d \
-./src/util.d \
-./src/vector.d \
-./src/work.d 
+./src/move.d \
+./src/util.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

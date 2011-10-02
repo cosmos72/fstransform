@@ -131,7 +131,7 @@ void fr_ui_tty::show_io_op(bool is_write, const fr_tty_window & window, ft_uoff 
     ft_ull len = (ft_ull)(((double)length * this_w * window.h + window.len - 1) / window.len);
 
     ft_ull y = pos / this_w, x = pos % this_w;
-    fprintf(this_file, "\033[3%cm\033[%"FS_ULL";%"FS_ULL"H", (int)(is_write ? '1' : '2'), y+1+window.h0, x+1); /* ANSI colors: 1 = red, 2 = green */
+    fprintf(this_file, "\033[3%cm\033[%"FT_ULL";%"FT_ULL"H", (int)(is_write ? '1' : '2'), y+1+window.h0, x+1); /* ANSI colors: 1 = red, 2 = green */
 
     while (len >= 40) {
         len -= 40;

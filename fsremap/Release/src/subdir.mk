@@ -14,8 +14,8 @@ CC_SRCS += \
 ../src/map.cc \
 ../src/map_stat.cc \
 ../src/pool.cc \
-../src/tmp_zero.cc \
 ../src/remap.cc \
+../src/tmp_zero.cc \
 ../src/util.cc \
 ../src/vector.cc \
 ../src/work.cc 
@@ -31,8 +31,8 @@ OBJS += \
 ./src/map.o \
 ./src/map_stat.o \
 ./src/pool.o \
-./src/tmp_zero.o \
 ./src/remap.o \
+./src/tmp_zero.o \
 ./src/util.o \
 ./src/vector.o \
 ./src/work.o 
@@ -48,8 +48,8 @@ CC_DEPS += \
 ./src/map.d \
 ./src/map_stat.d \
 ./src/pool.d \
-./src/tmp_zero.d \
 ./src/remap.d \
+./src/tmp_zero.d \
 ./src/util.d \
 ./src/vector.d \
 ./src/work.d 

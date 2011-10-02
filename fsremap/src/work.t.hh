@@ -56,11 +56,11 @@ void fr_work<T>::show(const char * label1, const char * label2, ft_uoff effectiv
     ft_size n = map.size();
 
     if (iter != end) {
-        ff_log(header_level, 0, "# %4"FS_ULL" extent%s in %s%s",
+        ff_log(header_level, 0, "# %4"FT_ULL" extent%s in %s%s",
                (ft_ull) n, (n == 1 ? " " : "s"), label1, label2);
 
         if (ff_log_is_enabled(level)) {
-            ff_log(level, 0, "# effective block size = %"FS_ULL, (ft_ull) effective_block_size);
+            ff_log(level, 0, "# effective block size = %"FT_ULL, (ft_ull) effective_block_size);
             show(level);
 
             for (ft_size i = 0; iter != end; ++iter, ++i)
@@ -83,7 +83,7 @@ void fr_work<T>::show(ft_log_level level)
 template<typename T>
 void fr_work<T>::show(ft_size i, T physical, T logical, T length, ft_size user_data, ft_log_level level)
 {
-    ff_log(level, 0, "#%8"FS_ULL"\t%12"FS_ULL"\t%12"FS_ULL"\t%8"FS_ULL"\t(%"FS_ULL")", (ft_ull)i,
+    ff_log(level, 0, "#%8"FT_ULL"\t%12"FT_ULL"\t%12"FT_ULL"\t%8"FT_ULL"\t(%"FT_ULL")", (ft_ull)i,
            (ft_ull) physical, (ft_ull) logical, (ft_ull) length, (ft_ull) user_data);
 }
 
@@ -589,7 +589,7 @@ int fr_work<T>::analyze(fr_vector<ft_uoff> & loop_file_extents,
     pretty_unit = ff_pretty_size((ft_uoff) hole_total_len << eff_block_size_log2, & pretty_len);
     ft_size storage_map_n = storage_map.size();
 
-    ff_log(FC_INFO, 0, "%s: located %.2f %sbytes (%"FS_ULL" fragment%s) usable in %s (free, invariant, contiguous and aligned)",
+    ff_log(FC_INFO, 0, "%s: located %.2f %sbytes (%"FT_ULL" fragment%s) usable in %s (free, invariant, contiguous and aligned)",
            label[FC_PRIMARY_STORAGE], pretty_len, pretty_unit, (ft_ull)storage_map_n, (storage_map_n == 1 ? "" : "s"), label[FC_DEVICE]);
 
     storage_map.total_count(hole_total_len);
@@ -602,7 +602,7 @@ int fr_work<T>::analyze(fr_vector<ft_uoff> & loop_file_extents,
 
 static int unusable_storage_size(const char * label, ft_uoff requested_len, const char * type_descr, ft_ull type_bytes)
 {
-    ff_log(FC_FATAL, 0, "fatal error: cannot use job %s length = %"FS_ULL" bytes, it is incompatible with %s = %"FS_ULL" bytes,"
+    ff_log(FC_FATAL, 0, "fatal error: cannot use job %s length = %"FT_ULL" bytes, it is incompatible with %s = %"FT_ULL" bytes,"
             " original job was probably created on a platform with %s",
             label, (ft_ull) requested_len, type_descr, type_bytes);
     /* mark error as reported */
@@ -788,8 +788,8 @@ int fr_work<T>::create_storage()
         const char * avail_pretty_unit = ff_pretty_size(avail_primary_size, & avail_pretty_len);
         const char * req_pretty_unit = ff_pretty_size(req_primary_size_exact, & req_pretty_len);
 
-        ff_log(FC_ERROR, 0, "available %s is only %"FS_ULL" bytes (%.2f %sbytes),"
-               " too small for requested %"FS_ULL" bytes (%.2f %sbytes)", label[FC_PRIMARY_STORAGE],
+        ff_log(FC_ERROR, 0, "available %s is only %"FT_ULL" bytes (%.2f %sbytes),"
+               " too small for requested %"FT_ULL" bytes (%.2f %sbytes)", label[FC_PRIMARY_STORAGE],
                (ft_ull)avail_primary_size, avail_pretty_len, avail_pretty_unit,
                (ft_ull) req_primary_size_exact, req_pretty_len, req_pretty_unit);
         /* mark error as reported */
@@ -890,7 +890,7 @@ void fr_work<T>::fill_io_primary_storage(ft_size primary_size)
     const char * pretty_unit = ff_pretty_size(primary_len, & pretty_len);
     ft_size fragment_n = primary_storage.size();
 
-    ff_log(FC_INFO, 0, "%s: actually using %.2f %sbytes (%"FS_ULL" fragment%s) from %s",
+    ff_log(FC_INFO, 0, "%s: actually using %.2f %sbytes (%"FT_ULL" fragment%s) from %s",
            label[FC_PRIMARY_STORAGE], pretty_len, pretty_unit,
            (ft_ull)fragment_n, (fragment_n == 1 ? "" : "s"), label[FC_DEVICE]);
 
@@ -1008,7 +1008,7 @@ void fr_work<T>::show_progress()
         if (eta_time >= 0) {
             const char * eta_time_label = ff_pretty_time(eta_time, & eta_time);
             ft_ull eta_time_ull = (ft_ull)(eta_time + 0.5);
-            ff_log(FC_NOTICE, 0, "progress: %4.1f%% done, %.2f %sbytes still to relocate, estimated %"FS_ULL" %s%s left",
+            ff_log(FC_NOTICE, 0, "progress: %4.1f%% done, %.2f %sbytes still to relocate, estimated %"FT_ULL" %s%s left",
                    percentage, pretty_len, pretty_label, eta_time_ull, eta_time_label, (eta_time_ull != 1 ? "s": ""));
         } else
             ff_log(FC_NOTICE, 0, "progress: %4.1f%% done, %.2f %sbytes still to relocate", percentage, pretty_len, pretty_label);

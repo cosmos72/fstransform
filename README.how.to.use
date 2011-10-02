@@ -1,4 +1,4 @@
-fsremap is functional, but still not very polished.
+fstransform is functional, but still not very polished.
 
 
 
@@ -19,7 +19,20 @@ but please understand that using a too small secondary storage can slow down fsr
 
 
 
-If you are still reading, let's see to how to actually use fsremap:
+If you are still reading, let's see to how to actually use fstransform:
+
+0) compile it. Running "make" should suffice on any recent Linux
+   machine, as long as g++ is installed.
+   
+   You will get two executables, fsmove and fsremap.
+   They will be located at
+     fstransform-{version}-src/fsmove/Release/fsmove
+   and
+     fstransform-{version}-src/fsremap/Release/fsmap
+   
+   You are suggested to copy them to a simpler path.
+   Below, they will be referred as {fsmove} and {fsremap}
+   
 
 1) mount read-write the device you want to remap to a different file-system
 
@@ -66,9 +79,10 @@ If you are still reading, let's see to how to actually use fsremap:
    
    Let's see how to perform this delicate recursive move.
    
-   You should have the fsmove program distributed with fsremap. If you have it, run:
+   You should have the fsmove program distributed with fstransform.
+   If you have it in {fsmove}, run:
    
-   fsmove {device-mount-point} {loop-file-mount-point} --exclude {device-mount-point}/{loop-file}
+   {fsmove} {device-mount-point} {loop-file-mount-point} --exclude {device-mount-point}/{loop-file}
    
    ################## WARNING ####### WARNING ####### WARNING ################
    
@@ -122,9 +136,9 @@ If you are still reading, let's see to how to actually use fsremap:
    
    If you skip this step, fsremap will use your home directory as {storage-dir}
 
-9) start fsremap:
+9) start fsremap. If you have the executable in {fsremap}, run:
 
-   fsremap -t {storage-dir} {device} {device-mount-point}/{loop-file} {device-mount-point}/{zero-file}
+   {fsremap} -t {storage-dir} {device} {device-mount-point}/{loop-file} {device-mount-point}/{zero-file}
 
    if you did not choose a {storage-dir} folder, omit the arguments -t {storage-dir}
    and fsremap will use your home directory as default

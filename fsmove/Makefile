@@ -1,5 +1,5 @@
 all:
-	$(MAKE) -C Debug $@
+	$(MAKE) -C Release $@
 
 %:
-	$(MAKE) -C Debug $@
+	$(MAKE) -C Release $@

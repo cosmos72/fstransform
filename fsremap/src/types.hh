@@ -51,14 +51,14 @@ typedef unsigned int ft_uint;
 // ft_ull must be the largest unsigned integer type existing on the platform
 #ifdef FT_HAVE_LONG_LONG
    typedef unsigned long long ft_ull;
-#  define FS_ULL "llu"
-#  define FS_XLL "llx"
-#  define FS_OLL "llo" /* octal */
+#  define FT_ULL "llu"
+#  define FT_XLL "llx"
+#  define FT_OLL "llo" /* octal */
 #else
    typedef unsigned long ft_ull;
-#  define FS_ULL "lu"
-#  define FS_XLL "lx"
-#  define FS_OLL "lo" /* octal */
+#  define FT_ULL "lu"
+#  define FT_XLL "lx"
+#  define FT_OLL "lo" /* octal */
 #endif
 
 // ft_stat is the same as 'struct stat'

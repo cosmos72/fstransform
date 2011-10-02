@@ -82,8 +82,8 @@ int fr_io::validate(const char * type_name, ft_uoff type_max, fr_dir dir, ft_uof
 {
     to = ff_max2(from, to);
     if (!ff_can_sum(to, length) || length > type_max || to > type_max - length) {
-        return ff_log(FC_FATAL, EOVERFLOW, "internal error! %s to %s io.copy(dir = %d, from_physical = %"FS_ULL", to_physical = %"FS_ULL", length = %"FS_ULL")"
-                      " overflows maximum allowed (%s)%"FS_ULL,
+        return ff_log(FC_FATAL, EOVERFLOW, "internal error! %s to %s io.copy(dir = %d, from_physical = %"FT_ULL", to_physical = %"FT_ULL", length = %"FT_ULL")"
+                      " overflows maximum allowed (%s)%"FT_ULL,
                       ff_is_from_dev(dir) ? label[FC_DEVICE] : label[FC_STORAGE],
                       ff_is_to_dev(dir) ? label[FC_DEVICE] : label[FC_STORAGE],
                       (int)dir, (ft_ull)from, (ft_ull)to, (ft_ull)length, type_name, (ft_ull)type_max);
@@ -102,7 +102,7 @@ int fr_io::read_extents(fr_vector<ft_uoff> & loop_file_extents,
     int err = read_extents(loop_file_extents, free_space_extents, block_size_bitmask);
     if (err == 0) {
         ft_uoff eff_block_size_log2 = effective_block_size_log2(block_size_bitmask);
-        ff_log(FC_INFO, 0, "%s effective block size = %"FS_ULL, label[FC_DEVICE], (ft_ull) 1 << eff_block_size_log2);
+        ff_log(FC_INFO, 0, "%s effective block size = %"FT_ULL, label[FC_DEVICE], (ft_ull) 1 << eff_block_size_log2);
     }
     return err;
 }

@@ -13,9 +13,9 @@
 #include <cstring>         // for strcmp(), memset(), memcpy()
 #include <dirent.h>        // for opendir(), readdir(), closedir()
 #include <fcntl.h>         // for open(), mknod()
-#include <sys/types.h>     // for   "        "    , lstat(), mkdir(), mkfifo(), umask()
-#include <sys/stat.h>      //  "    "        "        "        "        "         "
-#include <unistd.h>        //  "    "        "        "    , rmdir(), lchown(), close(), readlink(), symlink(), unlink(), read(), write()
+#include <sys/stat.h>      // for   "        "    , lstat(), mkdir(), mkfifo(), umask()
+#include <sys/types.h>     //  "    "        "        "        "        "         "    , lseek(), ftruncate()
+#include <unistd.h>        //  "    "        "        "    , rmdir(), lchown(), close(),    "          "     , readlink(), symlink(), unlink(), read(), write()
 #include <sys/time.h>      // for utimes(), utimensat()
 #include <utime.h>         //  "    "           "
 
@@ -34,6 +34,7 @@
 #endif /* PATH_MAX */
 
 FT_IO_NAMESPACE_BEGIN
+
 
 /** default constructor */
 fm_io_posix::fm_io_posix()
@@ -230,7 +231,7 @@ int fm_io_posix::move_special(const ft_string & source_path, const ft_stat & sta
             }
 
         } else {
-            ff_log(FC_ERROR, 0, "special device %s has unknown type 0%"FS_OLL", cannot create it",
+            ff_log(FC_ERROR, 0, "special device %s has unknown type 0%"FT_OLL", cannot create it",
                          source, (ft_ull)(stat.st_mode & ~07777));
             err = -EOPNOTSUPP;
             break;
@@ -277,11 +278,10 @@ int fm_io_posix::move_file(const ft_string & source_path, const ft_stat & stat, 
         if (in_fd < 0)
             err = ff_log(FC_ERROR, errno, "failed to open source file `%s'", source);
 
-        int out_fd = ::open(target, O_CREAT|O_WRONLY
-    #ifdef O_EXCL
-                            |O_EXCL
-    #endif
-                            , stat.st_mode);
+#ifndef O_EXCL
+# define O_EXCL 0
+#endif
+        int out_fd = ::open(target, O_CREAT|O_WRONLY|O_TRUNC|O_EXCL, 0600);
         if (out_fd < 0)
             err = ff_log(FC_ERROR, errno, "failed to create target file `%s'", target);
 
@@ -382,28 +382,121 @@ int fm_io_posix::hard_link(const ft_stat & stat, const ft_string & target_path)
 int fm_io_posix::copy_stream(int in_fd, int out_fd, const char * source, const char * target)
 {
     char buf[65536];
-    ssize_t got, sent, chunk;
+
+    ft_size present = 0, present_aligned, got;
+    ft_size hole_len, nonhole_len, tosend_offset, tosend_left;
     int err = 0;
-    while (err == 0) {
-        got = read(in_fd, buf, sizeof(buf));
-        if (got < 0)
+    for (;;) {
+        got = (ft_size) read(in_fd, buf + present, sizeof(buf) - present);
+        if (got == (ft_size)-1)
             err = ff_log(FC_ERROR, errno, "error reading from `%s'", source);
-        if (got <= 0)
+        if (got == (ft_size)-1 || got == 0)
             break;
 
-        // TODO: detect and create holes
-        sent = 0;
-        while (sent < got) {
-            while ((chunk = write(out_fd, buf + sent, got - sent)) == -1 && errno == EINTR)
-                ;
-            if (chunk <= 0) {
-                err = ff_log(FC_ERROR, errno, "error writing to `%s'", target);
-                break;
+        tosend_left = present_aligned = (present += got) / APPROX_BLOCK_SIZE * APPROX_BLOCK_SIZE;
+
+        for (tosend_offset = 0; tosend_left != 0;) {
+            /* detect hole */
+            if ((hole_len = hole_length(buf + tosend_offset, tosend_left)) != 0) {
+                /* re-create hole in target file */
+                if (::lseek(out_fd, (ft_off)hole_len, SEEK_CUR) == (ft_off)-1) {
+                    err = ff_log(FC_ERROR, errno, "error seeking in file `%s'", target);
+                    break;
+                }
+                tosend_offset += hole_len;
+                tosend_left -= hole_len;
             }
-            sent += chunk;
+
+            if ((nonhole_len = nonhole_length(buf + tosend_offset, tosend_left)) != 0) {
+                // copy the non-hole data
+                if ((err = full_write(out_fd, buf + tosend_offset, nonhole_len, target)) != 0)
+                    break;
+                tosend_offset += nonhole_len;
+                tosend_left -= nonhole_len;
+            }
         }
+        if (err != 0)
+            break;
+
+        if (present > present_aligned)
+            // move any remaining unaligned fragment to buffer beginning
+            ::memmove(buf, buf + present_aligned, present - present_aligned);
+        present -= present_aligned;
+        present_aligned = 0;
     }
+
+    if (err == 0) do {
+        if (present > present_aligned) {
+            // write any remaining unaligned fragment
+            err = full_write(out_fd, buf + present_aligned, present - present_aligned, target);
+            break;
+        }
+
+        // file may end with a hole... handle this case correctly!
+        ft_off filelen = ::lseek(out_fd, (ft_off)0, SEEK_CUR);
+        if (filelen == (ft_off)-1) {
+            err = ff_log(FC_ERROR, errno, "error seeking in file `%s'", target);
+            break;
+        }
+        if (::ftruncate(out_fd, filelen) == -1) {
+            err = ff_log(FC_ERROR, errno, "error truncating file `%s' to %"FT_ULL" bytes", target, (ft_ull)filelen);
+            break;
+        }
+    } while (0);
+
     return err;
+}
+
+
+/**
+ * scan memory for blocksize-length and blocksize-aligned sections full of zeroes
+ * return length of zeroed area at the beginning of scanned memory.
+ * returned length is rounded down to block_size
+ */
+size_t fm_io_posix::hole_length(const char * mem, ft_size mem_len)
+{
+    size_t len = 0;
+    mem_len = (mem_len / APPROX_BLOCK_SIZE) * APPROX_BLOCK_SIZE;
+    for (; len < mem_len; len++)
+        if (mem[len] != '\0')
+            break;
+    return (len / APPROX_BLOCK_SIZE) * APPROX_BLOCK_SIZE;
+}
+
+/**
+ * scan memory for blocksize-length and blocksize-aligned sections NOT full of zeroes
+ * return length of NON-zeroed area at the beginning of scanned memory.
+ * returned length is rounded UP to block_size
+ */
+size_t fm_io_posix::nonhole_length(const char * mem, ft_size mem_len)
+{
+    size_t hole_len, offset = 0;
+    while (mem_len >= APPROX_BLOCK_SIZE && (hole_len = hole_length(mem + offset, mem_len)) == 0) {
+        offset += APPROX_BLOCK_SIZE;
+        mem_len -= APPROX_BLOCK_SIZE;
+    }
+    return offset;
+}
+
+/**
+ * write bytes to out_fd, retrying in case of short writes or interrupted system calls.
+ * returns 0 for success, else error
+ */
+int fm_io_posix::full_write(int out_fd, const char * data, ft_size len, const char * target_path)
+{
+	ft_size chunk;
+	int err = 0;
+	while (len) {
+	    while ((chunk = ::write(out_fd, data, len)) == -1 && errno == EINTR)
+	        ;
+	    if (chunk <= 0) {
+	        err = ff_log(FC_ERROR, errno, "error writing to `%s'", target_path);
+	        break;
+	    }
+	    data += chunk;
+	    len -= chunk;
+	}
+	return err;
 }
 
 /**
@@ -412,6 +505,7 @@ int fm_io_posix::copy_stream(int in_fd, int out_fd, const char * source, const c
 int fm_io_posix::copy_stat(const char * target, const ft_stat & stat)
 {
     int err = 0;
+    const char * label = fm_io_posix_is_dir(stat) ? "directory" : fm_io_posix_is_file(stat) ? "file" : "special device";
 
     /* copy timestamps */
 #if defined(FT_HAVE_UTIMENSAT) && defined(AT_FDCWD) && defined(AT_SYMLINK_NOFOLLOW) && defined(FT_HAVE_STRUCT_STAT_XTIM_TV_NSEC)
@@ -423,7 +517,7 @@ int fm_io_posix::copy_stat(const char * target, const ft_stat & stat)
         time_buf[1].tv_nsec = stat.st_mtim.tv_nsec;
 
         if (utimensat(AT_FDCWD, target, time_buf, AT_SYMLINK_NOFOLLOW) != 0)
-            ff_log(FC_WARN, errno, "warning: cannot change file/directory `%s' timestamps", target);
+            ff_log(FC_WARN, errno, "warning: cannot change timestamps on %s `%s'", label, target);
 
     } while (0);
 #else
@@ -435,16 +529,21 @@ int fm_io_posix::copy_stat(const char * target, const ft_stat & stat)
         time_buf[0].tv_usec = time_buf[1].tv_usec = 0;
 
         if (utimes(target, time_buf) != 0)
-            ff_log(FC_WARN, errno, "warning: cannot change file/directory `%s' timestamps", target);
+            ff_log(FC_WARN, errno, "warning: cannot change timestamps on %s `%s'", label, target);
     }
 #endif
 
     do {
+        bool is_error = force_run();
+        const char * fail_label = is_error ? "failed to" : "warning: cannot";
+
         /* copy owner and group. this resets any SUID bits */
         if (lchown(target, stat.st_uid, stat.st_gid) != 0) {
-            err = ff_log(FC_ERROR, errno, "failed to change file/directory `%s' owner/group to %"FS_ULL"/%"FS_ULL,
-                         target, (ft_ull)stat.st_uid, (ft_ull)stat.st_gid);
-            break;
+            err = ff_log(FC_ERROR, errno, "%s set owner=%"FT_ULL" and group=%"FT_ULL" on %s `%s'",
+                         fail_label, (ft_ull)stat.st_uid, (ft_ull)stat.st_gid, label, target);
+            if (is_error)
+                break;
+            err = 0;
         }
         /*
          * copy permission bits
@@ -452,11 +551,12 @@ int fm_io_posix::copy_stat(const char * target, const ft_stat & stat)
          * 2. chmod() must be performed AFTER lchown(), because lchown() resets any SUID bits
          */
         if (!S_ISLNK(stat.st_mode) && chmod(target, stat.st_mode) != 0) {
-            err = ff_log(FC_ERROR, errno, "failed to change file/directory `%s' mode to 0%"FS_OLL,
-                         target, (ft_ull)stat.st_mode);
-            break;
+            err = ff_log(FC_ERROR, errno, "% change mode to 0%"FT_OLL" on %s `%s'",
+                         fail_label, (ft_ull)stat.st_mode, label, target);
+            if (is_error)
+                break;
+            err = 0;
         }
-
 
     } while (0);
     return err;
@@ -472,7 +572,7 @@ int fm_io_posix::create_dir(const ft_string & path, const ft_stat & stat)
     do {
         if (simulate_run())
             break;
-        if (mkdir(dir, 0700) == 0)
+        if (::mkdir(dir, 0700) == 0)
             break;
 
         /* if creating target root, ignore EEXIST error: target root is allowed to exist already */

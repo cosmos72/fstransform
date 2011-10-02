@@ -53,14 +53,8 @@
 * fsremap does not correctly handle the case where device_len is not a multiple
    of effective block size and file-system in loop_file uses a smaller block size
 
+* fsmove does not yet check for DISK FULL problems in {source-device} and {target-device}
 
-
-* rename fsremap -> fsrelocate? needed only if it's not the main program
-   (fsmove must be written still)
-
-  
-  
-  
-  
-  
-  
+   Checking for I/O errors during the copy is NOT enough: Linux loop devices
+   created on top of sparse files (the case we exploit) do NOT report ANY error
+   when writing to the backing sparse file fails because of disk full...
