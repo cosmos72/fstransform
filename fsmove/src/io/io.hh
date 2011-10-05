@@ -14,6 +14,8 @@
 #include "../fwd.hh"         // for fm_args
 #include "../inode_cache.hh" // for fm_inode_cache
 
+#include "disk_stat.hh"      // for fm_disk_stat
+
 #include <set>               // for std::set
 
 
@@ -29,6 +31,8 @@ private:
     fm_inode_cache this_inode_cache;
     std::set<ft_string> this_exclude_set;
 
+    fm_disk_stat this_source_stat, this_target_stat;
+
     ft_string this_source_root, this_target_root;
     bool this_force_run, this_simulate_run;
 
@@ -40,8 +44,11 @@ protected:
         return this_inode_cache.find(inode, path);
     }
     FT_INLINE void inode_cache_erase(ft_inode inode) {
-        return this_inode_cache.erase(inode);
+        this_inode_cache.erase(inode);
     }
+
+    FT_INLINE fm_disk_stat & source_stat() { return this_source_stat; }
+    FT_INLINE fm_disk_stat & target_stat() { return this_target_stat; }
 
 public:
     enum {

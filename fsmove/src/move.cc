@@ -318,30 +318,12 @@ int fm_move::init(const fm_args & args)
 }
 
 /**
- * analysis phase of recursive move algorithm,
- * must be executed after init() and before run() or move()
- */
-int fm_move::analyze()
-{
-    // TODO analyze
-    return 0;
-}
-
-
-/**
  * main recursive move algorithm.
- * calls in sequence analyze() and move()
+ * calls move()
  */
 int fm_move::run()
 {
-    int err = 0;
-    do {
-        if ((err = analyze()))
-            break;
-        if ((err = move()))
-            break;
-    } while (0);
-    return err;
+    return move();
 }
 
 /** core of recursive move algorithm, actually moves the whole source tree into target */

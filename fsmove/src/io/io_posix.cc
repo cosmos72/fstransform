@@ -6,6 +6,7 @@
  */
 
 #include "../first.hh"
+#include "../util.hh"      // for ff_min2()
 
 #include <cerrno>          // for errno
 #include <climits>         // for PATH_MAX
@@ -16,8 +17,10 @@
 #include <sys/stat.h>      // for   "        "    , lstat(), mkdir(), mkfifo(), umask()
 #include <sys/types.h>     //  "    "        "        "        "        "         "    , lseek(), ftruncate()
 #include <unistd.h>        //  "    "        "        "    , rmdir(), lchown(), close(),    "          "     , readlink(), symlink(), unlink(), read(), write()
+#include <sys/statvfs.h>   // for statvfs(), fsblkcnt_t
 #include <sys/time.h>      // for utimes(), utimensat()
 #include <utime.h>         //  "    "           "
+
 
 
 #define FT_HAVE_UTIMENSAT /* define if utimensat() is supported */
@@ -38,7 +41,7 @@ FT_IO_NAMESPACE_BEGIN
 
 /** default constructor */
 fm_io_posix::fm_io_posix()
-: super_type()
+: super_type(), bytes_copied_since_last_check(0)
 { }
 
 /** destructor. calls close() */
@@ -56,14 +59,79 @@ bool fm_io_posix::is_open() const
 /** check for consistency and open SOURCE_ROOT, TARGET_ROOT */
 int fm_io_posix::open(const fm_args & args)
 {
-    return super_type::open(args);
+    int err;
+    do {
+        if ((err = super_type::open(args)) != 0)
+            break;
+        bytes_copied_since_last_check = 0;
+        err = check_free_space();
+    } while (0);
+    return err;
 }
 
 /** close this I/O, including file descriptors to DEVICE, LOOP-FILE, ZERO-FILE and SECONDARY-STORAGE */
 void fm_io_posix::close()
 {
     super_type::close();
+    bytes_copied_since_last_check = 0;
 }
+
+
+
+
+/**
+ * add bytes_just_written to bytes_copied_since_last_check.
+ *
+ * if bytes_copied_since_last_check >= PERIODIC_CHECK_FREE_SPACE or >= 50% of free space,
+ * reset bytes_copied_since_last_check to zero and call check_free_space()
+ */
+int fm_io_posix::periodic_check_free_space(ft_size bytes_just_written)
+{
+    bytes_copied_since_last_check += bytes_just_written;
+
+    int err = 0;
+
+    if (bytes_copied_since_last_check >= PERIODIC_CHECK_FREE_SPACE) {
+        bytes_copied_since_last_check = 0;
+        err = check_free_space();
+    }
+    return err;
+}
+
+
+/**
+ * call 'disk_stat' twice: one time on source_root() and another on target_root().
+ * return error if statvfs() fails or if free disk space becomes critically low
+ */
+int fm_io_posix::check_free_space()
+{
+    ::sync(); // slow, but needed to get accurate disk stats when loop devices are involved
+    int err = disk_stat(source_root().c_str(), source_stat());
+    if (err == 0)
+        err = disk_stat(target_root().c_str(), target_stat());
+    return err;
+}
+
+/**
+ * fill 'disk_stat' with information about the file-system containing 'path'.
+ * return error if statvfs() fails or if free disk space becomes critically low
+ */
+int fm_io_posix::disk_stat(const char * path, fm_disk_stat & disk_stat)
+{
+    struct statvfs buf;
+    int err = 0;
+    if (::statvfs(path, & buf) != 0)
+        err = ff_log(FC_ERROR, errno, "failed to statvfs() `%s'", path);
+    else {
+        ft_uoff disk_total = (ft_uoff) buf.f_bsize * (ft_uoff) buf.f_blocks;
+        ft_uoff disk_free =  (ft_uoff) buf.f_bsize * (ft_uoff) buf.f_bfree;
+        disk_stat.set_total(disk_total);
+        err = disk_stat.set_free(disk_free);
+    }
+    return err;
+}
+
+
 
 /**
  * return true if 'stat' information is about a directory
@@ -133,6 +201,9 @@ int fm_io_posix::move(const ft_string & source_path, const ft_string & target_pa
         if ((err = this->create_dir(target_path, stat)) != 0)
             break;
 
+        if ((err = this->periodic_check_free_space()) != 0)
+            break;
+
         ft_string child_source = source_path, child_target = target_path;
         child_source += '/';
         child_target += '/';
@@ -165,6 +236,7 @@ int fm_io_posix::move(const ft_string & source_path, const ft_string & target_pa
     return err;
 }
 
+
 /**
  * fill 'stat' with information about the file/directory/special-device 'path'
  */
@@ -191,9 +263,10 @@ int fm_io_posix::move_special(const ft_string & source_path, const ft_stat & sta
     
     do {
         /* check inode_cache for hard links and recreate them */
-        err = hard_link(stat, target_path);
+        err = this->hard_link(stat, target_path);
         if (err == 0) {
             /** hard link succeeded, no need to create the special-device */
+            err = this->periodic_check_free_space();
             break;
         } else if (err == EAGAIN) {
             /* no luck with inode_cache, proceed as usual */
@@ -237,7 +310,10 @@ int fm_io_posix::move_special(const ft_string & source_path, const ft_stat & sta
             break;
         }
 
-        if ((err = copy_stat(target, stat)) != 0)
+        if ((err = this->copy_stat(target, stat)) != 0)
+            break;
+
+        if ((err = this->periodic_check_free_space()) != 0)
             break;
 
     } while (0);
@@ -261,9 +337,10 @@ int fm_io_posix::move_file(const ft_string & source_path, const ft_stat & stat, 
         return err;
 
     /* check inode_cache for hard links and recreate them */
-    err = hard_link(stat, target_path);
+    err = this->hard_link(stat, target_path);
     if (err == 0) {
         /** hard link succeeded, no need to copy the file contents */
+        err = this->periodic_check_free_space();
         goto move_file_unlink_source;
     } else if (err == EAGAIN) {
         /* no luck with inode_cache, proceed as usual */
@@ -285,9 +362,11 @@ int fm_io_posix::move_file(const ft_string & source_path, const ft_stat & stat, 
         if (out_fd < 0)
             err = ff_log(FC_ERROR, errno, "failed to create target file `%s'", target);
 
-        if (err == 0)
-            err = copy_stream(in_fd, out_fd, source, target);
-
+        if (err == 0) {
+            err = this->periodic_check_free_space();
+            if (err == 0)
+                err = this->copy_stream(in_fd, out_fd, source, target);
+        }
         if (in_fd >= 0)
             (void) ::close(in_fd);
         if (out_fd >= 0)
@@ -295,11 +374,11 @@ int fm_io_posix::move_file(const ft_string & source_path, const ft_stat & stat, 
     }
 
     if (err == 0)
-        err = copy_stat(target, stat);
+        err = this->copy_stat(target, stat);
 
 move_file_unlink_source:
     if (err == 0) {
-        if (unlink(source) != 0)
+        if (::unlink(source) != 0)
             err = ff_log(FC_ERROR, errno, "failed to remove source file `%s'", source);
     }
     return err;
@@ -316,7 +395,7 @@ int fm_io_posix::move_rename(const char * source, const char * target)
             err = EXDEV;
             break;
         }
-        if (rename(source, target) != 0) {
+        if (::rename(source, target) != 0) {
             err = errno;
             break;
         }
@@ -363,7 +442,7 @@ int fm_io_posix::hard_link(const ft_stat & stat, const ft_string & target_path)
         }
 
         const char * link_to = cached_link->c_str(), * link_from = target_path.c_str();
-        if (link(link_to, link_from) != 0) {
+        if (::link(link_to, link_from) != 0) {
             err = ff_log(FC_ERROR, errno, "failed to create target hard link `%s'\t-> `%s'", link_from, link_to);
             break;
         }
@@ -409,7 +488,7 @@ int fm_io_posix::copy_stream(int in_fd, int out_fd, const char * source, const c
 
             if ((nonhole_len = nonhole_length(buf + tosend_offset, tosend_left)) != 0) {
                 // copy the non-hole data
-                if ((err = full_write(out_fd, buf + tosend_offset, nonhole_len, target)) != 0)
+                if ((err = this->full_write(out_fd, buf + tosend_offset, nonhole_len, target)) != 0)
                     break;
                 tosend_offset += nonhole_len;
                 tosend_left -= nonhole_len;
@@ -423,12 +502,14 @@ int fm_io_posix::copy_stream(int in_fd, int out_fd, const char * source, const c
             ::memmove(buf, buf + present_aligned, present - present_aligned);
         present -= present_aligned;
         present_aligned = 0;
+
+
     }
 
     if (err == 0) do {
         if (present > present_aligned) {
             // write any remaining unaligned fragment
-            err = full_write(out_fd, buf + present_aligned, present - present_aligned, target);
+            err = this->full_write(out_fd, buf + present_aligned, present - present_aligned, target);
             break;
         }
 
@@ -495,6 +576,9 @@ int fm_io_posix::full_write(int out_fd, const char * data, ft_size len, const ch
 	    }
 	    data += chunk;
 	    len -= chunk;
+
+	    if ((err = this->periodic_check_free_space(chunk)) != 0)
+	        break;
 	}
 	return err;
 }

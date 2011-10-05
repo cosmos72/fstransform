@@ -22,10 +22,47 @@ class fm_io_posix: public fm_io
 private:
     typedef fm_io super_type;
 
+    ft_uoff bytes_copied_since_last_check;
 
-    // APPROX_BLOCK_SIZE is just for tuning creation of holes
-    // no need to find the exact value for the current file system
-    enum { APPROX_BLOCK_SIZE = 4096 };
+
+    enum {
+        /**
+         * APPROX_BLOCK_SIZE is an approximated block size, only used for tuning creation of holes.
+         * No need for it to be the exact block size used by the source and target file systems
+         */
+        APPROX_BLOCK_SIZE = 4096,
+         /**
+          * APPROX_INODE_COST is an approximated disk space used by an inode
+          * (directory, file or special device) even if it contains no actual data.
+          */
+        APPROX_INODE_COST = 256,
+        /**
+         * disk free space will be checked every PERIODIC_CHECK_FREE_SPACE bytes copied.
+         * note: we carefully set PERIODIC_CHECK_FREE_SPACE to half the minimum free space
+         * that can ever be considered 'critically low', i.e. 0.5 MBytes
+         */
+        PERIODIC_CHECK_FREE_SPACE = fm_disk_stat::THRESHOLD_MIN,
+    };
+
+    /**
+     * fill 'disk_stat' with information about the file-system containing 'path'.
+     * return error if statvfs() fails or if free disk space becomes critically low
+     */
+    int disk_stat(const char * path, fm_disk_stat & disk_stat);
+
+    /**
+     * call disk_stat() twice: one time on source_root() and another on target_root().
+     * return error if statvfs() fails or if free disk space becomes critically low
+     */
+    int check_free_space();
+
+    /**
+     * add bytes_just_written to bytes_copied_since_last_check.
+     *
+     * if bytes_copied_since_last_check >= PERIODIC_CHECK_FREE_SPACE,
+     * also call check_free_space() and reset bytes_copied_since_last_check to zero
+     */
+    int periodic_check_free_space(ft_size bytes_just_written = APPROX_INODE_COST);
 
     /**
      * fill 'stat' with information about the file/directory/special-device 'path'
@@ -75,7 +112,7 @@ private:
      * write bytes to out_fd, retrying in case of short writes or interrupted system calls.
      * returns 0 for success, else error
      */
-    static int full_write(int out_fd, const char * data, ft_size len, const char * target_path);
+    int full_write(int out_fd, const char * data, ft_size len, const char * target_path);
     
     /**
      * check inode_cache for hard links and recreate them.

@@ -46,12 +46,6 @@ private:
      */
     int init(FT_IO_NS fm_io & io);
 
-    /**
-     * analysis phase of recursive move algorithm,
-     * must be executed after init() and before move()
-     */
-    int analyze();
-
     /** core of recursive move algorithm, actually moves the whole source tree into target */
     int move();
 
