@@ -36,12 +36,6 @@ private:
           * (directory, file or special device) even if it contains no actual data.
           */
         APPROX_INODE_COST = 256,
-        /**
-         * disk free space will be checked every PERIODIC_CHECK_FREE_SPACE bytes copied.
-         * note: we carefully set PERIODIC_CHECK_FREE_SPACE to half the minimum free space
-         * that can ever be considered 'critically low', i.e. 0.5 MBytes
-         */
-        PERIODIC_CHECK_FREE_SPACE = fm_disk_stat::THRESHOLD_MIN,
     };
 
     /**
@@ -91,8 +85,26 @@ private:
 
     /**
      * copy file/stream contents from in_fd to out_fd
+     * we copy backward and progressively truncate in_fd to conserve space
      */
     int copy_stream(int in_fd, int out_fd, const char * source, const char * target);
+
+
+    /**
+     * truncate file pointed by descriptor to specified length
+     */
+    int fd_truncate(int fd, ft_off length, const char * path);
+
+    /**
+     * seek to specified position of file descriptor
+     */
+    int fd_seek(int fd, ft_off offset, const char * path);
+
+    /**
+     * seek to specified position of *both* file descriptors fd1 and fd2
+     */
+    int fd_seek2(int fd1, int fd2, ft_off offset, const char * path1, const char * path2);
+
 
     /**
      * scan memory for blocksize-length and blocksize-aligned sections full of zeroes
@@ -109,11 +121,18 @@ private:
     static size_t nonhole_length(const char * mem, ft_size mem_len);
 
     /**
+     * read bytes from in_fd, retrying in case of short reads or interrupted system calls.
+     * returns 0 for success, else error
+     * on return, len will contain the number of bytes actually read
+     */
+    int full_read(int in_fd, char * data, ft_size & len, const char * source_path);
+    
+    /**
      * write bytes to out_fd, retrying in case of short writes or interrupted system calls.
      * returns 0 for success, else error
      */
     int full_write(int out_fd, const char * data, ft_size len, const char * target_path);
-    
+
     /**
      * check inode_cache for hard links and recreate them.
      * must be called if and only if stat.st_nlink > 1.

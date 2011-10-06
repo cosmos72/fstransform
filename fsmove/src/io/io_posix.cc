@@ -6,6 +6,7 @@
  */
 
 #include "../first.hh"
+#include "../assert.hh"    // for ff_assert()
 #include "../util.hh"      // for ff_min2()
 
 #include <cerrno>          // for errno
@@ -91,7 +92,7 @@ int fm_io_posix::periodic_check_free_space(ft_size bytes_just_written)
 
     int err = 0;
 
-    if (bytes_copied_since_last_check >= PERIODIC_CHECK_FREE_SPACE) {
+    if (bytes_copied_since_last_check >= ff_min2(source_stat().get_free(), target_stat().get_free()) / 2) {
         bytes_copied_since_last_check = 0;
         err = check_free_space();
     }
@@ -351,7 +352,7 @@ int fm_io_posix::move_file(const ft_string & source_path, const ft_stat & stat, 
     }
 
     {
-        int in_fd = ::open(source, O_RDONLY);
+        int in_fd = ::open(source, O_RDWR);
         if (in_fd < 0)
             err = ff_log(FC_ERROR, errno, "failed to open source file `%s'", source);
 
@@ -456,30 +457,56 @@ int fm_io_posix::hard_link(const ft_stat & stat, const ft_string & target_path)
 }
 
 /**
- * copy file/stream contents from in_fd to out_fd
+ * copy file/stream contents from in_fd to out_fd.
+ * we copy backward and progressively truncate in_fd to conserve space
  */
 int fm_io_posix::copy_stream(int in_fd, int out_fd, const char * source, const char * target)
 {
-    char buf[65536];
+    ft_off file_size = ::lseek(in_fd, 0, SEEK_END), offset_high = file_size, offset_low;
+    if (offset_high == (ft_off)-1)
+        return ff_log(FC_ERROR, errno, "error seeking to end of file `%s'", source);
 
-    ft_size present = 0, present_aligned, got;
-    ft_size hole_len, nonhole_len, tosend_offset, tosend_left;
     int err = 0;
-    for (;;) {
-        got = (ft_size) read(in_fd, buf + present, sizeof(buf) - present);
-        if (got == (ft_size)-1)
-            err = ff_log(FC_ERROR, errno, "error reading from `%s'", source);
-        if (got == (ft_size)-1 || got == 0)
+    if ((err = fd_truncate(out_fd, offset_high, target)) != 0)
+        return err;
+
+    enum {
+        FT_LOG_BUFSIZE = 16, //< log2(FT_BUFSIZE)
+        FT_BUFSIZE = (ft_size)1 << FT_LOG_BUFSIZE, //< must be a power of 2!
+        FT_BUFSIZE_m1 = FT_BUFSIZE - 1
+    };
+    char buf[FT_BUFSIZE];
+
+    ft_size expected, got;
+    ft_size hole_len, nonhole_len, tosend_offset, tosend_left;
+    while (offset_high > 0) {
+        /** truncate in_fd, discarding any data that we already copied */
+        if ((err = fd_truncate(in_fd, offset_high, source)) != 0)
             break;
 
-        tosend_left = present_aligned = (present += got) / APPROX_BLOCK_SIZE * APPROX_BLOCK_SIZE;
+        offset_low = (offset_high - 1) & ~(ft_off)FT_BUFSIZE_m1;
+        ff_assert(offset_high - offset_low <= FT_BUFSIZE);
+        got = expected = (ft_size)(offset_high - offset_low);
 
-        for (tosend_offset = 0; tosend_left != 0;) {
+        if ((err = fd_seek2(in_fd, out_fd, offset_low, source, target)) != 0)
+            break;
+
+        if ((err = this->full_read(in_fd, buf, got, source)) != 0 || got != expected) {
+            if (err == 0) {
+                ff_log(FC_ERROR, 0, "error reading from `%s': expected %"FT_ULL" bytes, got %"FT_ULL" bytes",
+                       source, (ft_ull)expected, (ft_ull)got);
+                err = -EIO;
+            }
+            break;
+        }
+
+        tosend_offset = 0;
+        for (tosend_left = got; tosend_left != 0; ) {
             /* detect hole */
             if ((hole_len = hole_length(buf + tosend_offset, tosend_left)) != 0) {
                 /* re-create hole in target file */
                 if (::lseek(out_fd, (ft_off)hole_len, SEEK_CUR) == (ft_off)-1) {
-                    err = ff_log(FC_ERROR, errno, "error seeking in file `%s'", target);
+                    err = ff_log(FC_ERROR, errno, "error seeking %"FT_ULL" bytes forward in file `%s'", (ft_ull)hole_len, target);
                     break;
                 }
                 tosend_offset += hole_len;
@@ -496,38 +523,53 @@ int fm_io_posix::copy_stream(int in_fd, int out_fd, const char * source, const c
         }
         if (err != 0)
             break;
-
-        if (present > present_aligned)
-            // move any remaining unaligned fragment to buffer beginning
-            ::memmove(buf, buf + present_aligned, present - present_aligned);
-        present -= present_aligned;
-        present_aligned = 0;
-
-
+        offset_high = offset_low;
     }
+    if (err != 0 && offset_high != 0 && offset_high != file_size) {
+        ff_log(FC_ERROR, 0, "DANGER! due to previous error, copying `%s' -> `%s' was aborted", source, target);
+        ff_log(FC_ERROR, 0, "        and BOTH copies of this file are incomplete.");
+        ff_log(FC_ERROR, 0, "        To recover this file, execute the following command");
+        ff_log(FC_ERROR, 0, "        AFTER freeing enough space in the source device:");
 
-    if (err == 0) do {
-        if (present > present_aligned) {
-            // write any remaining unaligned fragment
-            err = this->full_write(out_fd, buf + present_aligned, present - present_aligned, target);
-            break;
-        }
-
-        // file may end with a hole... handle this case correctly!
-        ft_off filelen = ::lseek(out_fd, (ft_off)0, SEEK_CUR);
-        if (filelen == (ft_off)-1) {
-            err = ff_log(FC_ERROR, errno, "error seeking in file `%s'", target);
-            break;
-        }
-        if (::ftruncate(out_fd, filelen) == -1) {
-            err = ff_log(FC_ERROR, errno, "error truncating file `%s' to %"FT_ULL" bytes", target, (ft_ull)filelen);
-            break;
-        }
-    } while (0);
-
+        offset_high >>= FT_LOG_BUFSIZE;
+        ff_log(FC_ERROR, 0, "          /bin/dd bs=%"FT_ULL" skip=%"FT_ULL" seek=%"FT_ULL" conv=notrunc if=\"%s\" of=\"%s\"",
+               (ft_ull)FT_BUFSIZE, (ft_ull)offset_high, (ft_ull)offset_high, source, target);
+    }
     return err;
 }
 
+/**
+ * truncate file pointed by descriptor to specified length
+ */
+int fm_io_posix::fd_truncate(int fd, ft_off length, const char * path)
+{
+    int err = 0;
+    if (::ftruncate(fd, length) == -1)
+        err = ff_log(FC_ERROR, errno, "error truncating file `%s' to %"FT_ULL" bytes", path, (ft_ull)length);
+    return err;
+}
+
+/**
+ * seek to specified position of *both* fd1 and fd2
+ */
+int fm_io_posix::fd_seek2(int fd1, int fd2, ft_off offset, const char * path1, const char * path2)
+{
+    int err = fd_seek(fd1, offset, path1);
+    if (err == 0)
+        err = fd_seek(fd2, offset, path2);
+    return err;
+}
+
+/**
+ * seek to specified position of file descriptor
+ */
+int fm_io_posix::fd_seek(int fd, ft_off offset, const char * path)
+{
+    int err = 0;
+    if (::lseek(fd, offset, SEEK_SET) != offset)
+        err = ff_log(FC_ERROR, errno, "error seeking to position %"FT_ULL" of file `%s'", (ft_ull)offset, path);
+    return err;
+}
 
 /**
  * scan memory for blocksize-length and blocksize-aligned sections full of zeroes
@@ -537,6 +579,7 @@ int fm_io_posix::copy_stream(int in_fd, int out_fd, const char * source, const c
 size_t fm_io_posix::hole_length(const char * mem, ft_size mem_len)
 {
     size_t len = 0;
+    /* blocks smaller than APPROX_BLOCK_SIZE are always considered non-hole */
     mem_len = (mem_len / APPROX_BLOCK_SIZE) * APPROX_BLOCK_SIZE;
     for (; len < mem_len; len++)
         if (mem[len] != '\0')
@@ -547,17 +590,52 @@ size_t fm_io_posix::hole_length(const char * mem, ft_size mem_len)
 /**
  * scan memory for blocksize-length and blocksize-aligned sections NOT full of zeroes
  * return length of NON-zeroed area at the beginning of scanned memory.
- * returned length is rounded UP to block_size
+ * returned length is rounded UP to block_size if it fits mem_len
  */
 size_t fm_io_posix::nonhole_length(const char * mem, ft_size mem_len)
 {
     size_t hole_len, offset = 0;
-    while (mem_len >= APPROX_BLOCK_SIZE && (hole_len = hole_length(mem + offset, mem_len)) == 0) {
+
+    while (mem_len >= APPROX_BLOCK_SIZE && (hole_len = hole_length(mem + offset, APPROX_BLOCK_SIZE)) == 0) {
         offset += APPROX_BLOCK_SIZE;
         mem_len -= APPROX_BLOCK_SIZE;
     }
+    /*
+     * blocks smaller than APPROX_BLOCK_SIZE,
+     * or final fragments smaller than APPROX_BLOCK_SIZE,
+     * are always considered non-hole
+     */
+    if (mem_len < APPROX_BLOCK_SIZE)
+        offset += mem_len;
     return offset;
 }
+
+/**
+ * read bytes from in_fd, retrying in case of short reads or interrupted system calls.
+ * returns 0 for success, else error.
+ * on return, len will contain the number of bytes actually read
+ */
+int fm_io_posix::full_read(int in_fd, char * data, ft_size & len, const char * source_path)
+{
+    ft_size got, left = len;
+    int err = 0;
+    while (left) {
+        while ((got = ::read(in_fd, data, len)) == (ft_size)-1 && errno == EINTR)
+            ;
+        if (got == 0 || got == (ft_size)-1) {
+            if (got != 0)
+                err = ff_log(FC_ERROR, errno, "error reading from `%s'", source_path);
+            // else got == 0: end-of-file
+            break;
+        }
+        left -= got;
+        data += got;
+    }
+    len -= left;
+    return err;
+}
+
+
 
 /**
  * write bytes to out_fd, retrying in case of short writes or interrupted system calls.
@@ -568,9 +646,9 @@ int fm_io_posix::full_write(int out_fd, const char * data, ft_size len, const ch
 	ft_size chunk;
 	int err = 0;
 	while (len) {
-	    while ((chunk = ::write(out_fd, data, len)) == -1 && errno == EINTR)
+	    while ((chunk = ::write(out_fd, data, len)) == (ft_size)-1 && errno == EINTR)
 	        ;
-	    if (chunk <= 0) {
+	    if (chunk == 0 || chunk == (ft_size)-1) {
 	        err = ff_log(FC_ERROR, errno, "error writing to `%s'", target_path);
 	        break;
 	    }
