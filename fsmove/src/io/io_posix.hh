@@ -45,18 +45,23 @@ private:
     int disk_stat(const char * path, fm_disk_stat & disk_stat);
 
     /**
-     * call disk_stat() twice: one time on source_root() and another on target_root().
-     * return error if statvfs() fails or if free disk space becomes critically low
+     * return true if estimated free space is comfortably high enough to write 'bytes_to_write'
      */
-    int check_free_space();
+    bool enough_free_space(ft_uoff bytes_to_write = 0);
 
     /**
      * add bytes_just_written to bytes_copied_since_last_check.
      *
-     * if bytes_copied_since_last_check >= PERIODIC_CHECK_FREE_SPACE,
+     * if enough_free_space() returns false,
      * also call check_free_space() and reset bytes_copied_since_last_check to zero
      */
-    int periodic_check_free_space(ft_size bytes_just_written = APPROX_INODE_COST);
+    int periodic_check_free_space(ft_size bytes_just_written = APPROX_INODE_COST, ft_uoff bytes_to_write = 0);
+
+    /**
+     * call disk_stat() twice: one time on source_root() and another on target_root().
+     * return error if statvfs() fails or if free disk space becomes critically low
+     */
+    int check_free_space();
 
     /**
      * fill 'stat' with information about the file/directory/special-device 'path'
@@ -84,11 +89,17 @@ private:
     int move_rename(const char * source, const char * target);
 
     /**
-     * copy file/stream contents from in_fd to out_fd
-     * we copy backward and progressively truncate in_fd to conserve space
+     * forward or backward copy file/stream contents from in_fd to out_fd.
+     *
+     * if disk space is low, we copy backward and progressively truncate in_fd to conserve space:
+     * results in heavy fragmentation on target file, but at least we can continue
      */
-    int copy_stream(int in_fd, int out_fd, const char * source, const char * target);
+    int copy_stream(int in_fd, int out_fd, const ft_stat & stat, const char * source, const char * target);
 
+    /**
+     * forward copy file/stream contents from in_fd to out_fd.
+     */
+    int copy_stream_forward(int in_fd, int out_fd, const char * source, const char * target);
 
     /**
      * truncate file pointed by descriptor to specified length

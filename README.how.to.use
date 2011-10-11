@@ -86,12 +86,15 @@ If you are still reading, let's see to how to actually use fstransform:
    
    ################## WARNING ####### WARNING ####### WARNING ################
    
-   The last command above can take a LONG time to complete. You MUST monitor its progress with something like
+   The last command above can take a LONG time to complete, and it CAN fill either filesystem
+   {device-mount-point} and/or {loop-file-mount-point}.
+   
+   Even if {fsmove} periodically checks for free space, you still MUST monitor its progress with something like
    
    /usr/bin/watch /bin/df {device-mount-point} {loop-file-mount-point}
    
    bceause, if {device-mount-point} becomes full and the copy receives an 'I/O error', you are in trouble:
-   the filesystem inside {loop-file} will become CORRUPTED!
+   the filesystem inside {loop-file-mount-point} will become CORRUPTED!
    
    So if you realize {device-mount-point} is going to become full, you MUST interrupt the copy BEFORE it happens
    (and give up, sorry).
@@ -106,52 +109,78 @@ If you are still reading, let's see to how to actually use fstransform:
    then move all the files one by one, except {loop-file} (note: {loop-file-mount-point} must be an absolute path)
    
    cd {device-mount-point} && /usr/bin/find . -xdev \! -type d \! -path ./{loop-file} | while read i; do mv "$i" {loop-file-mount-point}/"$i" || break; done
- 
 
+   The same WARNING above still applies: you MUST monitor the free space
+   on {device-mount-point} and {loop-file-mount-point} and interrupt
+   the operation if you realize {device-mount-point} is going to become full. 
+
+   Actually, since these alternative commands do a simple file-by-file
+   copy and do not check for free space, in this case it is even more
+   critical to monitor the free space.
+
+   
 6) once all your files are inside the file-system in {loop-file}, things get less delicate.
-   now you just need to create a file full with zeros (not sparse) inside {device-mount-point}
+   now you need to umount {loop-file}, 'sync' and check that {loop-file} is not corrupted
+   
+   /bin/umount {loop-file-mount-point}
+   # if you used losetup before, you will need also:
+   /sbin/losetup -d /dev/loop{n}
+
+   # then in any case continue with:
+   /bin/sync
+   /sbin/fsck -f {device-mount-point}/{loop-file}
+
+   you need to be ABSOLUTELY sure that there are no errors in the
+   filesystem inside {device-mount-point}/{loop-file} before proceeding!
+
+   Additionally, it is now the time to check that the kernel did not
+   report any error while writing to {loop-file-mount-point}.
+   Please run:
+   
+   /bin/dmesg
+   
+   and check that there are no recent I/O errors in the produced
+   messages.
+
+7) the initial setup is almost complete.
+   now create a file full with zeros (not sparse) inside {device-mount-point}
    to help fsremap to locate any free disk space inside {device}:
 
    /bin/dd if=/dev/zero of={device-mount-point}/{zero-file} bs=512
 
-   this command will exit with the error "no space left on device",
+   the second command will exit with the error "no space left on device",
    but that's expected and not a problem.
 
    Note: if you have fallocate(1) and the file-system on {device} supports it,
    you can use fallocate instead of dd as it's much faster.
 
-7) the initial setup is almost complete.
-   just umount {loop-file} and remount {device} read-only to be sure no process will write into them
-
-   /bin/umount {loop-file-mount-point}
-   # if you used losetup before, you will need also:
-   /sbin/losetup -d /dev/loop{n}
-
-   in any case, also remount {device} read-only
+8) remount {device} read-only to be sure no process
+   will write into it:
 
    /bin/mount {device} -o remount,ro
 
-8) choose a folder with some free space (NOT inside {device}) where fsremap
+9) choose a folder with some free space (NOT inside {device}) where fsremap
    can write its (hopefully small) backup data and log files, and name it {storage-dir}
    
-   If you skip this step, fsremap will use your home directory as {storage-dir}
+   If you skip this step, fsremap will use your home directory as
+   default {storage-dir}.
 
-9) start fsremap. If you have the executable in {fsremap}, run:
+10) start fsremap. If you have the executable in {fsremap}, run:
 
    {fsremap} -t {storage-dir} {device} {device-mount-point}/{loop-file} {device-mount-point}/{zero-file}
 
    if you did not choose a {storage-dir} folder, omit the arguments -t {storage-dir}
-   and fsremap will use your home directory as default
+   and fsremap will use your home directory as default {storage-dir}
    
    if {device} has very little free space, fsremap will create a file
    {storage-dir}/.fsremap/job.{x}/storage.bin and use it to store blocks
    while moving them around.
 
-10) after an analysis phase, fsremap will ask you to umount {device}. just do as asked:
+11) after an analysis phase, fsremap will ask you to umount {device}. just do as asked:
 
    /bin/umount {device}
 
-11) fsremap will now relocate blocks from {loop-file} to {device}
+12) fsremap will now relocate blocks from {loop-file} to {device}
    and it will report its progress.
 
    once finished, check that the remapping actually worked:
@@ -160,6 +189,10 @@ If you are still reading, let's see to how to actually use fstransform:
    /bin/mount {device} {device-mount-point} [your-options]
 
    if everything worked, you can delete the file {storage-dir}/.fsremap/job.{x}/storage.bin
+
+   in case of problems, you can post your problem to the mailing list,
+   attaching the file {storage-dir}/.fsremap/job.{x}/fsremap.log
+   and hopefully somebody will help diagnosing the problem...
 
 
 Good luck!
