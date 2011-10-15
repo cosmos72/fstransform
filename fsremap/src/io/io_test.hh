@@ -66,7 +66,7 @@ public:
     virtual ~fr_io_test();
 
     /** check for consistency and load LOOP-FILE and ZERO-FILE extents list from files */
-    int open(char const* const args[FC_FILE_COUNT]);
+    virtual int open(const fr_args & args);
 
     /** return true if this fr_io_posix is currently (and correctly) open */
     virtual bool is_open() const;

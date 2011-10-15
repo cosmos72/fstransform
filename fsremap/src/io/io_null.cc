@@ -75,6 +75,15 @@ int ft_io_null::create_storage(ft_size secondary_len, ft_size buffer_len)
     return 0;
 }
 
+/**
+ * call umount(8) on dev_path()
+ *
+ * implementation: do nothing and return success
+ */
+int ft_io_null::umount_dev()
+{
+    return 0;
+}
 
 /**
  * actually copy a list of fragments from DEVICE or FREE-STORAGE, to STORAGE to FREE-DEVICE.

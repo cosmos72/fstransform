@@ -34,13 +34,17 @@ bool fr_io_self_test::is_open() const
 }
 
 /** check for consistency and load LOOP-FILE and ZERO-FILE extents list from files */
-int fr_io_self_test::open()
+int fr_io_self_test::open(const fr_args & args)
 {
     if (is_open()) {
         // already open!
         ff_log(FC_ERROR, 0, "unexpected call, I/O is already open");
         return EISCONN;
     }
+    int err = fr_io::open(args);
+    if (err != 0)
+        return err;
+
     /*
      * block_size_log_2 is a random number in the range [4,16]
      * thus block_size is one of 2^4, 2^5 ... 2^15, 2^16
@@ -57,7 +61,7 @@ int fr_io_self_test::open()
     const char * pretty_label = ff_pretty_size(dev_len, & pretty_len);
     ff_log(FC_INFO, 0, "%s%s length is %.2f %sbytes", sim_msg, label[FC_DEVICE], pretty_len, pretty_label);
     
-    return 0;
+    return err;
 }
 
 

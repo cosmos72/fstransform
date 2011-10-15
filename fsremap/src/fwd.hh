@@ -11,6 +11,7 @@
 #include "check.hh"
 
 FT_NAMESPACE_BEGIN
+class fr_args;
 class fr_remap;
 class fr_dispatch;
 class fr_job;

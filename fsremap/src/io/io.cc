@@ -36,7 +36,7 @@ char const* const fr_io::extents_filename[FC_IO_EXTENTS_FILE_COUNT] = {
 /** constructor */
 fr_io::fr_io(fr_job & job)
     : this_primary_storage(), request_vec(), this_dev_length(0), this_eff_block_size_log2(0),
-      this_dev_path(NULL), this_job(job), request_dir(FC_INVALID2INVALID), this_delegate_ui(false)
+      this_dev_path(NULL), this_umount_cmd(NULL), this_job(job), request_dir(FC_INVALID2INVALID), this_delegate_ui(false)
 {
     this_secondary_storage.clear();
 }
@@ -48,6 +48,16 @@ fr_io::fr_io(fr_job & job)
 fr_io::~fr_io()
 { }
 
+/**
+ * open this fr_io.
+ * sub-classes must override this method to perform appropriate initialization,
+ * and the first thing sub-classes open() must do is to call fr_io::open().
+ */
+int fr_io::open(const fr_args & args)
+{
+    this_umount_cmd = args.umount_cmd;
+    return 0;
+}
 
 /**
  * close this fr_io.

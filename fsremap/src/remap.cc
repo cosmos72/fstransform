@@ -109,6 +109,7 @@ int fr_remap::usage(const char * program_name) {
      "                       Do not actually read or write any disk block\n"
      "  -t, --dir DIR        Write storage and logs inside DIR (default: $HOME)\n"
      "  -j, --job JOB_ID     Set JOB_ID to use (default: autodetect)\n"
+     "  --umount-cmd CMD     Command and args to unmount %s (default: /bin/umount DEVICE)\n"
      "  -m, --mem-buffer RAM_SIZE[k|M|G|T|P|E|Z|Y]\n"
      "                       Set RAM buffer size (default: autodetect)\n"
      "  -s, --secondary-storage SECONDARY_SIZE[k|M|G|T|P|E|Z|Y]\n"
@@ -126,7 +127,8 @@ int fr_remap::usage(const char * program_name) {
      "  --posix              Use POSIX I/O (default)\n"
      "  --test               Use test I/O. Arguments are:\n"
      "                         DEVICE-LENGTH LOOP-FILE-EXTENTS FREE-SPACE-EXTENTS\n"
-     "  --self-test          Use self-test I/O. Performs self-test with random data\n");
+     "  --self-test          Use self-test I/O. Performs self-test with random data\n",
+     label[FC_DEVICE]);
 }
 
 
@@ -243,6 +245,10 @@ int fr_remap::init(int argc, char const* const* argv)
                 /* -t directory */
                 else if (argc > 1 && (!strcmp(arg, "-t") || !strcmp(arg, "--dir"))) {
                     --argc, args.root_dir = *++argv;
+                }
+                /* --umount-cmd */
+                else if (argc > 1 && (!strcmp(arg, "--umount-cmd"))) {
+                    --argc, args.umount_cmd = *++argv;
                 }
                 /* -j job_id */
                 else if (argc > 1 && (!strcmp(arg, "-j") || !strcmp(arg, "--job"))) {
@@ -457,13 +463,13 @@ int fr_remap::init_io(const fr_args & args)
     int err;
     switch (args.io_kind) {
         case FC_IO_POSIX:
-            err = init_io_posix(args.io_args);
+            err = init_io_posix(args);
             break;
         case FC_IO_TEST:
-            err = init_io_test(args.io_args);
+            err = init_io_test(args);
             break;
         case FC_IO_SELF_TEST:
-            err = init_io_self_test();
+            err = init_io_self_test(args);
             break;
         default:
             ff_log(FC_ERROR, 0, "tried to initialize unknown I/O '%d': not POSIX, not self-test", (int) args.io_kind);
@@ -476,17 +482,17 @@ int fr_remap::init_io(const fr_args & args)
 
 /**
  * initialize remapper to use POSIX I/O.
- * requires three arguments: DEVICE, LOOP-FILE and ZERO-FILE to be passed in path[].
+ * POSIX I/O requires three arguments in args.io_args: DEVICE, LOOP-FILE and ZERO-FILE.
  * return 0 if success, else error.
  */
-int fr_remap::init_io_posix(char const* const path[FT_IO_NS fr_io_posix::FC_FILE_COUNT])
+int fr_remap::init_io_posix(const fr_args & args)
 {
     int err;
     if ((err = pre_init_io()) == 0) {
 
         FT_IO_NS fr_io_posix * io_posix = new FT_IO_NS fr_io_posix(* this_job);
 
-        if ((err = io_posix->open(path)) == 0)
+        if ((err = io_posix->open(args)) == 0)
             post_init_io(io_posix);
         else
             delete io_posix;
@@ -496,17 +502,17 @@ int fr_remap::init_io_posix(char const* const path[FT_IO_NS fr_io_posix::FC_FILE
 
 /**
  * initialize remapper to use test I/O.
- * requires three arguments: DEVICE-LENGTH, LOOP-FILE-EXTENTS and ZERO-FILE-EXTENTS to be passed in arg[].
+ * test I/O requires three arguments in args.io_args: DEVICE-LENGTH, LOOP-FILE-EXTENTS and ZERO-FILE-EXTENTS.
  * return 0 if success, else error.
  */
-int fr_remap::init_io_test(char const* const arg[FT_IO_NS fr_io_posix::FC_FILE_COUNT])
+int fr_remap::init_io_test(const fr_args & args)
 {
     int err;
     if ((err = pre_init_io()) == 0) {
 
         FT_IO_NS fr_io_test * io_test = new FT_IO_NS fr_io_test(* this_job);
 
-        if ((err = io_test->open(arg)) == 0)
+        if ((err = io_test->open(args)) == 0)
             post_init_io(io_test);
         else
             delete io_test;
@@ -518,14 +524,14 @@ int fr_remap::init_io_test(char const* const arg[FT_IO_NS fr_io_posix::FC_FILE_C
  * initialize remapper to use self-test I/O.
  * return 0 if success, else error.
  */
-int fr_remap::init_io_self_test()
+int fr_remap::init_io_self_test(const fr_args & args)
 {
     int err;
     if ((err = pre_init_io()) == 0) {
 
         FT_IO_NS fr_io_self_test * io_self_test = new FT_IO_NS fr_io_self_test(* this_job);
 
-        if ((err = io_self_test->open()) == 0)
+        if ((err = io_self_test->open(args)) == 0)
             post_init_io(io_self_test);
         else
             delete io_self_test;

@@ -8,8 +8,8 @@
 #ifndef FSREMAP_IO_IO_POSIX_HH
 #define FSREMAP_IO_IO_POSIX_HH
 
-#include "../types.hh"    // for ft_uoff */
-#include "io.hh"          // for fr_io */
+#include "../types.hh"    /* for ft_uoff */
+#include "io.hh"          /* for fr_io   */
 
 
 FT_IO_NAMESPACE_BEGIN
@@ -143,7 +143,7 @@ public:
     virtual ~fr_io_posix();
 
     /** check for consistency and open DEVICE, LOOP-FILE and ZERO-FILE */
-    int open(char const* const paths[FC_FILE_COUNT]);
+    int open(const fr_args & args);
 
     /** return true if this fr_io_posix is currently (and correctly) open */
     virtual bool is_open() const;
@@ -165,6 +165,9 @@ public:
      * return 0 if success, else error
      */
     virtual int create_storage(ft_size secondary_len, ft_size mem_buffer_len);
+
+    /** call umount(8) on dev_path() */
+    virtual int umount_dev();
 
     /**
      * write zeroes to primary storage.

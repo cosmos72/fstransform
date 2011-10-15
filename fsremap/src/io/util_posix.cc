@@ -6,13 +6,18 @@
  */
 #include "../first.hh"
 
-#include <cerrno>        // for errno, EOVERFLOW, ENOTBLK, EINTR
-#include <sys/ioctl.h>   // for ioctl()
-#include <linux/fs.h>    // for BLKGETSIZE64
+#include <cerrno>         // for errno, EOVERFLOW, ENOTBLK, EINTR
+#include <cstdlib>        // for exit()
+#include <unistd.h>       // for fork(), execv()
+#include <sys/ioctl.h>    // for ioctl()
+#include <sys/types.h>    // for waitpid()
+#include <sys/wait.h>     // for   "
+#include <linux/fs.h>     // for BLKGETSIZE64
 
-#include "../types.hh"   // for ft_u64, ft_stat
-#include "../util.hh"    // for ff_min2<T>()
-#include "util_posix.hh" // for ff_posix_ioctl(), ff_posix_stat(), ff_posix_size(), ff_filedev()
+#include "../types.hh"    // for ft_u64, ft_stat
+#include "../log.hh"      // for ff_log()
+#include "../util.hh"     // for ff_min2<T>()
+#include "util_posix.hh"  // for ff_posix_ioctl(), ff_posix_stat(), ff_posix_size(), ff_filedev()
 
 
 FT_IO_NAMESPACE_BEGIN
@@ -180,5 +185,53 @@ int ff_posix_write(int fd, const void * mem, ft_uoff length)
     return 0;
 }
 
+/**
+ * spawn a system command, typically with fork()+execv(), wait for it to complete and return its exit status.
+ * argv[0] is conventionally the program name.
+ * argv[1...] are program arguments and must be terminated with a NULL pointer.
+ */
+int ff_posix_exec(const char * path, const char * const argv[])
+{
+    int err;
+    pid_t pid = ::fork();
+    if (pid == 0) {
+        /* child */
+        ::execvp(path, (char * const *)argv);
+
+        /* if we reach here, execvp() failed! */
+        ff_log(FC_ERROR, err = errno, "execvp(%s) failed");
+
+        /* exit() can only return one-byte exit status */
+        err &= 0xff;
+        if (err == 0) {
+            err = (ECHILD > 0 ? ECHILD : -ECHILD) & 0xff;
+            if (err == 0)
+                err = 1;
+        }
+        ::exit(err);
+    } else if (pid == (pid_t)-1) {
+        err = ff_log(FC_ERROR, errno, "fork() failed");
+    } else {
+        /* parent */
+        err = -ECHILD; // assume failure unless proved successful...
+        int status = 0;
+
+        if (waitpid(pid, & status, 0/*options*/) != pid)
+            err = ff_log(FC_ERROR, errno, "error in waitpid(), assuming command '%s' failed", path);
+        else if (WIFEXITED(status)) {
+
+            status = WEXITSTATUS(status);
+            if (status == 0)
+                err = 0; // proved successful!
+            else
+                ff_log(FC_ERROR, 0, "command '%s' exited with non-zero exit status %d", path, status);
+
+        } else if (WIFSIGNALED(status))
+            ff_log(FC_ERROR, 0, "command '%s' died with signal %d", path, (int)WTERMSIG(status));
+        else
+            ff_log(FC_ERROR, 0, "waitpid() returned unknown status %d, assuming command '%s' failed", status, path);
+    }
+    return err;
+}
 
 FT_IO_NAMESPACE_END

@@ -79,21 +79,24 @@ bool fr_io_posix::is_open() const
 }
 
 /** check for consistency and open DEVICE, LOOP-FILE and ZERO-FILE */
-int fr_io_posix::open(char const* const path[FC_FILE_COUNT])
+int fr_io_posix::open(const fr_args & args)
 {
     if (is_open()) {
         // already open!
         ff_log(FC_ERROR, 0, "unexpected call, I/O is already open");
         return EISCONN;
     }
+    int err = fr_io::open(args);
+    if (err != 0)
+        return err;
 
     if (getuid() != 0) {
         ff_log(FC_WARN, 0, "not running as root! expect '%s' errors", strerror(EPERM));
     }
 
+    char const* const* path = args.io_args;
     ft_uoff len[FC_FILE_COUNT];
     ft_size i;
-    int err = 0;
     ft_dev dev[FC_FILE_COUNT];
     const bool force = force_run();
     const char * force_msg = force ? ", continuing due to '-f'" : ", use '-f' to override";
@@ -587,6 +590,61 @@ int fr_io_posix::create_secondary_storage(ft_size len)
     }
     return err;
 }
+
+/** call umount(8) on dev_path() */
+int fr_io_posix::umount_dev()
+{
+    const char * cmd = umount_cmd(), * dev = dev_path();
+    const char * arg0 = NULL;
+    char * tofree = NULL;
+
+    std::vector<const char *> args;
+
+    if (cmd == NULL) {
+        // posix standard name for umount(8)
+        args.push_back(cmd = "/bin/umount");
+        // only one argument: device path
+        args.push_back(arg0 = dev);
+    } else {
+        tofree = strdup(cmd);
+        char * wcmd = tofree;
+        if (wcmd == NULL)
+            return ff_log(FC_ERROR, ENOMEM, "out of memory! failed to strdup('%s')", cmd);
+
+        char * space;
+        /*
+         * split --umount-cmd CMD, assuming arguments are delimited by spaces.
+         * prevents passing files, directories or options containing space...
+         * in such case please create a script and give its path with --umount-cmd CMD
+         */
+        for (;;) {
+            while (*wcmd == ' ')
+                wcmd++;
+            if (*wcmd == '\0')
+                break;
+
+            args.push_back(wcmd);
+            if ((space = strchr(wcmd, ' ')) == NULL)
+                break;
+            * space = '\0';
+            wcmd = space + 1;
+        }
+    }
+    args.push_back(NULL); // needed by ff_posix_exec() as end-of-arguments marker
+
+    ff_log(FC_NOTICE, 0, "unmounting %s '%s'... command: %s%s%s", label[FC_DEVICE],
+           dev, cmd, arg0 != NULL ? " " : "", arg0 != NULL ? arg0 : "");
+
+    int err = ff_posix_exec(args[0], & args[0]);
+
+    if (err == 0)
+        ff_log(FC_NOTICE, 0, "successful unmounted %s '%s'", label[FC_DEVICE], dev);
+
+    if (tofree != NULL)
+        ::free(tofree);
+    return err;
+}
+
 
 /**
  * actually copy a list of fragments from DEVICE or FREE-STORAGE, to STORAGE to FREE-DEVICE.

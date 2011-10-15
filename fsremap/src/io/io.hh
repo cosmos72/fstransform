@@ -11,6 +11,7 @@
 #include "../check.hh"
 
 #include "../types.hh"       // for ft_uoff
+#include "../fwd.hh"         // for fr_args forward declaration
 #include "../job.hh"         // for fr_job
 #include "../extent.hh"      // for fr_extent<T>
 #include "../vector.hh"      // for fr_vector<T>
@@ -48,6 +49,7 @@ private:
 
     ft_uoff this_dev_length, this_eff_block_size_log2;
     const char * this_dev_path;
+    const char * this_umount_cmd;
     fr_job & this_job;
     FT_UI_NS fr_ui * this_ui;
     fr_dir request_dir;
@@ -173,6 +175,13 @@ public:
     virtual bool is_open() const = 0;
 
     /**
+     * open this fr_io.
+     * sub-classes must override this method to perform appropriate initialization,
+     * and the first thing sub-classes open() must do is to call fr_io::open().
+     */
+    virtual int open(const fr_args & args);
+
+    /**
      * close this fr_io.
      * sub-classes must override this method to perform appropriate cleanup
      */
@@ -183,6 +192,12 @@ public:
 
     /** return device path, or NULL if not open */
     FT_INLINE const char * dev_path() const { return this_dev_path; }
+
+    /**
+     * return umount command, or NULL if not specified by command line.
+     * umount command is set by open(const fr_args & args).
+     */
+    FT_INLINE const char * umount_cmd() const { return this_umount_cmd; }
 
     /** return log2 of effective block size, or 0 if not open */
     FT_INLINE ft_uoff effective_block_size_log2() const { return this_eff_block_size_log2; }
@@ -279,6 +294,10 @@ public:
      * return 0 if success, else error
      */
     virtual int create_storage(ft_size secondary_len, ft_size mem_buffer_len) = 0;
+
+
+    /** call umount(8) on dev_path() */
+    virtual int umount_dev() = 0;
 
     /**
      * copy a single fragment from DEVICE to FREE-STORAGE, or from STORAGE to FREE-DEVICE or from DEVICE to FREE-DEVICE

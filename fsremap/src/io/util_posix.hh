@@ -58,6 +58,12 @@ int ff_posix_read(int fd, void * mem, ft_uoff length);
  */
 int ff_posix_write(int fd, const void * mem, ft_uoff length);
 
+/**
+ * spawn a system command, wait for it to complete and return its exit status.
+ * argv[0] is conventionally the program name.
+ * argv[1...] are program arguments and must be terminated with a NULL pointer.
+ */
+int ff_posix_exec(const char * path, const char * const argv[]);
 
 FT_IO_NAMESPACE_END
 

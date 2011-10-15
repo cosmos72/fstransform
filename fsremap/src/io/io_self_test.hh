@@ -56,7 +56,7 @@ public:
     virtual ~fr_io_self_test();
 
     /** check for consistency and prepare for read_extents() */
-    int open();
+    virtual int open(const fr_args & args);
 
     /** return true if this fr_io_posix is currently (and correctly) open */
     virtual bool is_open() const;

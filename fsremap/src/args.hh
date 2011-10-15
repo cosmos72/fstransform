@@ -25,6 +25,7 @@ public:
     const char * root_dir;   // if NULL, will autodetect
     const char * io_args[3]; // some I/O will need less than 3 arguments
     const char * ui_arg;
+    const char * umount_cmd;
     ft_size storage_size[FC_STORAGE_SIZE_N];    // if 0, will autodetect
     ft_uint job_id;          // if 0, will autodetect
     fr_clear_free_space job_clear;

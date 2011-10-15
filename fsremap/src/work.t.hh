@@ -920,20 +920,10 @@ int fr_work<T>::relocate()
 
     if (!simulated) {
         ff_log(FC_NOTICE, 0, "everything ready for relocation");
-#if 0
-#  ifdef FT_HAVE_UMOUNT
-        /* TODO: move this stuff to ff_posix_umount(), and call umount(8) instead of umount(2) to correctly update /etc/mtab */
-        if ((err = umount(dev_path)) == 0)
-            ff_log(FC_INFO, 0, "successful umount() %s '%s'", label[FC_DEVICE], dev_path);
-        else
-            err = ff_log(FC_ERROR, errno, "failed to umount() %s '%s'", label[FC_DEVICE], dev_path);
-#  else
-        err = ff_log(FC_WARN, ENOSYS, "umount() not supported on this platform");
-#  endif
-        if (err != 0)
-#endif
+
+        if ((err = io->umount_dev()) != 0)
         {
-            ff_log(FC_WARN, 0, "please manually umount %s '%s' before continuing.", label[FC_DEVICE], dev_path);
+            ff_log(FC_WARN, 0, "please manually unmount %s '%s' before continuing.", label[FC_DEVICE], dev_path);
             ff_log(FC_WARN, 0, "press RETURN when done, or CTRL+C to quit");
             char ch;
             err = read(0, &ch, 1) < 0 ? errno : 0;

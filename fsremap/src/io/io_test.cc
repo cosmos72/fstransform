@@ -11,6 +11,7 @@
 #include <fstream>         // for std::ifstream
 
 #include "../log.hh"       // for ff_log()
+#include "../args.hh"      // for fr_args
 #include "../util.hh"      // for ff_str2un_scaled()
 #include "extent_file.hh"  // for ff_read_extents_file()
 #include "io_test.hh"      // for fr_io_test
@@ -40,24 +41,28 @@ bool fr_io_test::is_open() const
 }
 
 /** check for consistency and load LOOP-FILE and ZERO-FILE extents list from files */
-int fr_io_test::open(char const* const args[FC_FILE_COUNT])
+int fr_io_test::open(const fr_args & args)
 {
     if (is_open()) {
         // already open!
         ff_log(FC_ERROR, 0, "unexpected call, I/O is already open");
         return EISCONN;
     }
+    int err = fr_io::open(args);
+    if (err != 0)
+        return err;
 
+    char const* const* io_args = args.io_args;
     ft_uoff dev_len;
     ft_size i = FC_DEVICE_LENGTH;
-    int err = ff_str2un_scaled(args[i], & dev_len);
+    err = ff_str2un_scaled(io_args[i], & dev_len);
     if (err != 0) {
-        return ff_log(FC_ERROR, errno, "error parsing %s '%s'", extents_label[i], args[i]);
+        return ff_log(FC_ERROR, errno, "error parsing %s '%s'", extents_label[i], io_args[i]);
     }
 
     for (i = FC_DEVICE_LENGTH+1; i < FC_FILE_COUNT; i++) {
-        if ((this_f[i] = fopen(args[i], "r")) == NULL) {
-            err = ff_log(FC_ERROR, errno, "error opening %s '%s'", extents_label[i], args[i]);
+        if ((this_f[i] = fopen(io_args[i], "r")) == NULL) {
+            err = ff_log(FC_ERROR, errno, "error opening %s '%s'", extents_label[i], io_args[i]);
             break;
         }
     }

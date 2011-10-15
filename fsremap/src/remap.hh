@@ -107,23 +107,23 @@ public:
 
     /**
      * initialize remapper to use POSIX I/O.
-     * requires three arguments: DEVICE, LOOP-FILE and ZERO-FILE to be passed in path[].
+     * POSIX I/O requires three arguments in args.io_args: DEVICE, LOOP-FILE and ZERO-FILE.
      * return 0 if success, else error.
      */
-    int init_io_posix(char const* const path[FT_IO_NS fr_io_posix::FC_FILE_COUNT]);
+    int init_io_posix(const fr_args & args);
 
     /**
      * initialize remapper to use test I/O.
-     * requires three arguments: DEVICE-LENGTH, LOOP-FILE-EXTENTS and ZERO-FILE-EXTENTS to be passed in arg[].
+     * test I/O requires three arguments in args.io_args: DEVICE-LENGTH, LOOP-FILE-EXTENTS and ZERO-FILE-EXTENTS.
      * return 0 if success, else error.
      */
-    int init_io_test(char const* const arg[FT_IO_NS fr_io_posix::FC_FILE_COUNT]);
+    int init_io_test(const fr_args & args);
 
     /**
      * initialize remapper to use self-test I/O.
      * return 0 if success, else error.
      */
-    int init_io_self_test();
+    int init_io_self_test(const fr_args & args);
 
     /**
      * perform actual work using configured I/O

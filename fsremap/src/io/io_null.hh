@@ -107,6 +107,13 @@ public:
     virtual int create_storage(ft_size secondary_len, ft_size buffer_len);
 
     /**
+     * call umount(8) on dev_path()
+     *
+     * implementation: do nothing and return success
+     */
+    virtual int umount_dev();
+
+    /**
      * write zeroes to primary storage.
      * used to remove primary-storage once relocation is finished
      * and clean the remaped file-system
