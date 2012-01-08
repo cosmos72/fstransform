@@ -57,13 +57,13 @@ public:
     FT_INLINE void job_storage_size(fr_storage_size which, ft_size len) { this_storage_size[which] = len; }
 
     /**
-     * return which free blocks to clear after relocation:
+     * return which free blocks to clear after remapping:
      * all, only blocks used as primary storage or renumbered device, or none
      */
     FT_INLINE fr_clear_free_space job_clear() const { return this_clear; }
 
     /**
-     * set which free blocks to clear after relocation:
+     * set which free blocks to clear after remapping:
      * all, only blocks used as primary storage or renumbered device, or none
      */
     FT_INLINE void job_clear(fr_clear_free_space clear) { this_clear = clear; }

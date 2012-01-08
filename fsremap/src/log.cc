@@ -120,8 +120,8 @@ void ff_log_register_range(FILE * f, ft_log_fmt format, ft_log_level min_level, 
 {
     /*
      * note 1.1)
-     * log subsystem is automatically initialized upon first call to
-     * ff_log(), ff_vlog(), ff_log_register() or ff_log_set_threshold().
+     * log subsystem is automatically initialized and configured upon first call to
+     * ff_log(), ff_vlog(), ff_log_register_range(), ff_log_unregister_range() or ff_log_set_threshold().
      */
     if (!this_log_initialized)
         ff_log_init();
@@ -138,6 +138,14 @@ void ff_log_register_range(FILE * f, ft_log_fmt format, ft_log_level min_level, 
  */
 void ff_log_unregister_range(FILE * f, ft_log_level min_level, ft_log_level max_level)
 {
+    /*
+     * note 1.1)
+     * log subsystem is automatically initialized and configured upon first call to
+     * ff_log(), ff_vlog(), ff_log_register_range(), ff_log_unregister_range() or ff_log_set_threshold().
+     */
+    if (!this_log_initialized)
+        ff_log_init();
+
     ft_size i = (ft_size) min_level, n = (ft_size) max_level;
     while (i <= n)
         this_log_stream[i++].erase(f);

@@ -632,13 +632,13 @@ int fr_io_posix::umount_dev()
     }
     args.push_back(NULL); // needed by ff_posix_exec() as end-of-arguments marker
 
-    ff_log(FC_NOTICE, 0, "unmounting %s '%s'... command: %s%s%s", label[FC_DEVICE],
+    ff_log(FC_INFO, 0, "unmounting %s '%s'... command: %s%s%s", label[FC_DEVICE],
            dev, cmd, arg0 != NULL ? " " : "", arg0 != NULL ? arg0 : "");
 
     int err = ff_posix_exec(args[0], & args[0]);
 
     if (err == 0)
-        ff_log(FC_NOTICE, 0, "successful unmounted %s '%s'", label[FC_DEVICE], dev);
+        ff_log(FC_NOTICE, 0, "successfully unmounted %s '%s'", label[FC_DEVICE], dev);
 
     if (tofree != NULL)
         ::free(tofree);
@@ -647,7 +647,7 @@ int fr_io_posix::umount_dev()
 
 
 /**
- * actually copy a list of fragments from DEVICE or FREE-STORAGE, to STORAGE to FREE-DEVICE.
+ * actually copy a list of fragments from DEVICE to STORAGE, or from STORAGE or DEVICE, or from DEVICE to DEVICE.
  * note: parameters are in bytes!
  * return 0 if success, else error.
  *
@@ -692,7 +692,7 @@ int fr_io_posix::copy_bytes(fr_dir dir, fr_vector<ft_uoff> & request_vec)
                 fr_extent<ft_uoff> & extent = request_vec[i];
                 if ((length = extent.length()) > (ft_uoff) buf_free)
                     break;
-                if ((err = copy_bytes(FC_POSIX_DEV2BUFFER, extent.physical(), (ft_uoff)(extent.user_data() = buf_offset), length)) != 0)
+                if ((err = copy_bytes(FC_POSIX_DEV2RAM, extent.physical(), (ft_uoff)(extent.user_data() = buf_offset), length)) != 0)
                     break;
                 buf_offset += (ft_size) length;
                 buf_free -= (ft_size) length;
@@ -706,7 +706,7 @@ int fr_io_posix::copy_bytes(fr_dir dir, fr_vector<ft_uoff> & request_vec)
 
                 for (i = start; err == 0 && i != save_i; ++i) {
                     fr_extent<ft_uoff> & extent = request_vec[i];
-                    if ((err = copy_bytes(FC_POSIX_BUFFER2DEV, (ft_uoff) extent.user_data(), extent.logical(), extent.length())) != 0)
+                    if ((err = copy_bytes(FC_POSIX_RAM2DEV, (ft_uoff) extent.user_data(), extent.logical(), extent.length())) != 0)
                         break;
                 }
                 if (err != 0)
@@ -728,8 +728,8 @@ int fr_io_posix::copy_bytes(fr_dir dir, fr_vector<ft_uoff> & request_vec)
                 while (length != 0) {
                     buf_length = (ft_size) ff_min2<ft_uoff>(length, buf_free);
 
-                    if ((err = copy_bytes(FC_POSIX_DEV2BUFFER, from_offset, buf_offset, buf_length)) != 0
-                        || (err = copy_bytes(FC_POSIX_BUFFER2DEV, buf_offset, to_offset, buf_length)) != 0
+                    if ((err = copy_bytes(FC_POSIX_DEV2RAM, from_offset, buf_offset, buf_length)) != 0
+                        || (err = copy_bytes(FC_POSIX_RAM2DEV, buf_offset, to_offset, buf_length)) != 0
                         || (err = flush_bytes()) != 0)
                         break;
 
@@ -755,14 +755,28 @@ int fr_io_posix::copy_bytes(fr_dir_posix dir, const fr_extent<ft_uoff> & request
     return copy_bytes(dir, request.physical(), request.logical(), request.length());
 }
 
+#undef ENABLE_CHECK_IF_MEM_IS_ZERO
+
+#ifdef ENABLE_CHECK_IF_MEM_IS_ZERO
+/** returns true if the specified memory range contains ONLY zeroes. */
+static bool fr_io_posix_mem_is_zero(const char * mem_address, ft_size mem_length) {
+    for (ft_size i = 0; i < mem_length; i++) {
+        if (mem_address[i] != 0)
+            return false;
+    }
+    return true;
+}
+#endif // ENABLE_CHECK_IF_MEM_IS_ZERO
+
+
 
 int fr_io_posix::copy_bytes(fr_dir_posix dir, ft_uoff from_offset, ft_uoff to_offset, ft_uoff length)
 {
     const bool use_storage = dir == FC_POSIX_DEV2STORAGE || dir == FC_POSIX_STORAGE2DEV;
-    const bool read_dev = dir == FC_POSIX_DEV2STORAGE || dir == FC_POSIX_DEV2BUFFER;
+    const bool read_dev = dir == FC_POSIX_DEV2STORAGE || dir == FC_POSIX_DEV2RAM;
 
     const char * label_dev   = label[FC_DEVICE];
-    const char * label_other = use_storage ? label[FC_STORAGE] : "buffer";
+    const char * label_other = use_storage ? label[FC_STORAGE] : "RAM";
     const char * label_from = read_dev ? label_dev : label_other;
     const char * label_to = read_dev ? label_other : label_dev;
 
@@ -786,11 +800,11 @@ int fr_io_posix::copy_bytes(fr_dir_posix dir, ft_uoff from_offset, ft_uoff to_of
     const bool simulated = simulate_run();
 
     if (ui() != NULL) {
-        if (dir != FC_POSIX_BUFFER2DEV) {
+        if (dir != FC_POSIX_RAM2DEV) {
             fr_from from = dir == FC_POSIX_STORAGE2DEV ? FC_FROM_STORAGE : FC_FROM_DEV;
             ui()->show_io_read(from, from_offset, length);
         }
-        if (dir!= FC_POSIX_DEV2BUFFER) {
+        if (dir!= FC_POSIX_DEV2RAM) {
             fr_to to = dir == FC_POSIX_DEV2STORAGE ? FC_TO_STORAGE : FC_TO_DEV;
             ui()->show_io_write(to, to_offset, length);
         }
@@ -802,19 +816,43 @@ int fr_io_posix::copy_bytes(fr_dir_posix dir, ft_uoff from_offset, ft_uoff to_of
                         label_dev, fd, (ft_ull)dev_offset);
                 break;
             }
-            if (read_dev)
-                err = ff_posix_read(fd, mmap_address + mem_offset, mem_length);
-            else
-                err = ff_posix_write(fd, mmap_address + mem_offset, mem_length);
+#define CURRENT_OP_FMT "from %s to %s, at %s({fd = %d, offset = %"FT_ULL"}, address + %"FT_ULL", length = %"FT_ULL")"
+#define CURRENT_OP_ARGS label_from, label_to, (read_dev ? "read" : "write"), fd, (ft_ull)dev_offset, (ft_ull)mem_offset, (ft_ull)mem_length
 
+#ifdef ENABLE_CHECK_IF_MEM_IS_ZERO
+# define CHECK_IF_MEM_IS_ZERO \
+            do { \
+                if (fr_io_posix_mem_is_zero(mmap_address + mem_offset, mem_length)) { \
+                    ff_log(FC_WARN, 0, "found an extent full of zeros %s " CURRENT_OP_FMT ". Stopping, press ENTER to continue.", \
+                           (read_dev ? "reading" : "writing"), CURRENT_OP_ARGS); \
+                    char ch; \
+                    (void) ff_posix_read(0, &ch, 1); \
+                } \
+            } while (0)
+
+#else // !ENABLE_CHECK_IF_MEM_IS_ZERO
+
+# define CHECK_IF_MEM_IS_ZERO do { } while (0)
+
+#endif // ENABLE_CHECK_IF_MEM_IS_ZERO
+            
+            if (read_dev) {
+                err = ff_posix_read(fd, mmap_address + mem_offset, mem_length);
+                if (err == 0) {
+                    CHECK_IF_MEM_IS_ZERO;
+                }
+            } else {
+                CHECK_IF_MEM_IS_ZERO;
+                err = ff_posix_write(fd, mmap_address + mem_offset, mem_length);
+            }
             if (err != 0) {
-                err = ff_log(FC_ERROR, err, "I/O error in %s to %s %s({fd = %d, offset = %"FT_ULL"}, address + %"FT_ULL", length = %"FT_ULL")",
-                             label_from, label_to, (read_dev ? "read" : "write"), fd, (ft_ull)dev_offset, (ft_ull)mem_offset, (ft_ull)mem_length);
+                err = ff_log(FC_ERROR, err, "I/O error while %s " CURRENT_OP_FMT,
+                             (read_dev ? "reading" : "writing"), CURRENT_OP_ARGS); \
                 break;
             }
         }
-        ff_log(FC_TRACE, 0, "%s%s to %s %s({fd = %d, offset = %"FT_ULL"}, address + %"FT_ULL", length = %"FT_ULL") = ok",
-               (simulated ? "SIMULATED " : ""), label_from, label_to, (read_dev ? "read" : "write"), fd, (ft_ull)dev_offset, (ft_ull)mem_offset, (ft_ull)mem_length);
+        ff_log(FC_TRACE, 0, "%scopy " CURRENT_OP_FMT " = ok",
+               (simulated ? "SIMULATED " : ""), CURRENT_OP_ARGS);
     } while (0);
     return err;
 }
@@ -827,8 +865,8 @@ int fr_io_posix::validate(const char * type_name, ft_uoff type_max, fr_dir_posix
     switch (dir2) {
         case FC_POSIX_STORAGE2DEV: dir = FC_STORAGE2DEV; break;
         case FC_POSIX_DEV2STORAGE: dir = FC_DEV2STORAGE; break;
-        case FC_POSIX_DEV2BUFFER:
-        case FC_POSIX_BUFFER2DEV:  dir = FC_DEV2DEV;     break;
+        case FC_POSIX_DEV2RAM:
+        case FC_POSIX_RAM2DEV:     dir = FC_DEV2DEV;     break;
         default:                   dir = FC_INVALID2INVALID; break;
     }
     return super_type::validate(type_name, type_max, dir, from, to, length);
@@ -892,7 +930,7 @@ int fr_io_posix::msync_bytes(const fr_extent<ft_uoff> & extent) const
 
 /**
  * write zeroes to device (or to storage).
- * used to remove device-renumbered blocks once relocation is finished
+ * used to remove device-renumbered blocks once remapping is finished
  */
 int fr_io_posix::zero_bytes(fr_to to, ft_uoff offset, ft_uoff length)
 {
@@ -945,7 +983,7 @@ int fr_io_posix::zero_bytes(fr_to to, ft_uoff offset, ft_uoff length)
 
 /**
  * write zeroes to primary storage.
- * used to remove primary-storage once relocation is finished
+ * used to remove primary-storage once remapping is finished
  * and clean the remaped file-system
  */
 int fr_io_posix::zero_primary_storage()

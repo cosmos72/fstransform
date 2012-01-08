@@ -157,7 +157,7 @@ protected:
 
     /**
      * write zeroes to device (or to storage).
-     * used to remove device-renumbered blocks once relocation is finished
+     * used to remove device-renumbered blocks once remapping is finished
      */
     virtual int zero_bytes(fr_to to, ft_uoff offset, ft_uoff length) = 0;
 
@@ -220,13 +220,13 @@ public:
     FT_INLINE void job_storage_size(fr_storage_size which, ft_size len) { this_job.job_storage_size(which, len); }
 
     /**
-     * return which free blocks to clear after relocation:
+     * return which free blocks to clear after remapping:
      * all, only blocks used as primary storage or renumbered device, or none
      */
     FT_INLINE fr_clear_free_space job_clear() const { return this_job.job_clear(); }
 
     /**
-     * set which free blocks to clear after relocation:
+     * set which free blocks to clear after remapping:
      * all, only blocks used as primary storage or renumbered device, or none
      */
     FT_INLINE void job_clear(fr_clear_free_space clear) { this_job.job_clear(clear); }
@@ -328,7 +328,7 @@ public:
 
     /**
      * write zeroes to device (or to storage).
-     * used to remove device-renumbered blocks once relocation is finished
+     * used to remove device-renumbered blocks once remapping is finished
      * and clean the remaped file-system
      */
     template<typename T>
@@ -345,7 +345,7 @@ public:
 
     /**
      * write zeroes to primary storage.
-     * used to remove primary-storage once relocation is finished
+     * used to remove primary-storage once remapping is finished
      * and clean the remaped file-system
      */
     virtual int zero_primary_storage() = 0;

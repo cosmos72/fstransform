@@ -11,7 +11,8 @@
 #include "check.hh"
 
 #include <stddef.h>      // for size_t
-#include <linux/types.h> // for __u32, __u64
+#include <stdint.h>      // for uint64_t
+
 #include <sys/types.h>   // for off_t, pid_t, mode_t, ino_t
 #include <sys/stat.h>    // for struct stat
 #include <unistd.h>      //  "    "     "
@@ -26,7 +27,7 @@ typedef size_t ft_size;
 typedef off_t  ft_off;
 
 // ft_u64 must be exactly 64-bit unsigned integer. only used for ioctl(FS_IOC_FIEMAP), ioctl(BLKGETSIZE64)
-typedef __u64  ft_u64;
+typedef uint64_t ft_u64;
 
 // ft_dev is the type used for ID of block devices. when dev_t exists, they must be the same type
 typedef dev_t  ft_dev;

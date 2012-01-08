@@ -24,7 +24,7 @@ FT_IO_NAMESPACE_BEGIN
 
 
 char const * const fr_io::label[] = {
-        "device", "loop-file", "zero-file", "secondary-storage", "primary-storage", "storage", "free-space"
+        "DEVICE", "LOOP-FILE", "ZERO-FILE", "secondary-storage", "primary-storage", "storage", "free-space"
 };
 
 
@@ -73,6 +73,8 @@ void fr_io::close()
     this_dev_length = this_eff_block_size_log2 = 0;
     this_dev_path = NULL;
 }
+
+
 
 /** compute and return log2() of effective block size and remember it */
 ft_uoff fr_io::effective_block_size_log2(ft_uoff block_size_bitmask)

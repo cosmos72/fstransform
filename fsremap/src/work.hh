@@ -163,7 +163,7 @@ private:
 
 
     /** show progress status and E.T.A. */
-    void show_progress();
+    void show_progress(ft_log_level log_level, const char * simul_msg);
 
 public:
     /** default constructor */

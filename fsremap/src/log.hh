@@ -21,7 +21,7 @@ FT_NAMESPACE_BEGIN
 /**
  * note 1.1)
  * log subsystem is automatically initialized and configured upon first call to
- * ff_log(), ff_vlog(), ff_log_register() or ff_log_set_threshold().
+ * ff_log(), ff_vlog(), ff_log_register_range(), ff_log_unregister_range() or ff_log_set_threshold().
  *
  * automatic configuration is:
  * print to stderr all INFO and NOTICE messages, with format FC_FMT_MSG

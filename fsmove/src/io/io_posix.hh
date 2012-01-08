@@ -163,6 +163,12 @@ private:
     /** remove a source directory, which must be empty */
     int remove_dir(const ft_string & path);
 
+    /**
+     * return true if path is the target directory lost+found.
+     * Treated specially because it is allowed to exist already.
+     */
+    bool is_lost_found(const ft_string & path) const;
+
 public:
     /** constructor */
     fm_io_posix();

@@ -77,7 +77,7 @@ protected:
 
     /**
      * write zeroes to device (or to storage).
-     * used to remove device-renumbered blocks once relocation is finished
+     * used to remove device-renumbered blocks once remapping is finished
      *
      * implementation: do nothing and return success
      */
@@ -115,7 +115,7 @@ public:
 
     /**
      * write zeroes to primary storage.
-     * used to remove primary-storage once relocation is finished
+     * used to remove primary-storage once remapping is finished
      * and clean the remaped file-system
      *
      * implementation: do nothing and return success

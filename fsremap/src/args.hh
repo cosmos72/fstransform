@@ -32,7 +32,7 @@ public:
     fr_io_kind io_kind;      // if 0, will autodetect
     fr_ui_kind ui_kind;
     bool force_run;          // if true, some sanity checks will be WARNINGS instead of ERRORS
-    bool simulate_run;       // if true, relocation algorithm runs WITHOUT reading or writing device blocks
+    bool simulate_run;       // if true, remapping algorithm runs WITHOUT reading or writing device blocks
 
     fr_args();
 };

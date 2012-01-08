@@ -98,7 +98,7 @@ int fr_job::init(const fr_args & args)
         if ((err = FT_IO_NS ff_mkdir(path)) == 0
                 && (err = init_log()) == 0)
         {
-            ff_log(FC_NOTICE, 0, "starting job %"FT_ULL, (ft_ull)i);
+            ff_log(FC_NOTICE, 0, "fsremap: starting job %"FT_ULL, (ft_ull)i);
             ff_log(FC_INFO, 0, "job persistent data and logs will be in '%s'", path);
             break;
         }

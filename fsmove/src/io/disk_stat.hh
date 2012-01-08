@@ -20,7 +20,7 @@ class fm_disk_stat {
 
 private:
     enum {
-        _1Mbyte = (ft_uoff)1 << 20,
+        _96kbytes = (ft_uoff)96 << 10,
         _1Gbyte = (ft_uoff)1 << 30
     };
 
@@ -29,12 +29,13 @@ private:
 
 public:
     /**
-     * if file system is smaller than 64GB, critically low free space is THRESHOLD_MIN (1Mbyte).
-     * if file system is between 64GB and 64TB, critically low free space is total disk space divided 65536 (i.e. 0.0015%).
-     * if file system is larger than 64TB, critically low free space is THRESHOLD_MAX (1Gbyte).
+     * if file systems is smaller than 6GB, critically low free space is 96kbytes.
+     * if file systems is between 6GB and 64TB, critically low free space is total disk space divided 65536 (i.e. 0.0015%).
+     * if file systems is larger than 64TB, critically low free space is 1Gbyte.
      */
     enum {
-        THRESHOLD_MIN = _1Mbyte,
+        // THRESHOLD_MIN must be somewhat larger than fm_io_posix::FT_BUFSIZE (currently 64k)
+        THRESHOLD_MIN = _96kbytes,
         THRESHOLD_MAX = _1Gbyte,
     };
     /** constructor */

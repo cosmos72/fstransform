@@ -39,8 +39,8 @@ private:
     enum fr_dir_posix {
         FC_POSIX_STORAGE2DEV,
         FC_POSIX_DEV2STORAGE,
-        FC_POSIX_DEV2BUFFER,
-        FC_POSIX_BUFFER2DEV,
+        FC_POSIX_DEV2RAM,
+        FC_POSIX_RAM2DEV,
     };
 
 
@@ -104,16 +104,16 @@ protected:
     int create_secondary_storage(ft_size secondary_len);
 
     /**
-     * actually copy a list of fragments from DEVICE or FREE-STORAGE, to STORAGE to FREE-DEVICE.
+     * actually copy a list of fragments from DEVICE to STORAGE, or from STORAGE or DEVICE, or from DEVICE to DEVICE.
      * note: parameters are in bytes!
      * return 0 if success, else error.
      */
     virtual int copy_bytes(fr_dir dir, fr_vector<ft_uoff> & request_vec);
 
-    /** internal method called by copy_bytes() to read/write from DEVICE to mmapped() memory (either BUFFER or STORAGE) */
+    /** internal method called by copy_bytes() to read/write from DEVICE to mmapped() memory (either RAM or STORAGE) */
     int copy_bytes(fr_dir_posix dir2, const fr_extent<ft_uoff> & request);
 
-    /** internal method called by copy_bytes() to read/write from DEVICE to mmapped() memory (either BUFFER or STORAGE) */
+    /** internal method called by copy_bytes() to read/write from DEVICE to mmapped() memory (either RAM or STORAGE) */
     int copy_bytes(fr_dir_posix dir, ft_uoff from, ft_uoff to, ft_uoff length);
 
 
@@ -131,7 +131,7 @@ protected:
 
     /**
      * write zeroes to device (or to storage).
-     * used to remove device-renumbered blocks once relocation is finished
+     * used to remove device-renumbered blocks once remapping is finished
      */
     virtual int zero_bytes(fr_to to, ft_uoff offset, ft_uoff length);
 
@@ -171,7 +171,7 @@ public:
 
     /**
      * write zeroes to primary storage.
-     * used to remove primary-storage once relocation is finished
+     * used to remove primary-storage once remapping is finished
      * and clean the remaped file-system
      */
     virtual int zero_primary_storage();

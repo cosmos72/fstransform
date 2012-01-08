@@ -10,10 +10,6 @@
 #include <cstring>        // for memmove()
 #include <cstdio>         // for fprintf(), stdout, stderr
 
-#ifdef FT_HAVE_UMOUNT
-#  include <sys/mount.h>  // for umount()
-#endif
-
 #include "assert.hh"      // for ff_assert()
 #include "log.hh"         // for ff_log()
 #include "vector.hh"      // for fr_vector<T>
@@ -351,7 +347,7 @@ int fr_work<T>::analyze(fr_vector<ft_uoff> & loop_file_extents,
                 ++iter;
         }
     }
-    show("to-clear", " (initial)", eff_block_size, toclear_map);
+    show("to-clear", " (initial)", eff_block_size, toclear_map, FC_DEBUG);
     show(label[FC_FREE_SPACE], " (after to-clear)", eff_block_size, dev_free);
 
 
@@ -439,7 +435,7 @@ int fr_work<T>::analyze(fr_vector<ft_uoff> & loop_file_extents,
     if (io->job_clear() == FC_CLEAR_MINIMAL) {
         /*
          * also add DEVICE (RENUMBERED) to TO-CLEAR-MAP:
-         * we will clear it once relocation is finished
+         * we will clear it once remapping is finished
          * WARNING: beware of intersections,
          * and be careful to use dev_map->logical instead of dev_map->physical!
          */
@@ -454,7 +450,7 @@ int fr_work<T>::analyze(fr_vector<ft_uoff> & loop_file_extents,
             toclear_map.insert(extent.first.physical, extent.first.physical, extent.second.length, FC_DEFAULT_USER_DATA);
         }
         dev_transpose.clear();
-        show("to-clear", " (final)", eff_block_size, toclear_map);
+        show("to-clear", " (final)", eff_block_size, toclear_map, FC_DEBUG);
     }
 
 
@@ -558,7 +554,7 @@ int fr_work<T>::analyze(fr_vector<ft_uoff> & loop_file_extents,
         map_value_type & extent = *iter;
         /*
          * whether this hole (extent from dev_free) is large enough to be useful or not,
-         * it is invariant free space. the current relocation algorithm will never use it,
+         * it is invariant free space. the current remapping algorithm will never use it,
          * so remove it from free space to get accurate calculation of usable free space.
          */
         dev_free.remove(extent);
@@ -919,18 +915,20 @@ int fr_work<T>::relocate()
     const char * simul_msg = simulated ? "SIMULATED " : "";
 
     if (!simulated) {
-        ff_log(FC_NOTICE, 0, "everything ready for relocation");
 
-        if ((err = io->umount_dev()) != 0)
-        {
+    	if (io->umount_dev() == 0) {
+            ff_log(FC_NOTICE, 0, "everything ready for in-place remapping, this is your LAST chance to quit.");
+            ff_log(FC_WARN, 0, "press RETURN to proceed, or CTRL+C to quit");
+        } else {
             ff_log(FC_WARN, 0, "please manually unmount %s '%s' before continuing.", label[FC_DEVICE], dev_path);
             ff_log(FC_WARN, 0, "press RETURN when done, or CTRL+C to quit");
-            char ch;
-            err = read(0, &ch, 1) < 0 ? errno : 0;
         }
+        char ch;
+        if (::read(0, &ch, 1) < 0)
+        	return ff_log(FC_ERROR, errno, "read(stdin) failed");
     }
 
-    ff_log(FC_NOTICE, 0, "%srelocation starting. this may take a LONG time ...", simul_msg);
+    ff_log(FC_NOTICE, 0, "%sstarting in-place remapping. this may take a LONG time ...", simul_msg);
 
     ft_uoff eff_block_size_log2 = io->effective_block_size_log2();
 
@@ -959,27 +957,27 @@ int fr_work<T>::relocate()
 
     while (err == 0 && !(dev_map.empty() && storage_map.empty())) {
         if (!dev_map.empty() && !storage_free.empty()) {
-            show_progress();
+            show_progress(FC_INFO, simul_msg);
             err = fill_storage();
         }
         if (err == 0 && !dev_map.empty()) {
-            show_progress();
+            show_progress(FC_NOTICE, simul_msg);
             err = move_to_target(FC_FROM_DEV);
         }
         if (err == 0 && !storage_map.empty()) {
-            show_progress();
+            show_progress(FC_INFO, simul_msg);
             err = move_to_target(FC_FROM_STORAGE);
         }
     }
     if (err == 0)
-        ff_log(FC_INFO, 0, "%sblocks relocation completed.", simul_msg);
+        ff_log(FC_INFO, 0, "%sblocks remapping completed.", simul_msg);
 
     return err;
 }
 
 /* show progress status and E.T.A. */
 template<typename T>
-void fr_work<T>::show_progress()
+void fr_work<T>::show_progress(ft_log_level log_level, const char * simul_msg)
 {
      const ft_uoff eff_block_size_log2 = io->effective_block_size_log2();
 
@@ -998,13 +996,15 @@ void fr_work<T>::show_progress()
         if (eta_time >= 0) {
             const char * eta_time_label = ff_pretty_time(eta_time, & eta_time);
             ft_ull eta_time_ull = (ft_ull)(eta_time + 0.5);
-            ff_log(FC_NOTICE, 0, "progress: %4.1f%% done, %.2f %sbytes still to relocate, estimated %"FT_ULL" %s%s left",
-                   percentage, pretty_len, pretty_label, eta_time_ull, eta_time_label, (eta_time_ull != 1 ? "s": ""));
+            ff_log(log_level, 0, "%sprogress: %4.1f%% done, %.2f %sbytes still to relocate, estimated %"FT_ULL" %s%s left",
+                   simul_msg, percentage, pretty_len, pretty_label, eta_time_ull, eta_time_label, (eta_time_ull != 1 ? "s": ""));
         } else
-            ff_log(FC_NOTICE, 0, "progress: %4.1f%% done, %.2f %sbytes still to relocate", percentage, pretty_len, pretty_label);
+            ff_log(log_level, 0, "%sprogress: %4.1f%% done, %.2f %sbytes still to relocate",
+		   simul_msg, percentage, pretty_len, pretty_label);
 
     } else
-        ff_log(FC_NOTICE, 0, "progress: %.2f %sbytes left to relocate", pretty_len, pretty_label);
+        ff_log(log_level, 0, "%sprogress: %.2f %sbytes left to relocate",
+	       simul_msg, pretty_len, pretty_label);
 
 
     const ft_uoff eff_block_size = (ft_uoff)1 << eff_block_size_log2;
@@ -1290,11 +1290,25 @@ int fr_work<T>::clear_free_space()
         end = toclear_map.end();
         for (; iter != end; ++iter) {
             const map_value_type & extent = *iter;
-            if ((err = io->zero(FC_TO_DEV, extent.first.physical, extent.second.length)) != 0)
+            if (extent.first.physical == 0) {
+                ff_log(FC_FATAL, 0, "PANIC! this is a BUG in fsremap! tried to clear first block of remapped device!");
+                ff_log(FC_FATAL, 0, "\tABORTED clearing %s free space to prevent filesystem corruption.", label[FC_DEVICE]);
+                ff_log(FC_FATAL, 0, "\tSuspending process to allow debugging... press ENTER or CTRL+C to quit.");
+                char ch;
+                (void) ::read(0, &ch, 1);
+                
+                err = -EFAULT;
+                break;
+
+            } else if ((err = io->zero(FC_TO_DEV, extent.first.physical, extent.second.length)) != 0)
                 break;
         }
-        if ((err = io->flush()) != 0)
+        int err2;
+        if ((err2 = io->flush()) != 0) {
+            if (err == 0)
+                err = err2;
             break;
+        }
 
         ff_log(FC_INFO, 0, "%s%s %s cleared", sim_msg, label[FC_DEVICE],
                job_clear == FC_CLEAR_NONE ? "UNWRITTEN blocks" : job_clear == FC_CLEAR_MINIMAL ? "temporary data" : label[FC_FREE_SPACE]);
