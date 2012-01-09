@@ -875,7 +875,7 @@ int fm_io_posix::create_dir(const ft_string & path, const ft_stat & stat)
             /* if force_run(), always ignore EEXIST error: any target directory is allowed to exist already */
 	    /* in any case, we also allow target directory lost+found to exist already */
             bool is_warn = err == EEXIST && (force_run() || is_lost_found(path));
-            err = ff_log(is_warn ? FC_WARN : FC_ERROR, err, "%sfailed to create target directory `%s'", is_warn ? "warning: " : "", dir);
+            err = ff_log(is_warn ? FC_WARN : FC_ERROR, err, "failed to create target directory `%s'", dir);
             if (!is_warn)
                 break;
         }

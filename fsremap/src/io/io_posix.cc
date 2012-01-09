@@ -536,7 +536,7 @@ int fr_io_posix::create_secondary_storage(ft_size len)
         const char * pretty_label = ff_pretty_size(len, & pretty_len);
         const bool simulated = simulate_run();
 
-        ff_log(FC_INFO, 0, "%s:%s writing %.2f %sbytes to '%s' ...", label[j], (simulated ? " SIMULATED" : ""), pretty_len, pretty_label, path);
+        ff_log(FC_INFO, 0, "%s:%s writing %.2f %sbytes to '%s' ...", label[j], (simulated ? " (simulated)" : ""), pretty_len, pretty_label, path);
 
         if (simulated) {
             if ((err = ff_posix_lseek(fd[j], len - 1)) != 0) {
@@ -578,7 +578,7 @@ int fr_io_posix::create_secondary_storage(ft_size len)
         extent.physical() = extent.logical() = 0;
         extent.length() = len;
 
-        ff_log(FC_INFO, 0, "%s:%s file created", label[j], (simulated ? " SIMULATED" : ""));
+        ff_log(FC_INFO, 0, "%s:%s file created", label[j], (simulated ? " (simulated)" : ""));
 
     } while (0);
 
@@ -852,7 +852,7 @@ int fr_io_posix::copy_bytes(fr_dir_posix dir, ft_uoff from_offset, ft_uoff to_of
             }
         }
         ff_log(FC_TRACE, 0, "%scopy " CURRENT_OP_FMT " = ok",
-               (simulated ? "SIMULATED " : ""), CURRENT_OP_ARGS);
+               (simulated ? "(simulated) " : ""), CURRENT_OP_ARGS);
     } while (0);
     return err;
 }

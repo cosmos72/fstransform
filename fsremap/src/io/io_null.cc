@@ -16,7 +16,7 @@ FT_IO_NAMESPACE_BEGIN
 
 char const * const ft_io_null::extents_label[ft_io_null::FC_FILE_COUNT] = { "DEVICE-LENGTH", "LOOP-EXTENTS", "FREE-SPACE-EXTENTS" };
 
-char const * const ft_io_null::sim_msg = "SIMULATED ";
+char const * const ft_io_null::sim_msg = "(simulated) ";
 
 
 /** constructor */

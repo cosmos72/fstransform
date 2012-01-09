@@ -78,7 +78,7 @@ int fr_job::init(const fr_args & args)
 
     this_dir += "/job.";
     ft_size len = this_dir.size();
-    ft_uint i, job_min = 1, job_max = (ft_uint)-1;
+    ft_uint i, job_min = 1, job_max = 999999;
     int err = 0;
 
     if (args.job_id != 0)

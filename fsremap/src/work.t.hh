@@ -147,7 +147,7 @@ int fr_work<T>::run(fr_vector<ft_uoff> & loop_file_extents,
         && (err = close_storage()) == 0;
 
     if (err == 0) {
-        ff_log(FC_NOTICE, 0, "%sremapping completed.", io.simulate_run() ? "SIMULATED " : "");
+        ff_log(FC_NOTICE, 0, "%sremapping completed.", io.simulate_run() ? "(simulated) " : "");
 
     } else if (!ff_log_is_reported(err)) {
         /*
@@ -912,16 +912,16 @@ int fr_work<T>::relocate()
     const char * dev_path = io->dev_path();
     int err = 0;
     const bool simulated = io->simulate_run();
-    const char * simul_msg = simulated ? "SIMULATED " : "";
+    const char * simul_msg = simulated ? "(simulated) " : "";
 
     if (!simulated) {
 
     	if (io->umount_dev() == 0) {
             ff_log(FC_NOTICE, 0, "everything ready for in-place remapping, this is your LAST chance to quit.");
-            ff_log(FC_WARN, 0, "press RETURN to proceed, or CTRL+C to quit");
+            ff_log(FC_WARN, 0, "press ENTER to proceed, or CTRL+C to quit");
         } else {
             ff_log(FC_WARN, 0, "please manually unmount %s '%s' before continuing.", label[FC_DEVICE], dev_path);
-            ff_log(FC_WARN, 0, "press RETURN when done, or CTRL+C to quit");
+            ff_log(FC_WARN, 0, "press ENTER when done, or CTRL+C to quit");
         }
         char ch;
         if (::read(0, &ch, 1) < 0)
@@ -1025,7 +1025,7 @@ int fr_work<T>::fill_storage()
     map_iterator from_iter = dev_map.begin(), from_pos, from_end = dev_map.end();
     T moved = 0, from_used_count = dev_map.used_count(), to_free_count = storage_map.free_count();
     const bool simulated = io->simulate_run();
-    const char * simul_msg = simulated ? "SIMULATED " : "";
+    const char * simul_msg = simulated ? "(simulated) " : "";
 
     double pretty_len = 0.0;
     const char * pretty_label = ff_pretty_size((ft_uoff)ff_min2<T>(from_used_count, to_free_count)
@@ -1182,7 +1182,7 @@ int fr_work<T>::move_to_target(fr_from from)
     const fr_dir dir = from == FC_FROM_DEV ? FC_DEV2DEV : FC_STORAGE2DEV;
     int err = 0;
     const bool simulated = io->simulate_run();
-    const char * simul_msg = simulated ? "SIMULATED " : "";
+    const char * simul_msg = simulated ? "(simulated) " : "";
 
     /* find all DEVICE or STORAGE extents that can be moved to their final destination into DEVICE free space */
     movable.intersect_all_all(from_transpose, dev_free, FC_PHYSICAL1);
@@ -1255,7 +1255,7 @@ int fr_work<T>::move_to_target(fr_from from)
 template<typename T>
 int fr_work<T>::clear_free_space()
 {
-    const char * sim_msg = io->simulate_run() ? "SIMULATED " : "";
+    const char * sim_msg = io->simulate_run() ? "(simulated) " : "";
     int err = 0;
     fr_clear_free_space job_clear = io->job_clear();
 

@@ -29,7 +29,7 @@ public:
     };
 
     static char const * const extents_label[]; // DEVICE-LENGTH, LOOP-EXTENTS and FREE-SPACE-EXTENTS
-    static char const * const sim_msg; // "SIMULATED "
+    static char const * const sim_msg; // "(simulated) "
 
 private:
     typedef fr_io super_type;

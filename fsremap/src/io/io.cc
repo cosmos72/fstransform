@@ -24,7 +24,7 @@ FT_IO_NAMESPACE_BEGIN
 
 
 char const * const fr_io::label[] = {
-        "DEVICE", "LOOP-FILE", "ZERO-FILE", "secondary-storage", "primary-storage", "storage", "free-space"
+        "device", "loop-file", "zero-file", "secondary-storage", "primary-storage", "storage", "free-space"
 };
 
 
