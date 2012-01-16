@@ -541,10 +541,8 @@ int fr_remap::init_io_self_test(const fr_args & args)
 
 int fr_remap::pre_init_io()
 {
-    int err;
-    if ((err = check_is_closed()) != 0)
-        ;
-    else if (this_job == NULL) {
+    int err = check_is_closed();
+    if (err == 0 && this_job == NULL) {
         ff_log(FC_ERROR, 0, "error: cannot start I/O subsystem, job must be initialized first");
         err = -ENOTCONN;
     }

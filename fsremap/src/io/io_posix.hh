@@ -108,13 +108,13 @@ protected:
      * note: parameters are in bytes!
      * return 0 if success, else error.
      */
-    virtual int copy_bytes(fr_dir dir, fr_vector<ft_uoff> & request_vec);
+    virtual int flush_copy_bytes(fr_dir dir, fr_vector<ft_uoff> & request_vec);
 
-    /** internal method called by copy_bytes() to read/write from DEVICE to mmapped() memory (either RAM or STORAGE) */
-    int copy_bytes(fr_dir_posix dir2, const fr_extent<ft_uoff> & request);
+    /** internal method called by flush_copy_bytes() to read/write from DEVICE to mmapped() memory (either RAM or STORAGE) */
+    int flush_copy_bytes(fr_dir_posix dir2, const fr_extent<ft_uoff> & request);
 
-    /** internal method called by copy_bytes() to read/write from DEVICE to mmapped() memory (either RAM or STORAGE) */
-    int copy_bytes(fr_dir_posix dir, ft_uoff from, ft_uoff to, ft_uoff length);
+    /** internal method called by flush_copy_bytes() to read/write from DEVICE to mmapped() memory (either RAM or STORAGE) */
+    int flush_copy_bytes(fr_dir_posix dir, ft_uoff from, ft_uoff to, ft_uoff length);
 
 
 

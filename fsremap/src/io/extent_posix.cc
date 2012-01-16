@@ -133,7 +133,7 @@ static int ff_posix_fibmap(int fd, ft_uoff dev_length, fr_vector<ft_uoff> & ret_
 
 
 #ifdef FS_IOC_FIEMAP
-static int ff_linux_fiemap_ioctl(int fd, ft_uoff file_length, ft_size extent_n, struct fiemap ** ret_k_map) {
+static int ff_linux_fiemap_ioctl(int fd, ft_uoff file_length, ft_u32 extent_n, struct fiemap ** ret_k_map) {
     struct fiemap * k_map;
     ft_size k_len = sizeof(struct fiemap) + extent_n * sizeof(struct fiemap_extent);
     int err = 0;
@@ -141,9 +141,9 @@ static int ff_linux_fiemap_ioctl(int fd, ft_uoff file_length, ft_size extent_n, 
     do {
         k_map = (struct fiemap *) malloc(k_len);
         if (k_map == NULL) {
-            ff_log(FC_DEBUG, 0, "malloc(%"FT_ULL") failed (%s), falling back on ioctl(FIBMAP) ...", fd, (ft_ull) k_len, strerror(err));
-            /* do not mark the error as reported, this is just a DEBUG message */
             err = ENOMEM; /* Out of memory */
+            /* do not mark the error as reported, this is just a DEBUG message */
+            ff_log(FC_DEBUG, 0, "malloc(%"FT_ULL") failed (%s), falling back on ioctl(FIBMAP) ...", (ft_ull) k_len, strerror(err));
             break;
         }
         memset(k_map, 0, k_len);
@@ -187,23 +187,61 @@ static int ff_linux_fiemap(int fd, fr_vector<ft_uoff> & ret_list, ft_uoff & ret_
     struct fiemap * k_map = NULL;
     struct fiemap_extent * k_extent;
     ft_uoff file_length, block_size_bitmask = ret_block_size_bitmask;
-    ft_size i, extent_n = 0;
+    ft_u32 i, extent_n = 0;
     int err;
 
     do {
-        if ((err = ff_posix_size(fd, & file_length)))
+        if ((err = ff_posix_size(fd, & file_length)) || file_length == 0)
             break;
 
-        /* first pass: call ioctl() and ask how many extents are needed */
-        if ((err = ff_linux_fiemap_ioctl(fd, file_length, extent_n, & k_map)))
-            break;
+        /*
+         * first pass: call ioctl() and ask how many extents are needed
+         *
+         * second and further passes: allocate enough extents and call ioctl()
+         * with progressively larger buffers until we retrieve all extents
+         */
+        while ((err = ff_linux_fiemap_ioctl(fd, file_length, extent_n, & k_map)) == 0) {
 
-        extent_n = k_map->fm_mapped_extents;
-        free(k_map);
-        k_map = NULL;
+            ft_u32 ret_extent_n = k_map->fm_mapped_extents;
+            
+        if (ret_extent_n != 0 && extent_n != 0 && k_map->fm_extent_count != 0) {
+                k_extent = k_map->fm_extents;
+                if (k_extent[ret_extent_n - 1].fe_flags & FIEMAP_EXTENT_LAST) {
+                    /* ok, we really got all the extents */
+                    break;
+                }
+            }
+            /*
+             * no FIEMAP_EXTENT_LAST found, we did not get all the extents :(
+             * 
+             * enlarge the array and try again.
+             * if extent_n == 0 (first pass), use kernel-suggested length k_map->fm_mapped_extents
+             * otherwise increase extent_n exponentially.
+             */
+            free(k_map);
+            k_map = NULL;
 
-        /* second pass: allocate enough extents and call ioctl() again to retrieve them */
-        if ((err = ff_linux_fiemap_ioctl(fd, file_length, extent_n, & k_map)))
+            if (extent_n == 0) {
+                if ((extent_n = ret_extent_n) <= 1024)
+                    extent_n = 1024;
+            } else if (ret_extent_n < extent_n) {
+                ff_log(FC_WARN, 0, "ff_linux_fiemap(%d) is refusing to return more than %"FT_ULL" extents in a single call, falling back on ioctl(FIBMAP) ...", fd, (ft_ull) ret_extent_n);
+                /* mark the error as reported, WARN is quite a severe level */
+                err = -ENOSYS; /* ioctl(FS_IOC_FIEMAP) not working as expected... */
+                break;
+            } else if (extent_n <= ((ft_u32)-1) >> 1)
+                extent_n <<= 1;
+            else if (extent_n < (ft_u32)-1)
+                extent_n = (ft_u32)-1;
+            else {
+                ff_log(FC_DEBUG, 0, "ff_linux_fiemap(%d) tried with extents[MAX_UINT32_T-1] but was not enough, falling back on ioctl(FIBMAP) ...", fd);
+                /* do not mark the error as reported, this is just a DEBUG message */
+                err = ENOMEM; /* Out of memory */
+                break;
+            }
+            /* keep trying */
+        }
+        if (err)
             break;
 
         extent_n = k_map->fm_mapped_extents;
@@ -214,13 +252,14 @@ static int ff_linux_fiemap(int fd, fr_vector<ft_uoff> & ret_list, ft_uoff & ret_
          * and computing an effective block size
          */
         for (i = 0; i < extent_n; i++) {
-            if (k_extent[i].fe_flags & (FIEMAP_EXTENT_UNKNOWN | FIEMAP_EXTENT_ENCODED)) {
-
+            ft_u32 flag = k_extent[i].fe_flags & (FIEMAP_EXTENT_UNKNOWN | FIEMAP_EXTENT_ENCODED);
+            
+            if (flag) {
                 ff_log(FC_DEBUG, 0, "ioctl(%d, FIEMAP, extents[%"FT_ULL"]) returned unsupported %s%s%s extents, falling back on ioctl(FIBMAP) ...",
                        fd, (ft_ull)extent_n,
-                       (k_extent[i].fe_flags & FIEMAP_EXTENT_UNKNOWN ? "UNKNOWN" : ""),
-                       ((k_extent[i].fe_flags & (FIEMAP_EXTENT_UNKNOWN|FIEMAP_EXTENT_ENCODED)) == (FIEMAP_EXTENT_UNKNOWN|FIEMAP_EXTENT_ENCODED) ? " + " : ""),
-                       (k_extent[i].fe_flags & FIEMAP_EXTENT_ENCODED ? "ENCODED" : "")
+                       (flag & FIEMAP_EXTENT_UNKNOWN ? "UNKNOWN" : ""),
+                       (flag == (FIEMAP_EXTENT_UNKNOWN|FIEMAP_EXTENT_ENCODED) ? " + " : ""),
+                       (flag & FIEMAP_EXTENT_ENCODED ? "ENCODED" : "")
                 );
                 /* do not mark the error as reported, this is just a DEBUG message */
                 err = ENOSYS;

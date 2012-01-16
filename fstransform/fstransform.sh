@@ -1,6 +1,7 @@
 #!/bin/dash
 
 PROG=fstransform
+PROG_VERSION=0.3.5
 ____='           '
 
 
@@ -8,6 +9,9 @@ BOOT_CMD_which=which
 
 CMDS_bootstrap="which expr id"
 CMDS="blockdev losetup mount umount mkdir rmdir rm mkfifo dd sync fsck mkfs fsmove fsremap"
+# commands that may need different variants for source and target filesystems
+CMDS_dual="fsck"
+# commands not found in environment
 CMDS_missing=
 
 # start with a clean environment
@@ -22,11 +26,22 @@ LOOP_DEVICE=
 LOOP_MOUNT_POINT=
 ZERO_FILE=
 
-OPTS_FSMOVE=
-OPTS_FSREMAP=
+OPTS_fsmove=
+OPTS_fsremap=
+OPTS_mkfs=
+OPTS_fsck_source="-p -f"
+OPTS_fsck_target="-p -f"
+X_COPY_LOOP_FILE=
+X_COPY_DEVICE=
 
-for cmd in $CMDS; do
+USER_ANSWER=
+
+for cmd in $CMDS_bootstrap $CMDS; do
   eval "CMD_$cmd="
+done
+for cmd in $CMDS_dual; do
+  eval "CMD_${cmd}_source="
+  eval "CMD_${cmd}_target="
 done
 
 FIFO_OUT="/tmp/fstransform.out.$$"
@@ -34,6 +49,10 @@ FIFO_ERR="/tmp/fstransform.err.$$"
 
 exec 5>/dev/null
 
+log_info_4_cmd() {
+  echo "$@"
+  echo "$@" 1>&5  
+}
 log_info() {
   echo "$PROG: $@"
   echo "$PROG: $@" 1>&5  
@@ -54,17 +73,17 @@ log_end() {
 
 log_warn() {
   echo
-  echo "WARNING: $PROG: $@"
+  echo "$PROG: WARNING: $@"
   echo 1>&5
-  echo "WARNING: $PROG: $@" 1>&5  
+  echo "$PROG: WARNING: $@" 1>&5  
 }
 log_warn_add() {
-  echo "         $@"
-  echo "         $@" 1>&5  
+  echo "$____  $@"
+  echo "$____  $@" 1>&5  
 }
 log_warn_add_prompt() {
-  echo -n "         $@"
-  echo "         $@" 1>&5  
+  echo -n "$____  $@"
+  echo "$____  $@" 1>&5  
 }
 
 log_err() {
@@ -87,13 +106,13 @@ append_to_log_file() {
 
   "$CMD_mkdir" -p "$HOME/.fstransform" >/dev/null 2>&1
   > "$PROG_LOG_FILE" >/dev/null 2>&1
-  if [ -w "$PROG_LOG_FILE" ]; then
+  if test -w "$PROG_LOG_FILE"; then
     exec 5>"$PROG_LOG_FILE"
   fi
   log_info "saving output of this script into $PROG_LOG_FILE"
 }
 
-log_info "starting version 0.3.4, checking environment"
+log_info "starting version $PROG_VERSION, checking environment"
 
 # parse command line arguments and set USER_CMD_* variables accordingly
 parse_args() {
@@ -117,19 +136,48 @@ parse_args() {
         ZERO_FILE="`$CMD_expr match \"$arg\" '--zero-file=\(.*\)'`"
 	log_info "zero file '$ZERO_FILE' specified on command line"
         ;;
+      --device-fstype=*)
+        DEVICE_FSTYPE="`$CMD_expr match \"$arg\" '--device-fstype=\(.*\)'`"
+	log_info "device initial filesystem type '$DEVICE_FSTYPE' specified on command line"
+        ;;
       --opts-fsmove=*)
-        OPTS_FSMOVE="$CMD_expr match \"$arg\" '--opts-fsmove=\(.*\)'"
+        OPTS_fsmove="`$CMD_expr match \"$arg\" '--opts-fsmove=\(.*\)'`"
+	log_info "options '$OPTS_fsmove' for fsmove specified on command line"
 	;;
       --opts-fsremap=*)
-        OPTS_FSREMAP="$CMD_expr match \"$arg\" '--opts-fsremap=\(.*\)'"
+        OPTS_fsremap="`$CMD_expr match \"$arg\" '--opts-fsremap=\(.*\)'`"
+	log_info "options '$OPTS_fsmove' for fsremap specified on command line"
 	;;
+      --opts-mkfs=*)
+        OPTS_mkfs="`$CMD_expr match \"$arg\" '--opts-mkfs=\(.*\)'`"
+	log_info "options '$OPTS_mkfs' for mkfs specified on command line"
+	;;
+      --opts-fsck-source=*)
+        OPTS_fsck_source="`$CMD_expr match \"$arg\" '--opts-fsck-source=\(.*\)'`"
+	log_info "options '$OPTS_fsck_source' for fsck(source filesystem) specified on command line"
+	;;
+      --opts-fsck-target=*)
+        OPTS_fsck_target="`$CMD_expr match \"$arg\" '--opts-fsck-target=\(.*\)'`"
+	log_info "options '$OPTS_FSCK_TARGET_FS' for fsck(target filesystem) specified on command line"
+	;;
+      --x-copy-device=*)
+        X_COPY_DEVICE="`$CMD_expr match \"$arg\" '--x-copy-device=\(.*\)'`"
+	log_info "(internal option) device will be copied to '$X_COPY_DEVICE' just before remapping"
+        ;;
+      --x-copy-loop-file=*)
+        X_COPY_LOOP_FILE="`$CMD_expr match \"$arg\" '--x-copy-loop-file=\(.*\)'`"
+	CMDS="$CMDS cmp"
+	CMD_cmp=
+	log_info "(internal option) loop file will be copied to '$X_COPY_LOOP_FILE'"
+	log_info_add "command 'cmp' will be needed to verify it after transformation."
+        ;;
       --*)
         log_info "ignoring unknown option '$arg'"
         ;;
       *)
-        if [ "$DEVICE" = "" ]; then
+        if test "$DEVICE" = ""; then
 	  DEVICE="$arg"
-	elif [ "$FSTYPE" = "" ]; then
+	elif test "$FSTYPE" = ""; then
 	  FSTYPE="$arg"
 	else
           log_info "ignoring extra argument '$arg'"
@@ -146,14 +194,15 @@ detect_cmd() {
   fi
 
   local cmd="$1"
-  log_start "checking for $cmd...	"
-  local user_cmd="`eval echo '$USER_CMD_'\"$cmd\"`"
   local my_cmd=
-
-  if test "$user_cmd" != "" ; then
+  local user_cmd="`eval echo '$USER_CMD_'\"$cmd\"`"
+  
+  log_start "checking for $cmd...	"
+  
+  if test "$user_cmd" != ""; then
     my_cmd="`$my_cmd_which \"$user_cmd\"`" >/dev/null 2>&1
-    if test "$my_cmd" != "" ; then
-      if test -x "$my_cmd" ; then
+    if test "$my_cmd" != ""; then
+      if test -x "$my_cmd"; then
         log_end "'$my_cmd' ('$user_cmd' was specified)"
         eval "CMD_$cmd=\"$my_cmd\""
         return 0
@@ -162,8 +211,8 @@ detect_cmd() {
   fi
 
   my_cmd="`$my_cmd_which \"$cmd\"`" >/dev/null 2>&1
-  if test "$my_cmd" != "" ; then
-    if test -x "$my_cmd" ; then
+  if test "$my_cmd" != ""; then
+    if test -x "$my_cmd"; then
       log_end "'$my_cmd'"
       eval "CMD_$cmd=\"$my_cmd\""
       return 0
@@ -175,6 +224,71 @@ detect_cmd() {
   fi
   CMDS_missing="$CMDS_missing '$cmd'"
   return 1
+}
+
+detect_cmd_dual() {
+  local my_cmd_which="$CMD_which"
+  if test "$my_cmd_which" = ""; then
+    my_cmd_which="$BOOT_CMD_which"
+  fi
+  
+  local cmd="$1"
+  local source_or_target="$2"
+  
+  local user_cmd="`eval echo '$USER_CMD_'\"$cmd\"'_'\"$source_or_target\"`"
+  local my_cmd=
+  log_start "checking for ${cmd}($source_or_target filesystem)...	"
+
+  if test "$user_cmd" != ""; then
+    my_cmd="`$my_cmd_which \"$user_cmd\"`" >/dev/null 2>&1
+    if test "$my_cmd" != ""; then
+      if test -x "$my_cmd"; then
+        log_end "'$my_cmd' ('$user_cmd' was specified)"
+        eval "CMD_${cmd}_$source_or_target=\"$my_cmd\""
+        return 0
+      fi
+    fi
+  fi
+  local nondual_cmd="`eval echo '$CMD_'\"$cmd\"`"
+  log_end "'$nondual_cmd'"
+  eval "CMD_${cmd}_$source_or_target=\"$nondual_cmd\""
+  return 0
+}
+
+# apply fixes for special cases...
+fix_for_special_cases() {
+  if test "$DEVICE_FSTYPE" = "ntfs-3g"; then
+    DEVICE_FSTYPE="ntfs"
+  fi
+  if test "$FSTYPE" = "ntfs-3g"; then
+    FSTYPE="ntfs"
+  fi
+  local my_cmd_ntfsresize=
+  if test "$FSTYPE" = "ntfs" -o "$DEVICE_FSTYPE" = "ntfs"; then
+    log_info "applying special options for filesystem type '$FSTYPE'"
+    # we need 'ntfsresize', check if it's available
+    my_cmd_ntfsresize="`$CMD_which ntfsresize`"
+    if test "$my_cmd_ntfsresize" = ""; then
+      log_warn "command 'ntfsresize' not found, it is needed to check integrity of filesystem type 'ntfs'"
+    fi
+  fi
+  
+  if test "$DEVICE_FSTYPE" = "ntfs"; then
+    if test "$my_cmd_ntfsresize" != "" -a "$USER_CMD_fsck_source" = ""; then
+      USER_CMD_fsck_source="ntfsresize"
+      OPTS_fsck_source="-n"
+      detect_cmd_dual "fsck" "source"
+    fi
+  fi
+  if test "$FSTYPE" = "ntfs"; then
+    if test "$my_cmd_ntfsresize" != "" -a "$USER_CMD_fsck_target" = ""; then
+      USER_CMD_fsck_target="ntfsresize"
+      OPTS_fsck_target="-n"
+      detect_cmd_dual "fsck" "target"
+    fi
+    # 'mkfs -t nfs' needs option '-f' (quick format) to maintain sparse files
+    OPTS_mkfs="$OPTS_mkfs -f"
+  fi
 }
 
 fail_missing_cmds() {
@@ -193,13 +307,13 @@ fail_missing_cmds() {
 for cmd in $CMDS_bootstrap; do
   detect_cmd "$cmd" || ERR="$?"
 done
-if [ "$ERR" != 0 ]; then
+if test "$ERR" != 0; then
   fail_missing_cmds
 fi
 
 check_uid_0() {
   UID="`$CMD_id -u`"
-  if [ "$UID" != 0 ]; then
+  if test "$UID" != 0; then
     log_err "this script must be executed as root (uid 0)"
     log_err_add "instead it is currently running as uid $UID"
     exit 1
@@ -214,35 +328,44 @@ for cmd in $CMDS; do
   detect_cmd "$cmd" || ERR="$?"
 done
 
-if [ "$ERR" != 0 ]; then
+for cmd in $CMDS_dual; do
+  detect_cmd_dual "$cmd" "source" || ERR="$?"
+  detect_cmd_dual "$cmd" "target" || ERR="$?"
+done
+
+fix_for_special_cases
+
+if test "$ERR" != 0; then
   fail_missing_cmds
 fi
 
 log_info "environment check passed."
 
-append_to_log_file
-
-
 check_command_line_args() {
-  if [ "$DEVICE" = "" -a "$FSTYPE" = "" ]; then
-    log_err "missing command-line arguments DEVICE and FSTYPE"
+  if test "$DEVICE" = ""; then
+    if test "$FSTYPE" = ""; then
+      log_err "missing command-line arguments DEVICE and FSTYPE"
+    else
+      log_err "missing command-line argument DEVICE"
+    fi
     exit 1
   fi
-  if [ "$DEVICE" = "" ]; then
-    log_err "missing command-line argument DEVICE"
-    exit 1
-  fi
-  if [ "$FSTYPE" = "" ]; then
+  if test "$FSTYPE" = ""; then
     log_err "missing command-line argument FSTYPE"
     exit 1
   fi
 }
 check_command_line_args
 
+append_to_log_file
+
+read_user_answer() {
+  read USER_ANSWER
+}
 
 # inform if a command failed, and offer to fix manually
 exec_cmd_status() {
-  if [ "$ERR" != 0 ]; then
+  if test "$ERR" != 0; then
     log_err "command '$@' failed (exit status $ERR)"
     log_err_add "this is potentially a problem."
     log_err_add "you can either quit now by pressing ENTER or CTRL+C,"
@@ -251,8 +374,8 @@ exec_cmd_status() {
     log_err_add "then manually run the command '$@'"
     log_err_add "(or something equivalent)"
     log_err_add_prompt "and finally resume this script by typing CONTINUE and pressing ENTER: "
-    read my_answ
-    if [ "$my_answ" != "CONTINUE" ]; then
+    read_user_answer
+    if test "$USER_ANSWER" != "CONTINUE"; then
       log_info 'exiting.'
       exit "$ERR"
     fi
@@ -279,17 +402,19 @@ trap remove_fifo_out_err 0
 read_cmd_out_err() {
   local my_cmd_full="$1"
   local my_cmd="`$CMD_expr match \"$1\" '.*/\([^/]*\)'`"
-  if [ "$my_cmd" = "" ]; then
+  if test "$my_cmd" = ""; then
     my_cmd="$my_cmd_full"
   fi
   local my_fifo="$2"
   local my_prefix="$3"
   local my_out_1= my_out=
   while read my_out_1 my_out; do
-    if [ "$my_out_1" = "$my_cmd:" -o "$my_out_1" = "$my_cmd_full:" ]; then
-      echo "$my_prefix$my_cmd: $my_out"
+    if test "$my_out_1" = "$my_cmd:"; then
+      log_info_4_cmd "$my_prefix$my_cmd: $my_out"
+    elif test "$my_out_1" = "$my_cmd_full:"; then
+      log_info_4_cmd "$my_prefix$my_cmd: $my_out"
     else
-      echo "$my_prefix$my_cmd: $my_out_1 $my_out"
+      log_info_4_cmd "$my_prefix$my_cmd: $my_out_1 $my_out"
     fi
   done < "$my_fifo" &
 }
@@ -317,10 +442,10 @@ capture_cmd() {
   my_ret="`\"$@\" 2>\"$FIFO_OUT\"`"
   ERR="$?"
   wait
-  if [ "$ERR" != 0 ]; then
+  if test "$ERR" != 0; then
     log_err "command '$@' failed (exit status $ERR)"
     exit "$ERR"
-  elif [ "$my_ret" = "" ]; then
+  elif test "$my_ret" = ""; then
     log_err "command '$@' failed (no output)"
     exit 1
   fi
@@ -339,7 +464,7 @@ log_info "detected '$DEVICE' size: $DEVICE_SIZE_IN_BYTES bytes"
 echo_device_mount_point_and_fstype() {
   local my_dev="$1"
   "$CMD_mount" | while read dev _on_ mount_point _type_ fstype opts; do
-    if [ "$dev" = "$my_dev" ]; then
+    if test "$dev" = "$my_dev"; then
       echo "$mount_point $fstype"
       break
     fi
@@ -349,32 +474,46 @@ echo_device_mount_point_and_fstype() {
 find_device_mount_point_and_fstype() {
   local my_dev="$DEVICE"
   local ret="`echo_device_mount_point_and_fstype \"$my_dev\"`"
-  if [ "$ret" = "" ]; then
+  if test "$ret" = ""; then
     log_err "device '$my_dev' not found in the output of command $CMD_mount"
     log_err_add "maybe device '$my_dev' is not mounted?"
     exit 1
   fi
   local my_mount_point= my_fstype=
   for i in $ret; do
-    if [ "$my_mount_point" = "" ]; then
+    if test "$my_mount_point" = ""; then
       my_mount_point="$i"
     else
       my_fstype="$i"
     fi
   done
   log_info "detected '$my_dev' mount point '$my_mount_point' with filesystem type '$my_fstype'"
-  if [ ! -e "$my_mount_point" ]; then
+  if test ! -e "$my_mount_point"; then
     log_err "mount point '$my_mount_point' does not exist."
     log_err_add "maybe device '$my_dev' is mounted on a path containing spaces?"
     log_err_add "fstransform.sh does not support mount points containing spaces in their path"
     exit 1
   fi
-  if [ ! -d "$my_mount_point" ]; then
+  if test ! -d "$my_mount_point"; then
     log_err "mount point '$my_mount_point' is not a directory"
     exit 1
   fi
   DEVICE_MOUNT_POINT="$my_mount_point"
-  DEVICE_FSTYPE="$my_fstype"
+  if test "$my_fstype" = fuseblk; then
+    if test "$DEVICE_FSTYPE" != ""; then
+      log_info "filesystem type '$my_fstype' is a placeholder name for FUSE... ignoring it (user specified type '$DEVICE_FSTYPE')"
+    else
+      log_info "filesystem type '$my_fstype' is a placeholder name for FUSE... ignoring it"
+    fi
+  elif test "$DEVICE_FSTYPE" != ""; then
+    # let's compare user-specified filesystem type with what we found...
+    # still we honour what the user said.
+    if test "$DEVICE_FSTYPE" != "$my_fstype"; then
+      log_warn "does not match user-specified device filesystem type '$DEVICE_FSTYPE'. using user-specified value."
+    fi
+  else
+    DEVICE_FSTYPE="$my_fstype"
+  fi
 }
 find_device_mount_point_and_fstype
 
@@ -383,30 +522,30 @@ create_loop_or_zero_file() {
   local my_kind="$1" my_var="$2" my_file="$3"
   local my_pattern="$DEVICE_MOUNT_POINT/.fstransform.$my_kind.*"
   local my_files="`echo $my_pattern`"
-  if [ "$my_files" != "$my_pattern" ]; then
+  if test "$my_files" != "$my_pattern"; then
     log_warn "possibly stale fstransform $my_kind files found inside device '$DEVICE',"
     log_warn_add "maybe they can be removed? list of files found:"
     log_warn_add
     log_warn_add "$my_files"
     log_warn_add
   fi
-  if [ "$my_file" = "" ]; then
+  if test "$my_file" = ""; then
     my_file="$DEVICE_MOUNT_POINT/.fstransform.$my_kind.$$"
     log_info "creating sparse $my_kind file '$my_file' inside device '$DEVICE'..."
-    if [ -e "$my_file" ]; then
+    if test -e "$my_file"; then
       log_err "$my_kind file '$my_file' already exists! please remove it"
       exit 1
     fi
   else
     # check that user-specified file is actually inside DEVICE_MOUNT_POINT
     "$CMD_expr" match "$my_file" "$DEVICE_MOUNT_POINT/.*" >/dev/null 2>/dev/null || ERR="$?"
-    if [ "$ERR" != 0 ]; then
+    if test "$ERR" != 0; then
       log_err "user-specified $my_kind file '$my_file' does not seem to be inside device mount point '$DEVICE_MOUNT_POINT'"
       log_err_add "please use a $my_kind file path that starts with '$DEVICE_MOUNT_POINT/'"
       exit "$ERR"
     fi
     "$CMD_expr" match "$my_file" '.*/\.\./.*' >/dev/null 2>/dev/null
-    if [ "$?" = 0 ]; then
+    if test "$?" = 0; then
       log_err "user-specified $my_kind file '$my_var' contains '/../' in path"
       log_err_add "maybe somebody is trying to break fstransform?"
       log_err_add "I give up, sorry"
@@ -414,9 +553,12 @@ create_loop_or_zero_file() {
     fi
     log_info "overwriting $my_kind file '$my_file' inside device '$DEVICE'..."
   fi
-  > "$my_file"
+  
+  read_cmd_out "$PROG"
+  > "$my_file" 2>"$FIFO_OUT"
   ERR="$?"
-  if [ "$ERR" != 0 ]; then
+  wait
+  if test "$ERR" != 0; then
     log_err "failed to create or truncate '$my_file' to zero bytes"
     log_err_add "maybe device '$DEVICE' is full or mounted read-only?"
     exit "$ERR"
@@ -443,7 +585,7 @@ disconnect_loop_device() {
   # loop device sometimes needs a little time to become free...
   for my_iter in 1 2 3 4; do
     exec_cmd "$CMD_sync"
-    if [ "$my_iter" -le 3 ]; then
+    if test "$my_iter" -le 3; then
       "$CMD_losetup" -d "$LOOP_DEVICE" && break
     else
       exec_cmd "$CMD_losetup" -d "$LOOP_DEVICE"
@@ -453,31 +595,30 @@ disconnect_loop_device() {
 }
 
 
-format_device() {
-  local my_device="$1" my_fstype="$2"
-  log_info "formatting '$my_device' with filesystem type '$my_fstype'..."
-  exec_cmd "$CMD_mkfs" -t "$my_fstype" -q "$my_device"
+format_loop_device() {
+  log_info "formatting loop device '$LOOP_DEVICE' with filesystem type '$FSTYPE'..."
+  exec_cmd "$CMD_mkfs" -t "$FSTYPE" -q $OPTS_mkfs "$LOOP_DEVICE"
 }
-format_device "$LOOP_DEVICE" "$FSTYPE" 
+format_loop_device
 
 
 mount_loop_file() {
-  if [ "$LOOP_MOUNT_POINT" = "" ]; then
+  if test "$LOOP_MOUNT_POINT" = ""; then
     LOOP_MOUNT_POINT="/tmp/fstransform.mount.$$"
     exec_cmd "$CMD_mkdir" "$LOOP_MOUNT_POINT"    
   else
     "$CMD_expr" match "$LOOP_MOUNT_POINT" "/.*" >/dev/null 2>/dev/null
-    if [ "$?" != 0 ]; then
+    if test "$?" != 0; then
       log_warn "user-specified loop file mount point '$LOOP_MOUNT_POINT' should start with '/'"
       log_warn_add "i.e. it should be an absolute path."
       log_warn_add "fstransform cannot ensure that '$LOOP_MOUNT_POINT' is outside '$DEVICE_MOUNT_POINT'"
       log_warn_add "continue at your own risk"
       log_warn_add
       log_warn_add_prompt "press ENTER to continue, or CTRL+C to quit: "
-      read dummy
+      read_user_answer
     else
       "$CMD_expr" match "$LOOP_MOUNT_POINT" "$DEVICE_MOUNT_POINT/.*" >/dev/null 2>/dev/null
-      if [ "$?" = 0 ]; then
+      if test "$?" = 0; then
         log_err "user-specified loop file mount point '$LOOP_MOUNT_POINT' seems to be inside '$DEVICE_MOUNT_POINT'"
 	log_err_add "maybe somebody is trying to break fstransform and lose data?"
 	log_err_add "I give up, sorry"
@@ -511,20 +652,26 @@ move_device_contents_into_loop_file() {
   log_warn_add
   log_warn_add "this is your chance to quit."
   log_warn_add_prompt "press ENTER to continue, or CTRL+C to quit: "
-  read my_answ
+  read_user_answer
   
   log_info "moving '$DEVICE' contents into the loop file."
   log_info "this may take a long time, please be patient..."
-  exec_cmd "$CMD_fsmove" $OPTS_FSMOVE -- "$DEVICE_MOUNT_POINT" "$LOOP_MOUNT_POINT" --exclude "$LOOP_FILE"
+  exec_cmd "$CMD_fsmove" $OPTS_fsmove -- "$DEVICE_MOUNT_POINT" "$LOOP_MOUNT_POINT" --exclude "$LOOP_FILE"
 }
 move_device_contents_into_loop_file
 
 umount_and_fsck_loop_file() {
-  exec_cmd "$CMD_umount" "$LOOP_MOUNT_POINT"
+  log_info "unmounting and running '$CMD_fsck_target' (disk check) on loop file '$LOOP_FILE'"
+  exec_cmd "$CMD_umount" "$LOOP_DEVICE"
   # ignore errors if removing "$LOOP_MOUNT_POINT" fails
-  "$CMD_rmdir" "$LOOP_MOUNT_POINT"
+  "$CMD_rmdir" "$LOOP_MOUNT_POINT" >/dev/null 2>/dev/null
+  exec_cmd "$CMD_fsck_target" $OPTS_fsck_target "$LOOP_DEVICE"
   exec_cmd "$CMD_sync"
-  exec_cmd "$CMD_fsck" -p -f "$LOOP_DEVICE"
+
+  if test "$X_COPY_LOOP_FILE" != ""; then
+    log_info "(internal option) copying loop file '$LOOP_FILE' to '$X_COPY_LOOP_FILE'"
+    exec_cmd "$CMD_dd" bs=64k if="$LOOP_DEVICE" of="$X_COPY_LOOP_FILE"
+  fi
 }
 umount_and_fsck_loop_file
 
@@ -532,41 +679,71 @@ disconnect_loop_device
 
 create_zero_file() {
   create_loop_or_zero_file zero ZERO_FILE "$ZERO_FILE"
-  log_info "creating a file '$ZERO_FILE' full of zeroes inside device '$DEVICE'"
+  log_info "filling '$ZERO_FILE' with zeroes until device '$DEVICE' is full"
   log_info_add "needed by '$CMD_fsremap' to locate unused space."
   log_info_add "this may take a while, please be patient..."
+  
+  # trying to fill a device until it fails with "no space left on device" is not very nice
+  # and can probably cause filesystem corruption if device happens to be a loop-mounted file
+  # which contains non-synced data.
+  # to be safe, we 'sync' BEFORE and AFTER filling the device
+  exec_cmd "$CMD_sync"
+
   # next command will fail with "no space left on device".
   # this is normal and expected.
   "$CMD_dd" if=/dev/zero of="$ZERO_FILE" bs=64k >/dev/null 2>/dev/null
+  
+  exec_cmd "$CMD_sync"
   log_info "file full of zeroes created successfully"
 }
 create_zero_file
 
 remount_device_ro_and_fsck() {
-  log_info "remounting device '$DEVICE' read-only"
+  #log_info "remounting device '$DEVICE' read-only"
+  #exec_cmd "$CMD_mount" "$DEVICE" -o remount,ro
+  #exec_cmd "$CMD_sync"
+
+  # cannot safely perform disk check on a mounted device... it must be unmounted first!
+  log_info "unmounting device '$DEVICE' before disk check"
+  exec_cmd "$CMD_umount" "$DEVICE"
+  log_info "running '$CMD_fsck_source' (disk check) on device '$DEVICE'"
+  exec_cmd "$CMD_fsck_source" $OPTS_fsck_source "$DEVICE"
   exec_cmd "$CMD_sync"
-  exec_cmd "$CMD_mount" "$DEVICE" -o remount,ro
-  # cannot safely perform disk check on a mounted device :(
-  #log_info "running '$CMD_fsck' (disk check) on device '$DEVICE'"
-  #exec_cmd "$CMD_fsck" -p -f "$DEVICE"
+  
+  if test "$X_COPY_DEVICE" != ""; then
+    log_info "(internal option) copying device '$DEVICE' to '$X_COPY_DEVICE'"
+    exec_cmd "$CMD_dd" bs=64k if="$DEVICE" of="$X_COPY_DEVICE"
+  fi
+  
+  log_info "mounting again device '$DEVICE' read-only"
+  if test "$DEVICE_FSTYPE" != ""; then
+    exec_cmd "$CMD_mount" -t "$DEVICE_FSTYPE" "$DEVICE" "$DEVICE_MOUNT_POINT" -o ro
+  else
+    exec_cmd "$CMD_mount" "$DEVICE" "$DEVICE_MOUNT_POINT" -o ro
+  fi
 }
 remount_device_ro_and_fsck
 
 
 remap_device_and_sync() {
   log_info "launching '$CMD_fsremap' in simulated mode"
-  exec_cmd "$CMD_fsremap" $OPTS_FSREMAP -n -q -- "$DEVICE" "$LOOP_FILE" "$ZERO_FILE"
+  exec_cmd "$CMD_fsremap" -n -q $OPTS_fsremap -- "$DEVICE" "$LOOP_FILE" "$ZERO_FILE"
   
   log_info "launching '$CMD_fsremap' in REAL mode to perform in-place remapping."
-  exec_cmd "$CMD_fsremap" $OPTS_FSREMAP -q -- "$DEVICE" "$LOOP_FILE" "$ZERO_FILE"
+  exec_cmd "$CMD_fsremap" -q $OPTS_fsremap -- "$DEVICE" "$LOOP_FILE" "$ZERO_FILE"
   exec_cmd "$CMD_sync"
+  
+
+  if test "$X_COPY_LOOP_FILE" != ""; then
+    log_info "(internal option) comparing transformed device '$DEVICE' with previously saved loop file '$X_COPY_LOOP_FILE'"
+    exec_cmd "$CMD_cmp" "$X_COPY_LOOP_FILE" "$DEVICE"
+  fi
 }
 remap_device_and_sync
 
 fsck_device() {
-  log_info "running again '$CMD_fsck' (disk check) on device '$DEVICE'"
-  exec_cmd "$CMD_fsck" -p -f "$DEVICE"
-  sleep 2
+  log_info "running again '$CMD_fsck_target' (disk check) on device '$DEVICE'"
+  exec_cmd "$CMD_fsck_target" $OPTS_fsck_target "$DEVICE"
 }
 fsck_device
 

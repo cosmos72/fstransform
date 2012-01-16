@@ -64,7 +64,7 @@ protected:
      *
      * implementation: do nothing and return success
      */
-    virtual int copy_bytes(fr_dir dir, fr_vector<ft_uoff> & request_vec);
+    virtual int flush_copy_bytes(fr_dir dir, fr_vector<ft_uoff> & request_vec);
 
     /**
      * flush any pending copy, i.e. actually perform all queued copies.

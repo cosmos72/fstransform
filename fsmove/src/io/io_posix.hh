@@ -160,14 +160,23 @@ private:
     /** create a target directory, copying its mode and other meta-data from 'stat' */
     int create_dir(const ft_string & path, const ft_stat & stat);
 
-    /** remove a source directory, which must be empty */
+    /**
+     * remove a source directory, which must be empty
+     * exception: will not remove '/lost+found' directory inside source_root()
+     */
     int remove_dir(const ft_string & path);
+
+    /**
+     * return true if path is the source directory lost+found.
+     * Treated specially because it is emptied but not removed.
+     */
+    bool is_source_lost_found(const ft_string & path) const;
 
     /**
      * return true if path is the target directory lost+found.
      * Treated specially because it is allowed to exist already.
      */
-    bool is_lost_found(const ft_string & path) const;
+    bool is_target_lost_found(const ft_string & path) const;
 
 public:
     /** constructor */

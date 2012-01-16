@@ -29,6 +29,9 @@ typedef off_t  ft_off;
 // ft_u64 must be exactly 64-bit unsigned integer. only used for ioctl(FS_IOC_FIEMAP), ioctl(BLKGETSIZE64)
 typedef uint64_t ft_u64;
 
+// ft_u32 must be exactly 32-bit unsigned integer. only used for ioctl(FS_IOC_FIEMAP)
+typedef uint32_t ft_u32;
+
 // ft_dev is the type used for ID of block devices. when dev_t exists, they must be the same type
 typedef dev_t  ft_dev;
 

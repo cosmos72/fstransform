@@ -251,6 +251,9 @@ int fm_io_posix::move(const ft_string & source_path, const ft_string & target_pa
             break;
         if ((err = this->copy_stat(target_path.c_str(), stat)) != 0)
             break;
+        /*
+         * we do not delete 'lost+found' directory inside source_root()
+         */
         if ((err = this->remove_dir(source_path)) != 0)
             break;
 
@@ -849,9 +852,19 @@ int fm_io_posix::copy_stat(const char * target, const ft_stat & stat)
 
 /**
  * return true if path is the target directory lost+found.
+ * Treated specially because it is emptied but not removed.
+ */
+bool fm_io_posix::is_source_lost_found(const ft_string & path) const
+{
+   return path == source_root() + "/lost+found";
+}
+
+
+/**
+ * return true if path is the target directory lost+found.
  * Treated specially because it is allowed to exist already.
  */
-bool fm_io_posix::is_lost_found(const ft_string & path) const
+bool fm_io_posix::is_target_lost_found(const ft_string & path) const
 {
    return path == target_root() + "/lost+found";
 }
@@ -874,7 +887,7 @@ int fm_io_posix::create_dir(const ft_string & path, const ft_stat & stat)
         if ((err = errno) != EEXIST || path != target_root()) {
             /* if force_run(), always ignore EEXIST error: any target directory is allowed to exist already */
 	    /* in any case, we also allow target directory lost+found to exist already */
-            bool is_warn = err == EEXIST && (force_run() || is_lost_found(path));
+            bool is_warn = err == EEXIST && (force_run() || is_target_lost_found(path));
             err = ff_log(is_warn ? FC_WARN : FC_ERROR, err, "failed to create target directory `%s'", dir);
             if (!is_warn)
                 break;
@@ -885,14 +898,17 @@ int fm_io_posix::create_dir(const ft_string & path, const ft_stat & stat)
     return err;
 }
 
-/** remove a source directory */
+/**
+ * remove a source directory.
+ * exception: we do not delete 'lost+found' directory inside source_root()
+ */
 int fm_io_posix::remove_dir(const ft_string & path)
 {
     const char * dir = path.c_str();
     int err = 0;
     ff_log(FC_TRACE, 0, "remove_dir()   `%s'", dir);
     do {
-        if (simulate_run())
+        if (simulate_run() || is_source_lost_found(path))
             break;
 
         if (rmdir(dir) != 0) {

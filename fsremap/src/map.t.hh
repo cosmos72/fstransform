@@ -770,6 +770,10 @@ void fr_map<T>::complement0_logical_shift(const fr_vector<ft_uoff> & other, ft_u
 
         last = logical + (other[i].length() >> effective_block_size_log2);
     }
+    /*
+     * NOTE: right-shifting device_length by effective_block_size_log2
+     * forgets any odd-sized last device block
+     */
     device_length >>= effective_block_size_log2;
     if (last < device_length) {
         /* add last "hole" with logical == logical */

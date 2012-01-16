@@ -165,12 +165,12 @@ int fr_io_posix::open(const fr_args & args)
 
                 /* for LOOP-FILE and ZERO-FILE, we also check that they are actually contained in DEVICE */
                 if (dev[FC_DEVICE] != dev[i]) {
-                    ff_log((force ? FC_WARN : FC_ERROR), 0, "%s'%s' is device 0x%04x, but %s '%s' is contained in device 0x%04x%s",
+                    err = ff_log((force ? FC_WARN : FC_ERROR), EINVAL, "%s'%s' is device 0x%04x, but %s '%s' is contained in device 0x%04x%s",
                         (force ? "WARNING: " : ""), path[FC_DEVICE], (unsigned)dev[FC_DEVICE], label[i], path[i], (unsigned)dev[i], force_msg);
                     if (force)
-                        break;
+                        err = 0;
                     else
-                        err = -EINVAL;
+                        break;
                 }
             }
         }

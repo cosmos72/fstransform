@@ -93,7 +93,7 @@ int ft_io_null::umount_dev()
  *
  * implementation: do nothing and return success
  */
-int ft_io_null::copy_bytes(fr_dir dir, fr_vector<ft_uoff> & request_vec)
+int ft_io_null::flush_copy_bytes(fr_dir dir, fr_vector<ft_uoff> & request_vec)
 {
     return 0;
 }

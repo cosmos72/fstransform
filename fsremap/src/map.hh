@@ -157,7 +157,7 @@ public:
      * if no intersections, return false and this will be unchanged
      *
      * note: if the intersection is only physical,
-     * the intersection will contain the appropriate subrange of extent[which] -> logical
+     * the intersection will contain the appropriate subrange of extent[match] -> logical
      */
     bool intersect(const value_type & extent1, const value_type & extent2, ft_match match);
 
@@ -168,7 +168,7 @@ public:
      * if no intersections, return false and this will be unchanged
      *
      * note: if the intersection is only physical,
-     * the intersection will contain the appropriate subrange of {map1,extent2}[which] -> logical
+     * the intersection will contain the appropriate subrange of {map1,extent2}[match] -> logical
      */
     bool intersect_all(const fr_map<T> & map1, const value_type & extent2, ft_match match);
 
@@ -179,21 +179,21 @@ public:
      * if no intersections, return false and this map will be unchanged
      *
      * note: if the intersection is only physical,
-     * the intersection will contain the appropriate subrange of map[which] -> logical
+     * the intersection will contain the appropriate subrange of map[match] -> logical
      */
     bool intersect_all_all(const fr_map<T> & map1, const fr_map<T> & map2, ft_match match);
 
     /**
      * add a single extent the fr_map
      *
-     * does not merge and does not check for merges
+     * use with extreme caution, it does NOT merge and does NOT CHECK for merges
      */
     void insert0(const key_type & key, const mapped_type & value);
 
     /**
      * add a single extent the fr_map
      *
-     * does not merge and does not check for merges
+     * use with extreme caution, it does NOT merge and does NOT CHECK for merges
      */
     void insert0(T physical, T logical, T length, ft_size user_data);
 

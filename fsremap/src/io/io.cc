@@ -199,7 +199,7 @@ int fr_io::save_extents(const fr_vector<ft_uoff> & loop_file_extents,
  * note: parameters are in bytes!
  * return 0 if success, else error
  */
-int fr_io::copy_queue(fr_dir dir, ft_uoff from_physical, ft_uoff to_physical, ft_uoff length)
+int fr_io::copy_bytes(fr_dir dir, ft_uoff from_physical, ft_uoff to_physical, ft_uoff length)
 {
     int err = 0;
     if (!request_vec.empty() && request_dir != dir) {
@@ -228,7 +228,7 @@ int fr_io::flush_queue()
 {
     int err = 0;
     if (!request_vec.empty()) {
-        err = copy_bytes(request_dir, request_vec);
+        err = flush_copy_bytes(request_dir, request_vec);
         request_vec.clear();
         request_dir = FC_INVALID2INVALID;
     }

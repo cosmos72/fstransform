@@ -261,8 +261,10 @@ T ff_extent_align(typename fr_map<T>::value_type & extent, T page_size_blocks_m_
  * assumes that vectors are ordered by extent->logical, and modifies them
  * in place: vector contents will be UNDEFINED when this method returns.
  *
- * implementation: to compute this->dev_map, performs in-place the union of specified
+ * basic implementation idea: to compute this->dev_map, performs in-place the union of specified
  * loop_file_extents and free_space_extents, then sorts in-place and complements such union.
+ *
+ * detailed implementation is quite complicated... see the comments and the documentation
  */
 template<typename T>
 int fr_work<T>::analyze(fr_vector<ft_uoff> & loop_file_extents,
@@ -435,7 +437,8 @@ int fr_work<T>::analyze(fr_vector<ft_uoff> & loop_file_extents,
     if (io->job_clear() == FC_CLEAR_MINIMAL) {
         /*
          * also add DEVICE (RENUMBERED) to TO-CLEAR-MAP:
-         * we will clear it once remapping is finished
+         * we MUST clear it once remapping is finished,
+         * since it contains data from the original device, NOT from the loop-file
          * WARNING: beware of intersections,
          * and be careful to use dev_map->logical instead of dev_map->physical!
          */
@@ -530,7 +533,10 @@ int fr_work<T>::analyze(fr_vector<ft_uoff> & loop_file_extents,
      *
      * forget the rest of LOOP-HOLES extents, we will not need them anymore
      */
-    /* how: intersect storage_map and loop_holes_map and put result into renumbered_map */
+    /*
+     * how: intersect storage_map (hosted in dev_free variable)
+     * and loop_holes_map and put result into renumbered_map
+     */
     renumbered_map.clear();
     renumbered_map.intersect_all_all(dev_free, loop_holes_map, FC_BOTH);
     /* then discard extents smaller than either work_count / 1024 or page_size*/
@@ -607,7 +613,7 @@ static int unusable_storage_size(const char * label, ft_uoff requested_len, cons
 
 
 /**
- * creates on-disk secondary storage, used as (small) backup area during relocate().
+ * creates on-disk secondary storage, used as (hopefully small) backup area during relocate().
  * must be executed before relocate()
  */
 template<typename T>
@@ -955,6 +961,12 @@ int fr_work<T>::relocate()
     dev_transpose.transpose(dev_map);
 
 
+    /*
+     * do we have an odd-sized (i.e. smaller than effective block size) last loop-file block?
+     * it must be treated specially, see the next function for details.
+     */
+    err = move_to_target_last_odd_sized_block();
+
     while (err == 0 && !(dev_map.empty() && storage_map.empty())) {
         if (!dev_map.empty() && !storage_free.empty()) {
             show_progress(FC_INFO, simul_msg);
@@ -1015,6 +1027,99 @@ void fr_work<T>::show_progress(ft_log_level log_level, const char * simul_msg)
     show(label[FC_STORAGE], "", eff_block_size, storage_map, FC_DUMP);
     show(label[FC_STORAGE], " free space", eff_block_size, storage_free, FC_DUMP);
 }
+
+
+/*
+ * called once by relocate() during the remapping phase.
+ *
+ * do we have an odd-sized (i.e. smaller than effective block size) last device block?
+ * it does not appear in any extent map: its length is zero in 1-block units !
+ *
+ * by itself it is not a problem and we could just ignore it,
+ * but it is likely that an equally odd-sized (or slightly smaller) last loop-file block will be present,
+ * and since its length is instead rounded UP to one block by the various io->read_extents() functions,
+ * the normal algorithm in relocate() would not find its final destination and enter an infinite loop (ouch)
+ */
+template<typename T>
+int fr_work<T>::move_to_target_last_odd_sized_block()
+{
+	ft_uoff eff_block_size_log2 = io->effective_block_size_log2();
+	ft_uoff eff_block_size = (ft_uoff) 1 << eff_block_size_log2;
+
+	ft_uoff dev_len = io->dev_length(), loop_file_len = io->loop_file_length();
+	ft_uoff odd_block_bytes = loop_file_len & (eff_block_size - 1);
+
+	int err = 0;
+
+	if (odd_block_bytes == 0 || (dev_len & (eff_block_size - 1)) == 0)
+		return err;
+
+	T odd_block_logical = loop_file_len >> eff_block_size_log2;
+	T odd_block_len = 1;
+	map_value_type odd_block_transp;
+	odd_block_transp.first.physical = odd_block_logical;
+	odd_block_transp.second.logical = 0;
+	odd_block_transp.second.length = odd_block_len;
+
+	const char * simul_msg = io->simulate_run() ? "(simulated) " : "";
+
+	ff_log(FC_INFO, 0, "%sloop file has an odd-sized last block (%"FT_ULL" bytes long), looking for it...",
+			simul_msg, odd_block_bytes);
+
+	map_type odd_block_map;
+	map_iterator iter;
+	if (!odd_block_map.intersect_all(dev_transpose, odd_block_transp, FC_PHYSICAL1)
+			|| (iter = odd_block_map.begin()) == odd_block_map.end())
+	{
+		ff_log(FC_WARN, 0, "%slast block NOT FOUND! this is probably a BUG", simul_msg);
+		return err;
+	}
+	if (odd_block_map.size() != 1) {
+		ff_log(FC_WARN, 0, "%sfound %"FT_ULL" blocks instead of just one, this is probably a BUG",
+				simul_msg, (ft_ull) odd_block_map.size());
+		ff_log(FC_INFO, 0, "%sreporting the unexpected blocks found for diagnostic purposes");
+		show(label[FC_DEVICE], "", eff_block_size, odd_block_map, FC_INFO);
+		return err;
+	}
+
+	const map_value_type & found_block_transp = * iter;
+	if (found_block_transp.first.physical != odd_block_logical || found_block_transp.second.length != odd_block_len) {
+		ff_log(FC_WARN, 0, "%slast block found, but it's different than expected. this is probably a BUG", simul_msg);
+		ff_log(FC_INFO, 0, "%sreporting the expected block and the one actually found for diagnostic purposes");
+		show(0, odd_block_transp, FC_INFO);
+		show(0, found_block_transp, FC_INFO);
+		return err;
+	}
+
+	ff_log(FC_INFO, 0, "%slast block found, trying to copy it to its final destination");
+	show(0, found_block_transp, FC_DEBUG);
+
+	T odd_block_phys = found_block_transp.second.logical;
+	ft_uoff from_bytes = odd_block_phys << eff_block_size_log2;
+	ft_uoff to_bytes = odd_block_logical << eff_block_size_log2;
+	ft_size user_data = found_block_transp.second.user_data;
+
+	dev_transpose.remove(found_block_transp);
+	dev_map.stat_remove(odd_block_phys, odd_block_logical, odd_block_len);
+	dev_free.insert(odd_block_phys, odd_block_logical, odd_block_len, user_data);
+
+	if ((err = io->flush()) != 0)
+		return err;
+
+	if ((err = io->copy_bytes(FC_DEV2DEV, from_bytes, to_bytes, odd_block_bytes)) == 0)
+		err = io->flush();
+
+	if (err == -EIO) {
+		ff_log(FC_WARN, 0, "%scopying the last odd-sized block (%"FT_ULL" bytes) to its final destination failed with I/O error",
+				simul_msg, (ft_ull) odd_block_bytes);
+		ff_log(FC_WARN, 0, "%sit is probably OK, such block is normally not part of the filesystem", simul_msg);
+		err = 0;
+	}
+	return err;
+}
+
+
+
 
 
 
@@ -1190,8 +1295,8 @@ int fr_work<T>::move_to_target(fr_from from)
     if (movable.empty()) {
         ff_log(FC_INFO, 0, "%smoved 0 bytes from %s to target (not so useful)", simul_msg, label_from);
         ft_uoff eff_block_size = (ft_uoff)1 << io->effective_block_size_log2();
-        show(label_from, " transposed", eff_block_size, from_transpose);
-        show(label[FC_DEVICE], " free space", eff_block_size, dev_free);
+        show(label_from, " transposed", eff_block_size, from_transpose, FC_DEBUG);
+        show(label[FC_DEVICE], " free space", eff_block_size, dev_free, FC_DEBUG);
         return err;
     }
 

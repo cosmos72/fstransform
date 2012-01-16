@@ -129,6 +129,19 @@ private:
     int close_storage();
 
 
+    /*
+     * called once by relocate() during the remapping phase.
+     *
+     * do we have an odd-sized (i.e. smaller than effective block size) last device block?
+     * it does not appear in any extent map: its length is zero in 1-block units !
+     *
+     * by itself it is not a problem and we could just ignore it,
+     * but it is likely that an equally odd-sized (or slightly smaller) last loop-file block will be present,
+     * and since its length is instead rounded UP to one block by the various io->read_extents() functions,
+     * the normal algorithm in relocate() would not find its final destination and enter an infinite loop (ouch)
+     */
+    int move_to_target_last_odd_sized_block();
+
 
     /** called by relocate(). move as many extents as possible from DEVICE to STORAGE */
     int fill_storage();

@@ -47,7 +47,7 @@ private:
     fr_extent<ft_uoff> this_secondary_storage;
     fr_vector<ft_uoff> request_vec;
 
-    ft_uoff this_dev_length, this_eff_block_size_log2;
+    ft_uoff this_dev_length, this_loop_file_length, this_eff_block_size_log2;
     const char * this_dev_path;
     const char * this_umount_cmd;
     fr_job & this_job;
@@ -73,6 +73,9 @@ protected:
 
     /** remember device length */
     FT_INLINE void dev_length(ft_uoff dev_length) { this_dev_length = dev_length; }
+
+    /** remember loop file length */
+    FT_INLINE void loop_file_length(ft_uoff loop_file_length) { this_loop_file_length = loop_file_length; }
 
     /** remember device path */
     FT_INLINE void dev_path(const char * dev_path) { this_dev_path = dev_path; }
@@ -123,15 +126,6 @@ protected:
     FT_INLINE fr_extent<ft_uoff> & secondary_storage() { return this_secondary_storage; }
 
     /**
-     * perform buffering and coalescing of copy requests.
-     * queues a copy of single fragment from DEVICE or FREE-STORAGE, to STORAGE to FREE-DEVICE.
-     * calls flush_queue() as needed to actually perform any copy that cannot be buffered or coalesced.
-     * note: parameters are in bytes!
-     * return 0 if success, else error
-     */
-    int copy_queue(fr_dir dir, ft_uoff from_physical, ft_uoff to_physical, ft_uoff length);
-
-    /**
      * flush any pending copy, i.e. actually call copy_bytes(request).
      * return 0 if success, else error
      * on return, 'ret_copied' will be increased by the number of blocks actually copied (NOT queued for copying),
@@ -146,7 +140,7 @@ protected:
      * note: parameters are in bytes!
      * return 0 if success, else error.
      */
-    virtual int copy_bytes(fr_dir dir, fr_vector<ft_uoff> & request_vec) = 0;
+    virtual int flush_copy_bytes(fr_dir dir, fr_vector<ft_uoff> & request_vec) = 0;
 
     /**
      * flush any I/O specific buffer
@@ -189,6 +183,9 @@ public:
 
     /** return device length (in bytes), or 0 if not open */
     FT_INLINE ft_uoff dev_length() const { return this_dev_length; }
+
+    /** return loop file length (in bytes), or 0 if not open */
+    FT_INLINE ft_uoff loop_file_length() const { return this_loop_file_length; }
 
     /** return device path, or NULL if not open */
     FT_INLINE const char * dev_path() const { return this_dev_path; }
@@ -300,20 +297,32 @@ public:
     virtual int umount_dev() = 0;
 
     /**
+     * perform buffering and coalescing of copy requests.
+     * queues a copy of single fragment from DEVICE or FREE-STORAGE, to STORAGE to FREE-DEVICE.
+     * calls flush_queue() as needed to actually perform any copy that cannot be buffered or coalesced.
+     * note: parameters are in bytes!
+     * return 0 if success, else error
+     *
+     * on return, this->ret_copied will be increased by the number of blocks actually copied or queued for copying,
+     * which could be > 0 even in case of errors
+     */
+    int copy_bytes(fr_dir dir, ft_uoff from_physical, ft_uoff to_physical, ft_uoff length);
+
+    /**
      * copy a single fragment from DEVICE to FREE-STORAGE, or from STORAGE to FREE-DEVICE or from DEVICE to FREE-DEVICE
      * (STORAGE to FREE-STORAGE copies could be supported easily, but are not considered useful)
-     * note: parameters are in bytes!
+     * note: parameters are in blocks!
      * note: implementations may accumulate (queue) copy requests, actual copy and error reporting may be delayed until flush()
      *
      * return 0 if success, else error
      *
-     * on return, 'ret_copied' will be increased by the number of blocks actually copied or queued for copying,
+     * on return, this->ret_copied will be increased by the number of blocks actually copied or queued for copying,
      * which could be > 0 even in case of errors
      */
     template<typename T>
     int copy(fr_dir dir, T from_physical, T to_physical, T length)
     {
-        return copy_queue(dir,
+        return copy_bytes(dir,
                           (ft_uoff)from_physical << this_eff_block_size_log2,
                           (ft_uoff)to_physical << this_eff_block_size_log2,
                           (ft_uoff)length  << this_eff_block_size_log2);
@@ -330,6 +339,7 @@ public:
      * write zeroes to device (or to storage).
      * used to remove device-renumbered blocks once remapping is finished
      * and clean the remaped file-system
+     * note: parameters are in blocks!
      */
     template<typename T>
     int zero(fr_to to, T offset, T length)

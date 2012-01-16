@@ -85,9 +85,6 @@ int fr_job::init(const fr_args & args)
         /* force job_id */
         job_min = args.job_id, job_max = args.job_id + 1;
 
-    /* copy force_run flag */
-    this_force_run = args.force_run;
-   
     path = this_dir.c_str();
 
     for (i = job_min; i != job_max; i++) {
