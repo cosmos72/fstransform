@@ -238,6 +238,38 @@ void fr_map<T>::bounds(key_type & min_key, key_type & max_key) const
         min_key.physical = max_key.physical = 0;
 }
 
+/**
+ * find the intersection (matching physical)
+ * between the specified single block and this map, and store the intersection in ret_extent.
+ * if no intersections, return false and ret_extent will be unchanged.
+ */
+template<typename T>
+bool fr_map<T>::find_physical_block(T key_physical, value_type & ret_extent) const
+{
+	if (empty())
+		return false;
+
+	key_type key;
+	key.physical = key_physical;
+
+	/* iterator to first element >= key */
+	const_iterator iter = this->lower_bound(key), e = end();
+	if (iter == e)
+		--iter;
+
+	const value_type & extent1 = *iter;
+    T physical1 = extent1.first.physical;
+    T logical1 = extent1.second.logical;
+    T end1 = physical1 + extent1.second.length;
+    if (key_physical < physical1 || key_physical >= end1)
+    	return false;
+
+    ret_extent.first.physical = key_physical;
+    ret_extent.second.logical = logical1 + (key_physical - physical1);
+    ret_extent.second.length = 1;
+    ret_extent.second.user_data = extent1.second.user_data;
+    return true;
+}
 
 
 /**
@@ -256,14 +288,14 @@ bool fr_map<T>::intersect(const value_type & extent1, const value_type & extent2
 
     T physical1 = key1.physical;
     T logical1 = value1.logical;
-    T end1 = value1.length + physical1;
+    T end1 = physical1 + value1.length;
 
     const key_type & key2 = extent2.first;
     const mapped_type & value2 = extent2.second;
 
     T physical2 = key2.physical;
     T logical2 = value2.logical;
-    T end2 = value2.length + physical2;
+    T end2 = physical2 + value2.length;
 
     key_type key = { 0 };
     mapped_type value = { 0, 0, (match == FC_PHYSICAL2 ? extent2 : extent1).second.user_data };

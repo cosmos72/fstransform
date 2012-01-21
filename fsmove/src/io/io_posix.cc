@@ -81,13 +81,16 @@ void fm_io_posix::close()
 
 /**
  * return true if estimated free space is enough to write 'bytes_to_write'
+ * if first_check is true, does a more conservative estimation, requiring twice more free space than normal
  */
-bool fm_io_posix::enough_free_space(ft_uoff bytes_to_write)
+bool fm_io_posix::enough_free_space(ft_uoff bytes_to_write, bool first_time)
 {
-    ft_uoff half_free_space = ff_min2(source_stat().get_free(), target_stat().get_free()) / 2;
+    ft_uoff half_free_space = ff_min2(source_stat().get_free(), target_stat().get_free()) >> 1;
+    if (first_time)
+        half_free_space >>= 1;
 
     return half_free_space > bytes_to_write
-        && half_free_space - bytes_to_write > bytes_copied_since_last_check;
+            && half_free_space - bytes_to_write > bytes_copied_since_last_check;
 }
 
 /**
@@ -201,7 +204,7 @@ int fm_io_posix::move(const ft_string & source_path, const ft_string & target_pa
 
         if ((err = this->stat(source_path, stat)) != 0)
             break;
-        
+
         if (fm_io_posix_is_file(stat)) {
             err = this->move_file(source_path, stat, target_path);
             break;
@@ -216,12 +219,12 @@ int fm_io_posix::move(const ft_string & source_path, const ft_string & target_pa
         /*
          * we allow target_root() to exist already, but other target directories must NOT exist.
          * option '-f' drops this check, i.e. any target directory can exist already
-	 * 
-	 * Exception: we allow a 'lost+found' directory to exist inside target_root()
+         *
+         * Exception: we allow a 'lost+found' directory to exist inside target_root()
          */
         if ((err = this->create_dir(target_path, stat)) != 0)
-	    break;
-       
+            break;
+
 
         if ((err = this->periodic_check_free_space()) != 0)
             break;
@@ -284,8 +287,8 @@ int fm_io_posix::move_special(const ft_string & source_path, const ft_stat & sta
     ff_log(FC_TRACE, 0, "move_special() `%s'\t-> `%s'", source, target);
 
     if (simulate_run())
-        return err; 
-    
+        return err;
+
     do {
         /* check inode_cache for hard links and recreate them */
         err = this->hard_link(stat, target_path);
@@ -330,7 +333,7 @@ int fm_io_posix::move_special(const ft_string & source_path, const ft_stat & sta
 
         } else {
             ff_log(FC_ERROR, 0, "special device %s has unknown type 0%"FT_OLL", cannot create it",
-                         source, (ft_ull)(stat.st_mode & ~07777));
+                    source, (ft_ull)(stat.st_mode & ~07777));
             err = -EOPNOTSUPP;
             break;
         }
@@ -342,7 +345,7 @@ int fm_io_posix::move_special(const ft_string & source_path, const ft_stat & sta
             break;
 
     } while (0);
-   
+
     if (err == 0 && unlink(source) != 0)
         err = ff_log(FC_ERROR, errno, "failed to remove source special device `%s'", source);
 
@@ -401,7 +404,7 @@ int fm_io_posix::move_file(const ft_string & source_path, const ft_stat & stat, 
     if (err == 0)
         err = this->copy_stat(target, stat);
 
-move_file_unlink_source:
+    move_file_unlink_source:
     if (err == 0) {
         if (::unlink(source) != 0)
             err = ff_log(FC_ERROR, errno, "failed to remove source file `%s'", source);
@@ -486,9 +489,9 @@ enum {
     // FT_BUFSIZE must be a power of 2 (currently 64k),
     // and must be somewhat smaller than fm_disk_stat::THRESHOLD_MIN (currently 96k)
     FT_BUFSIZE = (ft_size)1 << FT_LOG_BUFSIZE,
-    
+
     FT_BUFSIZE_m1 = FT_BUFSIZE - 1,
-    
+
     FT_BUFSIZE_SANITY_CHECK = sizeof(char[FT_BUFSIZE * 3 / 2 >= fm_disk_stat::THRESHOLD_MIN ? 1 : -1])
 };
 
@@ -545,7 +548,7 @@ int fm_io_posix::copy_stream(int in_fd, int out_fd, const ft_stat & stat, const 
         if ((err = this->full_read(in_fd, buf, got, source)) != 0 || got != expected) {
             if (err == 0) {
                 ff_log(FC_ERROR, 0, "error reading from `%s': expected %"FT_ULL" bytes, got %"FT_ULL" bytes",
-                       source, (ft_ull)expected, (ft_ull)got);
+                        source, (ft_ull)expected, (ft_ull)got);
                 err = -EIO;
             }
             break;
@@ -584,7 +587,7 @@ int fm_io_posix::copy_stream(int in_fd, int out_fd, const ft_stat & stat, const 
 
         offset_high >>= FT_LOG_BUFSIZE;
         ff_log(FC_ERROR, 0, "          /bin/dd bs=%"FT_ULL" skip=%"FT_ULL" seek=%"FT_ULL" conv=notrunc if=\"%s\" of=\"%s\"",
-               (ft_ull)FT_BUFSIZE, (ft_ull)offset_high, (ft_ull)offset_high, target, source);
+                (ft_ull)FT_BUFSIZE, (ft_ull)offset_high, (ft_ull)offset_high, target, source);
     }
     return err;
 }
@@ -803,7 +806,7 @@ int fm_io_posix::copy_stat(const char * target, const ft_stat & stat)
         time_buf[1].tv_nsec = stat.st_mtim.tv_nsec;
 
         if (utimensat(AT_FDCWD, target, time_buf, AT_SYMLINK_NOFOLLOW) != 0)
-            ff_log(FC_WARN, errno, "warning: cannot change timestamps on %s `%s'", label, target);
+            ff_log(FC_WARN, errno, "cannot change timestamps on %s `%s'", label, target);
 
     } while (0);
 #else
@@ -815,19 +818,19 @@ int fm_io_posix::copy_stat(const char * target, const ft_stat & stat)
         time_buf[0].tv_usec = time_buf[1].tv_usec = 0;
 
         if (utimes(target, time_buf) != 0)
-            ff_log(FC_WARN, errno, "warning: cannot change timestamps on %s `%s'", label, target);
+            ff_log(FC_WARN, errno, "cannot change timestamps on %s `%s'", label, target);
     }
 #endif
 
     do {
         bool is_error = !force_run();
-        const char * fail_label = is_error ? "failed to" : "warning: cannot";
+        const char * fail_label = is_error ? "failed to" : "cannot";
 
         /* copy owner and group. this resets any SUID bits */
         if (lchown(target, stat.st_uid, stat.st_gid) != 0) {
             err = ff_log(is_error ? FC_ERROR : FC_WARN, errno,
-                         "%s set owner=%"FT_ULL" and group=%"FT_ULL" on %s `%s'",
-                         fail_label, (ft_ull)stat.st_uid, (ft_ull)stat.st_gid, label, target);
+                    "%s set owner=%"FT_ULL" and group=%"FT_ULL" on %s `%s'",
+                    fail_label, (ft_ull)stat.st_uid, (ft_ull)stat.st_gid, label, target);
             if (is_error)
                 break;
             err = 0;
@@ -839,8 +842,8 @@ int fm_io_posix::copy_stat(const char * target, const ft_stat & stat)
          */
         if (!fm_io_posix_is_symlink(stat) && chmod(target, stat.st_mode) != 0) {
             err = ff_log(is_error ? FC_ERROR : FC_WARN, errno,
-                         "%s change mode to 0%"FT_OLL" on %s `%s'",
-                         fail_label, (ft_ull)stat.st_mode, label, target);
+                    "%s change mode to 0%"FT_OLL" on %s `%s'",
+                    fail_label, (ft_ull)stat.st_mode, label, target);
             if (is_error)
                 break;
             err = 0;
@@ -856,7 +859,7 @@ int fm_io_posix::copy_stat(const char * target, const ft_stat & stat)
  */
 bool fm_io_posix::is_source_lost_found(const ft_string & path) const
 {
-   return path == source_root() + "/lost+found";
+    return path == source_root() + "/lost+found";
 }
 
 
@@ -866,7 +869,7 @@ bool fm_io_posix::is_source_lost_found(const ft_string & path) const
  */
 bool fm_io_posix::is_target_lost_found(const ft_string & path) const
 {
-   return path == target_root() + "/lost+found";
+    return path == target_root() + "/lost+found";
 }
 
 
@@ -886,7 +889,7 @@ int fm_io_posix::create_dir(const ft_string & path, const ft_stat & stat)
         /* if creating target root, ignore EEXIST error: target root is allowed to exist already */
         if ((err = errno) != EEXIST || path != target_root()) {
             /* if force_run(), always ignore EEXIST error: any target directory is allowed to exist already */
-	    /* in any case, we also allow target directory lost+found to exist already */
+            /* in any case, we also allow target directory lost+found to exist already */
             bool is_warn = err == EEXIST && (force_run() || is_target_lost_found(path));
             err = ff_log(is_warn ? FC_WARN : FC_ERROR, err, "failed to create target directory `%s'", dir);
             if (!is_warn)

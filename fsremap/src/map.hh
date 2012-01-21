@@ -135,9 +135,8 @@ public:
     // clear this map, i.e. erase all elements
     super_type::clear;
 
-    // find an extent given its ->physical
+    // find an extent given its starting ->physical
     super_type::find;
-
 
     // copy fr_map, i.e. set this fr_map contents as a copy of other's contents.
     const fr_map<T> & operator=(const fr_map<T> & other);
@@ -150,6 +149,14 @@ public:
      * if this map is empty, return {0,0}
      */
     void bounds(key_type & min_key, key_type & max_key) const;
+
+    /**
+     * find the intersection (matching physical)
+     * between the specified single block and this map, and store the intersection in ret_extent.
+     * if no intersections, return false and ret_extent will be unchanged.
+     */
+    bool find_physical_block(T key_physical, value_type & ret_extent) const;
+
 
     /**
      * find the intersection (matching physical, or both physical and logical)

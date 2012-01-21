@@ -16,7 +16,7 @@ FT_NAMESPACE_BEGIN
 class ft_eta
 {
 private:
-    enum { FC_ETA_N = 8, FC_ETA_MIN_N = 4 };
+    enum { FC_ETA_N = 5, FC_ETA_MIN_N = 2 };
     double this_x[FC_ETA_N];
     double this_y[FC_ETA_N];
     ft_size this_n;

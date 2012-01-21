@@ -48,6 +48,21 @@ private:
     void * storage_mmap, * buffer_mmap;
     ft_size storage_mmap_size, buffer_mmap_size;
 
+    /* device major/minor numbers */
+    ft_dev this_dev_blkdev;
+
+    /** open DEVICE */
+    int open_dev(const char * path);
+
+    /** really open DEVICE */
+    int open_dev0(const char * path, int * ret_fd, ft_dev * ret_dev, ft_uoff * ret_len);
+
+    /** open LOOP-FILE or ZERO-FILE */
+    int open_file(ft_size i, const char * path);
+
+    /** set device major/minor numbers */
+    FT_INLINE void dev_blkdev(ft_dev blkdev) { this_dev_blkdev = blkdev; }
+
 protected:
 
     /** return true if a single descriptor/stream is open */
@@ -55,6 +70,9 @@ protected:
 
     /** close a single descriptor/stream */
     void close0(ft_size which);
+
+    /** return device major/minor numbers, or 0 if not known */
+    FT_INLINE ft_dev dev_blkdev() const { return this_dev_blkdev; }
 
     /** return true if this I/O has open descriptors/streams to LOOP-FILE and FREE-SPACE */
     bool is_open_extents() const;
@@ -168,6 +186,12 @@ public:
 
     /** call umount(8) on dev_path() */
     virtual int umount_dev();
+
+    /**
+     * if DEVICE ends with an odd-sized block, reopen it after it is unmounted.
+     * Needed at least on Linux to access the last odd-sized block, if present
+     */
+    virtual int reopen_dev_if_needed();
 
     /**
      * write zeroes to primary storage.

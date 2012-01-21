@@ -1,12 +1,46 @@
-fsremap idea comes from convertfs (http://tzukanov.narod.ru/convertfs)
-and from my desire to start programming again in C/C++.
+fstransform idea comes from now-abandoned program convertfs (http://tzukanov.narod.ru/convertfs)
+and from the author's desire to return to C/C++ programming after a long hiatus.
 
-It is designed from scratch with safety in mind:
+fstransform is designed and implemented from scratch with safety in mind:
 every reasonable precaution is taken in order not to lose/corrupt data.
+
+Anyway, the operations performed by fstransform, and especially the
+goal NOT to need or use a backup, are intrinsically VERY RISKY.
+
+For this reason, no matter how well (or badly) designed fstransform
+actually is, there are chances that by using it you will LOSE YOUR DATA.
+
+Please understand that the risk is only yours, and that you take full
+responsibility for using fstransform. In other words, the following standard
+disclaimer applies:
+
+THE AUTHOR DECLINES ALL RESPONSIBILITIES FOR ANY DAMAGE THAT MAY DERIVE
+FROM USING THE PROGRAMS AND PROCEDURES DESCRIBED IN THIS DOCUMENT  
+
+Having said that, let's move to the requirements that led to fstransform:
 
 ############################### Requirements ##################################
 
-1) be SAFE.
+1) be able function with very limited free disk space
+
+2) be able to remap in-place a block device from any filesystem to any other,
+   preserving file, directories, soft links, hard links, special devices,
+   timestamps and owner/group permissions if the following prerequisites
+   are satisfied:
+   
+   a) source filesystem supports sparse files (holes) and ioctl(FIEMAP or FIBMAP)
+   
+   b) both source and target filesystems are POSIX-like,
+      i.e. they support links, special devices, timestamps and UNIX-like permissions
+
+3) be reasonably fast
+
+   operations on disk must be O(N), i.e. linear with device size,
+   and perform large contiguous reads and writes as much as possible.
+
+#################### Requirements not yet implemented ########################
+
+4) be SAFE.
 
    If relevant hardware and drivers are working correctly,
    data must NEVER be lost or corrupted, not even in case of program crash
@@ -19,26 +53,9 @@ every reasonable precaution is taken in order not to lose/corrupt data.
    even in case of defective/failing disks or other relevant hardware
    and their drivers.
 
-2) store work progress status on disk,
+5) store work progress status on disk,
    and be able to resume work or completely undo it when program is started again.
    
-3) be able function with very limited free disk space
-
-4) be able to remap in-place a block device from any filesystem to any other,
-   preserving file, directories, soft links, hard links, special devices,
-   timestamps and owner/group permissions if the following prerequisites
-   are satisfied:
-   
-   a) source filesystem supports sparse files (holes) and ioctl(FIEMAP or FIBMAP)
-   
-   b) both source and target filesystems are POSIX-like,
-      i.e. they support links, special devices, timestamps and UNIX-like permissions
-
-5) be reasonably fast
-
-   operations on disk must be O(N), i.e. linear with device size,
-   and perform large contiguous reads and writes as much as possible.
-
 
 ################################# Reminders ###################################
 
@@ -57,9 +74,10 @@ every reasonable precaution is taken in order not to lose/corrupt data.
   
 * at fsremap start, check that device is mounted read-only
 
-################################## Design #####################################
+############################## fsremap algorithm #################################
 
-================== Initial situation =================
+
+================== Example initial situation =================
 
 device
 +-----------------------------------------------------------------------------+
@@ -71,7 +89,7 @@ loop file inside device
 +-----------------------------------------------------------------------------+
 
 
-============== Final situation (target) ==============
+============== Example final situation (target) ==============
 
 loop-file (physical blocks)
 +-----------------------------------------------------------------------------+

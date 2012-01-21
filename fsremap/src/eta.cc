@@ -73,12 +73,12 @@ double ft_eta::add(double y)
     else
         m = m_all;
 
-    /* but then cheat and compute x@(y=1) forcing the best-fitting line to pass from last point */
-    double x_1 = x + (1.0 - y) / m;
-    if (x_1 <= x)
+    /* but then cheat and change q to force the best-fitting line to pass from last point */
+    double x_left = (1.0 - y) / m;
+    if (x_left <= 0.0)
         return -1.0; /* E.T.A. is in the past! */
 
-    return x_1 - x;
+    return x_left;
 }
 
 static int ff_now(double & ret_time)
@@ -92,9 +92,9 @@ static int ff_now(double & ret_time)
 
 static int ff_least_squares(ft_size N, const double x[], const double y[], double & ret_m, double & ret_q)
 {
-    double X = 0, X2 = 0; /* X = sum(x[i]), X2 = sum(x[i]^2) */
-    double Y = 0, Y2 = 0; /* Y = sum(y[i]), Y2 = sum(y[i]^2) */
-    double XY = 0;       /* XY = sum(x[i]*y[i]) */
+    double X = 0, X2 = 0; /* X  = sum(x[i]), X2 = sum(x[i]^2) */
+    double Y = 0, Y2 = 0; /* Y  = sum(y[i]), Y2 = sum(y[i]^2) */
+    double XY = 0;        /* XY = sum(x[i]*y[i]) */
     double x0 = x[0], y0 = y[0], x_, y_;
 
     for (ft_size i = 0; i < N; i++) {

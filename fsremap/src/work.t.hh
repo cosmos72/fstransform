@@ -147,7 +147,7 @@ int fr_work<T>::run(fr_vector<ft_uoff> & loop_file_extents,
         && (err = close_storage()) == 0;
 
     if (err == 0) {
-        ff_log(FC_NOTICE, 0, "%sremapping completed.", io.simulate_run() ? "(simulated) " : "");
+        ff_log(FC_NOTICE, 0, "%sjob completed.", io.simulate_run() ? "(simulated) " : "");
 
     } else if (!ff_log_is_reported(err)) {
         /*
@@ -932,6 +932,9 @@ int fr_work<T>::relocate()
         char ch;
         if (::read(0, &ch, 1) < 0)
         	return ff_log(FC_ERROR, errno, "read(stdin) failed");
+
+        if ((err = io->reopen_dev_if_needed()) != 0)
+        	return err;
     }
 
     ff_log(FC_NOTICE, 0, "%sstarting in-place remapping. this may take a LONG time ...", simul_msg);
@@ -948,9 +951,7 @@ int fr_work<T>::relocate()
     storage_transpose.clear();
     storage_free.insert0(0, 0, storage_count, FC_DEFAULT_USER_DATA);
 
-    /* initialize progress report */
     work_total = dev_map.used_count();
-    eta.clear();
 
     /* device starts (almost) full */
     T dev_free_count = 0;
@@ -967,19 +968,23 @@ int fr_work<T>::relocate()
      */
     err = move_to_target_last_odd_sized_block();
 
+    /* initialize progress report */
+    eta.clear();
+    eta.add(0.0);
+
     while (err == 0 && !(dev_map.empty() && storage_map.empty())) {
-        if (!dev_map.empty() && !storage_free.empty()) {
-            show_progress(FC_INFO, simul_msg);
+
+        if (!dev_map.empty() && !storage_free.empty())
             err = fill_storage();
-        }
-        if (err == 0 && !dev_map.empty()) {
-            show_progress(FC_NOTICE, simul_msg);
+
+        if (err == 0)
+        	show_progress(FC_NOTICE, simul_msg);
+
+        if (err == 0 && !dev_map.empty())
             err = move_to_target(FC_FROM_DEV);
-        }
-        if (err == 0 && !storage_map.empty()) {
-            show_progress(FC_INFO, simul_msg);
+
+        if (err == 0 && !storage_map.empty())
             err = move_to_target(FC_FROM_STORAGE);
-        }
     }
     if (err == 0)
         ff_log(FC_INFO, 0, "%sblocks remapping completed.", simul_msg);
@@ -987,37 +992,45 @@ int fr_work<T>::relocate()
     return err;
 }
 
-/* show progress status and E.T.A. */
+/** show progress status and E.T.A. */
 template<typename T>
 void fr_work<T>::show_progress(ft_log_level log_level, const char * simul_msg)
 {
-     const ft_uoff eff_block_size_log2 = io->effective_block_size_log2();
+	const ft_uoff eff_block_size_log2 = io->effective_block_size_log2();
 
     T dev_used = dev_map.used_count(), storage_used = storage_map.used_count();
     ft_uoff total_len = ((ft_uoff)dev_used + (ft_uoff)storage_used) << eff_block_size_log2;
 
-    double pretty_len = 0.0, percentage, eta_progress, eta_time = -1.0;
+    double pretty_len = 0.0, percentage = 0.0, progress = 0.0, time_left = -1.0;
     const char * pretty_label = ff_pretty_size(total_len, & pretty_len);
 
     if (work_total != 0) {
         percentage = 1.0 - ((double)dev_used + 0.5 * (double)storage_used) / (double)work_total;
-        eta_progress = percentage; // percentage >= 0.125 ? percentage : percentage - 0.5 * (0.125 - percentage);
-        eta_time = eta.add(eta_progress);
+        time_left = eta.add(progress = percentage);
         percentage *= 100.0;
+    }
 
-        if (eta_time >= 0) {
-            const char * eta_time_label = ff_pretty_time(eta_time, & eta_time);
-            ft_ull eta_time_ull = (ft_ull)(eta_time + 0.5);
-            ff_log(log_level, 0, "%sprogress: %4.1f%% done, %.2f %sbytes still to relocate, estimated %"FT_ULL" %s%s left",
-                   simul_msg, percentage, pretty_len, pretty_label, eta_time_ull, eta_time_label, (eta_time_ull != 1 ? "s": ""));
-        } else
-            ff_log(log_level, 0, "%sprogress: %4.1f%% done, %.2f %sbytes still to relocate",
-		   simul_msg, percentage, pretty_len, pretty_label);
+    if (time_left < 0 || io->simulate_run()) {
+    	ff_log(log_level, 0, "%sprogress: %4.1f%% done, %.2f %sbytes still to relocate",
+    			simul_msg, percentage, pretty_len, pretty_label);
+    } else {
+    	ft_ull time_left1 = 0, time_left2 = 0;
+    	const char * time_left_label1 = NULL, * time_left_label2 = NULL;
 
-    } else
-        ff_log(log_level, 0, "%sprogress: %.2f %sbytes left to relocate",
-	       simul_msg, pretty_len, pretty_label);
+    	ff_pretty_time2(time_left, & time_left1, & time_left_label1, & time_left2, & time_left_label2);
 
+    	/* we write something like "1 hour and 20 minutes" instead of just "1 hour" or "1.3 hours" */
+    	if (time_left_label2 != NULL) {
+        	ff_log(log_level, 0, "%sprogress: %4.1f%% done, %.2f %sbytes still to relocate, estimated %"FT_ULL" %s%s and %"FT_ULL" %s%s left",
+        			simul_msg, percentage, pretty_len, pretty_label,
+        			time_left1, time_left_label1, (time_left1 != 1 ? "s": ""),
+        			time_left2, time_left_label2, (time_left2 != 1 ? "s": ""));
+    	} else {
+        	ff_log(log_level, 0, "%sprogress: %4.1f%% done, %.2f %sbytes still to relocate, estimated %"FT_ULL" %s%s left",
+        			simul_msg, percentage, pretty_len, pretty_label,
+        			time_left1, time_left_label1, (time_left1 != 1 ? "s": ""));
+    	}
+    }
 
     const ft_uoff eff_block_size = (ft_uoff)1 << eff_block_size_log2;
 
@@ -1056,40 +1069,20 @@ int fr_work<T>::move_to_target_last_odd_sized_block()
 
 	T odd_block_logical = loop_file_len >> eff_block_size_log2;
 	T odd_block_len = 1;
-	map_value_type odd_block_transp;
-	odd_block_transp.first.physical = odd_block_logical;
-	odd_block_transp.second.logical = 0;
-	odd_block_transp.second.length = odd_block_len;
 
 	const char * simul_msg = io->simulate_run() ? "(simulated) " : "";
 
 	ff_log(FC_INFO, 0, "%sloop file has an odd-sized last block (%"FT_ULL" bytes long), looking for it...",
 			simul_msg, odd_block_bytes);
 
-	map_type odd_block_map;
-	map_iterator iter;
-	if (!odd_block_map.intersect_all(dev_transpose, odd_block_transp, FC_PHYSICAL1)
-			|| (iter = odd_block_map.begin()) == odd_block_map.end())
+	map_value_type found_block_transp;
+	if (!dev_transpose.find_physical_block(odd_block_logical, found_block_transp))
 	{
 		ff_log(FC_WARN, 0, "%slast block NOT FOUND! this is probably a BUG", simul_msg);
 		return err;
 	}
-	if (odd_block_map.size() != 1) {
-		ff_log(FC_WARN, 0, "%sfound %"FT_ULL" blocks instead of just one, this is probably a BUG",
-				simul_msg, (ft_ull) odd_block_map.size());
-		ff_log(FC_INFO, 0, "%sreporting the unexpected blocks found for diagnostic purposes");
-		show(label[FC_DEVICE], "", eff_block_size, odd_block_map, FC_INFO);
-		return err;
-	}
-
-	const map_value_type & found_block_transp = * iter;
-	if (found_block_transp.first.physical != odd_block_logical || found_block_transp.second.length != odd_block_len) {
-		ff_log(FC_WARN, 0, "%slast block found, but it's different than expected. this is probably a BUG", simul_msg);
-		ff_log(FC_INFO, 0, "%sreporting the expected block and the one actually found for diagnostic purposes");
-		show(0, odd_block_transp, FC_INFO);
-		show(0, found_block_transp, FC_INFO);
-		return err;
-	}
+	/* guaranteed by fr_map<T>::find_physical_block() */
+	ff_assert(found_block_transp.second.length == odd_block_len);
 
 	ff_log(FC_INFO, 0, "%slast block found, trying to copy it to its final destination");
 	show(0, found_block_transp, FC_DEBUG);
@@ -1110,8 +1103,8 @@ int fr_work<T>::move_to_target_last_odd_sized_block()
 		err = io->flush();
 
 	if (err == -EIO) {
-		ff_log(FC_WARN, 0, "%scopying the last odd-sized block (%"FT_ULL" bytes) to its final destination failed with I/O error",
-				simul_msg, (ft_ull) odd_block_bytes);
+		ff_log(FC_WARN, 0, "%scopying the last odd-sized block (%"FT_ULL" bytes) to its final destination failed with %s",
+				simul_msg, (ft_ull) odd_block_bytes, strerror(-err));
 		ff_log(FC_WARN, 0, "%sit is probably OK, such block is normally not part of the filesystem", simul_msg);
 		err = 0;
 	}

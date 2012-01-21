@@ -1,7 +1,7 @@
 #!/bin/dash
 
 PROG=fstransform
-PROG_VERSION=0.3.5
+PROG_VERSION=0.3.7
 ____='           '
 
 
@@ -18,11 +18,13 @@ CMDS_missing=
 ERR=0
 DEVICE=
 FSTYPE=
+DEVICE_BLOCK_SIZE=
 DEVICE_SIZE_IN_BYTES=
 DEVICE_MOUNT_POINT=
 DEVICE_FSTYPE=
 LOOP_FILE=
 LOOP_DEVICE=
+LOOP_SIZE_IN_BYTES=
 LOOP_MOUNT_POINT=
 ZERO_FILE=
 
@@ -120,52 +122,52 @@ parse_args() {
   for arg in "$@"; do
     case "$arg" in
       --cmd-*=* )
-        cmd="`$CMD_expr match \"$arg\" '--cmd-\(.*\)=.*'`"
-        user_cmd="`$CMD_expr match \"$arg\" '--cmd-.*=\(.*\)'`"
+        cmd="`\"$CMD_expr\" match \"$arg\" '--cmd-\(.*\)=.*'`"
+        user_cmd="`\"$CMD_expr\" match \"$arg\" '--cmd-.*=\(.*\)'`"
         eval "USER_CMD_$cmd=\"$user_cmd\""
         ;;
       --loop-file=*)
-        LOOP_FILE="`$CMD_expr match \"$arg\" '--loop-file=\(.*\)'`"
+        LOOP_FILE="`\"$CMD_expr\" match \"$arg\" '--loop-file=\(.*\)'`"
 	log_info "loop file '$LOOP_FILE' specified on command line"
         ;;
       --loop-mount-point=*)
-        LOOP_MOUNT_POINT="`$CMD_expr match \"$arg\" '--loop-mount-point=\(.*\)'`"
+        LOOP_MOUNT_POINT="`\"$CMD_expr\" match \"$arg\" '--loop-mount-point=\(.*\)'`"
 	log_info "loop file mount point '$LOOP_MOUNT_POINT' specified on command line"
         ;;
       --zero-file=*)
-        ZERO_FILE="`$CMD_expr match \"$arg\" '--zero-file=\(.*\)'`"
+        ZERO_FILE="`\"$CMD_expr\" match \"$arg\" '--zero-file=\(.*\)'`"
 	log_info "zero file '$ZERO_FILE' specified on command line"
         ;;
-      --device-fstype=*)
-        DEVICE_FSTYPE="`$CMD_expr match \"$arg\" '--device-fstype=\(.*\)'`"
+      --source-fstype=*)
+        DEVICE_FSTYPE="`\"$CMD_expr\" match \"$arg\" '--device-fstype=\(.*\)'`"
 	log_info "device initial filesystem type '$DEVICE_FSTYPE' specified on command line"
         ;;
       --opts-fsmove=*)
-        OPTS_fsmove="`$CMD_expr match \"$arg\" '--opts-fsmove=\(.*\)'`"
+        OPTS_fsmove="`\"$CMD_expr\" match \"$arg\" '--opts-fsmove=\(.*\)'`"
 	log_info "options '$OPTS_fsmove' for fsmove specified on command line"
 	;;
       --opts-fsremap=*)
-        OPTS_fsremap="`$CMD_expr match \"$arg\" '--opts-fsremap=\(.*\)'`"
-	log_info "options '$OPTS_fsmove' for fsremap specified on command line"
+        OPTS_fsremap="`\"$CMD_expr\" match \"$arg\" '--opts-fsremap=\(.*\)'`"
+	log_info "options '$OPTS_fsremap' for fsremap specified on command line"
 	;;
       --opts-mkfs=*)
-        OPTS_mkfs="`$CMD_expr match \"$arg\" '--opts-mkfs=\(.*\)'`"
+        OPTS_mkfs="`\"$CMD_expr\" match \"$arg\" '--opts-mkfs=\(.*\)'`"
 	log_info "options '$OPTS_mkfs' for mkfs specified on command line"
 	;;
       --opts-fsck-source=*)
-        OPTS_fsck_source="`$CMD_expr match \"$arg\" '--opts-fsck-source=\(.*\)'`"
+        OPTS_fsck_source="`\"$CMD_expr\" match \"$arg\" '--opts-fsck-source=\(.*\)'`"
 	log_info "options '$OPTS_fsck_source' for fsck(source filesystem) specified on command line"
 	;;
       --opts-fsck-target=*)
-        OPTS_fsck_target="`$CMD_expr match \"$arg\" '--opts-fsck-target=\(.*\)'`"
+        OPTS_fsck_target="`\"$CMD_expr\" match \"$arg\" '--opts-fsck-target=\(.*\)'`"
 	log_info "options '$OPTS_FSCK_TARGET_FS' for fsck(target filesystem) specified on command line"
 	;;
       --x-copy-device=*)
-        X_COPY_DEVICE="`$CMD_expr match \"$arg\" '--x-copy-device=\(.*\)'`"
+        X_COPY_DEVICE="`\"$CMD_expr\" match \"$arg\" '--x-copy-device=\(.*\)'`"
 	log_info "(internal option) device will be copied to '$X_COPY_DEVICE' just before remapping"
         ;;
       --x-copy-loop-file=*)
-        X_COPY_LOOP_FILE="`$CMD_expr match \"$arg\" '--x-copy-loop-file=\(.*\)'`"
+        X_COPY_LOOP_FILE="`\"$CMD_expr\" match \"$arg\" '--x-copy-loop-file=\(.*\)'`"
 	CMDS="$CMDS cmp"
 	CMD_cmp=
 	log_info "(internal option) loop file will be copied to '$X_COPY_LOOP_FILE'"
@@ -265,7 +267,7 @@ fix_for_special_cases() {
   fi
   local my_cmd_ntfsresize=
   if test "$FSTYPE" = "ntfs" -o "$DEVICE_FSTYPE" = "ntfs"; then
-    log_info "applying special options for filesystem type '$FSTYPE'"
+    log_info "applying special options for filesystem type 'ntfs'"
     # we need 'ntfsresize', check if it's available
     my_cmd_ntfsresize="`$CMD_which ntfsresize`"
     if test "$my_cmd_ntfsresize" = ""; then
@@ -401,7 +403,7 @@ trap remove_fifo_out_err 0
 
 read_cmd_out_err() {
   local my_cmd_full="$1"
-  local my_cmd="`$CMD_expr match \"$1\" '.*/\([^/]*\)'`"
+  local my_cmd="`\"$CMD_expr\" match \"$1\" '.*/\([^/]*\)'`"
   if test "$my_cmd" = ""; then
     my_cmd="$my_cmd_full"
   fi
@@ -459,7 +461,13 @@ log_info "preparing to transform device '$DEVICE' to filesystem type '$FSTYPE'"
 
 
 capture_cmd DEVICE_SIZE_IN_BYTES "$CMD_blockdev" --getsize64 "$DEVICE"
-log_info "detected '$DEVICE' size: $DEVICE_SIZE_IN_BYTES bytes"
+capture_cmd DEVICE_BLOCK_SIZE "$CMD_blockdev" --getbsz "$DEVICE"
+log_info "detected '$DEVICE' length = $DEVICE_SIZE_IN_BYTES bytes, block size = $DEVICE_BLOCK_SIZE bytes"
+
+if [ "$DEVICE_BLOCK_SIZE" -lt 512 ]; then
+  # paranoia...
+  DEVICE_BLOCK_SIZE=512
+fi
 
 echo_device_mount_point_and_fstype() {
   local my_dev="$1"
@@ -568,7 +576,10 @@ create_loop_or_zero_file() {
 
 create_loop_file() {
   create_loop_or_zero_file loop LOOP_FILE "$LOOP_FILE"
-  exec_cmd "$CMD_dd" if=/dev/zero of="$LOOP_FILE" bs=1 count=1 seek="`\"$CMD_expr\" \"$DEVICE_SIZE_IN_BYTES\" - 1`" >/dev/null 2>/dev/null
+  # for loop file length, truncate down device size to a multiple of its block size:
+  # avoids annoying problems with the last block if device has an odd length
+  LOOP_SIZE_IN_BYTES="`\"$CMD_expr\" $DEVICE_SIZE_IN_BYTES / $DEVICE_BLOCK_SIZE '*' $DEVICE_BLOCK_SIZE`"
+  exec_cmd "$CMD_dd" if=/dev/zero of="$LOOP_FILE" bs=1 count=1 seek="`\"$CMD_expr\" $LOOP_SIZE_IN_BYTES - 1`" >/dev/null 2>/dev/null
 }
 create_loop_file
 

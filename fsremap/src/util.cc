@@ -161,7 +161,7 @@ enum { fc_pretty_time_len = sizeof(fc_pretty_time)/sizeof(fc_pretty_time[0]) };
  * return human-readable representation of time,
  * with [second|minute|hour|day|month|year] scale as appropriate
  */
-const char * ff_pretty_time(double time, double * ret_pretty_time)
+char const * ff_pretty_time(double time, double * ret_pretty_time)
 {
     ft_size i = 0;
     for (; i < fc_pretty_time_len - 1; i++) {
@@ -170,6 +170,71 @@ const char * ff_pretty_time(double time, double * ret_pretty_time)
     }
     * ret_pretty_time = time / fc_pretty_time[i];
     return fc_pretty_time_unit[i];
+}
+
+/**
+ * return human-readable representation of time,
+ * with [second|minute|hour|day|month|year] scale as appropriate
+ */
+void ff_pretty_time2(double time,
+		ft_ull * ret_pretty_time1, char const ** ret_pretty_label1,
+		ft_ull * ret_pretty_time2, char const ** ret_pretty_label2)
+{
+    ft_size i = 0;
+    for (; i < fc_pretty_time_len - 1; i++) {
+        if (time < fc_pretty_time[i+1])
+            break;
+    }
+    double time1 = time / fc_pretty_time[i];
+
+    * ret_pretty_time1 = ff_pretty_number(time1);
+    * ret_pretty_label1 = fc_pretty_time_unit[i];
+    if (ret_pretty_time2 == NULL || ret_pretty_label2 == NULL)
+    	return;
+
+	* ret_pretty_time2 = 0.0;
+	* ret_pretty_label2 = NULL;
+
+	if (i == 0 || time1 <= 1.0 || time1 > 1.9)
+		return;
+
+    time -= (ft_ull) time1 * fc_pretty_time[i];
+    if (time <= 0.0)
+    	return;
+
+    ft_size j = 0;
+    for (j = 0; j < fc_pretty_time_len - 1; j++) {
+    	if (time < fc_pretty_time[j+1])
+    		break;
+    }
+    if (j + 1 == i) {
+    	* ret_pretty_time1 = 1;
+		* ret_pretty_time2 = ff_pretty_number(time / fc_pretty_time[j]);
+		* ret_pretty_label2 = fc_pretty_time_unit[j];
+    }
+}
+
+/**
+ * return approximate number, rounding to "one-and-a-half" significant digits.
+ * if t <= 10, return (ft_ull)(t + 0.5)
+ * if t <= 30, return ((ft_ull)(t/5 + 0.5)) * 5
+ * if t <= 100, return ((ft_ull)(t/10 + 0.5)) * 10
+ * if t <= 300, return ((ft_ull)(t/50 + 0.5)) * 50
+ * otherwise return ((ft_ull)(t/100 + 0.5)) * 100
+ */
+ft_ull ff_pretty_number(double t) {
+	ft_ull n;
+	if (t <= 10.0)
+		n = t + 0.5;
+	else if (t <= 30.0)
+		n = 5 * (ft_ull)(t*0.2 + 0.5);
+	else if (t <= 100.0)
+		n = 10 * (ft_ull)(t*0.1 + 0.5);
+	else if (t <= 300.0)
+		n = 50 * (ft_ull)(t*0.02 + 0.5);
+	else
+		n = 100 * (ft_ull)(t*0.01 + 0.5);
+	return n;
 }
 
 FT_NAMESPACE_END

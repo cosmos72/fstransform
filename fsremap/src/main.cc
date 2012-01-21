@@ -11,6 +11,7 @@
 #undef FR_TEST_MAP
 #undef FR_TEST_RANDOM
 #undef FR_TEST_WRITE_ZEROES
+#undef FR_TEST_PRETTY_TIME
 
 
 
@@ -76,6 +77,43 @@ FT_IO_NAMESPACE_END
 # define FR_MAIN(argc, argv) FT_IO_NS ff_zero_loop_file_holes(argc, argv)
 
 
+#elif defined(FR_TEST_PRETTY_TIME)
+
+
+#include "util.hh"
+#include "log.hh"
+
+FT_NAMESPACE_BEGIN
+int ff_test_pretty_time(int argc, char ** argv) {
+	ft_log_level log_level = FT_NS FC_INFO;
+	double time, percentage = 0.0, pretty_len = 0;
+	const char * simul_msg = "", * pretty_label = "";
+
+	for (time = 0.4; time < 800000000.0; time *= 1.1) {
+    	ft_ull time_left1 = 0, time_left2 = 0;
+    	const char * time_left_label1 = NULL, * time_left_label2 = NULL;
+
+    	ff_pretty_time2(time, & time_left1, & time_left_label1, & time_left2, & time_left_label2);
+
+    	/* we write something like "1 hour and 20 minutes" instead of just "1 hour" or "1.3 hours" */
+    	if (time_left_label2 != NULL) {
+    		ff_log(log_level, 0, "%sprogress: %4.1f%% done, %.2f %sbytes still to relocate, estimated %"FT_ULL" %s%s and %"FT_ULL" %s%s left",
+        			simul_msg, percentage, pretty_len, pretty_label,
+        			time_left1, time_left_label1, (time_left1 != 1 ? "s": ""),
+        			time_left2, time_left_label2, (time_left2 != 1 ? "s": ""));
+    	} else {
+    		ff_log(log_level, 0, "%sprogress: %4.1f%% done, %.2f %sbytes still to relocate, estimated %"FT_ULL" %s%s left",
+        			simul_msg, percentage, pretty_len, pretty_label,
+        			time_left1, time_left_label1, (time_left1 != 1 ? "s": ""));
+    	}
+	}
+	return 0;
+}
+FT_NAMESPACE_END
+# define FR_MAIN(argc, argv) FT_NS ff_test_pretty_time(argc, argv)
+
+
+
 #else /* actual fstranform program */
 
 # include "remap.hh"    // for fr_remap
@@ -85,7 +123,6 @@ FT_IO_NAMESPACE_END
 
 
 
-
 int main(int argc, char ** argv) {
-    return FR_MAIN(argc, argv);
+	return FR_MAIN(argc, argv);
 }

@@ -41,20 +41,34 @@
    An alternative would be not to mmap() at all primary_storage,
    and maybe neither secondary_storage  
 
+5) fsremap must correctly handle the case where device_len and/or loop_file_len
+   are not multiples of effective block size
+   and file-system in loop_file uses a smaller block size than file-system in device
+   
+   PARTIALLY implemented: fstransform creates a loop_file that is always multiple
+   of device block size. In this way, fsremap will not have problems.
+   
+6) some ioctl(FIEMAP) implementations are strange (buggy?) and refuse
+   to return more than a certain number of extents (approx. 1300)
+   in a single call.
+   
+   if this case happens, fsremap MUST detect that the returned extents
+   are incomplete, log the problem, and work around it
+   - currently, fsremap switches to ioctl(FIBMAP) if it happens.
+   
+7) fsmove MUST preemptively check for DISK ALMOST FULL conditions
+   on {source-device} and {target-device}
 
+   Checking for I/O errors during the copy is NOT enough: Linux loop devices
+   created on top of sparse files (the case we exploit) do NOT report ANY error
+   when writing to the backing sparse file fails because of disk full,
+   but only write the I/O error to kernel messages (dmesg).
+
+   
 ###############################################
 ################### TO DO #####################
 ###############################################
 
 * bug? primary storage sometimes too small
 
-* bug? when using primary storage, sometimes relocated file-system is corrupted!
 
-* fsremap does not correctly handle the case where device_len is not a multiple
-   of effective block size and file-system in loop_file uses a smaller block size
-
-* fsmove does not yet check for DISK FULL problems in {source-device} and {target-device}
-
-   Checking for I/O errors during the copy is NOT enough: Linux loop devices
-   created on top of sparse files (the case we exploit) do NOT report ANY error
-   when writing to the backing sparse file fails because of disk full...

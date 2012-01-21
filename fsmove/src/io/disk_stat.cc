@@ -35,9 +35,9 @@ int fm_disk_stat::set_free(ft_uoff free)
     this_free = free;
     int err = 0;
     /**
-     * if file systems is smaller than 6GB, critically low free space is 96kbytes.
-     * if file systems is between 6GB and 64TB, critically low free space is total disk space divided 65536 (i.e. 0.0015%).
-     * if file systems is larger than 64TB, critically low free space is 1Gbyte.
+     * if file system is smaller than 6GB, critically low free space is 96kbytes.
+     * if file system is between 6GB and 64TB, critically low free space is total disk space divided 65536 (i.e. 0.0015%).
+     * if file system is larger than 64TB, critically low free space is 1Gbyte.
      */
     if (free <= THRESHOLD_MAX
             && (free <= THRESHOLD_MIN || free <= (this_total >> 16))) {

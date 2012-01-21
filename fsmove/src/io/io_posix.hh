@@ -46,8 +46,9 @@ private:
 
     /**
      * return true if estimated free space is comfortably high enough to write 'bytes_to_write'
+     * if first_check is true, does a more conservative estimation, requiring twice more free space than normal
      */
-    bool enough_free_space(ft_uoff bytes_to_write = 0);
+    bool enough_free_space(ft_uoff bytes_to_write = 0, bool first_check = false);
 
     /**
      * add bytes_just_written to bytes_copied_since_last_check.

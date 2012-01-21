@@ -191,6 +191,16 @@ int fr_io::save_extents(const fr_vector<ft_uoff> & loop_file_extents,
 }
 
 
+/**
+ * if DEVICE ends with an odd-sized block, reopen it after it is unmounted.
+ * Needed at least on Linux to access the last odd-sized block, if present.
+ *
+ * Default implementation: do nothing and return success.
+ */
+int fr_io::reopen_dev_if_needed()
+{
+	return 0;
+}
 
 /**
  * perform buffering and coalescing of copy requests.

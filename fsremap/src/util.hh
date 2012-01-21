@@ -122,7 +122,24 @@ const char * ff_pretty_size(ft_uoff length, double * ret_pretty_len);
  */
 const char * ff_pretty_time(double time, double * ret_pretty_time);
 
+/**
+ * return human-readable representation of time,
+ * with [second|minute|hour|day|month|year] scale as appropriate
+ */
+void ff_pretty_time2(double time,
+		ft_ull * ret_pretty_time1, char const ** ret_pretty_label1,
+		ft_ull * ret_pretty_time2 = NULL, char const ** ret_pretty_label2 = NULL);
 
+
+/**
+ * return approximate number, rounding to "one-and-a-half" significant digits.
+ * if t <= 10, return (ft_ull)(t + 0.5)
+ * if t <= 30, return ((ft_ull)(t*5 + 0.5)) / 5
+ * if t <= 100, return ((ft_ull)(t*10 + 0.5)) / 10
+ * if t <= 300, return ((ft_ull)(t*50 + 0.5)) / 50
+ * otherwise return ((ft_ull)(t*100 + 0.5)) / 100
+ */
+ft_ull ff_pretty_number(double t);
 
 
 FT_NAMESPACE_END

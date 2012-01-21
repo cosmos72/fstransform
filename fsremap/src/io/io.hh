@@ -297,6 +297,14 @@ public:
     virtual int umount_dev() = 0;
 
     /**
+     * if DEVICE ends with an odd-sized block, reopen it after it is unmounted.
+     * Needed at least on Linux to access the last odd-sized block, if present.
+     *
+     * Default implementation: do nothing and return success.
+     */
+    virtual int reopen_dev_if_needed();
+
+    /**
      * perform buffering and coalescing of copy requests.
      * queues a copy of single fragment from DEVICE or FREE-STORAGE, to STORAGE to FREE-DEVICE.
      * calls flush_queue() as needed to actually perform any copy that cannot be buffered or coalesced.

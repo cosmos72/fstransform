@@ -1,11 +1,19 @@
+#
+# This simple script is a helper to run torture tests on 'fstransform.sh'
+# 
+# It is designed assuming the availability of certain files and commands
+# in certain hard-coded paths,
+# and it will NOT be useful for the general public until customized.
+#
+
 DEVICE_FILE_SAVE=0.device
 DEVICE_FILE=1.device
 LOOP_FILE=random
 DEVICE_MOUNT_POINT=device
 ZERO_FILE=zero
 
-FSREMAP=../bin/fsremap
-CAT_RANDOM=../bin/cat-random
+FSREMAP=fsremap
+CAT_RANDOM=cat-random
 
 set -e
 set -x
