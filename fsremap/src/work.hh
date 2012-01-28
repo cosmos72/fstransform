@@ -140,7 +140,7 @@ private:
      * and since its length is instead rounded UP to one block by the various io->read_extents() functions,
      * the normal algorithm in relocate() would not find its final destination and enter an infinite loop (ouch)
      */
-    int move_to_target_last_odd_sized_block();
+    int check_last_odd_sized_block();
 
 
     /** called by relocate(). move as many extents as possible from DEVICE to STORAGE */

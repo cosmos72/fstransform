@@ -11,7 +11,12 @@
 #include "io/io.hh"        // for fm_io
 #include "io/io_posix.hh"  // for fm_io_posix
 
-#include <cstring>         // for strcmp()
+#if defined(FT_HAVE_STRING_H)
+# include <string.h>       // for strcmp()
+#elif defined(FT_HAVE_CSTRING)
+# include <cstring>        // for strcmp()
+#endif
+
 #include <vector>          // for std::vector
 
 
@@ -24,7 +29,7 @@ static char const* const* label = FT_IO_NS fm_io::label;
 
 /** default constructor */
 fm_move::fm_move()
-  : this_io(0), this_eta(), this_work_total(0)
+  : this_io(0)
 { }
 
 /** destructor. calls quit() */
@@ -228,7 +233,7 @@ int fm_move::init(int argc, char const* const* argv)
                     args.simulate_run = true;
                 }
                 /* --posix */
-                else if ((io_kind = FC_IO_POSIX,   !strcmp(arg, "--posix")))
+                else if ((io_kind = FC_IO_POSIX, !strcmp(arg, "--posix")))
                 {
                     if (args.io_kind == FC_IO_AUTODETECT)
                         args.io_kind = io_kind;

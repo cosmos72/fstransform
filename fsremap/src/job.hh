@@ -8,10 +8,13 @@
 #ifndef FSREMAP_JOB_HH
 #define FSREMAP_JOB_HH
 
-#include "types.hh"    // for ft_size
+#include "types.hh"    // for ft_size, ft_uint, ft_string
 
-#include <cstdio>      // for FILE
-#include <string>      // for ft_string
+#if defined(FT_HAVE_STDIO_H)
+# include <stdio.h>        // for FILE. also for sprintf() used in job.cc
+#elif defined(FT_HAVE_CSTDIO)
+# include <cstdio>         // for FILE. also for sprintf() used in job.cc
+#endif
 
 #include "args.hh"     // for fr_args
 

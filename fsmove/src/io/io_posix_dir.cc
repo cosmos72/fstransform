@@ -7,9 +7,18 @@
 
 #include "../first.hh"
 
-#include <cerrno>           // for errno and error codes
-#include <sys/types.h>      // for DIR, opendir()
-#include <dirent.h>         //  "   "     "      , readdir(), closedir()
+#if defined(FT_HAVE_CERRNO)
+# include <cerrno>           // for errno and error codes
+#elif defined(FT_HAVE_ERRNO_H)
+# include <errno.h>
+#endif
+
+#ifdef FT_HAVE_SYS_TYPES_H
+# include <sys/types.h>      // for DIR, opendir()
+#endif
+#ifdef FT_HAVE_DIRENT_H
+# include <dirent.h>         //  "   "     "      , readdir(), closedir()
+#endif
 
 #include "../log.hh"        // for ff_log()
 #include "io_posix_dir.hh"  // for fm_io_posix_dir

@@ -10,8 +10,9 @@
 
 #include "../types.hh"    // for ft_string
 
-#include <dirent.h>       // for DIR
-
+#ifdef FT_HAVE_DIRENT_H
+# include <dirent.h>       // for DIR
+#endif
 
 FT_IO_NAMESPACE_BEGIN
 

@@ -8,7 +8,7 @@
 #include "../first.hh"
 
 #include "../log.hh"       // for ff_log()
-#include "../util.hh"      // for ff_pretty_size()
+#include "../misc.hh"      // for ff_pretty_size()
 #include "disk_stat.hh"    // for fm_disk_stat
 
 FT_IO_NAMESPACE_BEGIN

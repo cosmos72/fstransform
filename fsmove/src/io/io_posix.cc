@@ -7,25 +7,55 @@
 
 #include "../first.hh"
 #include "../assert.hh"    // for ff_assert()
-#include "../util.hh"      // for ff_min2()
-
-#include <cerrno>          // for errno
-#include <climits>         // for PATH_MAX
-#include <cstdio>          // for rename()
-#include <cstring>         // for strcmp(), memset(), memcpy()
-#include <dirent.h>        // for opendir(), readdir(), closedir()
-#include <fcntl.h>         // for open(), mknod()
-#include <sys/stat.h>      // for   "        "    , lstat(), mkdir(), mkfifo(), umask()
-#include <sys/types.h>     //  "    "        "        "        "        "         "    , lseek(), ftruncate()
-#include <unistd.h>        //  "    "        "        "    , rmdir(), lchown(), close(),    "          "     , readlink(), symlink(), unlink(), read(), write()
-#include <sys/statvfs.h>   // for statvfs(), fsblkcnt_t
-#include <sys/time.h>      // for utimes(), utimensat()
-#include <utime.h>         //  "    "           "
+#include "../misc.hh"      // for ff_min2()
 
 
+#if defined(FT_HAVE_CERRNO)
+# include <cerrno>         // for errno and error codes
+#elif defined(FT_HAVE_ERRNO_H)
+# include <errno.h>
+#endif
+#if defined(FT_HAVE_CLIMITS)
+# include <climits>        // for PATH_MAX
+#elif defined(FT_HAVE_LIMITS_H)
+# include <limits.h>       // for PATH_MAX
+#endif
+#if defined(FT_HAVE_CSTDIO)
+# include <cstdio>         // for rename()
+#elif defined(FT_HAVE_STDIO_H)
+# include <stdio.h>        // for rename()
+#endif
+#if defined(FT_HAVE_CSTRING)
+# include <cstring>        // for strcmp(), memset(), memcpy()
+#elif defined(FT_HAVE_STRING_H)
+# include <string.h>       // for strcmp(), memset(), memcpy()
+#endif
 
-#define FT_HAVE_UTIMENSAT /* define if utimensat() is supported */
-#define FT_HAVE_STRUCT_STAT_XTIM_TV_NSEC /* define if struct stat has fields st_atim.tv_nsec and st_mtim.tv_nsec */
+#ifdef FT_HAVE_DIRENT_H
+# include <dirent.h>       // for opendir(), readdir(), closedir()
+#endif
+#ifdef FT_HAVE_FCNTL_H
+# include <fcntl.h>        // for open(), mknod()
+#endif
+#ifdef FT_HAVE_SYS_STAT_H
+# include <sys/stat.h>     // for   "        "    , lstat(), mkdir(), mkfifo(), umask()
+#endif
+#ifdef FT_HAVE_SYS_TYPES_H
+# include <sys/types.h>    //  "    "        "        "        "        "         "    , lseek(), ftruncate()
+#endif
+#ifdef FT_HAVE_UNISTD_H
+# include <unistd.h>       //  "    "        "        "   ,symlink(),lchown(), close(),    "          "     , readlink(), read(), write()
+#endif
+#ifdef FT_HAVE_SYS_STATVFS_H
+# include <sys/statvfs.h>  // for statvfs(), fsblkcnt_t
+#endif
+#ifdef FT_HAVE_SYS_TIME_H
+# include <sys/time.h>     // for utimes(), utimensat()
+#endif
+#ifdef FT_HAVE_UTIME_H
+# include <utime.h>        //  "    "           "
+#endif
+
 
 
 #include "../log.hh"       // for ff_log()
@@ -71,7 +101,7 @@ int fm_io_posix::open(const fm_args & args)
     return err;
 }
 
-/** close this I/O, including file descriptors to DEVICE, LOOP-FILE, ZERO-FILE and SECONDARY-STORAGE */
+/** close this I/O, including file descriptors */
 void fm_io_posix::close()
 {
     super_type::close();
@@ -101,6 +131,8 @@ bool fm_io_posix::enough_free_space(ft_uoff bytes_to_write, bool first_time)
  */
 int fm_io_posix::periodic_check_free_space(ft_size bytes_just_written, ft_uoff bytes_to_write)
 {
+	add_work_done(bytes_just_written);
+
     bytes_copied_since_last_check += bytes_just_written;
 
     int err = 0;
@@ -181,7 +213,16 @@ int fm_io_posix::move()
     /* avoid messing up permissions of created files/directories/special-devices */
     umask(0);
 
-    return move(source_root(), target_root());
+	ft_uoff source_used = source_stat().get_used();
+	ft_uoff target_used = target_stat().get_used();
+	ft_uoff work_total = source_used > target_used ? source_used - target_used : 0;
+
+	init_work(work_total);
+
+    int err = move(source_root(), target_root());
+    if (err == 0)
+    	ff_log(FC_NOTICE, 0, "job completed.");
+    return err;
 }
 
 
@@ -346,7 +387,7 @@ int fm_io_posix::move_special(const ft_string & source_path, const ft_stat & sta
 
     } while (0);
 
-    if (err == 0 && unlink(source) != 0)
+    if (err == 0 && remove(source) != 0)
         err = ff_log(FC_ERROR, errno, "failed to remove source special device `%s'", source);
 
     return err;
@@ -369,7 +410,7 @@ int fm_io_posix::move_file(const ft_string & source_path, const ft_stat & stat, 
     if (err == 0) {
         /** hard link succeeded, no need to copy the file contents */
         err = this->periodic_check_free_space();
-        goto move_file_unlink_source;
+        goto move_file_remove_source;
     } else if (err == EAGAIN) {
         /* no luck with inode_cache, proceed as usual */
         err = 0;
@@ -404,9 +445,9 @@ int fm_io_posix::move_file(const ft_string & source_path, const ft_stat & stat, 
     if (err == 0)
         err = this->copy_stat(target, stat);
 
-    move_file_unlink_source:
+    move_file_remove_source:
     if (err == 0) {
-        if (::unlink(source) != 0)
+        if (::remove(source) != 0)
             err = ff_log(FC_ERROR, errno, "failed to remove source file `%s'", source);
     }
     return err;
@@ -515,10 +556,10 @@ int fm_io_posix::copy_stream(int in_fd, int out_fd, const ft_stat & stat, const 
     }
 
     /* not enough free space, use backward copy + progressively truncate source file */
-    if (ff_log_is_enabled(FC_DEBUG)) {
+    if (ff_log_is_enabled(FC_INFO)) {
         double pretty_size = 0.0;
         const char * pretty_label = ff_pretty_size((ft_uoff) file_size, & pretty_size);
-        ff_log(FC_DEBUG, 0, "low free space, using backward copy for file `%s' (%.2f %sbytes)", target, pretty_size, pretty_label);
+        ff_log(FC_INFO, 0, "low free space, using backward copy for file `%s' (%.2f %sbytes)", target, pretty_size, pretty_label);
     }
 
     if (::lseek(in_fd, 0, SEEK_END) != file_size)
@@ -797,19 +838,27 @@ int fm_io_posix::copy_stat(const char * target, const ft_stat & stat)
     const char * label = fm_io_posix_is_dir(stat) ? "directory" : fm_io_posix_is_file(stat) ? "file" : "special device";
 
     /* copy timestamps */
-#if defined(FT_HAVE_UTIMENSAT) && defined(AT_FDCWD) && defined(AT_SYMLINK_NOFOLLOW) && defined(FT_HAVE_STRUCT_STAT_XTIM_TV_NSEC)
+#if defined(FT_HAVE_UTIMENSAT) && defined(AT_FDCWD) && defined(AT_SYMLINK_NOFOLLOW)
     do {
         struct timespec time_buf[2];
         time_buf[0].tv_sec = stat.st_atime;
-        time_buf[0].tv_nsec = stat.st_atim.tv_nsec;
         time_buf[1].tv_sec = stat.st_mtime;
-        time_buf[1].tv_nsec = stat.st_mtim.tv_nsec;
+# if defined(FT_HAVE_STRUCT_STAT_ST_ATIM_TV_NSEC)
+        time_buf[0].tv_nsec = stat.st_atim.tv_nsec;
+# elif defined(FT_HAVE_STRUCT_STAT_ST_ATIMENSEC)
+        time_buf[0].tv_nsec = stat.st_atimensec;
+# endif
 
+# if defined(FT_HAVE_STRUCT_STAT_ST_MTIM_TV_NSEC)
+        time_buf[1].tv_nsec = stat.st_mtim.tv_nsec;
+# elif defined(FT_HAVE_STRUCT_STAT_ST_MTIMENSEC)
+        time_buf[1].tv_nsec = stat.st_mtimensec;
+# endif
         if (utimensat(AT_FDCWD, target, time_buf, AT_SYMLINK_NOFOLLOW) != 0)
             ff_log(FC_WARN, errno, "cannot change timestamps on %s `%s'", label, target);
 
     } while (0);
-#else
+#elif defined(FT_HAVE_UTIMES)
     /* utimes() does not work on symbolic links */
     if (!fm_io_posix_is_symlink(stat.st_mode)) {
         struct timeval time_buf[2];
@@ -820,14 +869,23 @@ int fm_io_posix::copy_stat(const char * target, const ft_stat & stat)
         if (utimes(target, time_buf) != 0)
             ff_log(FC_WARN, errno, "cannot change timestamps on %s `%s'", label, target);
     }
+#else
+# warning utimensat() and utimes() are both missing. fsmove will not be able to set timestamps of copied files/directories
 #endif
 
     do {
         bool is_error = !force_run();
+        bool is_symlink = fm_io_posix_is_symlink(stat);
         const char * fail_label = is_error ? "failed to" : "cannot";
 
         /* copy owner and group. this resets any SUID bits */
-        if (lchown(target, stat.st_uid, stat.st_gid) != 0) {
+
+#if defined(FT_HAVE_LCHOWN)
+        if (lchown(target, stat.st_uid, stat.st_gid) != 0)
+#else
+        if (!is_symlink && chown(target, stat.st_uid, stat.st_gid) != 0)
+#endif
+        {
             err = ff_log(is_error ? FC_ERROR : FC_WARN, errno,
                     "%s set owner=%"FT_ULL" and group=%"FT_ULL" on %s `%s'",
                     fail_label, (ft_ull)stat.st_uid, (ft_ull)stat.st_gid, label, target);
@@ -840,7 +898,7 @@ int fm_io_posix::copy_stat(const char * target, const ft_stat & stat)
          * 1. chmod() on a symbolic link has no sense, don't to it
          * 2. chmod() must be performed AFTER lchown(), because lchown() resets any SUID bits
          */
-        if (!fm_io_posix_is_symlink(stat) && chmod(target, stat.st_mode) != 0) {
+        if (!is_symlink && chmod(target, stat.st_mode) != 0) {
             err = ff_log(is_error ? FC_ERROR : FC_WARN, errno,
                     "%s change mode to 0%"FT_OLL" on %s `%s'",
                     fail_label, (ft_ull)stat.st_mode, label, target);
@@ -914,7 +972,7 @@ int fm_io_posix::remove_dir(const ft_string & path)
         if (simulate_run() || is_source_lost_found(path))
             break;
 
-        if (rmdir(dir) != 0) {
+        if (remove(dir) != 0) {
             /* ignore error if we are removing source root: it is allowed to be in use */
             if (path != source_root()) {
                 /* if force_run(), failure to remove a source directory is just a warning */

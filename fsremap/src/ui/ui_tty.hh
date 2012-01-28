@@ -8,10 +8,14 @@
 #ifndef FSREMAP_UI_UI_TTY_HH
 #define FSREMAP_UI_UI_TTY_HH
 
-#include <cstdio>
+#if defined (FT_HAVE_STDIO_H)
+# include <stdio.h>      // for FILE. also for fdopen() used in ui_tty.cc
+#elif defined(FT_HAVE_CSTDIO)
+# include <cstdio>       // for FILE. also for fdopen() used in ui_tty.cc
+#endif
 
 #include "../fwd.hh"     // for fr_io
-#include "../types.hh"   // for ft_uint
+#include "../types.hh"   // for ft_uint, ft_uoff
 #include "ui.hh"         // for fr_ui
 
 FT_UI_NAMESPACE_BEGIN

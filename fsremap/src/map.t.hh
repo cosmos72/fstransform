@@ -9,7 +9,7 @@
 
 #include "assert.hh"     // for ff_assert macro
 #include "map.hh"        // for fr_map<T>
-#include "util.hh"       // for ff_max2(), ff_min2()
+#include "misc.hh"       // for ff_max2(), ff_min2()
 #include "vector.hh"     // for fr_vector<T>
 
 FT_NAMESPACE_BEGIN

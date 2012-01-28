@@ -10,6 +10,8 @@
 
 #include "../types.hh"
 
+#ifdef __linux__
+
 FT_ARCH_NAMESPACE_BEGIN
 
 /**
@@ -19,5 +21,7 @@ FT_ARCH_NAMESPACE_BEGIN
 ft_uoff ff_arch_linux_mem_system_free();
 
 FT_ARCH_NAMESPACE_END
+
+#endif /* __linux__ */
 
 #endif /* FSREMAP_ARCH_MEM_LINUX_HH */

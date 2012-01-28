@@ -7,14 +7,27 @@
 
 #include "first.hh"
 
-#include <cerrno>    // for ENOMEM
-#include <cstdio>    // for sprintf()
-#include <cstdlib>   // for malloc(), free(), getenv()
-#include <cstring>   // for memcpy(), sprintf()
 
-#include "io/util.hh"  // for ff_mkdir()
-#include "job.hh"      // for fr_job
-#include "log.hh"      // for ff_log*()
+#if defined(FT_HAVE_ERRNO_H)
+# include <errno.h>        // for errno
+#elif defined(FT_HAVE_CERRNO)
+# include <cerrno>         // for errno
+#endif
+#if defined(FT_HAVE_STDLIB_H)
+# include <stdlib.h>       // for malloc(), free(), getenv()
+#elif defined(FT_HAVE_CSTDLIB)
+# include <cstdlib>        // for malloc(), free(), getenv()
+#endif
+#if defined(FT_HAVE_STRING_H)
+# include <string.h>     // for memcpy()
+#elif defined(FT_HAVE_CSTRING)
+# include <cstring>      // for memcpy()
+#endif
+
+
+#include "io/util.hh" // for ff_mkdir()
+#include "job.hh"     // for fr_job
+#include "log.hh"     // for ff_log*()
 
 
 FT_NAMESPACE_BEGIN

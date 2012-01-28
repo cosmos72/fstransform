@@ -7,8 +7,11 @@
 
 #include "../first.hh"
 
-#include <cerrno>            // for errno, ENOMEM, EINVAL, EFBIG
-#include <cstdio>            // for FILE
+#if defined(FT_HAVE_ERRNO_H)
+# include <errno.h>      // for errno, ENOMEM, EINVAL, EFBIG
+#elif defined(FT_HAVE_CERRNO)
+# include <cerrno>       // for errno, ENOMEM, EINVAL, EFBIG
+#endif
 
 #include "../types.hh"       // for ft_off
 #include "../extent.hh"      // for fr_extent<T>
@@ -30,8 +33,10 @@ int ff_load_extents_file(FILE * f, fr_vector<ft_uoff> & ret_list, ft_uoff & ret_
 {
     {
         char header[200];
-        for (ft_size i = 0; i < 6; i++)
-            fgets(header, sizeof(header), f);
+        for (ft_size i = 0; i < 6; i++) {
+            if (fgets(header, sizeof(header), f) == NULL || header[0] != '#')
+	        return EPROTO;
+	}
     }
 
     ft_ull physical, logical, length = 0, user_data;

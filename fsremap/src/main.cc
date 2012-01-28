@@ -37,7 +37,7 @@ FT_NAMESPACE_END
 
 # include "assert.hh"
 # include "log.hh"
-# include "util.hh"
+# include "misc.hh"
 #define FR_MAIN(argc, argv) FT_NS test_random(argc, argv)
 FT_NAMESPACE_BEGIN
 static int test_random(int argc, char ** argv) {
@@ -80,7 +80,7 @@ FT_IO_NAMESPACE_END
 #elif defined(FR_TEST_PRETTY_TIME)
 
 
-#include "util.hh"
+#include "misc.hh"
 #include "log.hh"
 
 FT_NAMESPACE_BEGIN

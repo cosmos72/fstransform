@@ -7,7 +7,11 @@
 
 #include "first.hh"
 
-#include <cstdlib>       // for exit()
+#if defined(FT_HAVE_STDLIB_H)
+# include <stdlib.h>     // for exit()
+#elif defined(FT_HAVE_CSTDLIB)
+# include <cstdlib>      // for exit()
+#endif
 
 #include "assert.hh"     // for ff_assert()
 #include "log.hh"        // for ff_log()

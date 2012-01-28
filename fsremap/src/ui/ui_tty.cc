@@ -7,16 +7,27 @@
 
 #include "../first.hh"
 
-#include <cerrno>
-
-#ifdef FT_HAVE_TERMIOS_H
-# include <termios.h>
-# include <sys/ioctl.h>
+#if defined(FT_HAVE_ERRNO_H)
+# include <errno.h>        // for errno
+#elif defined(FT_HAVE_CERRNO)
+# include <cerrno>         // for errno
 #endif
 
+#ifdef FT_HAVE_TERMIOS_H
+# include <termios.h>    // for TIOCGWINSZ, struct winsize
+#endif
+#ifdef FT_HAVE_SYS_IOCTL_H
+# include <sys/ioctl.h>  // for ioctl()
+#endif
+#ifdef FT_HAVE_SYS_TYPES_H
 # include <sys/types.h>
+#endif
+#ifdef FT_HAVE_SYS_STAT_H
 # include <sys/stat.h>
+#endif
+#ifdef FT_HAVE_FCNTL_H
 # include <fcntl.h>
+#endif
 
 #include "../log.hh"        // for ff_log
 #include "../vector.hh"     // for fr_vector<T>
@@ -52,7 +63,7 @@ int fr_ui_tty::init(const char * tty_name)
             err = ff_log(FC_ERROR, errno, "error opening tty '%s'", tty_name);
             break;
         }
-        if ((err = ioctl(fd, TIOCGWINSZ, &wsz)) != 0) {
+       if ((err = ::ioctl(fd, TIOCGWINSZ, &wsz)) != 0) {
             err = ff_log(FC_ERROR, errno, "error in tty ioctl('%s', TIOCGWINSZ)", tty_name);
             break;
         }

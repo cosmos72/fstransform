@@ -7,10 +7,17 @@
 
 #include "first.hh"
 
-#include <cstdio>    // for FILE *, stdout, stderr
-#include <cstdarg>   // for va_list and va_{start,end,copy}()
-#include <cstring>   // for strerror(), strncmp()
-#include <ctime>     // for time(), localtime_r(), localtime(), strftime()
+#if defined(FT_HAVE_STRING_H)
+# include <string.h>     // for strerror(), strncmp()
+#elif defined(FT_HAVE_CSTRING)
+# include <cstring>      // for strerror(), strncmp()
+#endif
+#if defined(FT_HAVE_TIME_H)
+# include <time.h>     // for time(), localtime_r(), localtime(), strftime()
+#elif defined(FT_HAVE_CTIME)
+# include <ctime>      // for time(), localtime_r(), localtime(), strftime()
+#endif
+
 
 #include <map>       // for std::map<K,V>
 
@@ -57,7 +64,7 @@ static void ff_log_init()
 {
     if (!this_log_initialized) {
         this_log_initialized = true;
-#ifdef FT_HAVE_LOCALTIME_R
+#ifdef FT_HAVE_TZSET
         tzset();
 #endif
         (void) setvbuf(stdout, NULL, _IOLBF, 0);

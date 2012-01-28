@@ -6,17 +6,36 @@
  */
 #include "../first.hh"
 
-#include <cerrno>         // for errno, EOVERFLOW, ENOTBLK, EINTR
-#include <cstdlib>        // for exit()
-#include <unistd.h>       // for fork(), execv()
-#include <sys/ioctl.h>    // for ioctl()
-#include <sys/types.h>    // for waitpid()
-#include <sys/wait.h>     // for   "
-#include <linux/fs.h>     // for BLKGETSIZE64
+#if defined(FT_HAVE_ERRNO_H)
+# include <errno.h>        // for errno, EOVERFLOW, ENOTBLK, EINTR
+#elif defined(FT_HAVE_CERRNO)
+# include <cerrno>         // for errno, EOVERFLOW, ENOTBLK, EINTR
+#endif
+#if defined(FT_HAVE_STDLIB_H)
+# include <stdlib.h>       // for exit()
+#elif defined(FT_HAVE_CSTDLIB)
+# include <cstdlib>        // for exit()
+#endif
+
+#ifdef FT_HAVE_UNISTD_H
+# include <unistd.h>       // for fork(), execvp()
+#endif
+#ifdef FT_HAVE_SYS_STAT_H
+# include <sys/ioctl.h>    // for ioctl()
+#endif
+#ifdef FT_HAVE_SYS_TYPES_H
+# include <sys/types.h>    // for waitpid()
+#endif
+#ifdef FT_HAVE_SYS_WAIT_H
+# include <sys/wait.h>     // for    "
+#endif
+#ifdef FT_HAVE_LINUX_FS_H
+# include <linux/fs.h>     // for BLKGETSIZE64
+#endif
 
 #include "../types.hh"    // for ft_u64, ft_stat
 #include "../log.hh"      // for ff_log()
-#include "../util.hh"     // for ff_min2<T>()
+#include "../misc.hh"     // for ff_min2<T>()
 #include "util_posix.hh"  // for ff_posix_ioctl(), ff_posix_stat(), ff_posix_size(), ff_filedev()
 
 
@@ -40,17 +59,28 @@ int ff_posix_stat(int fd, ft_stat * ret_stat)
 }
 
 
+/** return block size of file-system containing file */
+int ff_posix_blocksize(int fd, ft_uoff * ret_block_size)
+{
+    ft_stat st_buf;
+    int err = ff_posix_stat(fd, & st_buf);
+    if (err == 0) {
+        ft_uoff block_size;
+        if ((err = ff_narrow(st_buf.st_blksize, & block_size)) == 0)
+        	* ret_block_size = block_size;
+    }
+    return err;
+}
+
 /** return file size in (*ret_size) */
 int ff_posix_size(int fd, ft_uoff * ret_size)
 {
     ft_stat st_buf;
     int err = ff_posix_stat(fd, & st_buf);
     if (err == 0) {
-        ft_uoff file_size = (ft_uoff) st_buf.st_size;
-        if ((ft_off) file_size == st_buf.st_size)
-            * ret_size = file_size;
-        else
-            err = EOVERFLOW; // file size cannot be represented by ft_uoff!
+        ft_uoff file_size;
+        if ((err = ff_narrow(st_buf.st_size, & file_size)) == 0)
+        	* ret_size = file_size;
     }
     return err;
 }
@@ -94,14 +124,6 @@ int ff_posix_blkdev_size(int fd, ft_uoff * ret_size)
             err = EOVERFLOW; // device size cannot be represented by ft_uoff!
     }
     return err;
-}
-
-
-/** return this process PID in (*ret_pid) */
-int ff_posix_pid(ft_pid * ret_pid)
-{
-    * ret_pid = getpid();
-    return 0;
 }
 
 /** create a directory */
@@ -216,9 +238,11 @@ int ff_posix_exec(const char * path, const char * const argv[])
         err = -ECHILD; // assume failure unless proved successful...
         int status = 0;
 
-        if (waitpid(pid, & status, 0/*options*/) != pid)
-            err = ff_log(FC_ERROR, errno, "error in waitpid(), assuming command '%s' failed", path);
-        else if (WIFEXITED(status)) {
+        if (waitpid(pid, & status, 0/*options*/) != pid) {
+        	err = ff_log(FC_ERROR, errno, "error in waitpid(), assuming command '%s' failed", path);
+        	if (err == 0)
+        		err = -ECHILD;
+        } else if (WIFEXITED(status)) {
 
             status = WEXITSTATUS(status);
             if (status == 0)

@@ -10,8 +10,6 @@
 
 #include "check.hh"
 
-#include <cstdio>          // for FILE *
-
 #include "args.hh"         // for fr_args
 #include "io/io.hh"        // for fr_io
 #include "io/io_posix.hh"  // for fr_io_posix

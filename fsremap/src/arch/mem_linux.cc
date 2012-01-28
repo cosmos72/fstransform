@@ -6,14 +6,25 @@
  */
 #include "../first.hh"
 
-#include "mem_linux.hh"
-
-
 #ifdef __linux__
 
-#include <cerrno>  // for errno
-#include <cstdio>  // for FILE, fopen(), fclose()
-#include <cstring> // for strcmp()
+#include "mem_linux.hh"
+
+#if defined(FT_HAVE_ERRNO_H)
+# include <errno.h>      // for errno
+#elif defined(FT_HAVE_CERRNO)
+# include <cerrno>       // for errno
+#endif
+#if defined(FT_HAVE_STDIO_H)
+# include <stdio.h>      // for FILE, fopen(), fclose()
+#elif defined(FT_HAVE_CSTDIO)
+# include <cstdio>       // for FILE, fopen(), fclose()
+#endif
+#if defined(FT_HAVE_STRING_H)
+# include <string.h>     // for strcmp()
+#elif defined(FT_HAVE_CSTRING)
+# include <cstring>      // for strcmp()
+#endif
 
 
 #include "../log.hh" // for ff_log()

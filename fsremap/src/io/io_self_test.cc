@@ -8,7 +8,7 @@
 #include "../first.hh"
 
 #include "../log.hh"         // for ff_log()
-#include "../util.hh"        // for ff_min2(), ff_max2(), ff_random()
+#include "../misc.hh"        // for ff_min2(), ff_max2(), ff_random()
 #include "io_self_test.hh"   // for fr_io_self_test
 
 

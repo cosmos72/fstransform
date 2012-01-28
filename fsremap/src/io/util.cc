@@ -6,24 +6,18 @@
  */
 #include "../first.hh"
 
-#include <cerrno>        // for ENOSYS
+#if defined(FT_HAVE_ERRNO_H)
+# include <errno.h>        // for ENOSYS
+#elif defined(FT_HAVE_CERRNO)
+# include <cerrno>         // for ENOSYS
+#endif
 
-#include "../types.hh"   // for ft_pid, ft_mode
-#include "util_posix.hh" // for ff_posix_pid(), ff_posix_mkdir()
+#include "../types.hh"   // for ft_mode
+#include "util_posix.hh" // for ff_posix_mkdir()
 
 
 FT_IO_NAMESPACE_BEGIN
 
-
-/** return this process PID in (*ret_pid) */
-int ff_pid(ft_pid * ret_pid)
-{
-#ifdef __USE_POSIX
-    return ff_posix_pid(ret_pid);
-#else
-    return ENOSYS;
-#endif
-}
 
 /** create a directory */
 int ff_mkdir(const char * path)

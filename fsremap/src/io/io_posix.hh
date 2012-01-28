@@ -115,11 +115,17 @@ protected:
              ft_size extent_index, ft_size & mem_offset);
 
     /**
-     * create and open SECONDARY-STORAGE in job.job_dir() + '.storage'
+     * create and open SECONDARY-STORAGE in job.job_dir() + '.storage.bin'
      * and fill it with 'secondary_len' bytes of zeros. do not mmap() it.
      * return 0 if success, else error
      */
     int create_secondary_storage(ft_size secondary_len);
+
+    /**
+     * remove SECONDARY-STORAGE in job.job_dir() + '.storage.bin'
+     * return 0 if success, else error
+     */
+    int remove_secondary_storage();
 
     /**
      * actually copy a list of fragments from DEVICE to STORAGE, or from STORAGE or DEVICE, or from DEVICE to DEVICE.
@@ -188,19 +194,13 @@ public:
     virtual int umount_dev();
 
     /**
-     * if DEVICE ends with an odd-sized block, reopen it after it is unmounted.
-     * Needed at least on Linux to access the last odd-sized block, if present
-     */
-    virtual int reopen_dev_if_needed();
-
-    /**
      * write zeroes to primary storage.
      * used to remove primary-storage once remapping is finished
      * and clean the remaped file-system
      */
     virtual int zero_primary_storage();
 
-    /** close and munmap() PRIMARY-STORAGE and SECONDARY-STORAGE. called by close() and by work<T>::close_storage() */
+    /** close, munmap() and remove() SECONDARY-STORAGE. called by close() and by work<T>::close_storage() */
     virtual int close_storage();
 };
 

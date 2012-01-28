@@ -8,7 +8,6 @@
 #include "first.hh"
 
 #include <algorithm>     // for std::sort()
-#include <cerrno>        // for EFBIG
 
 #include "vector.hh"     // for fr_vector<T>
 

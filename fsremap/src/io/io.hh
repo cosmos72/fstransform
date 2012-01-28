@@ -10,7 +10,7 @@
 
 #include "../check.hh"
 
-#include "../types.hh"       // for ft_uoff
+#include "../types.hh"       // for ft_uoff, ft_size, ft_string
 #include "../fwd.hh"         // for fr_args forward declaration
 #include "../job.hh"         // for fr_job
 #include "../extent.hh"      // for fr_extent<T>
@@ -295,14 +295,6 @@ public:
 
     /** call umount(8) on dev_path() */
     virtual int umount_dev() = 0;
-
-    /**
-     * if DEVICE ends with an odd-sized block, reopen it after it is unmounted.
-     * Needed at least on Linux to access the last odd-sized block, if present.
-     *
-     * Default implementation: do nothing and return success.
-     */
-    virtual int reopen_dev_if_needed();
 
     /**
      * perform buffering and coalescing of copy requests.

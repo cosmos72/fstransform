@@ -7,17 +7,46 @@
 
 #include "../first.hh"
 
-#include <cerrno>         // for errno
-#include <cstdlib>        // for malloc(), free(), posix_fallocate()
-#include <cstring>        // for memset()
-#include <sys/types.h>    // for open()
-#include <sys/stat.h>     //  "    "
-#include <fcntl.h>        //  "    "
-#include <unistd.h>       // for close(), unlink()
-#include <sys/mman.h>     // for mmap(), munmap()
+#if defined(FT_HAVE_ERRNO_H)
+# include <errno.h>        // for errno
+#elif defined(FT_HAVE_CERRNO)
+# include <cerrno>         // for errno
+#endif
+#if defined(FT_HAVE_STDIO_H)
+# include <stdio.h>        // for remove()
+#elif defined(FT_HAVE_CSTDIO)
+# include <cstdio>         // for remove()
+#endif
+#if defined(FT_HAVE_STDLIB_H)
+# include <stdlib.h>       // for malloc(), free(), posix_fallocate()
+#elif defined(FT_HAVE_CSTDLIB)
+# include <cstdlib>        // for malloc(), free(), posix_fallocate()
+#endif
+#if defined(FT_HAVE_STRING_H)
+# include <string.h>       // for memset()
+#elif defined(FT_HAVE_CSTRING)
+# include <cstring>        // for memset()
+#endif
+
+#ifdef FT_HAVE_SYS_TYPES_H
+# include <sys/types.h>    // for open()
+#endif
+#ifdef FT_HAVE_SYS_STAT_H
+# include <sys/stat.h>     //  "    "
+#endif
+#ifdef FT_HAVE_FCNTL_H
+# include <fcntl.h>        //  "    "
+#endif
+#ifdef FT_HAVE_UNISTD_H
+# include <unistd.h>       // for close()
+#endif
+#ifdef FT_HAVE_SYS_MMAN_H
+# include <sys/mman.h>     // for mmap(), munmap()
+#endif
+
 
 #include "../log.hh"      // for ff_log()
-#include "../util.hh"     // for ff_max2(), ff_min2()
+#include "../misc.hh"     // for ff_max2(), ff_min2()
 
 #include "../ui/ui.hh"    // for fr_ui
 
@@ -80,82 +109,34 @@ bool fr_io_posix::is_open() const
 
 static char const * fr_io_posix_force_msg(bool force) {
     if (force)
-        return ", continuing due to '-f'";
+        return ", continuing AT YOUR OWN RISK due to '-f'";
     else
-        return ", use '-f' to override";
+        return ", re-run with option '-f' if you want to continue anyway (AT YOUR OWN RISK)";
 };
 
 /** open DEVICE */
 int fr_io_posix::open_dev(const char * path)
 {
     enum { i = FC_DEVICE };
-	ft_uoff dev_len;
-	ft_dev dev_blk;
-	int err = open_dev0(path, & fd[i], & dev_blk, & dev_len);
-	if (err != 0)
-		return err;
+    ft_uoff dev_len;
+    ft_dev dev_blk;
+    int err = open_dev0(path, & fd[i], & dev_blk, & dev_len);
+    if (err != 0)
+        return err;
+        
+    /* remember device length */
+    dev_length(dev_len);
+    /* also remember device path */
+    dev_path(path);
+    /* also remember device major/minor numbers */
+    dev_blkdev(dev_blk);
 
-	/* remember device length */
-	dev_length(dev_len);
-	/* also remember device path */
-	dev_path(path);
-	/* also remember device major/minor numbers */
-	dev_blkdev(dev_blk);
+    double pretty_len;
+    const char * pretty_label = ff_pretty_size(dev_len, & pretty_len);
+    ff_log(FC_INFO, 0, "%s length is %.2f %sbytes", label[i], pretty_len, pretty_label);
 
-	double pretty_len;
-	const char * pretty_label = ff_pretty_size(dev_len, & pretty_len);
-	ff_log(FC_INFO, 0, "%s length is %.2f %sbytes", label[i], pretty_len, pretty_label);
-
-	return err;
+    return err;
 }
-
-/**
- * if DEVICE ends with an odd-sized block, reopen it after it is unmounted.
- * Needed at least on Linux to access the last odd-sized block, if present
- */
-int fr_io_posix::reopen_dev_if_needed()
-{
-	ft_uoff dev_block_size_minus_1 = ((ft_uoff)1 << effective_block_size_log2()) - 1;
-	if ((dev_length() & dev_block_size_minus_1) == 0
-			|| (loop_file_length() & dev_block_size_minus_1) == 0)
-		/* DEVICE or LOOP-FILE do not end with an odd-sized block, nothing to do */
-		return 0;
-
-    enum { i = FC_DEVICE };
-	ft_uoff dev_len;
-	const char * path = dev_path();
-	ft_dev dev_num;
-
-	close0(i);
-	int err = open_dev0(path, & fd[i], & dev_num, & dev_len);
-	do {
-		if (err != 0) {
-			ff_log(FC_ERROR, errno, "failed to reopen %s '%s' after unmount", label[i], path);
-			return 0;
-		}
-		if (dev_num != dev_blkdev()) {
-			ff_log(FC_ERROR, 0, "%s '%s' reopened after unmount is device 0x%04x instead of original 0x%04x",
-					label[i], path, (unsigned)dev_num, (unsigned)dev_blkdev());
-			err = -EINVAL;
-			break;
-		}
-		if (dev_len != dev_length()) {
-			ff_log(FC_ERROR, 0, "%s '%s' reopened after unmount is %"FT_ULL" bytes long instead of original %"FT_ULL,
-					label[i], path, (ft_ull)dev_len, (ft_ull)dev_length());
-			err = -EINVAL;
-			break;
-		}
-		ff_log(FC_INFO, 0, "successfully reopened %s '%s' after unmount to access last odd-sized block",
-				label[i], path);
-
-	} while (0);
-
-	if (err != 0)
-		close0(i);
-
-	return err;
-}
-
 
 /** actually open DEVICE */
 int fr_io_posix::open_dev0(const char * path, int * ret_fd, ft_dev * ret_dev, ft_uoff * ret_len)
@@ -203,70 +184,116 @@ int fr_io_posix::open_file(ft_size i, const char * path)
     const bool force = force_run();
     const char * force_msg = fr_io_posix_force_msg(force);
     int err = 0;
+    ft_dev dev_dev = dev_blkdev();
+    bool readwrite = true;
     do {
         /* first, try to open everything as read-write */
         fd[i] = ::open(path, O_RDWR);
-        if (fd[i] >= 0) {
-            close0(i);
-            ff_log(FC_ERROR, 0, "%s '%s' can be opened read-write, it means %s '%s' is not mounted read-only as it should",
-                   label[i], path, label[FC_DEVICE], dev_path());
-            err = -EINVAL;
-            break;
-        } else {
+        if (fd[i] < 0) {
+            readwrite = false;
             /* then, retry to open LOOP-FILE and ZERO-FILE as read-only */
             fd[i] = ::open(path, O_RDONLY);
-        }
-        if (fd[i] < 0) {
-            err = ff_log(FC_ERROR, errno, "error opening %s '%s'", label[i], path);
-            break;
+            if (fd[i] < 0) {
+                err = ff_log(FC_ERROR, errno, "error opening %s '%s'", label[i], path);
+                break;
+            }
         }
 
         /* for LOOP-FILE and ZERO-FILE, we want to know the dev_t of the device they are stored into */
         ft_dev file_dev;
         err = ff_posix_dev(fd[i], & file_dev);
         if (err != 0) {
-            err = ff_log((force ? FC_WARN : FC_ERROR), err, "%sfailed %s fstat('%s')%s",
-                         (force ? "WARNING: " : ""), label[i], path, force_msg);
+            err = ff_log((force ? FC_WARN : FC_ERROR), err, "failed %s fstat('%s')%s",
+                         label[i], path, force_msg);
             if (force)
                 err = 0;
             else
                 break;
         }
-
-        ft_uoff len, dev_len = dev_length();
-        /* for LOOP-FILE and ZERO-FILE, we check their length */
-        if ((err = ff_posix_size(fd[i], & len)) != 0) {
-            err = ff_log((force ? FC_WARN : FC_ERROR), err, "%sfailed %s fstat('%s')%s",
-                         (force ? "WARNING: " : ""), label[i], path, force_msg);
-            if (force)
-                err = 0;
-            else
-                break;
-        } else if (len > dev_len) {
-            err = ff_log(FC_ERROR, 0, "%s size = %"FT_ULL" bytes exceeds %s length = %"FT_ULL" bytes",
-                         label[i], (ft_ull)len, label[FC_DEVICE], (ft_ull)dev_len);
-            break;
-        }
-        if (i == FC_LOOP_FILE) {
-            if (len < dev_len) {
-                ff_log(FC_INFO, 0, "%s '%s' is shorter than %s, remapping will also shrink file-system",
-                       label[i], path, label[FC_DEVICE]);
-            }
-            /* remember LOOP-FILE length */
-            loop_file_length(len);
-        }
-            
         /* for LOOP-FILE and ZERO-FILE, we also check that they are actually contained in DEVICE */
-        ft_dev dev_dev = dev_blkdev();
         if (file_dev != dev_dev) {
-            ff_log((force ? FC_WARN : FC_ERROR), 0, "%s'%s' is device 0x%04x, but %s '%s' is contained in device 0x%04x%s",
-                   (force ? "WARNING: " : ""), dev_path(), (unsigned)dev_dev, label[i], path, (unsigned)file_dev, force_msg);
+            ff_log((force ? FC_WARN : FC_ERROR), 0, "'%s' is device 0x%04x, but %s '%s' is contained in device 0x%04x%s",
+                   dev_path(), (unsigned)dev_dev, label[i], path, (unsigned)file_dev, force_msg);
             if (!force) {
                 err = -EINVAL;
                 break;
             }
         }
+        if (readwrite) {
+            /*
+             * check only now if open(O_RDWR) succeeded:
+             * before telling the user that DEVICE is not mounted read-only,
+             * we need to know that LOOP-FILE and ZERO-FILE are actually inside DEVICE,
+             * otherwise the message below will mislead the user
+             */
+            close0(i);
+            ff_log(FC_ERROR, 0, "%s '%s' can be opened read-write, it means %s '%s' is not mounted read-only as it should",
+                   label[i], path, label[FC_DEVICE], dev_path());
+            err = -EINVAL;
+            break;
+        }
 
+
+        ft_uoff len, dev_len = dev_length();
+        /* for LOOP-FILE and ZERO-FILE, we check their length */
+        if ((err = ff_posix_size(fd[i], & len)) != 0) {
+            err = ff_log((force ? FC_WARN : FC_ERROR), err, "failed %s fstat('%s')%s",
+                         label[i], path, force_msg);
+            if (force)
+                err = 0;
+            else
+                break;
+        }
+        if (i == FC_LOOP_FILE) {
+            /* remember LOOP-FILE length */
+            loop_file_length(len);
+
+            /*
+             * in some cases, it can happen that device has a last odd-sized block,
+             * for example a device 1GB+1kB long with 4kB block size,
+             * and at least on Linux it's not easy to write to the last odd-sized block:
+             * the filesystem driver usually prevents it.
+             *
+             * So we play it safe and truncate device length to a multiple of its block size.
+             * Funnily enough, a good way to get device block size is to stat() a file inside it
+             */
+            ft_uoff block_size;
+            if (ff_posix_blocksize(fd[i], & block_size) != 0) {
+                ff_log(FC_WARN, errno, "%s fstat('%s') failed, assuming %s block size is at most 4 kilobytes",
+                                       label[i], path, label[FC_DEVICE]);
+                block_size = 4096;
+            } else if (block_size < 512) {
+                ff_log(FC_WARN, errno, "%s fstat('%s') reported suspiciously small block size (%"FT_ULL" bytes) for %s, rounding block size to 512 bytes",
+                                       label[i], path, (ft_ull) block_size, label[FC_DEVICE]);
+                block_size = 512;
+            }
+
+            /** remember rounded device length */
+            ft_uoff dev_len_rounded = dev_len - dev_len % block_size;
+            dev_length(dev_len_rounded);
+
+            if (len > dev_len_rounded) {
+                ff_log(FC_ERROR, 0, "cannot start %sremapping: %s '%s' length (%"FT_ULL" bytes) exceeds %s '%s' size (%"FT_ULL" bytes)",
+                        (simulate_run() ? "(simulated) " : ""),
+                        label[i], path, (ft_ull)len, label[FC_DEVICE], dev_path(), (ft_ull)dev_len_rounded);
+                if (dev_len_rounded != dev_len) {
+                    ff_log(FC_ERROR, 0, "    Note: %s size is actually %"FT_ULL" bytes, "
+                            "but fsremap needs to round it down to a multiple of fyle-system block size (%"FT_ULL" bytes)",
+                            label[FC_DEVICE], (ft_ull)dev_len, (ft_ull)block_size);
+                    ff_log(FC_ERROR, 0, "    so the usable %s size is %"FT_ULL" bytes",
+                            label[FC_DEVICE], (ft_ull)dev_len_rounded);
+                }
+                ff_log(FC_ERROR, 0, "Exiting, please shrink %s to %"FT_ULL" bytes or less before running fsremap again.",
+                        label[i], (ft_ull) dev_len_rounded);
+                ff_log(FC_ERROR, 0, "    (if you are using fstransform - i.e. if you did not manually run fsremap - "
+                        "then this is a BUG in fstransform, please report it)");
+                err = -EFBIG;
+                break;
+            } else if (len < dev_len_rounded) {
+                ff_log(FC_INFO, 0, "%s '%s' is shorter than %s, remapping will also shrink file-system",
+                       label[i], path, label[FC_DEVICE]);
+            }
+        }
     } while (0);
     
     return err;
@@ -285,9 +312,10 @@ int fr_io_posix::open(const fr_args & args)
     if (err != 0)
         return err;
 
-    if (getuid() != 0) {
+#ifdef FT_HAVE_GETUID
+    if (getuid() != 0)
         ff_log(FC_WARN, 0, "not running as root! expect '%s' errors", strerror(EPERM));
-    }
+#endif
 
     char const* const* path = args.io_args;
     do {
@@ -396,7 +424,7 @@ void fr_io_posix::close_extents()
         close0(which[i]);
 }
 
-/** close and munmap() SECONDARY-STORAGE. called by close() and by work<T>::close_storage() */
+/** close, munmap() and remove() SECONDARY-STORAGE. called by close() and by work<T>::close_storage() */
 int fr_io_posix::close_storage()
 {
     int err = 0;
@@ -426,6 +454,7 @@ int fr_io_posix::close_storage()
     if (err == 0) {
         close0(i);
         close0(j);
+        err = remove_secondary_storage();
     }
     return err;
 }
@@ -617,10 +646,20 @@ int fr_io_posix::replace_storage_mmap(int fd, const char * label_i,
                 " mmap(address + %"FT_ULL", length = %"FT_ULL", MAP_FIXED) = ok",
                 label_i, (ft_ull) extent_index, (ft_ull) mem_start, (ft_ull) len);
 
+#ifdef FT_HAVE_MLOCK
         if (!simulate_run() && mlock(addr_new, len) != 0) {
-            ff_log(FC_WARN, errno, "warning: %s extent #%"FT_ULL" mlock(address + %"FT_ULL", length = %"FT_ULL") failed",
+            ff_log(FC_WARN, errno, "%s extent #%"FT_ULL" mlock(address + %"FT_ULL", length = %"FT_ULL") failed",
                    label_i, (ft_ull) extent_index, (ft_ull) mem_start, (ft_ull) len);
         }
+#else
+#warning mlock() not found on this platform. fsremap will be vulnerable to memory exhaustion from other programs
+        static bool warned_no_mlock = false;
+        if (!warned_no_mlock) {
+            warned_no_mlock = true;
+            ff_log(FC_WARN, 0, "fsremap was compiled without support for mlock()");
+            ff_log(FC_WARN, 0, "for the safety of your data, please do not start memory-hungry programs while fsremap is running");
+        }
+#endif
         /**
          * all ok, let's store mmapped() address offset into extent.user_data to remember it,
          * as msync() inside flush() and munmap() inside close_storage() could need it
@@ -711,11 +750,29 @@ int fr_io_posix::create_secondary_storage(ft_size len)
     } while (0);
 
     if (err != 0) {
-        const bool need_unlink = is_open0(j);
+        const bool need_remove = is_open0(j);
         close0(fd[j]);
-        if (need_unlink && unlink(path) != 0)
+        if (need_remove && remove(path) != 0)
             ff_log(FC_WARN, errno, "removing %s file '%s' failed", label[j], path);
     }
+    return err;
+}
+
+/**
+ * remove SECONDARY-STORAGE in job.job_dir() + '.storage.bin'
+ * return 0 if success, else error
+ */
+int fr_io_posix::remove_secondary_storage()
+{
+    enum { j = FC_SECONDARY_STORAGE };
+
+    ft_string filepath = job_dir();
+    filepath += "/storage.bin";
+    const char * path = filepath.c_str();
+
+    int err = 0;
+    if (remove(path) != 0 && errno != ENOENT)
+        err = ff_log(FC_WARN, errno, "removing %s file '%s' failed", label[j], path);
     return err;
 }
 
@@ -728,7 +785,7 @@ int fr_io_posix::umount_dev()
 
     if (cmd == NULL)
         // posix standard name for umount(8)
-    	cmd = "/bin/umount";
+        cmd = "/bin/umount";
 
     args.push_back(cmd);
     // only one argument: device path

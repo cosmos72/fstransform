@@ -7,36 +7,41 @@
 
 #include "../first.hh" // for FT_*TEMPLATE* macros */
 
-/*
- * io/extent_posix.t.hh
- *
- *  Created on: Feb 27, 2011
- *      Author: max
- */
+#if defined(FT_HAVE_ERRNO_H)
+# include <errno.h>        // for errno, ENOMEM, EINVAL, EFBIG
+#elif defined(FT_HAVE_CERRNO)
+# include <cerrno>         // for errno, ENOMEM, EINVAL, EFBIG
+#endif
+#if defined(FT_HAVE_STDLIB_H)
+# include <stdlib.h>       // for malloc(), free()
+#elif defined(FT_HAVE_CSTDLIB)
+# include <cstdlib>        // for malloc(), free()
+#endif
+#if defined(FT_HAVE_STRING_H)
+# include <string.h>       // for memset()
+#elif defined(FT_HAVE_CSTRING)
+# include <cstring>        // for memset()
+#endif
 
-#include "../first.hh"
-
-#include <cerrno>         // for errno, ENOMEM, EINVAL, EFBIG */
-#include <cstdlib>        // for qsort() */
-#include <cstring>        // for memset() */
-
-#include <utility>        // for std::pair<T1,T2> and std::make_pair()
-#include <vector>         // for std::vector<T>
-
-#include <linux/fs.h>     // for FS_IOC_FIEMAP, FIBMAP */
-
-/* if <linux/fs.h> defines FS_IOC_FIEMAP, we expect <linux/fiemap.h> to exist */
-#ifdef FS_IOC_FIEMAP
+#ifdef FT_HAVE_LINUX_FS_H
+# include <linux/fs.h>     // for FS_IOC_FIEMAP, FIBMAP */
+#endif
+#ifdef FT_HAVE_LINUX_FIEMAP_H
+ /* if <linux/fs.h> defines FS_IOC_FIEMAP, <linux/fiemap.h> is supposed to exist */
 # include <linux/fiemap.h> // for struct fiemap and struct fiemap_extent. 
 #endif
 
-#include "../log.hh"         // for ff_log() */
-#include "../traits.hh"      // for FT_TYPE_TO_UNSIGNED(T) */
-#include "../types.hh"       // for ft_off */
-#include "../extent.hh"      // for fr_extent<T>, fr_map<T>, ff_filemap() */
-#include "../vector.hh"      // for fr_vector<T> */
-#include "extent_posix.hh"   // for ff_read_extents_posix() */
-#include "util_posix.hh"     // for ff_posix_ioctl(), ff_posix_size() */
+#include <utility>         // for std::pair<T1,T2> and std::make_pair()
+#include <vector>          // for std::vector<T>
+
+
+#include "../log.hh"       // for ff_log() */
+#include "../traits.hh"    // for FT_TYPE_TO_UNSIGNED(T) */
+#include "../types.hh"     // for ft_off */
+#include "../extent.hh"    // for fr_extent<T>, fr_map<T>, ff_filemap() */
+#include "../vector.hh"    // for fr_vector<T> */
+#include "extent_posix.hh" // for ff_read_extents_posix() */
+#include "util_posix.hh"   // for ff_posix_ioctl(), ff_posix_size() */
 
 FT_IO_NAMESPACE_BEGIN
 

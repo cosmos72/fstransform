@@ -7,14 +7,32 @@
 
 #include "first.hh"
 
-#include <cstring>              // for memset()
-#include <sys/types.h>          // for open()
-#include <sys/stat.h>           //  "    "
-#include <fcntl.h>              //  "    "
+#if defined(FT_HAVE_STDIO_H)
+# include <stdio.h>              // for fopen(), fclose()
+#elif defined(FT_HAVE_CSTDIO)
+# include <cstdio>               // for fopen(), fclose()
+#endif
+#if defined(FT_HAVE_STRING_H)
+# include <string.h>             // for memset()
+#elif defined(FT_HAVE_CSTRING)
+# include <cstring>              // for memset()
+#endif
 
+#ifdef FT_HAVE_SYS_TYPES_H
+# include <sys/types.h>          // for open()
+#endif
+#ifdef FT_HAVE_SYS_STAT_H
+# include <sys/stat.h>           //  "    "
+#endif
+#ifdef FT_HAVE_FCNTL_H
+# include <fcntl.h>              //  "    "
+#endif
+#ifdef FT_HAVE_UNISTD_H
+# include <unistd.h>             // for close()
+#endif
 
 #include "log.hh"               // for ff_log()
-#include "util.hh"              // for ff_str2un(), ff_min2()
+#include "misc.hh"              // for ff_str2un(), ff_min2()
 #include "map.hh"               // for fr_map<T>
 #include "vector.hh"            // for fr_vector<T>
 #include "work.hh"              // for fr_work<T>::show()

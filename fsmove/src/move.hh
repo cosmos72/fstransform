@@ -9,7 +9,6 @@
 #define FSMOVE_MOVE_HH
 
 #include "args.hh"        // for fm_args
-#include "eta.hh"         // for ft_eta
 #include "fwd.hh"         // for fm_io forward declaration
 #include "log.hh"         // for FC_TRACE
 
@@ -23,8 +22,6 @@ class fm_move
 {
 private:
     FT_IO_NS fm_io * this_io;
-    ft_eta this_eta;
-    ft_uoff this_work_total;
 
     /** cannot call copy constructor */
     fm_move(const fm_move &);

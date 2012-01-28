@@ -12,7 +12,6 @@
 
 #include <vector>         // for std::vector<T> */
 
-#include "types.hh"       // for ft_off
 #include "fwd.hh"         // for fr_map<T>
 #include "extent.hh"      // for fr_extent<T>
 

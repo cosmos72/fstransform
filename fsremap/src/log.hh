@@ -10,9 +10,21 @@
 
 #include "check.hh"
 
-#include <errno.h>  // for EINVAL
-#include <stdio.h>  // for FILE *
-#include <stdarg.h> // for va_list
+#if defined(FT_HAVE_ERRNO_H)
+# include <errno.h>      /* for EINVAL */
+#elif defined(FT_HAVE_CERRNO) && defined(__cplusplus)
+# include <cerrno>       /* for EINVAL */
+#endif
+#if defined(FT_HAVE_STDARG_H)
+# include <stdarg.h>     /* for va_list. also for va_start(), va_end(), va_copy() used by log.cc */
+#elif defined(FT_HAVE_CSTDARG) && defined(__cplusplus)
+# include <cstdarg>      /* for va_list. also for va_start(), va_end(), va_copy() used by log.cc */
+#endif
+#if defined(FT_HAVE_STDIO_H)
+# include <stdio.h>      /* for FILE. also for stdout, stderr used by log.cc */
+#elif defined(FT_HAVE_CSTDIO) && defined(__cplusplus)
+# include <cstdio>       /* for FILE. also for stdout, stderr used by log.cc */
+#endif
 
 FT_EXTERN_C_BEGIN
 FT_NAMESPACE_BEGIN
@@ -24,8 +36,8 @@ FT_NAMESPACE_BEGIN
  * ff_log(), ff_vlog(), ff_log_register_range(), ff_log_unregister_range() or ff_log_set_threshold().
  *
  * automatic configuration is:
- * print to stderr all INFO and NOTICE messages, with format FC_FMT_MSG
- * print to stdout all WARN, ERROR and FATAL messages, with format FC_FMT_MSG
+ * print to stdout all INFO and NOTICE messages, with format FC_FMT_MSG
+ * print to stderr all WARN, ERROR and FATAL messages, with format FC_FMT_MSG
  */
 
 
@@ -34,10 +46,10 @@ typedef enum ft_log_level_e { FC_DUMP, FC_TRACE, FC_DEBUG, FC_INFO, FC_NOTICE, F
 
 
 typedef enum ft_log_fmt_e {
-    FC_FMT_MSG, // message only
-    FC_FMT_LEVEL_MSG, // level + message
-    FC_FMT_DATETIME_LEVEL_MSG, // datetime + level + message
-    FC_FMT_DATETIME_LEVEL_CALLER_MSG, // datetime + level + [file.func(line)] + message
+    FC_FMT_MSG, /* message only */
+    FC_FMT_LEVEL_MSG, /* level + message */
+    FC_FMT_DATETIME_LEVEL_MSG, /* datetime + level + message */
+    FC_FMT_DATETIME_LEVEL_CALLER_MSG, /* datetime + level + [file.func(line)] + message */
 } ft_log_fmt;
 
 

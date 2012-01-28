@@ -6,12 +6,14 @@
  */
 #include "../first.hh"
 
-#include "mem_posix.hh"
-
-
 #ifdef __unix__
 
-#include <unistd.h>  // for sysconf(), _SC_PAGESIZE
+#ifdef FT_HAVE_UNISTD_H
+# include <unistd.h>  // for sysconf(), _SC_PAGESIZE
+#endif
+
+#include "mem_posix.hh"
+
 
 FT_ARCH_NAMESPACE_BEGIN
 

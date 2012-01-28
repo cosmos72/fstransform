@@ -8,11 +8,15 @@
 #ifndef FSREMAP_IO_IO_TEST_HH
 #define FSREMAP_IO_IO_TEST_HH
 
-#include "../types.hh"    // for ft_uoff
+#include "../types.hh"     // for ft_uoff, ft_size
 
-#include <cstdio>         // for FILE
+#if defined(FT_HAVE_STDIO_H)
+# include <stdio.h>        // for FILE. also for fopen(), fclose() used in io_test.cc
+#elif defined(FT_HAVE_CSTDIO)
+# include <cstdio>         // for FILE. also for fopen(), fclose() used in io_test.cc
+#endif
 
-#include "io_null.hh"     // for ft_io_null
+#include "io_null.hh"      // for ft_io_null
 
 
 FT_IO_NAMESPACE_BEGIN

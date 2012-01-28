@@ -10,7 +10,9 @@
 
 #include "../check.hh"
 
-#include "../types.hh"       // for ft_string-
+#include "../types.hh"       // for ft_string, ft_uoff
+#include "../eta.hh"         // for ft_eta
+#include "../log.hh"         // for ft_log_level, also for ff_log() used by io.cc
 #include "../fwd.hh"         // for fm_args
 #include "../inode_cache.hh" // for fm_inode_cache
 
@@ -32,11 +34,16 @@ private:
     std::set<ft_string> this_exclude_set;
 
     fm_disk_stat this_source_stat, this_target_stat;
-
     ft_string this_source_root, this_target_root;
+
+    ft_eta  this_eta;
+    ft_uoff this_work_done, this_work_last_reported, this_work_total;
+    double this_work_last_reported_time;
+
     bool this_force_run, this_simulate_run;
 
 protected:
+
     FT_INLINE const ft_string * inode_cache_find_or_add(ft_inode inode, const ft_string & path) {
         return this_inode_cache.find_or_add(inode, path);
     }
@@ -49,6 +56,22 @@ protected:
 
     FT_INLINE fm_disk_stat & source_stat() { return this_source_stat; }
     FT_INLINE fm_disk_stat & target_stat() { return this_target_stat; }
+
+    /**
+     * set total number of bytes to move (may include estimated overhead for special files, inodes...),
+     * reset total number of bytes moved,
+     * initialize this_eta to 0% at current time
+     */
+    void init_work(ft_uoff work_total);
+
+    /**
+     * add to number of bytes moved until now (may include estimated overhead for special files, inodes...)
+     * also periodically invokes show_progress()
+     */
+    void add_work_done(ft_uoff work_done);
+
+    /** show human-readable progress indication, bytes still to move, and estimated time left */
+    void show_progress(ft_log_level log_level = FC_NOTICE);
 
 public:
     enum {

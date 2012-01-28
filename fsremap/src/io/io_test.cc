@@ -7,12 +7,15 @@
 
 #include "../first.hh"
 
-#include <cerrno>          // for errno, EISCONN...
-#include <fstream>         // for std::ifstream
+#if defined(FT_HAVE_ERRNO_H)
+# include <errno.h>        // for errno, EISCONN, ENOTCONN
+#elif defined(FT_HAVE_CERRNO)
+# include <cerrno>         // for errno, EISCONN, ENOTCONN
+#endif
 
 #include "../log.hh"       // for ff_log()
 #include "../args.hh"      // for fr_args
-#include "../util.hh"      // for ff_str2un_scaled()
+#include "../misc.hh"      // for ff_str2un_scaled()
 #include "extent_file.hh"  // for ff_read_extents_file()
 #include "io_test.hh"      // for fr_io_test
 

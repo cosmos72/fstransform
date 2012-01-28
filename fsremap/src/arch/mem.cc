@@ -6,9 +6,9 @@
  */
 #include "../first.hh"
 
-#include "mem.hh"    // for ff_arch_mem_system_free()
-#include "mem_posix.hh"
-#include "mem_linux.hh"
+#include "mem.hh"        // for ff_arch_mem_system_free(), ff_arch_mem_page_size()
+#include "mem_posix.hh"  // for ff_arch_posix_mem_page_size()
+#include "mem_linux.hh"  // for ff_arch_linux_mem_system_free()
 
 
 FT_ARCH_NAMESPACE_BEGIN

@@ -10,13 +10,28 @@
 
 #include "check.hh"
 
-#include <stddef.h>      // for size_t
-#include <stdint.h>      // for uint64_t
+#if defined(FT_HAVE_STDDEF_H)
+# include <stddef.h>     // for size_t
+#elif defined(FT_HAVE_CSTDDEF)
+# include <cstddef>      // for size_t
+#endif
+#if defined(FT_HAVE_STDINT_H)
+# include <stdint.h>     // for uint64_t, uint32_t
+#elif defined(FT_HAVE_CSTDINT)
+# include <cstdint>      // for uint64_t, uint32_t
+#endif
 
-#include <sys/types.h>   // for off_t, pid_t, mode_t, ino_t
-#include <sys/stat.h>    // for struct stat
-#include <unistd.h>      //  "    "     "
-#include <string>        // for ft_string
+#ifdef FT_HAVE_SYS_TYPES_H
+# include <sys/types.h>   // for off_t, pid_t, mode_t, ino_t
+#endif
+#ifdef FT_HAVE_SYS_STAT_H
+# include <sys/stat.h>    // for struct stat
+#endif
+#ifdef FT_HAVE_UNISTD_H
+# include <unistd.h>      //  "    "     "
+#endif
+
+#include <string>        // for std::string
 
 #include "traits.hh"     // for FT_TYPE_TO_UNSIGNED
 
@@ -34,9 +49,6 @@ typedef uint32_t ft_u32;
 
 // ft_dev is the type used for ID of block devices. when dev_t exists, they must be the same type
 typedef dev_t  ft_dev;
-
-// ft_pid is the type used for process PIDs. when ft_pid exists, they must be the same type
-typedef pid_t  ft_pid;
 
 // ft_mode is the type used for file/directory permissions. when mode_t exists, they must be the same type
 typedef mode_t ft_mode;

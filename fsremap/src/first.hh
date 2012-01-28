@@ -8,7 +8,7 @@
 #ifndef FSTRANSFORM_FIRST_HH
 #define FSTRANSFORM_FIRST_HH
 
-#if defined(__USE_ANSI) || defined(_FEATURES_H) || defined(FSREMAP_FEATURES_HH) || defined(FSREMAP_AUTOCONF_HH)
+#if defined(__USE_ANSI) || defined(_FEATURES_H) || defined(FSTRANSFORM_FEATURES_HH) || defined(FSTRANSFORM_AUTOCONF_HH)
 #  error "first.hh" must be included before any other #include
 #endif
 
@@ -30,6 +30,12 @@
 
 
 /* put here any option/define/... affecting the whole program (headers and source files) */
+
+#include "autoconf.hh"
+
+#ifdef FT_HAVE_FEATURES_H
+# include <features.h>
+#endif
 
 #include "features.hh"
 

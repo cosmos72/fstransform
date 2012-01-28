@@ -77,6 +77,8 @@ public:
      */
     int set_free(ft_uoff free);
 
+    /** return the used disk space */
+    FT_INLINE ft_uoff get_used() const { return this_free < this_total ? this_total - this_free : 0; }
 };
 
 

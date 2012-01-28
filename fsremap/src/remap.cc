@@ -7,22 +7,24 @@
 
 #include "first.hh"
 
-#include <cerrno>           // for errno
-#include <cstdlib>          // for malloc()
-#include <cstdio>           // for fprintf(), sprintf(), stdout, stderr
-#include <cstring>          // for strcmp()
+#if defined(FT_HAVE_STRING_H)
+# include <string.h>       // for strcmp()
+#elif defined(FT_HAVE_CSTRING)
+# include <cstring>        // for strcmp()
+#endif
 
 #include "log.hh"           // for ff_log()
 #include "map.hh"           // for fr_map<T>
 #include "vector.hh"        // for fr_vector<T>
 #include "dispatch.hh"      // for fr_dispatch
 #include "remap.hh"     // for fr_remap
-#include "util.hh"          // for ff_strtoul()
+#include "misc.hh"          // for ff_strtoul()
 
 #include "io/io.hh"         // for fr_io
 #include "io/io_posix.hh"   // for fr_io_posix
 #include "io/io_self_test.hh" // for fr_io_self_test
 #include "io/util.hh"       // for ff_mkdir()
+
 
 FT_NAMESPACE_BEGIN
 

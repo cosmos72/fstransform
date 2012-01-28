@@ -7,19 +7,25 @@
 
 #include "first.hh"
 
-#include <cerrno>        // for ERANGE
-#include <sys/time.h>    // for time_t, gettimeofday()
+#if defined(FT_HAVE_ERRNO_H)
+# include <errno.h>      // for errno, EDOM
+#elif defined(FT_HAVE_CERRNO)
+# include <cerrno>       // for errno, EDOM
+#endif
+#if defined(FT_HAVE_TIME_H)
+# include <time.h>     // for time_t, time()
+#elif defined(FT_HAVE_CTIME)
+# include <ctime>      // for time_t, time()
+#endif
 
 #include "eta.hh"        // for ft_eta
+#include "misc.hh"       // for ft_now
 
 
 FT_NAMESPACE_BEGIN
 
 
 static int ff_least_squares(ft_size N, const double xi[], const double yi[], double & ret_m, double & ret_q);
-
-static int ff_now(double & ret_now);
-
 
 /** default constructor */
 ft_eta::ft_eta()
@@ -42,6 +48,8 @@ void ft_eta::clear()
  */
 double ft_eta::add(double y)
 {
+	enum { FC_ETA_MIN_N = 3 };
+
     double x = 0.0;
     if (ff_now(x) != 0)
         return -1.0; /* error in gettimeofday */
@@ -81,15 +89,6 @@ double ft_eta::add(double y)
     return x_left;
 }
 
-static int ff_now(double & ret_time)
-{
-    struct timeval tv;
-    if (gettimeofday(& tv, NULL) != 0)
-        return errno; /* error in gettimeofday() */
-    ret_time = (double) tv.tv_sec + (double) tv.tv_usec * 1e-6;
-    return 0;
-}
-
 static int ff_least_squares(ft_size N, const double x[], const double y[], double & ret_m, double & ret_q)
 {
     double X = 0, X2 = 0; /* X  = sum(x[i]), X2 = sum(x[i]^2) */
@@ -105,8 +104,8 @@ static int ff_least_squares(ft_size N, const double x[], const double y[], doubl
         XY += x_ * y_;
     }
     double v = X2 - X*X/N;
-    if (v == 0)
-        return -ERANGE;
+    if (v == 0.0)
+        return -EDOM;
     double c = XY - X*Y/N;
     ret_m = c / v;
     /* adjust back for x0, y0 */

@@ -7,15 +7,15 @@
 
 #include "../first.hh"
 
-#include <cerrno>          // for ENOMEM, EINVAL...
-#include <cstdlib>         // for malloc()
-#include <cstring>         // for strlen(), memcpy()
-#include <fstream>         // for std::ofstream
+#if defined(FT_HAVE_STDIO_H)
+# include <stdio.h>        // for fopen(), fclose()
+#elif defined(FT_HAVE_CSTDIO)
+# include <cstdio>         // for fopen(), fclose()
+#endif
 
-#include <string>          // for ft_string
 
 #include "../log.hh"       // for ff_log()
-#include "../util.hh"      // for ff_can_sum()
+#include "../misc.hh"      // for ff_can_sum()
 #include "../ui/ui.hh"     // for fr_ui
 #include "io.hh"           // for fr_io
 #include "extent_file.hh"  // for ff_write_extents_file()
@@ -190,17 +190,6 @@ int fr_io::save_extents(const fr_vector<ft_uoff> & loop_file_extents,
     return err;
 }
 
-
-/**
- * if DEVICE ends with an odd-sized block, reopen it after it is unmounted.
- * Needed at least on Linux to access the last odd-sized block, if present.
- *
- * Default implementation: do nothing and return success.
- */
-int fr_io::reopen_dev_if_needed()
-{
-	return 0;
-}
 
 /**
  * perform buffering and coalescing of copy requests.

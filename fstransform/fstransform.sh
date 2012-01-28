@@ -1,15 +1,15 @@
 #!/bin/dash
 
-PROG=fstransform
-PROG_VERSION=0.3.7
 ____='           '
+PROG=fstransform
+PROG_VERSION=%PACKAGE_VERSION%
 
 
 BOOT_CMD_which=which
 
 CMDS_bootstrap="which expr id"
-CMDS="blockdev losetup mount umount mkdir rmdir rm mkfifo dd sync fsck mkfs fsmove fsremap"
-# commands that may need different variants for source and target filesystems
+CMDS="stat blockdev losetup mount umount mkdir rmdir rm mkfifo dd sync fsck mkfs fsmove fsremap"
+# commands that may need different variants for source and target file-systems
 CMDS_dual="fsck"
 # commands not found in environment
 CMDS_missing=
@@ -20,6 +20,7 @@ DEVICE=
 FSTYPE=
 DEVICE_BLOCK_SIZE=
 DEVICE_SIZE_IN_BYTES=
+DEVICE_SIZE_IN_BLOCKS=
 DEVICE_MOUNT_POINT=
 DEVICE_FSTYPE=
 LOOP_FILE=
@@ -37,6 +38,7 @@ X_COPY_LOOP_FILE=
 X_COPY_DEVICE=
 
 USER_ANSWER=
+USER_LOOP_SIZE_IN_BYTES=
 
 for cmd in $CMDS_bootstrap $CMDS; do
   eval "CMD_$cmd="
@@ -138,9 +140,13 @@ parse_args() {
         ZERO_FILE="`\"$CMD_expr\" match \"$arg\" '--zero-file=\(.*\)'`"
 	log_info "zero file '$ZERO_FILE' specified on command line"
         ;;
-      --source-fstype=*)
-        DEVICE_FSTYPE="`\"$CMD_expr\" match \"$arg\" '--device-fstype=\(.*\)'`"
-	log_info "device initial filesystem type '$DEVICE_FSTYPE' specified on command line"
+      --old-fstype=*)
+        DEVICE_FSTYPE="`\"$CMD_expr\" match \"$arg\" '--old-fstype=\(.*\)'`"
+	log_info "device old (initial) file-system type '$DEVICE_FSTYPE' specified on command line"
+        ;;
+      --new-size=*)
+        USER_LOOP_SIZE_IN_BYTES="`\"$CMD_expr\" match \"$arg\" '--new-size=\(.*\)'`"
+	log_info "device new (final) file-system length '$USER_LOOP_SIZE_IN_BYTES' bytes specified on command line"
         ;;
       --opts-fsmove=*)
         OPTS_fsmove="`\"$CMD_expr\" match \"$arg\" '--opts-fsmove=\(.*\)'`"
@@ -156,11 +162,11 @@ parse_args() {
 	;;
       --opts-fsck-source=*)
         OPTS_fsck_source="`\"$CMD_expr\" match \"$arg\" '--opts-fsck-source=\(.*\)'`"
-	log_info "options '$OPTS_fsck_source' for fsck(source filesystem) specified on command line"
+	log_info "options '$OPTS_fsck_source' for fsck(source file-system) specified on command line"
 	;;
       --opts-fsck-target=*)
         OPTS_fsck_target="`\"$CMD_expr\" match \"$arg\" '--opts-fsck-target=\(.*\)'`"
-	log_info "options '$OPTS_FSCK_TARGET_FS' for fsck(target filesystem) specified on command line"
+	log_info "options '$OPTS_FSCK_TARGET_FS' for fsck(target file-system) specified on command line"
 	;;
       --x-copy-device=*)
         X_COPY_DEVICE="`\"$CMD_expr\" match \"$arg\" '--x-copy-device=\(.*\)'`"
@@ -239,7 +245,7 @@ detect_cmd_dual() {
   
   local user_cmd="`eval echo '$USER_CMD_'\"$cmd\"'_'\"$source_or_target\"`"
   local my_cmd=
-  log_start "checking for ${cmd}($source_or_target filesystem)...	"
+  log_start "checking for ${cmd}($source_or_target file-system)...	"
 
   if test "$user_cmd" != ""; then
     my_cmd="`$my_cmd_which \"$user_cmd\"`" >/dev/null 2>&1
@@ -267,11 +273,11 @@ fix_for_special_cases() {
   fi
   local my_cmd_ntfsresize=
   if test "$FSTYPE" = "ntfs" -o "$DEVICE_FSTYPE" = "ntfs"; then
-    log_info "applying special options for filesystem type 'ntfs'"
+    log_info "applying special options for file-system type 'ntfs'"
     # we need 'ntfsresize', check if it's available
     my_cmd_ntfsresize="`$CMD_which ntfsresize`"
     if test "$my_cmd_ntfsresize" = ""; then
-      log_warn "command 'ntfsresize' not found, it is needed to check integrity of filesystem type 'ntfs'"
+      log_warn "command 'ntfsresize' not found, it is needed to check integrity of file-system type 'ntfs'"
     fi
   fi
   
@@ -385,6 +391,20 @@ exec_cmd_status() {
   fi
 }
 
+# treat 'fsck' programs specially:
+# they exit with status 1 to indicate that file-system errors were corrected
+exec_cmd_status_fsck() {
+  if test "$ERR" = 1; then
+    log_info "command '$@' returned exit status 1"
+    log_info_add "this means some file-system problems were found and corrected"
+    log_info_add "on ext2, ext3 and ext4 it may simply mean harmless directory optimization"
+    log_info_add "continuing..."
+    ERR=0
+  else
+    exec_cmd_status "$@"
+  fi
+}
+
 
 remove_fifo_out_err() {
   "$CMD_rm" -f "$FIFO_OUT" "$FIFO_ERR"
@@ -437,6 +457,16 @@ exec_cmd() {
   exec_cmd_status "$@"
 }
 
+# treat 'fsck' programs specially:
+# they exit with status 1 to indicate that file-system errors were corrected
+exec_cmd_fsck() {
+  read_cmd_out "$1"
+  "$@" >"$FIFO_OUT" 2>"$FIFO_OUT"
+  ERR="$?"
+  wait
+  exec_cmd_status_fsck "$@"
+}
+
 capture_cmd() {
   local my_ret my_var="$1"
   shift
@@ -457,17 +487,8 @@ capture_cmd() {
 
 
 
-log_info "preparing to transform device '$DEVICE' to filesystem type '$FSTYPE'"
+log_info "preparing to transform device '$DEVICE' to file-system type '$FSTYPE'"
 
-
-capture_cmd DEVICE_SIZE_IN_BYTES "$CMD_blockdev" --getsize64 "$DEVICE"
-capture_cmd DEVICE_BLOCK_SIZE "$CMD_blockdev" --getbsz "$DEVICE"
-log_info "detected '$DEVICE' length = $DEVICE_SIZE_IN_BYTES bytes, block size = $DEVICE_BLOCK_SIZE bytes"
-
-if [ "$DEVICE_BLOCK_SIZE" -lt 512 ]; then
-  # paranoia...
-  DEVICE_BLOCK_SIZE=512
-fi
 
 echo_device_mount_point_and_fstype() {
   local my_dev="$1"
@@ -495,7 +516,7 @@ find_device_mount_point_and_fstype() {
       my_fstype="$i"
     fi
   done
-  log_info "detected '$my_dev' mount point '$my_mount_point' with filesystem type '$my_fstype'"
+  log_info "detected '$my_dev' mount point '$my_mount_point' with file-system type '$my_fstype'"
   if test ! -e "$my_mount_point"; then
     log_err "mount point '$my_mount_point' does not exist."
     log_err_add "maybe device '$my_dev' is mounted on a path containing spaces?"
@@ -509,15 +530,15 @@ find_device_mount_point_and_fstype() {
   DEVICE_MOUNT_POINT="$my_mount_point"
   if test "$my_fstype" = fuseblk; then
     if test "$DEVICE_FSTYPE" != ""; then
-      log_info "filesystem type '$my_fstype' is a placeholder name for FUSE... ignoring it (user specified type '$DEVICE_FSTYPE')"
+      log_info "file-system type '$my_fstype' is a placeholder name for FUSE... ignoring it (user specified type '$DEVICE_FSTYPE')"
     else
-      log_info "filesystem type '$my_fstype' is a placeholder name for FUSE... ignoring it"
+      log_info "file-system type '$my_fstype' is a placeholder name for FUSE... ignoring it"
     fi
   elif test "$DEVICE_FSTYPE" != ""; then
-    # let's compare user-specified filesystem type with what we found...
+    # let's compare user-specified file-system type with what we found...
     # still we honour what the user said.
     if test "$DEVICE_FSTYPE" != "$my_fstype"; then
-      log_warn "does not match user-specified device filesystem type '$DEVICE_FSTYPE'. using user-specified value."
+      log_warn "does not match user-specified device file-system type '$DEVICE_FSTYPE'. using user-specified value."
     fi
   else
     DEVICE_FSTYPE="$my_fstype"
@@ -525,6 +546,13 @@ find_device_mount_point_and_fstype() {
 }
 find_device_mount_point_and_fstype
 
+
+
+find_device_size() {
+  capture_cmd DEVICE_SIZE_IN_BYTES "$CMD_blockdev" --getsize64 "$DEVICE"
+  log_info "detected '$DEVICE' raw size = $DEVICE_SIZE_IN_BYTES bytes"
+}
+find_device_size
 
 create_loop_or_zero_file() {
   local my_kind="$1" my_var="$2" my_file="$3"
@@ -576,9 +604,28 @@ create_loop_or_zero_file() {
 
 create_loop_file() {
   create_loop_or_zero_file loop LOOP_FILE "$LOOP_FILE"
-  # for loop file length, truncate down device size to a multiple of its block size:
-  # avoids annoying problems with the last block if device has an odd length
-  LOOP_SIZE_IN_BYTES="`\"$CMD_expr\" $DEVICE_SIZE_IN_BYTES / $DEVICE_BLOCK_SIZE '*' $DEVICE_BLOCK_SIZE`"
+  
+  # loop file length is = device size truncated down to a multiple of its block size:
+  # avoids annoying problems if device's last block has an odd length
+  
+  capture_cmd DEVICE_BLOCK_SIZE "$CMD_stat" -c %o "$LOOP_FILE"
+  log_info "detected '$DEVICE' file-system block size = $DEVICE_BLOCK_SIZE bytes"
+  if test "$DEVICE_BLOCK_SIZE" = "" -o "$DEVICE_BLOCK_SIZE" -lt 512; then
+    # paranoia...
+    DEVICE_BLOCK_SIZE=512
+  fi
+  capture_cmd DEVICE_SIZE_IN_BLOCKS "$CMD_expr" "$DEVICE_SIZE_IN_BYTES" "/" "$DEVICE_BLOCK_SIZE"
+  capture_cmd LOOP_SIZE_IN_BYTES "$CMD_expr" "$DEVICE_SIZE_IN_BLOCKS" "*" "$DEVICE_BLOCK_SIZE"
+  log_info "detected '$DEVICE' usable size = $LOOP_SIZE_IN_BYTES bytes"
+  
+  if test "$USER_LOOP_SIZE_IN_BYTES" != ""; then
+    # only accept user-specified new-size if smaller than maximum allowed,
+    # and in any case truncate it down to a multiple of device block size
+    if test "$USER_LOOP_SIZE_IN_BYTES" -lt "$LOOP_SIZE_IN_BYTES"; then
+      capture_cmd LOOP_SIZE_IN_BYTES "$CMD_expr" "$USER_LOOP_SIZE_IN_BYTES" "/" "$DEVICE_BLOCK_SIZE" "*" "$DEVICE_BLOCK_SIZE"
+    fi
+    log_info "sparse loop file will be $LOOP_SIZE_IN_BYTES bytes long (user specified $USER_LOOP_SIZE_IN_BYTES bytes)"
+  fi
   exec_cmd "$CMD_dd" if=/dev/zero of="$LOOP_FILE" bs=1 count=1 seek="`\"$CMD_expr\" $LOOP_SIZE_IN_BYTES - 1`" >/dev/null 2>/dev/null
 }
 create_loop_file
@@ -607,7 +654,7 @@ disconnect_loop_device() {
 
 
 format_loop_device() {
-  log_info "formatting loop device '$LOOP_DEVICE' with filesystem type '$FSTYPE'..."
+  log_info "formatting loop device '$LOOP_DEVICE' with file-system type '$FSTYPE'..."
   exec_cmd "$CMD_mkfs" -t "$FSTYPE" -q $OPTS_mkfs "$LOOP_DEVICE"
 }
 format_loop_device
@@ -676,7 +723,7 @@ umount_and_fsck_loop_file() {
   exec_cmd "$CMD_umount" "$LOOP_DEVICE"
   # ignore errors if removing "$LOOP_MOUNT_POINT" fails
   "$CMD_rmdir" "$LOOP_MOUNT_POINT" >/dev/null 2>/dev/null
-  exec_cmd "$CMD_fsck_target" $OPTS_fsck_target "$LOOP_DEVICE"
+  exec_cmd_fsck "$CMD_fsck_target" $OPTS_fsck_target "$LOOP_DEVICE"
   exec_cmd "$CMD_sync"
 
   if test "$X_COPY_LOOP_FILE" != ""; then
@@ -695,7 +742,7 @@ create_zero_file() {
   log_info_add "this may take a while, please be patient..."
   
   # trying to fill a device until it fails with "no space left on device" is not very nice
-  # and can probably cause filesystem corruption if device happens to be a loop-mounted file
+  # and can probably cause file-system corruption if device happens to be a loop-mounted file
   # which contains non-synced data.
   # to be safe, we 'sync' BEFORE and AFTER filling the device
   exec_cmd "$CMD_sync"
@@ -718,7 +765,7 @@ remount_device_ro_and_fsck() {
   log_info "unmounting device '$DEVICE' before disk check"
   exec_cmd "$CMD_umount" "$DEVICE"
   log_info "running '$CMD_fsck_source' (disk check) on device '$DEVICE'"
-  exec_cmd "$CMD_fsck_source" $OPTS_fsck_source "$DEVICE"
+  exec_cmd_fsck "$CMD_fsck_source" $OPTS_fsck_source "$DEVICE"
   exec_cmd "$CMD_sync"
   
   if test "$X_COPY_DEVICE" != ""; then
@@ -747,14 +794,17 @@ remap_device_and_sync() {
 
   if test "$X_COPY_LOOP_FILE" != ""; then
     log_info "(internal option) comparing transformed device '$DEVICE' with previously saved loop file '$X_COPY_LOOP_FILE'"
-    exec_cmd "$CMD_cmp" "$X_COPY_LOOP_FILE" "$DEVICE"
+    
+    # loop file may be smaller than device...
+    # more exactly its length will be = device length rounded down to device block size
+    "$CMD_dd" if="$DEVICE" bs="$DEVICE_BLOCK_SIZE" count="$DEVICE_SIZE_IN_BLOCKS" | "$CMD_cmp" - "$X_COPY_LOOP_FILE" || exit 1
   fi
 }
 remap_device_and_sync
 
 fsck_device() {
   log_info "running again '$CMD_fsck_target' (disk check) on device '$DEVICE'"
-  exec_cmd "$CMD_fsck_target" $OPTS_fsck_target "$DEVICE"
+  exec_cmd_fsck "$CMD_fsck_target" $OPTS_fsck_target "$DEVICE"
 }
 fsck_device
 
@@ -764,4 +814,4 @@ mount_device() {
 }
 mount_device
 
-log_info "completed successfully. your new '$FSTYPE' filesystem is mounted at '$DEVICE_MOUNT_POINT'"
+log_info "completed successfully. your new '$FSTYPE' file-system is mounted at '$DEVICE_MOUNT_POINT'"

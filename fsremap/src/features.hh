@@ -8,10 +8,6 @@
 #ifndef FSTRANSFORM_FEATURES_HH
 #define FSTRANSFORM_FEATURES_HH
 
-#include <features.h>
-
-#include "autoconf.hh"
-
 #ifdef FT_HAVE_EXTERN_C
    /** in C++, define to extern "C" { ... }. in C, define as empty  */
 #  define FT_EXTERN_C_BEGIN extern "C" {

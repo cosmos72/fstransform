@@ -8,11 +8,16 @@
 #ifndef FSREMAP_IO_POSIX_EXTENT_HH
 #define FSREMAP_IO_POSIX_EXTENT_HH
 
+#include "../check.hh"
+
+#if defined(FT_HAVE_STDIO_H)
+# include <stdio.h>      // for FILE
+#elif defined(FT_HAVE_CSTDIO)
+# include <cstdio>       // for FILE
+#endif
+
 #include "../fwd.hh"     // for fr_vector<T> forward declaration */
 #include "../types.hh"   // for ft_uoff
-
-#include <cstdio>        // for FILE
-
 
 FT_IO_NAMESPACE_BEGIN
 

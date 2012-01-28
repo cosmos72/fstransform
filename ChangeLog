@@ -1,0 +1,13 @@
+From 0.3.7 to 0.3.8:
+  * replaced Eclipse-generated makefiles with automake+autoconf ones.
+    new 'configure' script also autodetects required C functions and headers
+  
+  * fstransform: added better checks for devices with last odd-sized block,
+    now create loop-file length is device size _rounded_down_
+    to file-system block size
+    
+  * fsremap: added better checks for devices with last odd-sized block,
+    now it refuses to run if loop-file is larger than device size _rounded_down_
+    to file-system block size
+  
+  * fsmove: added progress report

@@ -6,8 +6,9 @@
  */
 #include "first.hh"
 
+#undef FM_TEST_
 
-#ifdef FM_TEST_
+#if defined(FM_TEST_)
 
 /* main for test programs here... */
 
