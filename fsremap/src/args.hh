@@ -33,6 +33,7 @@ public:
     fr_ui_kind ui_kind;
     bool force_run;          // if true, some sanity checks will be WARNINGS instead of ERRORS
     bool simulate_run;       // if true, remapping algorithm runs WITHOUT reading or writing device blocks
+    bool ask_questions;      // if true, remapping algorithm will ask confirmation and read answer from stdin before actually starting
 
     fr_args();
 };

@@ -26,7 +26,7 @@ int fr_dispatch::main(fr_vector<ft_uoff> & loop_file_extents,
                            fr_vector<ft_uoff> & free_space_extents, FT_IO_NS fr_io & io)
 {
     if (fr_work<ft_uint>::check(io) == 0) {
-        ff_log(FC_INFO, 0, "using reduced (%"FT_ULL" bit) remapping algorithm: lower memory usage", (ft_ull)8*sizeof(ft_uint));
+        ff_log(FC_INFO, 0, "using reduced (%"FT_ULL" bit) remapping algorithm", (ft_ull)8*sizeof(ft_uint));
         return fr_work<ft_uint>::main(loop_file_extents, free_space_extents, io);
     }
     ff_log(FC_INFO, 0, "using full (%"FT_ULL" bit) remapping algorithm", (ft_ull)8*sizeof(ft_uoff));

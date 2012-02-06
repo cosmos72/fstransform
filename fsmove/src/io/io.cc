@@ -11,6 +11,13 @@
 #include "../misc.hh"      // for ff_show_progress(), ff_now()
 #include "io.hh"           // for fm_io
 
+#if defined(FT_HAVE_MATH_H)
+# include <math.h>         // for sqrt()
+#elif defined(FT_HAVE_CMATH)
+# include <cmath>          // for sqrt()
+#endif
+
+
 FT_IO_NAMESPACE_BEGIN
 
 
@@ -23,8 +30,9 @@ fm_io::fm_io()
     : this_inode_cache(), this_exclude_set(),
       this_source_stat(), this_target_stat(),
       this_source_root(), this_target_root(),
-      this_eta(), this_work_done(0), this_work_last_reported(0), this_work_total(0),
-      this_force_run(false), this_simulate_run(false)
+      this_eta(), this_work_total(0), this_work_report_threshold(0),
+      this_work_done(0), this_work_last_reported(0), 
+      this_work_last_reported_time(0.0), this_force_run(false), this_simulate_run(false)
 { }
 
 /**
@@ -59,7 +67,7 @@ int fm_io::open(const fm_args & args)
         this_source_root = arg1;
         this_target_root = arg2;
         this_eta.clear();
-        this_work_done = this_work_last_reported = this_work_total = 0;
+        this_work_total = this_work_report_threshold = this_work_done = this_work_last_reported = 0;
         this_force_run = args.force_run;
         this_simulate_run = args.simulate_run;
 
@@ -72,18 +80,71 @@ int fm_io::open(const fm_args & args)
     return err;
 }
 
+/**
+ * returns error if source or target file-system are almost full (typical threshold is 97%)
+ */
+int fm_io::is_almost_full(const fm_disk_stat & stat) const
+{
+    ft_uoff total = stat.get_total();
+    int err = 0;
+    if (total != 0) {
+        ft_uoff used = stat.get_used();
+        double percentage = 100.0 * ((double) used / total);
+        if (percentage > 97.0) {
+        	bool can_force = percentage <= 99.0;
+        	bool is_warn = this_force_run && can_force;
+
+
+            ff_log(is_warn ? FC_WARN : FC_ERROR, 0, "%s file-system is %4.1f%% full%s%s",
+            		stat.get_name().c_str(), percentage,
+            		(is_warn ? ", continuing anyway due to -f" : ", cowardly refusing to run"),
+            		(!is_warn && can_force ? ". use option '-f' to override this safety check AT YOUR OWN RISK" : ""));
+
+            err = is_warn ? 0 : -ENOSPC;
+        }
+    }
+    return err;
+}
 
 /**
  * set total number of bytes to move (may include estimated overhead for special files, inodes...),
  * reset total number of bytes moved,
  * initialize this_eta to 0% at current time
+ * 
+ * returns error if source or target file-system are almost full (typical threshold is 97%)
  */
-void fm_io::init_work(ft_uoff work_total)
+int fm_io::init_work()
 {
-	this_work_total = work_total;
-	this_work_done = this_work_last_reported = 0;
-	ff_now(this_work_last_reported_time);
-	this_eta.add(0.0);
+    int err = is_almost_full(source_stat());
+    if (err == 0)
+        err = is_almost_full(target_stat());
+    if (err != 0)
+        return err;
+
+    ft_uoff source_used = source_stat().get_used();
+    ft_uoff target_used = target_stat().get_used();
+    ft_uoff work_total = source_used > target_used ? source_used - target_used : 0;
+
+    this_work_total = work_total;
+    
+    ft_uoff work_total_GB = work_total >> 30;
+    
+    if (work_total_GB <= 4)
+        /* up to 4GB, report approximately every 5% progress */
+        this_work_report_threshold = work_total / 20;
+    
+    else if (work_total_GB <= 100)
+        /* up to 100GB, report approximately every 2% progress */
+        this_work_report_threshold = work_total / 50;
+    else
+        /* above 100GB, report approximately every 2GB * sqrt(size/100GB) */
+        this_work_report_threshold = (ft_uoff)
+            (((ft_uoff)2 << 30) * sqrt(0.01 * work_total_GB));
+    
+    this_work_done = this_work_last_reported = 0;
+    ff_now(this_work_last_reported_time);
+    this_eta.add(0.0);
+    return err;
 }
 
 /**
@@ -93,25 +154,9 @@ void fm_io::init_work(ft_uoff work_total)
 void fm_io::add_work_done(ft_uoff work_done)
 {
 	this_work_done += work_done;
-	if (this_work_total == 0)
-		return;
-
-	ft_uoff delta = this_work_done - this_work_last_reported;
-	bool need_show_progress = false;
-
-	if ((this_work_total >> 30) <= 4)
-		/* up to 4GB, report approximately every 5% progress */
-		need_show_progress = delta >= this_work_total / 20;
-
-	else if (sizeof(ft_uoff) >= 6 && (this_work_total >> 30) <= 100)
-		/* up to 100GB, report approximately every 2% progress */
-		need_show_progress = delta >= this_work_total / 50;
-	else
-		/* above 100GB, report approximately every 1GB */
-		need_show_progress = delta >= ((ft_uoff)1 << 20);
-
-
-	if (!need_show_progress)
+	if (this_work_total == 0
+            || this_work_report_threshold == 0
+            || this_work_done - this_work_last_reported < this_work_report_threshold)
 		return;
 
 	this_work_last_reported = this_work_done;

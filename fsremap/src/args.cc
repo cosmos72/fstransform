@@ -16,7 +16,7 @@ FT_NAMESPACE_BEGIN
 fr_args::fr_args()
     : root_dir(NULL), io_args(), ui_arg(NULL), umount_cmd(NULL), storage_size(), job_id(0),
       job_clear(FC_CLEAR_AUTODETECT), io_kind(FC_IO_AUTODETECT), ui_kind(FC_UI_NONE),
-      force_run(false), simulate_run(false)
+      force_run(false), simulate_run(false), ask_questions(true)
 {
     ft_size i, n;
     for (i = 0, n = sizeof(io_args)/sizeof(io_args[0]); i < n; i++)

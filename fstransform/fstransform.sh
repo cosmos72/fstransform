@@ -8,11 +8,14 @@ PROG_VERSION=%PACKAGE_VERSION%
 BOOT_CMD_which=which
 
 CMDS_bootstrap="which expr id"
-CMDS="stat blockdev losetup mount umount mkdir rmdir rm mkfifo dd sync fsck mkfs fsmove fsremap"
+CMDS="stat mkfifo blockdev losetup fsck mkfs mount umount mkdir rmdir rm dd sync fsmove fsremap"
+# optional commands
+CMDS_optional="date"
 # commands that may need different variants for source and target file-systems
 CMDS_dual="fsck"
 # commands not found in environment
 CMDS_missing=
+
 
 # start with a clean environment
 ERR=0
@@ -29,6 +32,10 @@ LOOP_SIZE_IN_BYTES=
 LOOP_MOUNT_POINT=
 ZERO_FILE=
 
+OPT_CREATE_ZERO_FILE=yes
+OPT_ASK_QUESTIONS=yes
+OPT_TTY_SHOW_TIME=no
+
 OPTS_fsmove=
 OPTS_fsremap=
 OPTS_mkfs=
@@ -40,7 +47,7 @@ X_COPY_DEVICE=
 USER_ANSWER=
 USER_LOOP_SIZE_IN_BYTES=
 
-for cmd in $CMDS_bootstrap $CMDS; do
+for cmd in $CMDS_bootstrap $CMDS $CMDS_optional; do
   eval "CMD_$cmd="
 done
 for cmd in $CMDS_dual; do
@@ -51,82 +58,38 @@ done
 FIFO_OUT="/tmp/fstransform.out.$$"
 FIFO_ERR="/tmp/fstransform.err.$$"
 
+# after log_init_file(), file descriptor 5 will be log file ~/.fstransform/fstransform.$$
 exec 5>/dev/null
 
-log_info_4_cmd() {
-  echo "$@"
-  echo "$@" 1>&5  
-}
-log_info() {
-  echo "$PROG: $@"
-  echo "$PROG: $@" 1>&5  
-}
-log_info_add() {
-  echo "$____  $@"
-  echo "$____  $@" 1>&5  
-}
+# after log_init_{tty,gui}(), file descriptor 1 will be tty or gui file descriptor
 
-log_start() {
-  echo -n "$PROG: $@"
-  echo -n "$PROG: $@" 1>&5  
-}
-log_end() {
-  echo "$@"
-  echo "$@" 1>&5  
-}
 
-log_warn() {
-  echo
-  echo "$PROG: WARNING: $@"
-  echo 1>&5
-  echo "$PROG: WARNING: $@" 1>&5  
-}
-log_warn_add() {
-  echo "$____  $@"
-  echo "$____  $@" 1>&5  
-}
-log_warn_add_prompt() {
-  echo -n "$____  $@"
-  echo "$____  $@" 1>&5  
-}
 
-log_err() {
-  echo
-  echo "ERROR! $PROG: $@"
-  echo 1>&5
-  echo "ERROR! $PROG: $@" 1>&5  
-}
-log_err_add() {
-  echo "       $@"
-  echo "       $@" 1>&5  
-}
-log_err_add_prompt() {
-  echo -n "       $@"
-  echo "       $@" 1>&5  
-}
-
-append_to_log_file() {
-  PROG_LOG_FILE="$HOME/.fstransform/log.$$"
-
-  "$CMD_mkdir" -p "$HOME/.fstransform" >/dev/null 2>&1
-  > "$PROG_LOG_FILE" >/dev/null 2>&1
-  if test -w "$PROG_LOG_FILE"; then
-    exec 5>"$PROG_LOG_FILE"
-  fi
-  log_info "saving output of this script into $PROG_LOG_FILE"
-}
-
-log_info "starting version $PROG_VERSION, checking environment"
 
 # parse command line arguments and set USER_CMD_* variables accordingly
 parse_args() {
   log_info "parsing command line arguments"
   for arg in "$@"; do
     case "$arg" in
-      --cmd-*=* )
-        cmd="`\"$CMD_expr\" match \"$arg\" '--cmd-\(.*\)=.*'`"
-        user_cmd="`\"$CMD_expr\" match \"$arg\" '--cmd-.*=\(.*\)'`"
-        eval "USER_CMD_$cmd=\"$user_cmd\""
+      --old-fstype=*)
+        DEVICE_FSTYPE="`\"$CMD_expr\" match \"$arg\" '--old-fstype=\(.*\)'`"
+	log_info "device old (initial) file-system type '$DEVICE_FSTYPE' specified on command line"
+        ;;
+      --new-size=*)
+        USER_LOOP_SIZE_IN_BYTES="`\"$CMD_expr\" match \"$arg\" '--new-size=\(.*\)'`"
+	log_info "device new (final) file-system length '$USER_LOOP_SIZE_IN_BYTES' bytes specified on command line"
+        ;;
+      --irreversible)
+        OPT_CREATE_ZERO_FILE=no
+	log_info "zero file will not be created, '$arg' specified on command line"
+        ;;
+      --no-questions)
+        OPT_ASK_QUESTIONS=no
+	log_info "assuming non-interactive execution, '$arg' specified on command line"
+        ;;
+      --show-time)
+        OPT_TTY_SHOW_TIME=yes
+	log_info "showing time-of-day for each message, '$arg' specified on command line"
         ;;
       --loop-file=*)
         LOOP_FILE="`\"$CMD_expr\" match \"$arg\" '--loop-file=\(.*\)'`"
@@ -140,13 +103,10 @@ parse_args() {
         ZERO_FILE="`\"$CMD_expr\" match \"$arg\" '--zero-file=\(.*\)'`"
 	log_info "zero file '$ZERO_FILE' specified on command line"
         ;;
-      --old-fstype=*)
-        DEVICE_FSTYPE="`\"$CMD_expr\" match \"$arg\" '--old-fstype=\(.*\)'`"
-	log_info "device old (initial) file-system type '$DEVICE_FSTYPE' specified on command line"
-        ;;
-      --new-size=*)
-        USER_LOOP_SIZE_IN_BYTES="`\"$CMD_expr\" match \"$arg\" '--new-size=\(.*\)'`"
-	log_info "device new (final) file-system length '$USER_LOOP_SIZE_IN_BYTES' bytes specified on command line"
+      --cmd-*=* )
+        cmd="`\"$CMD_expr\" match \"$arg\" '--cmd-\(.*\)=.*'`"
+        user_cmd="`\"$CMD_expr\" match \"$arg\" '--cmd-.*=\(.*\)'`"
+        eval "USER_CMD_$cmd='$user_cmd'"
         ;;
       --opts-fsmove=*)
         OPTS_fsmove="`\"$CMD_expr\" match \"$arg\" '--opts-fsmove=\(.*\)'`"
@@ -195,6 +155,184 @@ parse_args() {
   done
 }
 
+
+
+
+log_def_file() {
+  log_file_timestamp() {
+    if test "$CMD_date" != ""; then
+      echo -n "`\"$CMD_date\" \"+%Y-%m-%d %H:%M:%S\"` " 1>&5
+    fi
+  }
+  log_file_no_timestamp() {
+    if test "$CMD_date" != ""; then
+      echo -n "                   " 1>&5
+    fi
+  }
+  log_file_info_4_cmd() {
+    log_file_timestamp
+    echo "$@" 1>&5
+  }
+  log_file_info() {
+    log_file_timestamp
+    echo "$PROG: $@" 1>&5
+  }
+  log_file_info_add() {
+    log_file_no_timestamp
+    echo "$____  $@" 1>&5
+  }
+  log_file_start() {
+    log_file_timestamp
+    echo -n "$PROG: $@" 1>&5
+  }
+  log_file_end() {
+    log_file_timestamp
+    echo "$@" 1>&5
+  }
+  log_file_warn() {
+    log_file_no_timestamp
+    echo 1>&5
+    log_file_timestamp
+    echo "$PROG: WARNING: $@" 1>&5
+  }
+  log_file_warn_add() {
+    log_file_no_timestamp
+    echo "$____  $@" 1>&5
+  }
+  log_file_warn_add_prompt() {
+    log_file_no_timestamp
+    echo "$____  $@" 1>&5
+  }
+  log_file_err() {
+    log_file_no_timestamp
+    echo 1>&5
+    log_file_timestamp
+    echo "ERROR! $PROG: $@" 1>&5  
+  }
+  log_file_err_add() {
+    log_file_no_timestamp
+    echo "       $@" 1>&5  
+  }
+  log_file_err_add_prompt() {
+    log_file_no_timestamp
+    echo "       $@" 1>&5  
+  }
+}
+
+log_init_file() {
+  PROG_LOG_FILE="$HOME/.fstransform/fstransform.log.$$"
+
+  "$CMD_mkdir" -p "$HOME/.fstransform" >/dev/null 2>&1
+  > "$PROG_LOG_FILE" >/dev/null 2>&1
+  
+  if test -w "$PROG_LOG_FILE"; then
+    exec 5>"$PROG_LOG_FILE"
+  fi
+}
+
+log_def_tty() {
+  read_user_answer() {
+    if test "$OPT_ASK_QUESTIONS" = "yes"; then
+      read USER_ANSWER
+    else
+      USER_ANSWER=
+    fi
+  }
+
+  log_tty_timestamp() {
+    if test "$OPT_TTY_SHOW_TIME" = "yes" -a "$CMD_date" != ""; then
+      echo -n "`\"$CMD_date\" \"+%H:%M:%S\"` "
+    fi
+  }
+  log_tty_no_timestamp() {
+    if test "$OPT_TTY_SHOW_TIME" = "yes" -a "$CMD_date" != ""; then
+      echo -n "         "
+    fi
+  }
+  log_info_4_cmd() {
+    log_tty_timestamp
+    echo "$@"
+    log_file_info_4_cmd "$@"
+  }
+  log_info() {
+    log_tty_timestamp
+    echo "$PROG: $@"
+    log_file_info "$@"
+  }
+  log_info_add() {
+    log_tty_no_timestamp
+    echo "$____  $@"
+    log_file_info_add "$@"
+  }
+  log_start() {
+    log_tty_timestamp
+    echo -n "$PROG: $@"
+    log_file_start "$@"
+  }
+  log_end() {
+    echo "$@"
+    log_file_end "$@"
+  }
+  log_warn() {
+    log_tty_no_timestamp
+    echo
+    log_tty_timestamp
+    echo "$PROG: WARNING: $@"
+    log_file_warn "$@"
+  }
+  log_warn_add() {
+    log_tty_no_timestamp
+    echo "$____  $@"
+    log_file_warn_add "$@"
+  }
+  log_warn_add_prompt() {
+    log_tty_no_timestamp
+    echo -n "$____  $@"
+    log_file_warn_add_prompt "$@"
+  }
+  log_err() {
+    log_tty_no_timestamp
+    echo
+    log_tty_timestamp
+    echo "ERROR! $PROG: $@"
+    log_file_err "$@"
+  }
+  log_err_add() {
+    log_tty_no_timestamp
+    echo "       $@"
+    log_file_err_add "$@"
+  }
+  log_err_add_prompt() {
+    log_tty_no_timestamp
+    echo -n "       $@"
+    log_file_err_add_prompt "$@"
+  }
+}
+log_init_tty() {
+  log_quit() {
+    # tty implementation of log_quit(): nothing to do
+    return 0
+  }
+  return 0
+}
+
+log_quit() {
+  # default implementation of log_quit(): nothing to do
+  return 0
+}
+
+log_def_file
+log_init_tty && log_def_tty
+
+ERR="$?"
+if test "$ERR" != 0; then
+  echo "failed to initialize output to tty!"
+  echo "exiting."
+  exit "$ERR"
+fi
+
+log_info "starting version $PROG_VERSION, checking environment"
+
 detect_cmd() {
   local my_cmd_which="$CMD_which"
   if test "$my_cmd_which" = ""; then
@@ -205,14 +343,14 @@ detect_cmd() {
   local my_cmd=
   local user_cmd="`eval echo '$USER_CMD_'\"$cmd\"`"
   
-  log_start "checking for $cmd...	"
+  log_start "checking for $cmd... 	"
   
   if test "$user_cmd" != ""; then
     my_cmd="`$my_cmd_which \"$user_cmd\"`" >/dev/null 2>&1
     if test "$my_cmd" != ""; then
       if test -x "$my_cmd"; then
         log_end "'$my_cmd' ('$user_cmd' was specified)"
-        eval "CMD_$cmd=\"$my_cmd\""
+        eval "CMD_$cmd='$my_cmd'"
         return 0
       fi
     fi
@@ -222,7 +360,7 @@ detect_cmd() {
   if test "$my_cmd" != ""; then
     if test -x "$my_cmd"; then
       log_end "'$my_cmd'"
-      eval "CMD_$cmd=\"$my_cmd\""
+      eval "CMD_$cmd='$my_cmd'"
       return 0
    else
       log_end "found '$my_cmd', but is NOT executable by you!"
@@ -252,14 +390,14 @@ detect_cmd_dual() {
     if test "$my_cmd" != ""; then
       if test -x "$my_cmd"; then
         log_end "'$my_cmd' ('$user_cmd' was specified)"
-        eval "CMD_${cmd}_$source_or_target=\"$my_cmd\""
+        eval "CMD_${cmd}_$source_or_target='$my_cmd'"
         return 0
       fi
     fi
   fi
   local nondual_cmd="`eval echo '$CMD_'\"$cmd\"`"
   log_end "'$nondual_cmd'"
-  eval "CMD_${cmd}_$source_or_target=\"$nondual_cmd\""
+  eval "CMD_${cmd}_$source_or_target='$nondual_cmd'"
   return 0
 }
 
@@ -301,7 +439,7 @@ fix_for_special_cases() {
 
 fail_missing_cmds() {
   log_err "environment check failed."
-  log_err_add "Please install the commands$CMDS_missing before running fstransform.sh"
+  log_err_add "Please install the commands$CMDS_missing before running $PROG"
   log_err_add "If these commands are already installed, add them to your \$PATH"
   log_err_add "or tell their location with the option --cmd-COMMAND=/path/to/your/command"
   exit "$ERR"
@@ -341,6 +479,11 @@ for cmd in $CMDS_dual; do
   detect_cmd_dual "$cmd" "target" || ERR="$?"
 done
 
+log_info "looking for optional commands"
+for cmd in $CMDS_optional; do
+  detect_cmd "$cmd"
+done
+
 fix_for_special_cases
 
 if test "$ERR" != 0; then
@@ -348,6 +491,8 @@ if test "$ERR" != 0; then
 fi
 
 log_info "environment check passed."
+
+ERR=0
 
 check_command_line_args() {
   if test "$DEVICE" = ""; then
@@ -365,23 +510,24 @@ check_command_line_args() {
 }
 check_command_line_args
 
-append_to_log_file
-
-read_user_answer() {
-  read USER_ANSWER
-}
 
 # inform if a command failed, and offer to fix manually
 exec_cmd_status() {
   if test "$ERR" != 0; then
     log_err "command '$@' failed (exit status $ERR)"
     log_err_add "this is potentially a problem."
-    log_err_add "you can either quit now by pressing ENTER or CTRL+C,"
-    log_err_add
-    log_err_add "or, if you know what went wrong, you can fix it yourself,"
-    log_err_add "then manually run the command '$@'"
-    log_err_add "(or something equivalent)"
-    log_err_add_prompt "and finally resume this script by typing CONTINUE and pressing ENTER: "
+    if test "$OPT_ASK_QUESTIONS" = "yes"; then
+      log_err_add "you can either quit now by pressing ENTER or CTRL+C,"
+      log_err_add
+      log_err_add "or, if you know what went wrong, you can fix it yourself,"
+      log_err_add "then manually run the command '$@'"
+      log_err_add "(or something equivalent)"
+      log_err_add_prompt "and finally resume this script by typing CONTINUE and pressing ENTER: "
+    else
+      log_err_add
+      log_err_add "you could try fix the problem yourself and continue"
+      log_err_add "but this is a non-interactive run, so $PROG will exit now"
+    fi
     read_user_answer
     if test "$USER_ANSWER" != "CONTINUE"; then
       log_info 'exiting.'
@@ -418,8 +564,23 @@ create_fifo_out_err() {
 }
 create_fifo_out_err
 
+cleanup() {
+  remove_fifo_out_err
+  log_quit
+}
 
-trap remove_fifo_out_err 0
+trap cleanup 0
+
+
+
+log_init_file
+log_info "saving output of this execution into $PROG_LOG_FILE"
+
+
+
+
+
+
 
 read_cmd_out_err() {
   local my_cmd_full="$1"
@@ -481,7 +642,7 @@ capture_cmd() {
     log_err "command '$@' failed (no output)"
     exit 1
   fi
-  eval "$my_var=\"$my_ret\""
+  eval "$my_var='$my_ret'"
 }
 
 
@@ -516,11 +677,11 @@ find_device_mount_point_and_fstype() {
       my_fstype="$i"
     fi
   done
-  log_info "detected '$my_dev' mount point '$my_mount_point' with file-system type '$my_fstype'"
+  log_info "device is mounted at '$my_mount_point' with file-system type '$my_fstype'"
   if test ! -e "$my_mount_point"; then
     log_err "mount point '$my_mount_point' does not exist."
     log_err_add "maybe device '$my_dev' is mounted on a path containing spaces?"
-    log_err_add "fstransform.sh does not support mount points containing spaces in their path"
+    log_err_add "$PROG does not support mount points containing spaces in their path"
     exit 1
   fi
   if test ! -d "$my_mount_point"; then
@@ -550,7 +711,7 @@ find_device_mount_point_and_fstype
 
 find_device_size() {
   capture_cmd DEVICE_SIZE_IN_BYTES "$CMD_blockdev" --getsize64 "$DEVICE"
-  log_info "detected '$DEVICE' raw size = $DEVICE_SIZE_IN_BYTES bytes"
+  log_info "device raw size = $DEVICE_SIZE_IN_BYTES bytes"
 }
 find_device_size
 
@@ -559,7 +720,7 @@ create_loop_or_zero_file() {
   local my_pattern="$DEVICE_MOUNT_POINT/.fstransform.$my_kind.*"
   local my_files="`echo $my_pattern`"
   if test "$my_files" != "$my_pattern"; then
-    log_warn "possibly stale fstransform $my_kind files found inside device '$DEVICE',"
+    log_warn "possibly stale $PROG $my_kind files found inside device '$DEVICE',"
     log_warn_add "maybe they can be removed? list of files found:"
     log_warn_add
     log_warn_add "$my_files"
@@ -583,7 +744,7 @@ create_loop_or_zero_file() {
     "$CMD_expr" match "$my_file" '.*/\.\./.*' >/dev/null 2>/dev/null
     if test "$?" = 0; then
       log_err "user-specified $my_kind file '$my_var' contains '/../' in path"
-      log_err_add "maybe somebody is trying to break fstransform?"
+      log_err_add "maybe somebody is trying to break $PROG?"
       log_err_add "I give up, sorry"
       exit "$ERR"
     fi
@@ -599,7 +760,7 @@ create_loop_or_zero_file() {
     log_err_add "maybe device '$DEVICE' is full or mounted read-only?"
     exit "$ERR"
   fi
-  eval "$my_var=\"$my_file\""
+  eval "$my_var='$my_file'"
 }
 
 create_loop_file() {
@@ -609,24 +770,24 @@ create_loop_file() {
   # avoids annoying problems if device's last block has an odd length
   
   capture_cmd DEVICE_BLOCK_SIZE "$CMD_stat" -c %o "$LOOP_FILE"
-  log_info "detected '$DEVICE' file-system block size = $DEVICE_BLOCK_SIZE bytes"
+  log_info "device file-system block size = $DEVICE_BLOCK_SIZE bytes"
   if test "$DEVICE_BLOCK_SIZE" = "" -o "$DEVICE_BLOCK_SIZE" -lt 512; then
     # paranoia...
     DEVICE_BLOCK_SIZE=512
   fi
-  capture_cmd DEVICE_SIZE_IN_BLOCKS "$CMD_expr" "$DEVICE_SIZE_IN_BYTES" "/" "$DEVICE_BLOCK_SIZE"
-  capture_cmd LOOP_SIZE_IN_BYTES "$CMD_expr" "$DEVICE_SIZE_IN_BLOCKS" "*" "$DEVICE_BLOCK_SIZE"
-  log_info "detected '$DEVICE' usable size = $LOOP_SIZE_IN_BYTES bytes"
+  : $(( DEVICE_SIZE_IN_BLOCKS = DEVICE_SIZE_IN_BYTES / DEVICE_BLOCK_SIZE ))
+  : $(( LOOP_SIZE_IN_BYTES = DEVICE_SIZE_IN_BLOCKS * DEVICE_BLOCK_SIZE ))
+  log_info "device usable size = $LOOP_SIZE_IN_BYTES bytes"
   
   if test "$USER_LOOP_SIZE_IN_BYTES" != ""; then
     # only accept user-specified new-size if smaller than maximum allowed,
     # and in any case truncate it down to a multiple of device block size
     if test "$USER_LOOP_SIZE_IN_BYTES" -lt "$LOOP_SIZE_IN_BYTES"; then
-      capture_cmd LOOP_SIZE_IN_BYTES "$CMD_expr" "$USER_LOOP_SIZE_IN_BYTES" "/" "$DEVICE_BLOCK_SIZE" "*" "$DEVICE_BLOCK_SIZE"
+      : $(( LOOP_SIZE_IN_BYTES = USER_LOOP_SIZE_IN_BYTES / DEVICE_BLOCK_SIZE * DEVICE_BLOCK_SIZE ))
     fi
     log_info "sparse loop file will be $LOOP_SIZE_IN_BYTES bytes long (user specified $USER_LOOP_SIZE_IN_BYTES bytes)"
   fi
-  exec_cmd "$CMD_dd" if=/dev/zero of="$LOOP_FILE" bs=1 count=1 seek="`\"$CMD_expr\" $LOOP_SIZE_IN_BYTES - 1`" >/dev/null 2>/dev/null
+  exec_cmd "$CMD_dd" if=/dev/zero of="$LOOP_FILE" bs=1 count=1 seek="$(( LOOP_SIZE_IN_BYTES - 1 ))" >/dev/null 2>/dev/null
 }
 create_loop_file
 
@@ -666,19 +827,27 @@ mount_loop_file() {
     exec_cmd "$CMD_mkdir" "$LOOP_MOUNT_POINT"    
   else
     "$CMD_expr" match "$LOOP_MOUNT_POINT" "/.*" >/dev/null 2>/dev/null
-    if test "$?" != 0; then
+    ERR="$?"
+    if test "$ERR" != 0; then
       log_warn "user-specified loop file mount point '$LOOP_MOUNT_POINT' should start with '/'"
       log_warn_add "i.e. it should be an absolute path."
-      log_warn_add "fstransform cannot ensure that '$LOOP_MOUNT_POINT' is outside '$DEVICE_MOUNT_POINT'"
-      log_warn_add "continue at your own risk"
-      log_warn_add
-      log_warn_add_prompt "press ENTER to continue, or CTRL+C to quit: "
-      read_user_answer
+      log_warn_add "$PROG cannot ensure that '$LOOP_MOUNT_POINT' is outside '$DEVICE_MOUNT_POINT'"
+      if test "$OPT_ASK_QUESTIONS" = "yes"; then
+        log_warn_add "continue at your own risk"
+        log_warn_add
+        log_warn_add_prompt "press ENTER to continue, or CTRL+C to quit: "
+        read_user_answer
+      else
+        log_err_add "you could examine the previous warning and decide to continue at your own risk"
+        log_err_add "but this is a non-interactive run, so $PROG will exit now"
+        log_info "exiting."
+        exit "$ERR"
+      fi
     else
       "$CMD_expr" match "$LOOP_MOUNT_POINT" "$DEVICE_MOUNT_POINT/.*" >/dev/null 2>/dev/null
       if test "$?" = 0; then
         log_err "user-specified loop file mount point '$LOOP_MOUNT_POINT' seems to be inside '$DEVICE_MOUNT_POINT'"
-	log_err_add "maybe somebody is trying to break fstransform and lose data?"
+	log_err_add "maybe somebody is trying to break $PROG and lose data?"
 	log_err_add "I give up, sorry"
 	exit 1
       fi
@@ -693,25 +862,26 @@ mount_loop_file
 
 move_device_contents_into_loop_file() {
   log_info "preliminary steps completed, now comes the delicate part:"
-  log_info "fstransform will move '$DEVICE' contents into the loop file."
+  log_info "$PROG will move '$DEVICE' contents into the loop file."
   
   log_warn "THIS IS IMPORTANT! if either the original device '$DEVICE'"
   log_warn_add "or the loop device '$LOOP_DEVICE' become FULL,"
   log_warn_add
   log_warn_add " YOU  WILL  LOSE  YOUR  DATA !"
   log_warn_add
-  log_warn_add "please open another terminal, type"
-  log_warn_add "'watch df $DEVICE $LOOP_DEVICE'"
+  log_warn_add "$PROG checks for enough available space,"
+  log_warn_add "in any case it is recommended to open another terminal, type"
+  log_warn_add "  watch df $DEVICE $LOOP_DEVICE"
   log_warn_add "and check that both the original device '$DEVICE'"
   log_warn_add "and the loop device '$LOOP_DEVICE' are NOT becoming full."
+  log_warn_add "if one of them is becoming full (or both),"
+  log_warn_add "you MUST stop $PROG with CTRL+C or equivalent."
   log_warn_add
-  log_warn_add "if one of them is almost full,"
-  log_warn_add "you MUST stop fstransform.sh with CTRL+C or equivalent."
-  log_warn_add
-  log_warn_add "this is your chance to quit."
-  log_warn_add_prompt "press ENTER to continue, or CTRL+C to quit: "
-  read_user_answer
-  
+  if test "$OPT_ASK_QUESTIONS" = "yes"; then
+    log_warn_add "this is your chance to quit."
+    log_warn_add_prompt "press ENTER to continue, or CTRL+C to quit: "
+    read_user_answer
+  fi
   log_info "moving '$DEVICE' contents into the loop file."
   log_info "this may take a long time, please be patient..."
   exec_cmd "$CMD_fsmove" $OPTS_fsmove -- "$DEVICE_MOUNT_POINT" "$LOOP_MOUNT_POINT" --exclude "$LOOP_FILE"
@@ -736,6 +906,9 @@ umount_and_fsck_loop_file
 disconnect_loop_device
 
 create_zero_file() {
+  if test "$OPT_CREATE_ZERO_FILE" != "yes"; then
+    return 0
+  fi
   create_loop_or_zero_file zero ZERO_FILE "$ZERO_FILE"
   log_info "filling '$ZERO_FILE' with zeroes until device '$DEVICE' is full"
   log_info_add "needed by '$CMD_fsremap' to locate unused space."
@@ -784,11 +957,24 @@ remount_device_ro_and_fsck
 
 
 remap_device_and_sync() {
+  local my_OPTS_fsremap="$OPTS_fsremap"
+  if test "$OPT_ASK_QUESTIONS" != "yes"; then
+    my_OPTS_fsremap="$my_OPTS_fsremap --no-questions"
+  fi
+  
   log_info "launching '$CMD_fsremap' in simulated mode"
-  exec_cmd "$CMD_fsremap" -n -q $OPTS_fsremap -- "$DEVICE" "$LOOP_FILE" "$ZERO_FILE"
+  if test "$OPT_CREATE_ZERO_FILE" = "yes"; then
+    exec_cmd "$CMD_fsremap" -n -q $my_OPTS_fsremap -- "$DEVICE" "$LOOP_FILE" "$ZERO_FILE"
+  else
+    exec_cmd "$CMD_fsremap" -n -q $my_OPTS_fsremap -- "$DEVICE" "$LOOP_FILE"
+  fi
   
   log_info "launching '$CMD_fsremap' in REAL mode to perform in-place remapping."
-  exec_cmd "$CMD_fsremap" -q $OPTS_fsremap -- "$DEVICE" "$LOOP_FILE" "$ZERO_FILE"
+  if test "$OPT_CREATE_ZERO_FILE" = "yes"; then
+    exec_cmd "$CMD_fsremap" -q $my_OPTS_fsremap -- "$DEVICE" "$LOOP_FILE" "$ZERO_FILE"
+  else
+    exec_cmd "$CMD_fsremap" -q $my_OPTS_fsremap -- "$DEVICE" "$LOOP_FILE"
+  fi
   exec_cmd "$CMD_sync"
   
 

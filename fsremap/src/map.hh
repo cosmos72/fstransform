@@ -333,7 +333,7 @@ public:
      * since the file(s) contained in such complementary extents are not known,
      * all calculated extents will have ->logical == ->physical.
      *
-     * 'other' must be already sorted by physical!
+     * 'other' must be already sorted by logical!
      * does not merge and does not check for merges
      * does not check for overflows
      */

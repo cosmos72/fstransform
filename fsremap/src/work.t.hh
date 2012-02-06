@@ -925,20 +925,37 @@ int fr_work<T>::relocate()
     const char * dev_path = io->dev_path();
     int err = 0;
     const bool simulated = io->simulate_run();
+    const bool ask_questions = io->ask_questions();
     const char * simul_msg = simulated ? "(simulated) " : "";
 
     if (!simulated) {
-
-    	if (io->umount_dev() == 0) {
-            ff_log(FC_NOTICE, 0, "everything ready for in-place remapping, this is your LAST chance to quit.");
-            ff_log(FC_WARN, 0, "press ENTER to proceed, or CTRL+C to quit");
+        err = io->umount_dev();
+            
+        if (err == 0) {
+            if (ask_questions) {
+                ff_log(FC_NOTICE, 0, "everything ready for in-place remapping, this is your LAST chance to quit.");
+                ff_log(FC_WARN, 0, "press ENTER to proceed, or CTRL+C to quit");
+            }
         } else {
-            ff_log(FC_WARN, 0, "please manually unmount %s '%s' before continuing.", label[FC_DEVICE], dev_path);
-            ff_log(FC_WARN, 0, "press ENTER when done, or CTRL+C to quit");
+            if (ask_questions) {
+                ff_log(FC_WARN, 0, "please manually unmount %s '%s' before continuing.", label[FC_DEVICE], dev_path);
+                ff_log(FC_WARN, 0, "press ENTER when done, or CTRL+C to quit");
+                err = 0;
+            } else {
+                err = ff_log(FC_ERROR, err, "unmount %s '%s' failed", label[FC_DEVICE], dev_path);
+                ff_log(FC_ERROR, 0, "    you could unmount it yourself and continue");
+                ff_log(FC_ERROR, 0, "    but this is a non-interactive run, so fsremap will exit now");
+                ff_log(FC_ERROR, 0, "exiting.");
+            }
         }
-        char ch;
-        if (::read(0, &ch, 1) < 0)
-        	return ff_log(FC_ERROR, errno, "read(stdin) failed");
+
+        if (ask_questions) {
+            char ch;
+            if (::read(0, &ch, 1) < 0)
+                err = ff_log(FC_ERROR, errno, "read(stdin) failed");
+        }
+        if (err)
+            return err;
     }
 
     ff_log(FC_NOTICE, 0, "%sstarting in-place remapping. this may take a LONG time ...", simul_msg);
@@ -982,7 +999,7 @@ int fr_work<T>::relocate()
             err = fill_storage();
 
         if (err == 0)
-        	show_progress(FC_NOTICE, simul_msg);
+            show_progress(FC_NOTICE, simul_msg);
 
         if (err == 0 && !dev_map.empty())
             err = move_to_target(FC_FROM_DEV);
@@ -1000,7 +1017,7 @@ int fr_work<T>::relocate()
 template<typename T>
 void fr_work<T>::show_progress(ft_log_level log_level, const char * simul_msg)
 {
-	const ft_uoff eff_block_size_log2 = io->effective_block_size_log2();
+    const ft_uoff eff_block_size_log2 = io->effective_block_size_log2();
 
     T dev_used = dev_map.used_count(), storage_used = storage_map.used_count();
     ft_uoff total_len = ((ft_uoff)dev_used + (ft_uoff)storage_used) << eff_block_size_log2;
@@ -1014,7 +1031,7 @@ void fr_work<T>::show_progress(ft_log_level log_level, const char * simul_msg)
     }
 
     if (io->simulate_run())
-    	time_left = -1.0;
+        time_left = -1.0;
 
     ff_show_progress(log_level, simul_msg, percentage, total_len, " still to relocate", time_left);
 
@@ -1042,24 +1059,24 @@ void fr_work<T>::show_progress(ft_log_level log_level, const char * simul_msg)
 template<typename T>
 int fr_work<T>::check_last_odd_sized_block()
 {
-	ft_uoff eff_block_size_log2 = io->effective_block_size_log2();
-	ft_uoff eff_block_size = (ft_uoff) 1 << eff_block_size_log2;
+    ft_uoff eff_block_size_log2 = io->effective_block_size_log2();
+    ft_uoff eff_block_size = (ft_uoff) 1 << eff_block_size_log2;
 
-	ft_uoff dev_len = io->dev_length(), loop_file_len = io->loop_file_length();
-	dev_len &= ~(eff_block_size - 1);
+    ft_uoff dev_len = io->dev_length(), loop_file_len = io->loop_file_length();
+    dev_len &= ~(eff_block_size - 1);
 
-	if (loop_file_len <= dev_len)
-		return 0;
+    if (loop_file_len <= dev_len)
+        return 0;
 
-	ft_uoff odd_block_len = loop_file_len & (eff_block_size - 1);
+    ft_uoff odd_block_len = loop_file_len & (eff_block_size - 1);
 
-	const char * simul_msg = io->simulate_run() ? "(simulated) " : "";
+    const char * simul_msg = io->simulate_run() ? "(simulated) " : "";
 
-	ff_log(FC_ERROR, 0, "%s%s has an odd-sized last block (%"FT_ULL" bytes long) that exceeds device rounded length.",
-			simul_msg, label[FC_LOOP_FILE], (ft_ull) odd_block_len);
-	ff_log(FC_ERROR, 0, "%sExiting, please shrink %s to %"FT_ULL" bytes or less before running fsremap again.",
-			simul_msg, label[FC_LOOP_FILE], (ft_ull) dev_len);
-	return -EFBIG;
+    ff_log(FC_ERROR, 0, "%s%s has an odd-sized last block (%"FT_ULL" bytes long) that exceeds device rounded length.",
+            simul_msg, label[FC_LOOP_FILE], (ft_ull) odd_block_len);
+    ff_log(FC_ERROR, 0, "%sExiting, please shrink %s to %"FT_ULL" bytes or less before running fsremap again.",
+            simul_msg, label[FC_LOOP_FILE], (ft_ull) dev_len);
+    return -EFBIG;
 }
 
 
@@ -1344,9 +1361,9 @@ int fr_work<T>::clear_free_space()
                 ff_log(FC_FATAL, 0, "\tABORTED clearing %s free space to prevent filesystem corruption.", label[FC_DEVICE]);
                 ff_log(FC_FATAL, 0, "\tSuspending process to allow debugging... press ENTER or CTRL+C to quit.");
                 char ch;
-	        if (::read(0, &ch, 1) < 0) {
-		    ff_log(FC_WARN, errno, "read(stdin) failed");
-		}
+                if (::read(0, &ch, 1) < 0) {
+                	ff_log(FC_WARN, errno, "read(stdin) failed");
+                }
                 err = -EFAULT;
                 break;
 

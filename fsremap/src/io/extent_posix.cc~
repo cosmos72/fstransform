@@ -239,7 +239,7 @@ static int ff_linux_fiemap(int fd, fr_vector<ft_uoff> & ret_list, ft_uoff & ret_
             else if (extent_n < (ft_u32)-1)
                 extent_n = (ft_u32)-1;
             else {
-                ff_log(FC_DEBUG, 0, "tried ioctl(%d, FS_IOC_FIEMAP) with [MAX_UINT32_T-1] extents but it was not enough, falling back on ioctl(FIBMAP) ...", fd);
+                ff_log(FC_DEBUG, 0, "tried ioctl(%d, FS_IOC_FIEMAP) with extents[MAX_UINT32_T-1] but it was not enough, falling back on ioctl(FIBMAP) ...", fd);
                 /* do not mark the error as reported, this is just a DEBUG message */
                 err = ENOMEM; /* Out of memory */
                 break;

@@ -69,7 +69,7 @@ int ff_str2ull_scaled(const char * str, ft_ull * ret_n)
             break;
 
         switch (*str) {
-            case '\0': scale = 0; break;
+            case '\0': scale = 0; * ret_n = n; return err;
             case 'k': scale = 10; break;
             case 'M': scale = 20; break;
             case 'G': scale = 30; break;
@@ -83,15 +83,12 @@ int ff_str2ull_scaled(const char * str, ft_ull * ret_n)
         if (err != 0)
             break;
 
-        /* no benefit in scaling 0 */
-        if (n != 0) {
-            /* overflow? */
-            if (scale >= 8*sizeof(ft_ull) || n > (ft_ull)-1 >> scale) {
-                err = EOVERFLOW;
-                break;
-            }
-            n <<= scale;
-        }
+		/* overflow? */
+		if (scale >= 8*sizeof(ft_ull) || n > (ft_ull)-1 >> scale) {
+			err = EOVERFLOW;
+			break;
+		}
+		n <<= scale;
         * ret_n = n;
     } while (0);
     return err;
@@ -278,14 +275,21 @@ ft_ull ff_pretty_number(double t) {
 	return n;
 }
 
-void ff_show_progress(ft_log_level log_level, const char * prefix, double percentage,
+/**
+ * Show progress. logs a message like
+ * {prefix}progress: {percentage}% done, {bytes_left} bytes{suffix}, estimated {time_left} left"
+ *
+ * if time_left < 0, omits the part "estimated {time_left} left"
+ */
+void ff_show_progressl(const char * caller_file, const char * caller_func, int caller_line,
+		ft_log_level log_level, const char * prefix, double percentage,
 		ft_uoff bytes_left, const char * suffix, double time_left)
 {
 	double pretty_len = 0.0;
     const char * pretty_label = ff_pretty_size(bytes_left, & pretty_len);
 
     if (time_left < 0) {
-    	ff_log(log_level, 0, "%sprogress: %4.1f%% done, %.1f %sbytes%s",
+    	ff_log(log_level, 0, "%sprogress: %4.1f%% done, %5.1f %sbytes%s",
     			prefix, percentage, pretty_len, pretty_label, suffix);
     	return;
     }
@@ -297,12 +301,14 @@ void ff_show_progress(ft_log_level log_level, const char * prefix, double percen
 
 	/* we write something like "1 hour and 20 minutes" instead of just "1 hour" or "1.3 hours" */
 	if (time_left_label2 != NULL) {
-    	ff_log(log_level, 0, "%sprogress: %4.1f%% done, %.1f %sbytes%s, estimated %"FT_ULL" %s%s and %"FT_ULL" %s%s left",
+    	ff_logl(caller_file, caller_func, caller_line,
+    			log_level, 0, "%sprogress: %4.1f%% done, %5.1f %sbytes%s, estimated %2"FT_ULL" %s%s and %2"FT_ULL" %s%s left",
     			prefix, percentage, pretty_len, pretty_label, suffix,
     			time_left1, time_left_label1, (time_left1 != 1 ? "s": ""),
     			time_left2, time_left_label2, (time_left2 != 1 ? "s": ""));
 	} else {
-    	ff_log(log_level, 0, "%sprogress: %4.1f%% done, %.1f %sbytes%s, estimated %"FT_ULL" %s%s left",
+		ff_logl(caller_file, caller_func, caller_line,
+				log_level, 0, "%sprogress: %4.1f%% done, %5.1f %sbytes%s, estimated %2"FT_ULL" %s%s left",
     			prefix, percentage, pretty_len, pretty_label, suffix,
     			time_left1, time_left_label1, (time_left1 != 1 ? "s": ""));
 	}

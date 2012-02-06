@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.65])
-AC_INIT([fstransform], [0.3.8], [BUG-REPORT-ADDRESS])
+AC_INIT([fstransform], [0.9.0], [BUG-REPORT-ADDRESS])
 AC_CONFIG_SRCDIR([fsremap/src/remap.cc])
 AC_CONFIG_HEADERS([fsremap/src/config.hh])
 AC_CONFIG_AUX_DIR([tools])
@@ -18,8 +18,8 @@ AC_PROG_INSTALL
 
 # Checks for header files.
 AC_LANG(C++)
-AC_CHECK_HEADERS([cerrno  climits  cstdarg  cstdio  cstdlib  cstring  ctime \
-                  errno.h limits.h stdarg.h stdio.h stdlib.h string.h time.h \
+AC_CHECK_HEADERS([cerrno  climits  cmath  cstdarg  cstdio  cstdlib  cstring  ctime \
+                  errno.h limits.h math.h stdarg.h stdio.h stdlib.h string.h time.h \
                   dirent.h fcntl.h features.h stddef.h stdint.h \
                   linux/fiemap.h linux/fs.h sys/ioctl.h sys/mman.h sys/stat.h \
                   sys/statvfs.h sys/time.h sys/types.h sys/wait.h \

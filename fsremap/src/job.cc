@@ -34,8 +34,8 @@ FT_NAMESPACE_BEGIN
 
 /** default constructor */
 fr_job::fr_job()
-    : this_dir(), this_log_file(NULL), this_id(0),
-      this_clear(FC_CLEAR_AUTODETECT), this_force_run(false), this_simulate_run(false)
+    : this_dir(), this_log_file(NULL), this_id(0), this_clear(FC_CLEAR_AUTODETECT),
+    this_force_run(false), this_simulate_run(false), this_ask_questions(true)
 {
     for (ft_size i = 0; i < FC_STORAGE_SIZE_N; i++)
         this_storage_size[i] = 0;
@@ -80,7 +80,7 @@ int fr_job::init(const fr_args & args)
         this_dir = args.root_dir;
         this_dir += '/';
     }
-    this_dir += ".fsremap";
+    this_dir += ".fstransform";
 
     const char * path = this_dir.c_str();
 
@@ -89,7 +89,7 @@ int fr_job::init(const fr_args & args)
 
     (void) FT_IO_NS ff_mkdir(path);
 
-    this_dir += "/job.";
+    this_dir += "/fsremap.job.";
     ft_size len = this_dir.size();
     ft_uint i, job_min = 1, job_max = 1000000;
     int err = 0;
@@ -98,9 +98,6 @@ int fr_job::init(const fr_args & args)
         /* force job_id */
         job_min = args.job_id, job_max = args.job_id + 1;
 
-    /* copy force_run flag */
-    this_force_run = args.force_run;
-   
     path = this_dir.c_str();
 
     for (i = job_min; i != job_max; i++) {
@@ -125,14 +122,20 @@ int fr_job::init(const fr_args & args)
         else
             err = ff_log(FC_ERROR, err, "failed to locate a free job id, tried range %"FT_ULL"...%"FT_ULL, (ft_ull) job_min, (ft_ull) (job_max-1));
     }
-    if (err == 0) {
-        for (ft_size l = 0; l < FC_STORAGE_SIZE_N; l++)
-            this_storage_size[l] = args.storage_size[l];
-        this_id = i;
-        this_clear = args.job_clear;
-        this_simulate_run = args.simulate_run;
-    } else
+    if (err != 0) {
         quit();
+        return err;
+    }
+    
+    for (ft_size l = 0; l < FC_STORAGE_SIZE_N; l++)
+        this_storage_size[l] = args.storage_size[l];
+    this_id = i;
+    this_clear = args.job_clear;
+        
+    /* copy flags */
+    this_force_run = args.force_run;
+    this_simulate_run = args.simulate_run;
+    this_ask_questions = args.ask_questions;
 
     return err;
 

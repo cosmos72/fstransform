@@ -187,6 +187,10 @@ int fr_io_posix::open_file(ft_size i, const char * path)
     ft_dev dev_dev = dev_blkdev();
     bool readwrite = true;
     do {
+        if (path == NULL && i == FC_ZERO_FILE) {
+            /* zero-file is optional */
+            return err;
+        }
         /* first, try to open everything as read-write */
         fd[i] = ::open(path, O_RDWR);
         if (fd[i] < 0) {
@@ -278,7 +282,7 @@ int fr_io_posix::open_file(ft_size i, const char * path)
                         label[i], path, (ft_ull)len, label[FC_DEVICE], dev_path(), (ft_ull)dev_len_rounded);
                 if (dev_len_rounded != dev_len) {
                     ff_log(FC_ERROR, 0, "    Note: %s size is actually %"FT_ULL" bytes, "
-                            "but fsremap needs to round it down to a multiple of fyle-system block size (%"FT_ULL" bytes)",
+                            "but fsremap needs to round it down to a multiple of file-system block size (%"FT_ULL" bytes)",
                             label[FC_DEVICE], (ft_ull)dev_len, (ft_ull)block_size);
                     ff_log(FC_ERROR, 0, "    so the usable %s size is %"FT_ULL" bytes",
                             label[FC_DEVICE], (ft_ull)dev_len_rounded);
@@ -355,16 +359,8 @@ void fr_io_posix::close()
 /** return true if this I/O has open descriptors/streams to LOOP-FILE and FREE-SPACE */
 bool fr_io_posix::is_open_extents() const
 {
-    bool flag = false;
-    if (dev_length() != 0) {
-        ft_size which[] = { FC_LOOP_FILE, FC_ZERO_FILE };
-        ft_size i, n = sizeof(which)/sizeof(which[0]);
-        for (i = 0; i < n; i++)
-            if (!is_open0(which[i]) < 0)
-                break;
-        flag = i == n;
-    }
-    return flag;
+	/* FREE-SPACE is optional, do not check if it's open */
+    return dev_length() != 0 && is_open0(FC_LOOP_FILE);
 }
 
 /**
@@ -399,11 +395,33 @@ int fr_io_posix::read_extents(fr_vector<ft_uoff> & loop_file_extents,
             break;
         }
 
+        ft_uoff dev_len = dev_length();
+        
         /* ff_read_extents_posix() appends into fr_vector<T>, does NOT overwrite it */
-        if ((err = ff_read_extents_posix(fd[FC_LOOP_FILE], dev_length(), loop_file_extents, block_size_bitmask)) != 0)
+        if ((err = ff_read_extents_posix(fd[FC_LOOP_FILE], dev_len, loop_file_extents, block_size_bitmask)) != 0)
             break;
-        if ((err = ff_read_extents_posix(fd[FC_ZERO_FILE], dev_length(), free_space_extents, block_size_bitmask)) != 0)
-            break;
+        if (fd[FC_ZERO_FILE] >= 0) {
+            if ((err = ff_read_extents_posix(fd[FC_ZERO_FILE], dev_len, free_space_extents, block_size_bitmask)) != 0)
+                break;
+        } else {
+            block_size_bitmask |= dev_len;
+            /*
+             * ZERO-FILE is optional.
+             * if not specified, prepare for an irreversible remapping that does not preserve DEVICE:
+             * consider *ALL* extents outside LOOP-FILE as free
+             */
+            free_space_extents = loop_file_extents;
+            free_space_extents.sort_by_physical();
+
+            fr_map<ft_uoff> free_map;
+            free_map.complement0_physical_shift(free_space_extents, 0, dev_len);
+
+            free_space_extents.clear();
+
+            fr_map<ft_uoff>::const_iterator iter, end = free_map.end();
+            for (iter = free_map.begin(); iter != end; ++iter)
+                free_space_extents.append(*iter);
+        }
 
     } while (0);
 
@@ -419,9 +437,8 @@ int fr_io_posix::read_extents(fr_vector<ft_uoff> & loop_file_extents,
  */
 void fr_io_posix::close_extents()
 {
-    ft_size which[] = { FC_LOOP_FILE, FC_ZERO_FILE };
-    for (ft_size i = 0; i < sizeof(which)/sizeof(which[0]); i++)
-        close0(which[i]);
+	close0(FC_ZERO_FILE);
+	close0(FC_LOOP_FILE);
 }
 
 /** close, munmap() and remove() SECONDARY-STORAGE. called by close() and by work<T>::close_storage() */

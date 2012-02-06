@@ -28,17 +28,18 @@ FT_NAMESPACE_BEGIN
 static int ff_least_squares(ft_size N, const double xi[], const double yi[], double & ret_m, double & ret_q);
 
 /** default constructor */
-ft_eta::ft_eta()
+ft_eta::ft_eta(ft_size max_n)
     : this_x(), this_y()
 {
-    clear();
+    clear(max_n);
 }
 
-void ft_eta::clear()
+void ft_eta::clear(ft_size max_n)
 {
-    for (ft_size i = 0; i < FC_ETA_N; i++)
-        this_y[i] = this_x[i] = 0.0;
-    this_n = 0;
+	this_x.clear();
+	this_y.clear();
+
+    this_max_n = max_n;
 }
 
 
@@ -51,17 +52,21 @@ double ft_eta::add(double y)
 	enum { FC_ETA_MIN_N = 3 };
 
     double x = 0.0;
-    if (ff_now(x) != 0)
-        return -1.0; /* error in gettimeofday */
+    if (this_max_n == 0 || ff_now(x) != 0)
+        return -1.0; /* also in case of error in gettimeofday */
 
     /* slide window */
-    for (ft_size i = FC_ETA_N - 1; i != 0; i--) {
-        this_x[i] = this_x[i - 1];
-        this_y[i] = this_y[i - 1];
+    ft_size n = this_x.size();
+    if (n < this_max_n)
+    	n++;
+    else {
+    	this_x.erase(this_x.begin());
+    	this_y.erase(this_y.begin());
     }
-    this_x[0] = x;
-    this_y[0] = y;
-    if (this_n < FC_ETA_N && ++this_n < FC_ETA_MIN_N)
+    this_x.push_back(x);
+    this_y.push_back(y);
+
+    if (n < this_max_n && n < FC_ETA_MIN_N)
         return -1.0; /* not enough data available yet */
 
     /*
@@ -69,12 +74,12 @@ double ft_eta::add(double y)
      * formula to find the line best-fitting all points
      */
     double m_all = 0.0, q_all, m_last = 0.0, q_last, m;
-    int err = ff_least_squares(this_n, this_x, this_y, m_all, q_all);
+    int err = ff_least_squares(n, & this_x[0], & this_y[0], m_all, q_all);
     if (err != 0 || m_all <= 0.0)
         return -1.0; /* ill-conditioned data */
 
     /* repeat to find the line best-fitting last FC_ETA_MIN_N points */
-    err = ff_least_squares(FC_ETA_MIN_N, this_x, this_y, m_last, q_last);
+    err = ff_least_squares(FC_ETA_MIN_N, & this_x[0], & this_y[0], m_last, q_last);
     if (err == 0 && m_last > 0.0)
         /* make a brutal average between the two computed m */
         m = 0.5 * (m_all + m_last);

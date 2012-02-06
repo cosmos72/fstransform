@@ -213,13 +213,9 @@ int fm_io_posix::move()
     /* avoid messing up permissions of created files/directories/special-devices */
     umask(0);
 
-	ft_uoff source_used = source_stat().get_used();
-	ft_uoff target_used = target_stat().get_used();
-	ft_uoff work_total = source_used > target_used ? source_used - target_used : 0;
-
-	init_work(work_total);
-
-    int err = move(source_root(), target_root());
+    int err = init_work();
+    if (err == 0)
+        err = move(source_root(), target_root());
     if (err == 0)
     	ff_log(FC_NOTICE, 0, "job completed.");
     return err;
@@ -559,7 +555,8 @@ int fm_io_posix::copy_stream(int in_fd, int out_fd, const ft_stat & stat, const 
     if (ff_log_is_enabled(FC_INFO)) {
         double pretty_size = 0.0;
         const char * pretty_label = ff_pretty_size((ft_uoff) file_size, & pretty_size);
-        ff_log(FC_INFO, 0, "low free space, using backward copy for file `%s' (%.2f %sbytes)", target, pretty_size, pretty_label);
+        ff_log(FC_INFO, 0, "using backward copy and truncate for file `%s': less than %.2f %sbytes free space left",
+        		target, pretty_size, pretty_label);
     }
 
     if (::lseek(in_fd, 0, SEEK_END) != file_size)
@@ -569,6 +566,8 @@ int fm_io_posix::copy_stream(int in_fd, int out_fd, const ft_stat & stat, const 
 
     if ((err = fd_truncate(out_fd, offset_high, target)) != 0)
         return err;
+
+    ::sync();  // slow, but on Linux not doing it is worse
 
     char buf[FT_BUFSIZE];
 

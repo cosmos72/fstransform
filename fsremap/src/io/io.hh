@@ -246,6 +246,9 @@ public:
     /** return true if subclasses should simulate run, i.e. run WITHOUT reading or writing device blocks */
     FT_INLINE bool simulate_run() const { return this_job.simulate_run(); }
 
+    /** return true if program can ask questions to the user and read answers from stdin */
+    FT_INLINE bool ask_questions() const { return this_job.ask_questions(); }
+
     /**
      * calls the 3-argument version of read_extents() and, if successful,
      * calls effective_block_size_log2() to compute and remember effective block size

@@ -29,7 +29,7 @@
 ###############################################################################
 ###############################################################################
 
-This document explains how use the script 'fstransform'
+This document explains how use the script 'fstransform.sh'
 to transform the contents of a Linux device - usually a disk partition -
 from a filesystem type to another.
 
@@ -74,7 +74,7 @@ BEFORE actually using the procedures described here.
 
 Enough legalese... now let's get to the technical part.  
 
-The script 'fstransform' does the following:
+The script 'fstransform.sh' does the following:
 
 it takes a device with a filesystem on it (even if almost full)
 and transforms the device to a different filesystem type,
@@ -88,7 +88,16 @@ are larger than half the device or larger than the available space.
 
 There are four requirements for the script to have a chance to succeed:
 
-1) the device must have a little free space, typically at least 5% 
+1) the device must have a little free space, typically at least 5%
+
+   WARNING: transforming an almost full device to 'xfs' file-system
+   can be tricky:
+   * you need either slightly more free space, typically at least 10%,
+   * or you must be VERY quick at suspending fstransform 
+     when either the source or the target (or both) file-system is almost full
+     and run 'xfs_fsr' on the source or target device (or both)
+     before resuming fstransform.
+     A future fstransform version may automate this operation.
 
 2) the filesystem on the device must support SPARSE FILES, i.e. files with holes
    (see for example http://en.wikipedia.org/wiki/Sparse_file for an explanation of what they are)
@@ -120,8 +129,8 @@ in order manually set the secondary storage size,
 but please understand that using a too small secondary storage
 can slow down the procedure.
 
-To pass the same option to 'fstransform', you must execute something like
-  fstransform --opts-fsremap='-s <size>' <other-options-and-arguments> 
+To pass the same option to 'fstransform.sh', you must execute something like
+  fstransform.sh --opts-fsremap='-s <size>' <other-options-and-arguments> 
 
 
 PROCEDURE:
@@ -150,7 +159,7 @@ PROCEDURE:
 2) decide the target filesystem type.
 
    For some combinations of the initial and final filesystems
-   it is not necessary to use 'fstransform',
+   it is not necessary to use 'fstransform.sh',
    as the same result can be obtained with much simpler - and SAFE - tools.
 
    For example, an 'ext2' or 'ext3' filesystem can be transformed into 'ext3' or 'ext4'
@@ -163,11 +172,11 @@ PROCEDURE:
    "convert Linux File System ext3 to ext4" 
    
    But for most combinations, the only way is either to do a full backup + format +
-   restore the data, or use 'fstransform'
+   restore the data, or use 'fstransform.sh'
 
 3) execute the script
 
-   fstransform {device} {target-file-system-type}
+   fstransform.sh {device} {target-file-system-type}
 
 4) follow the instructions - the script will tell you what it is doing
    and 'fsremap' also shows progress percentage and estimated time left.
@@ -181,7 +190,7 @@ PROCEDURE:
    they are considered fairly fast, at least among hard disks
    - solid state disks (SSD) can be MUCH faster, especially on non-sequential operations
 
-6) if something goes really wrong, check in $HOME/.fstransform and $HOME/.fsremap
+6) if something goes really wrong, check in $HOME/.fstransform
    for the log-files produced by the script: they are absolutely necessary
    if you want someone to analyze the problem
    - but in most cases you can forget about recovering your data... 

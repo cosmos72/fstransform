@@ -93,7 +93,7 @@ int fr_remap::main(int argc, char const* const* argv)
 
 /** print command-line usage to stdout and return 0 */
 int fr_remap::usage(const char * program_name) {
-    ff_log(FC_NOTICE, 0, "Usage: %s [OPTION]... %s %s %s\n", program_name, label[0], label[1], label[2]);
+    ff_log(FC_NOTICE, 0, "Usage: %s [OPTION]... %s %s [%s]\n", program_name, label[0], label[1], label[2]);
     ff_log(FC_NOTICE, 0, "");
     return ff_log
     (FC_NOTICE, 0, "Supported options:\n"
@@ -105,13 +105,14 @@ int fr_remap::usage(const char * program_name) {
      "  -v, --verbose        Be verbose, print what is being done\n"
      "  -vv                  Be very verbose, print a lot of detailed output\n"
      "  -vvv                 Be incredibly verbose (warning: prints TONS of output)\n"
-     "  --progress-tty TTY   Show full-text progress in tty device TTY\n"
      "  -f, --force-run      Run even if some sanity checks fail\n"
      "  -n, --no-action, --simulate-run\n"
      "                       Do not actually read or write any disk block\n"
+     "  -p, --no-questions   Run automatically, without ask any question\n"
+     "  --progress-tty TTY   Show full-text progress on tty device TTY\n"
      "  -t, --dir DIR        Write storage and logs inside DIR (default: $HOME)\n"
      "  -j, --job JOB_ID     Set JOB_ID to use (default: autodetect)\n"
-     "  --umount-cmd CMD     Command and args to unmount %s (default: /bin/umount %s)\n"
+     "  --umount-cmd CMD     Command to unmount %s (default: /bin/umount)\n"
      "  -m, --mem-buffer RAM_SIZE[k|M|G|T|P|E|Z|Y]\n"
      "                       Set RAM buffer size (default: autodetect)\n"
      "  -s, --secondary-storage SECONDARY_SIZE[k|M|G|T|P|E|Z|Y]\n"
@@ -196,7 +197,7 @@ int fr_remap::init(int argc, char const* const* argv)
             break;
 
         if (argc == 0) {
-            err = invalid_cmdline("fsremap", 0, "missing arguments: %s %s %s", label[0], label[1], label[2]);
+            err = invalid_cmdline("fsremap", 0, "missing arguments: %s %s [%s]", label[0], label[1], label[2]);
             break;
         }
 
@@ -231,13 +232,17 @@ int fr_remap::init(int argc, char const* const* argv)
                         break;
                     }
                 }
-                /* -f force run: degrade failed sanity checks from ERRORS (which stop execution) to WARNINGS (which let execution continue) */
+                /* -f, --force-run: consider failed sanity checks as WARNINGS (which let execution continue) instead of ERRORS (which stop execution) */
                 else if (!strcmp(arg, "-f") || !strcmp(arg, "--force-run")) {
                     args.force_run = true;
                 }
-                /* -n simulate run: do not read or write device blocks  */
+                /* -n, --no-action, --simulate-run: do not read or write device blocks  */
                 else if (!strcmp(arg, "-n") || !strcmp(arg, "--no-action") || !strcmp(arg, "--simulate-run")) {
                     args.simulate_run = true;
+                }
+                /* -p, --no-questions: run automatically without asking any confirmation  */
+                else if (!strcmp(arg, "-p") || !strcmp(arg, "--no-questions")) {
+                    args.ask_questions = false;
                 }
                 /* --progress-tty */
                 else if (argc > 1 && (!strcmp(arg, "--progress-tty"))) {
@@ -333,7 +338,18 @@ int fr_remap::init(int argc, char const* const* argv)
             if (args.io_kind == FC_IO_AUTODETECT)
                 args.io_kind = FC_IO_POSIX;
 
-            if ((args.io_kind == FC_IO_POSIX || args.io_kind == FC_IO_TEST) && io_args_n < FC_FILE_COUNT) {
+            if (args.io_kind == FC_IO_POSIX) {
+                switch (io_args_n) {
+                    case 0:
+                        err = invalid_cmdline(program_name, 0, "missing arguments: %s %s [%s]", label[0], label[1], label[2]);
+                        break;
+                    case 1:
+                        err = invalid_cmdline(program_name, 0, "missing arguments: %s [%s]", label[1], label[2]);
+                        break;
+                    default:
+                        break;
+                }
+            } else if (args.io_kind == FC_IO_TEST) {
                 switch (io_args_n) {
                     case 0:
                         err = invalid_cmdline(program_name, 0, "missing arguments: %s %s %s", label[0], label[1], label[2]);
@@ -344,10 +360,11 @@ int fr_remap::init(int argc, char const* const* argv)
                     case 2:
                         err = invalid_cmdline(program_name, 0, "missing argument: %s", label[2]);
                         break;
+                    default:
+                        break;
                 }
             }
         }
-
     } while (0);
 
     if (err == 0) {

@@ -37,10 +37,18 @@ private:
     ft_string this_source_root, this_target_root;
 
     ft_eta  this_eta;
-    ft_uoff this_work_done, this_work_last_reported, this_work_total;
+    ft_uoff this_work_total, this_work_report_threshold;
+    ft_uoff this_work_done,  this_work_last_reported;
     double this_work_last_reported_time;
 
     bool this_force_run, this_simulate_run;
+
+    enum fm_source_or_target { FC_SOURCE, FC_TARGET };
+
+    /**
+     * returns error if source or target file-system are almost full (typical threshold is 97%)
+     */
+    int is_almost_full(const fm_disk_stat & stat) const;
 
 protected:
 
@@ -58,11 +66,14 @@ protected:
     FT_INLINE fm_disk_stat & target_stat() { return this_target_stat; }
 
     /**
-     * set total number of bytes to move (may include estimated overhead for special files, inodes...),
+     * use source_stat and target_stat to compute total number of bytes to move
+     * (may include estimated overhead for special files, inodes...),
      * reset total number of bytes moved,
      * initialize this_eta to 0% at current time
+     * 
+     * returns error if source or target file-system are almost full (typical threshold is 97%)
      */
-    void init_work(ft_uoff work_total);
+    int init_work();
 
     /**
      * add to number of bytes moved until now (may include estimated overhead for special files, inodes...)

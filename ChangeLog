@@ -1,13 +1,31 @@
-From 0.3.7 to 0.3.8:
-  * replaced Eclipse-generated makefiles with automake+autoconf ones.
-    new 'configure' script also autodetects required C functions and headers
-  
-  * fstransform: added better checks for devices with last odd-sized block,
-    now create loop-file length is device size _rounded_down_
-    to file-system block size
+From 0.3.7 to 0.9.0:
+
+  all:
+    * replaced Eclipse-generated makefiles with automake+autoconf ones.
+      new 'configure' script also autodetects required C functions,
+      headers and types
     
-  * fsremap: added better checks for devices with last odd-sized block,
-    now it refuses to run if loop-file is larger than device size _rounded_down_
-    to file-system block size
+    * added warning to README about transforming to 'xfs'
+      a device more than 90% full
+
+  fsmove:
+    * added progress report
+
+  fsremap:
+    * zero-file is now optional. if not specified, fsremap performs
+      an irreversible remapping
   
-  * fsmove: added progress report
+  fstransform:
+    * added option '--show-time' to print time-of-day before each message
+    * added option '--irreversible' to skip creating zero-file
+    
+  fstransform and fsremap:
+    * added option '--no-questions' to run automatically without asking
+      any confirmation.
+
+    * added safety checks for devices with odd-sized last block:
+      now fstransform creates a loop-file with length = device size
+      _rounded_down_ to file-system block size,
+      and fsremap refuses to run if loop-file length exceeds device size
+      _rounded_down_ to file-system block size
+    

@@ -1,10 +1,10 @@
-sbin_SCRIPTS = fstransform
+sbin_SCRIPTS = fstransform.sh
 
-fstransform:  ../fstransform.sh
+fstransform.sh:  ../fstransform.sh
 	sed 's/%PACKAGE_VERSION%/$(PACKAGE_VERSION)/g' <$<  >$@
 	chmod +x $@
 
 ../fstransform.sh:
 
 clean: clean-am
-	rm -f fstransform
+	rm -f fstransform.sh

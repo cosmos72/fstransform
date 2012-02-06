@@ -161,7 +161,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-sbin_SCRIPTS = fstransform
+sbin_SCRIPTS = fstransform.sh
 all: all-am
 
 .SUFFIXES:
@@ -376,14 +376,14 @@ uninstall-am: uninstall-sbinSCRIPTS
 	uninstall-am uninstall-sbinSCRIPTS
 
 
-fstransform:  ../fstransform.sh
+fstransform.sh:  ../fstransform.sh
 	sed 's/%PACKAGE_VERSION%/$(PACKAGE_VERSION)/g' <$<  >$@
 	chmod +x $@
 
 ../fstransform.sh:
 
 clean: clean-am
-	rm -f fstransform
+	rm -f fstransform.sh
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

@@ -770,7 +770,7 @@ void fr_map<T>::complement0_physical_shift(const fr_vector<ft_uoff> & other,
  * since the file(s) contained in such complementary extents are not known,
  * all calculated extents will have ->logical == ->physical.
  *
- * 'other' must be already sorted by physical!
+ * 'other' must be already sorted by logical!
  * does not merge and does not check for merges
  * does not check for overflows
  */

@@ -9,6 +9,9 @@
 /* Define to 1 if you have the <climits> header file. */
 #undef HAVE_CLIMITS
 
+/* Define to 1 if you have the <cmath> header file. */
+#undef HAVE_CMATH
+
 /* Define to 1 if you have the <cstdarg> header file. */
 #undef HAVE_CSTDARG
 
@@ -81,6 +84,9 @@
 /* Define to 1 if your system has a GNU libc compatible `malloc' function, and
    to 0 otherwise. */
 #undef HAVE_MALLOC
+
+/* Define to 1 if you have the <math.h> header file. */
+#undef HAVE_MATH_H
 
 /* Define to 1 if you have the `memmove' function. */
 #undef HAVE_MEMMOVE

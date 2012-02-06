@@ -10,19 +10,22 @@
 
 #include "types.hh"         // for ft_size
 
+#include <vector>           // for std::vector<T>
+
 FT_NAMESPACE_BEGIN
 
 /** estimates time-of-arrival from a sliding window extrapolation of last 5 progress percentages */
 class ft_eta
 {
 private:
-    enum { FC_ETA_N = 5 };
-    double this_x[FC_ETA_N];
-    double this_y[FC_ETA_N];
-    ft_size this_n;
+    std::vector<double> this_x;
+    std::vector<double> this_y;
+    ft_size this_max_n;
 
 public:
-    ft_eta();
+    enum { DEFAULT_MAX_N = 6 };
+
+    ft_eta(ft_size max_n = DEFAULT_MAX_N);
 
     /**
      * add percentage and {current timestamp} to the sliding window E.T.A. extrapolation.
@@ -31,7 +34,7 @@ public:
     double add(double percentage);
 
     /* reset this E.T.A. to empty */
-    void clear();
+    void clear(ft_size max_n = DEFAULT_MAX_N);
 };
 
 
