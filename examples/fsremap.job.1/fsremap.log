@@ -1,0 +1,354 @@
+2012-02-10 01:02:42 NOTICE [job.init(114)] fsremap: starting job 1
+2012-02-10 01:02:42 INFO   [job.init(115)] job persistent data and logs will be in '/root/.fstransform/fsremap.job.8'
+2012-02-10 01:02:42 INFO   [io/io_posix.open_dev(136)] device length is 6.00 gigabytes
+2012-02-10 01:02:42 INFO   [remap.run(605)] analyzing device '/dev/loop0', this may take some minutes ...
+2012-02-10 01:02:42 DEBUG  [io/extent_posix.ff_linux_fiemap(298)] ioctl(7, FS_IOC_FIEMAP, extents[99639]) succeeded
+2012-02-10 01:02:42 INFO   [io/io.read_extents(117)] device effective block size = 4096
+2012-02-10 01:02:42 INFO   [dispatch.main(29)] using reduced (32 bit) remapping algorithm
+2012-02-10 01:02:42 DEBUG  [work<T>.show(63)] # 98286 extents in loop-file
+2012-02-10 01:02:42 DEBUG  [work<T>.show(63)] #  259 extents in to-clear (initial)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(66)] # effective block size = 4096
+2012-02-10 01:02:42 DEBUG  [work<T>.show(82)] #  extent        physical         logical      length  user_data
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #       0	         905	         905	   25719	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #       1	       32770	       32770	     383	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #       2	       98306	       98306	     383	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #       3	      163842	      163842	     383	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #       4	      229378	      229378	     383	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #       5	      294906	      294906	       6	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #       6	      294914	      294914	     383	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #       7	      327663	      327663	      17	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #       8	      360183	      360183	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #       9	      360187	      360187	       5	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      10	      360217	      360217	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      11	      425028	      425028	       4	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      12	      589700	      589700	       4	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      13	      589768	      589768	      56	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      14	      618379	      618379	       5	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      15	      618433	      618433	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      16	      619465	      619465	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      17	      620400	      620400	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      18	      620417	      620417	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      19	      620489	      620489	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      20	      621505	      621505	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      21	      622504	      622504	       6	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      22	      622526	      622526	      66	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      23	      678536	      678536	     126	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      24	      678727	      678727	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      25	      679753	      679753	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      26	      680129	      680129	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      27	      680156	      680156	       4	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      28	      680172	      680172	       4	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      29	      680186	      680186	       6	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      30	      680657	      680657	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      31	      681371	      681371	       5	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      32	      681381	      681381	       3	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      33	      681601	      681601	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      34	      681623	      681623	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      35	      681736	      681736	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      36	      681759	      681759	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      37	      682497	      682497	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      38	      683529	      683529	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      39	      684228	      684228	       4	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      40	      684233	      684233	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      41	      684254	      684254	       2	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      42	      684265	      684265	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      43	      684481	      684481	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      44	      684919	      684919	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      45	      685513	      685513	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      46	      686535	      686535	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      47	      687561	      687561	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      48	      687941	      687941	       3	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      49	      697102	      697102	       2	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      50	      703241	      703241	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      51	      705295	      705295	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      52	      705299	      705299	       5	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      53	      709895	      709895	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      54	      748530	      748530	     172	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      55	      748751	      748751	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      56	      749711	      749711	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      57	      749762	      749762	       6	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      58	      750073	      750073	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      59	      750289	      750289	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      60	      750621	      750621	       3	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      61	      750625	      750625	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      62	      750647	      750647	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      63	      750657	      750657	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      64	      750677	      750677	       3	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      65	      751241	      751241	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      66	      751776	      751776	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      67	      751799	      751799	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      68	      752265	      752265	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      69	      752320	      752320	       6	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      70	      752342	      752342	       2	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      71	      752503	      752503	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      72	      818951	      818951	     249	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      73	      819202	      819202	     383	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      74	      824196	      824196	       4	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      75	      826250	      826250	       6	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      76	      831362	      831362	       4	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      77	      831382	      831382	       2	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      78	      836493	      836493	       4	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      79	      836513	      836513	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      80	      847777	      847777	       4	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      81	      847797	      847797	      41	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      82	      847887	      847887	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      83	      848047	      848047	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      84	      848395	      848395	       5	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      85	      848410	      848410	       6	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      86	      848431	      848431	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      87	      848463	      848463	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      88	      848495	      848495	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      89	      848635	      848635	       5	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      90	      848641	      848641	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      91	      848657	      848657	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      92	      848670	      848670	       2	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      93	      848678	      848678	       2	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      94	      848694	      848694	       2	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      95	      848839	      848839	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      96	      848855	      848855	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      97	      848900	      848900	       4	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      98	      849933	      849933	       3	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #      99	      881043	      881043	       2	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     100	      881061	      881061	      95	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     101	      881222	      881222	       2	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     102	      881697	      881697	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     103	      881719	      881719	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     104	      881993	      881993	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     105	      883009	      883009	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     106	      883208	      883208	       2	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     107	      883226	      883226	       6	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     108	      884738	      884738	     383	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     109	      890759	      890759	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     110	      913048	      913048	       5	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     111	      913069	      913069	     178	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     112	      913548	      913548	       4	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     113	      914305	      914305	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     114	      914997	      914997	       3	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     115	      915009	      915009	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     116	      915027	      915027	       5	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     117	      915042	      915042	       6	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     118	      915273	      915273	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     119	      916289	      916289	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     120	      916706	      916706	       6	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     121	      916719	      916719	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     122	      982601	      982601	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     123	      982784	      982784	      38	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     124	      982838	      982838	     202	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     125	     1012829	     1012829	       3	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     126	     1013056	     1013056	     191	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     127	     1013263	     1013263	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     128	     1013313	     1013313	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     129	     1013697	     1013697	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     130	     1013716	     1013716	       4	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     131	     1013732	     1013732	       4	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     132	     1013746	     1013746	       6	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     133	     1014217	     1014217	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     134	     1014931	     1014931	       5	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     135	     1014941	     1014941	       3	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     136	     1015113	     1015113	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     137	     1015183	     1015183	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     138	     1015296	     1015296	       5	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     139	     1015317	     1015317	       3	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     140	     1046154	     1046154	       6	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     141	     1046288	     1046288	      31	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     142	     1047377	     1047377	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     143	     1048376	     1048376	     200	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     144	     1089547	     1089547	       4	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     145	     1089567	     1089567	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     146	     1100808	     1100808	       4	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     147	     1100828	     1100828	       4	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     148	     1114085	     1114085	      27	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     149	     1120775	     1120775	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     150	     1124814	     1124814	       2	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     151	     1126861	     1126861	       3	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     152	     1146284	     1146284	     208	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     153	     1146508	     1146508	       4	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     154	     1223043	     1223043	       5	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     155	     1229964	     1229964	       4	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     156	     1232018	     1232018	       6	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     157	     1243022	     1243022	       2	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     158	     1245058	     1245058	       2	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     159	     1245076	     1245076	     108	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     160	     1277047	     1277047	     193	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     161	     1310350	     1310350	     141	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     162	     1310507	     1310507	     213	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     163	     1362052	     1362052	       5	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     164	     1362073	     1362073	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     165	     1365154	     1365154	     190	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     166	     1365377	     1365377	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     167	     1366255	     1366255	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     168	     1366269	     1366269	       3	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     169	     1366273	     1366273	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     170	     1366351	     1366351	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     171	     1367087	     1367087	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     172	     1367329	     1367329	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     173	     1367415	     1367415	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     174	     1367417	     1367417	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     175	     1368129	     1368129	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     176	     1369161	     1369161	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     177	     1369344	     1369344	       6	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     178	     1369366	     1369366	       2	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     179	     1369929	     1369929	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     180	     1370945	     1370945	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     181	     1371160	     1371160	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     182	     1371177	     1371177	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     183	     1371311	     1371311	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     184	     1371982	     1371982	       2	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     185	     1371986	     1371986	       6	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     186	     1372041	     1372041	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     187	     1372657	     1372657	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     188	     1372669	     1372669	       3	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     189	     1372686	     1372686	       2	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     190	     1372697	     1372697	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     191	     1372945	     1372945	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     192	     1373650	     1373650	       6	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     193	     1373671	     1373671	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     194	     1373961	     1373961	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     195	     1374025	     1374025	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     196	     1374039	     1374039	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     197	     1375049	     1375049	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     198	     1390154	     1390154	       4	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     199	     1390174	     1390174	       2	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     200	     1401416	     1401416	       5	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     201	     1401437	     1401437	       3	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     202	     1403490	     1403490	     124	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     203	     1403663	     1403663	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     204	     1404607	     1404607	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     205	     1404687	     1404687	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     206	     1404700	     1404700	       4	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     207	     1404716	     1404716	       4	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     208	     1404732	     1404732	       4	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     209	     1404751	     1404751	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     210	     1404923	     1404923	       5	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     211	     1405054	     1405054	       2	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     212	     1405215	     1405215	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     213	     1405227	     1405227	       5	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     214	     1405242	     1405242	       6	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     215	     1405249	     1405249	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     216	     1405263	     1405263	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     217	     1405270	     1405270	       2	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     218	     1405278	     1405278	       2	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     219	     1405295	     1405295	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     220	     1405406	     1405406	       2	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     221	     1405423	     1405423	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     222	     1405439	     1405439	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     223	     1405471	     1405471	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     224	     1405697	     1405697	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     225	     1406729	     1406729	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     226	     1407745	     1407745	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     227	     1408744	     1408744	     280	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     228	     1413636	     1413636	       4	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     229	     1415690	     1415690	       6	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     230	     1420804	     1420804	       5	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     231	     1420825	     1420825	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     232	     1440189	     1440189	     170	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     233	     1474405	     1474405	     155	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     234	     1481222	     1481222	       2	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     235	     1487307	     1487307	       5	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     236	     1489345	     1489345	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     237	     1489366	     1489366	       2	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     238	     1500303	     1500303	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     239	     1504261	     1504261	     111	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     240	     1504388	     1504388	     193	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     241	     1505669	     1505669	       3	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     242	     1506493	     1506493	       3	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     243	     1506497	     1506497	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     244	     1506515	     1506515	       5	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     245	     1506531	     1506531	       5	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     246	     1506569	     1506569	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     247	     1539319	     1539319	     177	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     248	     1544875	     1544875	      30	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     249	     1544970	     1544970	       6	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     250	     1545936	     1545936	    1023	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     251	     1548033	     1548033	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     252	     1549016	     1549016	    1024	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     253	     1550089	     1550089	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     254	     1551072	     1551072	    1022	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     255	     1552143	     1552143	       1	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     256	     1553153	     1553153	       7	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     257	     1554152	     1554152	    1023	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     258	     1555191	     1555191	   17657	(0)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(75)] 
+2012-02-10 01:02:42 DEBUG  [work<T>.show(63)] # 1753 extents in free-space (after to-clear)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(73)] #   no extents in device
+2012-02-10 01:02:42 DEBUG  [work<T>.show(63)] #  259 extents in loop-holes (initial)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(73)] #   no extents in device (invariant)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(63)] #  259 extents in loop-holes after device (invariant)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(73)] #   no extents in device (renumbered)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(63)] #  259 extents in loop-holes (final)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(73)] #   no extents in loop-file (invariant)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(63)] # 98286 extents in device + loop-file (merged)
+2012-02-10 01:02:42 NOTICE [work<T>.analyze(533)] analysis completed: 5.79 gigabytes must be relocated
+2012-02-10 01:02:42 DEBUG  [work<T>.show(63)] #   74 extents in free-space (invariant)
+2012-02-10 01:02:42 DEBUG  [work<T>.show(73)] #   no extents in primary-storage (= free-space, invariant, contiguous, aligned)
+2012-02-10 01:02:42 INFO   [work<T>.analyze(602)] primary-storage: located 0.00 bytes (0 fragments) usable in device (free, invariant, contiguous and aligned)
+2012-02-10 01:02:42 INFO   [work<T>.fill_io_primary_storage(904)] primary-storage: actually using 0.00 bytes (0 fragments) from device
+2012-02-10 01:02:42 DEBUG  [work<T>.show(73)] #   no extents in primary-storage (actually used)
+2012-02-10 01:02:42 DEBUG  [io/io_posix.create_storage(539)] storage: preemptively reserved contiguous RAM, mmap(length = 778043392, PROT_NONE, MAP_PRIVATE|MAP_ANONYMOUS, -1) = ok
+2012-02-10 01:02:42 NOTICE [io/io_posix.create_storage(564)] allocated 1.00 gigabytes RAM as memory buffer
+2012-02-10 01:02:42 INFO   [io/io_posix.create_secondary_storage(723)] secondary-storage: writing 742.00 megabytes to '/root/.fstransform/fsremap.job.8/storage.bin' ...
+2012-02-10 01:02:43 INFO   [io/io_posix.create_secondary_storage(765)] secondary-storage: file created
+2012-02-10 01:02:43 NOTICE [io/io_posix.create_storage(603)] secondary-storage is 742.00 megabytes, initialized and mmapped() to contiguous RAM
+2012-02-10 01:02:43 INFO   [io/io_posix.umount_dev(812)] unmounting device '/dev/loop0'... command: /bin/umount /dev/loop0
+2012-02-10 01:02:43 NOTICE [io/io_posix.umount_dev(817)] successfully unmounted device '/dev/loop0'
+2012-02-10 01:02:43 NOTICE [work<T>.relocate(936)] everything ready for in-place remapping, this is your LAST chance to quit.
+2012-02-10 01:02:43 WARN   [work<T>.relocate(937)] press ENTER to proceed, or CTRL+C to quit
+2012-02-10 01:02:50 NOTICE [work<T>.relocate(961)] starting in-place remapping. this may take a LONG time ...
+2012-02-10 01:02:50 INFO   [work<T>.fill_storage(1100)] filling storage by moving 742.00 megabytes from device ...
+2012-02-10 01:03:05 INFO   [work<T>.fill_storage(1114)] storage filled
+2012-02-10 01:03:05 NOTICE [misc.ff_show_progressl(293)] progress:  6.3% done,   5.8 gigabytes still to relocate
+2012-02-10 01:03:05 INFO   [work<T>.move_to_target(1274)] moving 287.36 megabytes from device to target ...
+2012-02-10 01:03:17 INFO   [work<T>.move_to_target(1306)] finished moving from device to target
+2012-02-10 01:03:17 INFO   [work<T>.move_to_target(1274)] moving 557.89 megabytes from storage to target ...
+2012-02-10 01:03:25 INFO   [work<T>.move_to_target(1306)] finished moving from storage to target
+2012-02-10 01:03:25 INFO   [work<T>.fill_storage(1100)] filling storage by moving 557.89 megabytes from device ...
+2012-02-10 01:03:38 INFO   [work<T>.fill_storage(1114)] storage filled
+2012-02-10 01:03:38 NOTICE [work<T>.show_progress(1036)] progress: 20.5% done,   5.0 gigabytes still to relocate, estimated  3 minutes left
+2012-02-10 01:03:38 INFO   [work<T>.move_to_target(1274)] moving 201.44 megabytes from device to target ...
+2012-02-10 01:03:47 INFO   [work<T>.move_to_target(1306)] finished moving from device to target
+2012-02-10 01:03:47 INFO   [work<T>.move_to_target(1274)] moving 559.31 megabytes from storage to target ...
+2012-02-10 01:03:55 INFO   [work<T>.move_to_target(1306)] finished moving from storage to target
+2012-02-10 01:03:55 INFO   [work<T>.fill_storage(1100)] filling storage by moving 559.31 megabytes from device ...
+2012-02-10 01:04:07 INFO   [work<T>.fill_storage(1114)] storage filled
+2012-02-10 01:04:07 NOTICE [work<T>.show_progress(1036)] progress: 33.3% done,   4.2 gigabytes still to relocate, estimated  3 minutes left
+2012-02-10 01:04:07 INFO   [work<T>.move_to_target(1274)] moving 198.20 megabytes from device to target ...
+2012-02-10 01:04:15 INFO   [work<T>.move_to_target(1306)] finished moving from device to target
+2012-02-10 01:04:15 INFO   [work<T>.move_to_target(1274)] moving 563.92 megabytes from storage to target ...
+2012-02-10 01:04:22 INFO   [work<T>.move_to_target(1306)] finished moving from storage to target
+2012-02-10 01:04:23 INFO   [work<T>.fill_storage(1100)] filling storage by moving 563.92 megabytes from device ...
+2012-02-10 01:04:32 INFO   [work<T>.fill_storage(1114)] storage filled
+2012-02-10 01:04:32 NOTICE [work<T>.show_progress(1036)] progress: 46.2% done,   3.5 gigabytes still to relocate, estimated  2 minutes left
+2012-02-10 01:04:32 INFO   [work<T>.move_to_target(1274)] moving 193.60 megabytes from device to target ...
+2012-02-10 01:04:41 INFO   [work<T>.move_to_target(1306)] finished moving from device to target
+2012-02-10 01:04:41 INFO   [work<T>.move_to_target(1274)] moving 566.02 megabytes from storage to target ...
+2012-02-10 01:04:50 INFO   [work<T>.move_to_target(1306)] finished moving from storage to target
+2012-02-10 01:04:50 INFO   [work<T>.fill_storage(1100)] filling storage by moving 566.02 megabytes from device ...
+2012-02-10 01:05:03 INFO   [work<T>.fill_storage(1114)] storage filled
+2012-02-10 01:05:03 NOTICE [work<T>.show_progress(1036)] progress: 59.0% done,   2.7 gigabytes still to relocate, estimated  1 minute and 30 seconds left
+2012-02-10 01:05:03 INFO   [work<T>.move_to_target(1274)] moving 315.80 megabytes from device to target ...
+2012-02-10 01:05:17 INFO   [work<T>.move_to_target(1306)] finished moving from device to target
+2012-02-10 01:05:17 INFO   [work<T>.move_to_target(1274)] moving 441.20 megabytes from storage to target ...
+2012-02-10 01:05:17 INFO   [work<T>.move_to_target(1306)] finished moving from storage to target
+2012-02-10 01:05:17 INFO   [work<T>.fill_storage(1100)] filling storage by moving 441.20 megabytes from device ...
+2012-02-10 01:05:29 INFO   [work<T>.fill_storage(1114)] storage filled
+2012-02-10 01:05:29 NOTICE [work<T>.show_progress(1036)] progress: 71.8% done,   2.0 gigabytes still to relocate, estimated  1 minute and  3 seconds left
+2012-02-10 01:05:29 INFO   [work<T>.move_to_target(1274)] moving 304.19 megabytes from device to target ...
+2012-02-10 01:05:44 INFO   [work<T>.move_to_target(1306)] finished moving from device to target
+2012-02-10 01:05:44 INFO   [work<T>.move_to_target(1274)] moving 472.15 megabytes from storage to target ...
+2012-02-10 01:05:48 INFO   [work<T>.move_to_target(1306)] finished moving from storage to target
+2012-02-10 01:05:48 INFO   [work<T>.fill_storage(1100)] filling storage by moving 472.15 megabytes from device ...
+2012-02-10 01:05:58 INFO   [work<T>.fill_storage(1114)] storage filled
+2012-02-10 01:05:58 NOTICE [work<T>.show_progress(1036)] progress: 84.9% done,   1.2 gigabytes still to relocate, estimated 30 seconds left
+2012-02-10 01:05:58 INFO   [work<T>.move_to_target(1274)] moving 131.68 megabytes from device to target ...
+2012-02-10 01:06:04 INFO   [work<T>.move_to_target(1306)] finished moving from device to target
+2012-02-10 01:06:04 INFO   [work<T>.move_to_target(1274)] moving 619.41 megabytes from storage to target ...
+2012-02-10 01:06:14 INFO   [work<T>.move_to_target(1306)] finished moving from storage to target
+2012-02-10 01:06:14 INFO   [work<T>.fill_storage(1100)] filling storage by moving 394.18 megabytes from device ...
+2012-02-10 01:06:24 INFO   [work<T>.fill_storage(1114)] storage filled
+2012-02-10 01:06:24 NOTICE [work<T>.show_progress(1036)] progress: 95.6% done, 516.8 megabytes still to relocate, estimated 10 seconds left
+2012-02-10 01:06:24 INFO   [work<T>.move_to_target(1274)] moving 516.77 megabytes from storage to target ...
+2012-02-10 01:06:33 INFO   [work<T>.move_to_target(1306)] finished moving from storage to target
+2012-02-10 01:06:33 INFO   [work<T>.relocate(1011)] blocks remapping completed.
+2012-02-10 01:06:33 INFO   [work<T>.clear_free_space(1349)] clearing 215.08 megabytes free-space from device ...
+2012-02-10 01:06:39 INFO   [work<T>.clear_free_space(1381)] device free-space cleared
+2012-02-10 01:06:39 NOTICE [work<T>.run(157)] job completed.

@@ -23,6 +23,10 @@
 # include <cstring>        // for memset()
 #endif
 
+#ifdef FT_HAVE_SYS_IOCTL_H
+# include <sys/ioctl.h>    // for ioctl()
+#endif
+
 #ifdef FT_HAVE_LINUX_FS_H
 # include <linux/fs.h>     // for FS_IOC_FIEMAP, FIBMAP */
 #endif

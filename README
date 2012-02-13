@@ -46,7 +46,7 @@ Do NOT use the script with other filesystems unless you are willing to LOSE your
 Common sense and experience tell that you should ALWAYS have a backup
 of your valuable data.
 
-The script is intended for those cases where such backup is either already done,
+This script is intended for those cases where such backup is either already done,
 or is not feasible or unnecessary, typically because the data is not valuable.
 
 There is ALWAYS a possibility that the script will irreversibly delete
@@ -72,7 +72,7 @@ BEFORE actually using the procedures described here.
 ###############################################################################
 ###############################################################################
 
-Enough legalese... now let's get to the technical part.  
+Enough legalese... now let's get to the interesting part.
 
 The script 'fstransform.sh' does the following:
 
@@ -101,7 +101,7 @@ There are four requirements for the script to have a chance to succeed:
 
 2) the filesystem on the device must support SPARSE FILES, i.e. files with holes
    (see for example http://en.wikipedia.org/wiki/Sparse_file for an explanation of what they are)
-   and at least one of the two system calls "ioctl(FIEMAP)" or "ioctl(FIBMAP)"
+   and at least one of the two system calls "ioctl(FS_IOC_FIEMAP)" or "ioctl(FIBMAP)"
    (see the file Documentation/filesystems/fiemap.txt in any recent Linux kernel
    for an explanation, or search for the same file on Internet)
 
@@ -136,7 +136,7 @@ To pass the same option to 'fstransform.sh', you must execute something like
 PROCEDURE:
 
 0) compile fsmove and fsremap.
-   Running "make" should suffice on any recent Linux machine,
+   Running "./configure" then "make" should suffice on any recent Linux machine,
    as long as g++ is installed.
    
    You will get two executables, fsmove and fsremap.
@@ -149,18 +149,18 @@ PROCEDURE:
    Below, they will be referred as {fsmove} and {fsremap}
 
 
-1) mount read-write the device you want to remap to a different file-system
+1) mount read-write the device you want to remap to a new file-system type
 
    mount {device} {device-mount-point} [your-options]
 
    if the device is already mounted, check that it is mounted read-write
    and that no process is using it.
 
-2) decide the target filesystem type.
+2) decide the target file-system type.
 
    For some combinations of the initial and final filesystems
    it is not necessary to use 'fstransform.sh',
-   as the same result can be obtained with much simpler - and SAFE - tools.
+   as the same result can be obtained with much simpler - and SAFER - tools.
 
    For example, an 'ext2' or 'ext3' filesystem can be transformed into 'ext3' or 'ext4'
    using the program 'tune2fs'.
@@ -179,16 +179,20 @@ PROCEDURE:
    fstransform.sh {device} {target-file-system-type}
 
 4) follow the instructions - the script will tell you what it is doing
-   and 'fsremap' also shows progress percentage and estimated time left.
+   and both 'fsmove' and 'fsremap' also show progress percentage and estimated time left.
+   
+   Note that 'fsmove' and 'fsremap' approximately need the same time to run,
+   so if 'fsmove' tells you that it will need 2 hours, 'fsmove' will
+   likely need a similar amount of time, for a total of 4 hours.
    
    In case there are errors, you can even try to fix them instead of aborting the script
    
 5) be PATIENT. Transforming a large device takes a LONG time...
-   For example, transforming a 250GB device from jfs to ext4 took 4 hours
-   on the author's computer, which has hard disks capable of reading or writing
-   slightly more than 100MB per second: at the time of writing this document
-   they are considered fairly fast, at least among hard disks
-   - solid state disks (SSD) can be MUCH faster, especially on non-sequential operations
+   On a fairly fast disk, it takes about 1 minute per 1 gigabyte.
+   It means transforming 250GB of takes about 4 hours.
+   Solid state disks (SSD) can be MUCH faster.
+   
+   Also, you should count the _used_ disk space, not the _total_ one.
 
 6) if something goes really wrong, check in $HOME/.fstransform
    for the log-files produced by the script: they are absolutely necessary

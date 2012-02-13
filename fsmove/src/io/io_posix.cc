@@ -859,7 +859,7 @@ int fm_io_posix::copy_stat(const char * target, const ft_stat & stat)
     } while (0);
 #elif defined(FT_HAVE_UTIMES)
     /* utimes() does not work on symbolic links */
-    if (!fm_io_posix_is_symlink(stat.st_mode)) {
+    if (!fm_io_posix_is_symlink(stat)) {
         struct timeval time_buf[2];
         time_buf[0].tv_sec = stat.st_atime;
         time_buf[1].tv_sec = stat.st_mtime;

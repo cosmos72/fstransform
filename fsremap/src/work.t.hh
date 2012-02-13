@@ -100,6 +100,27 @@ fr_work<T>::fr_work()
 { }
 
 
+#ifdef FT_HAVE_EXTERNAL_TEMPLATE
+/**
+ * copy constructor CANNOT be invoked,
+ * but some C++ compilers need it to be defined
+ * if explicit template instantiation is used
+ */
+template<typename T>
+fr_work<T>::fr_work(const fr_work<T> & other)
+{
+    ff_assert_fail("fr_work<T> copy constructor CANNOT be invoked");
+}
+
+/** assignment operator CANNOT be invoked */
+template<typename T>
+    const fr_work<T> & fr_work<T>::operator=(const fr_work<T> & other)
+{
+    ff_assert_fail("fr_work<T> assignment operator CANNOT be invoked");
+}
+#endif /* FT_HAVE_EXTERNAL_TEMPLATE */
+
+
 /** destructor. calls cleanup() */
 template<typename T>
 fr_work<T>::~fr_work()

@@ -2,7 +2,7 @@
 
 ____='           '
 PROG=fstransform
-PROG_VERSION=%PACKAGE_VERSION%
+PROG_VERSION=0.9.1
 
 BOOT_CMD_which=which
 

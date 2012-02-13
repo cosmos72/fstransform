@@ -83,12 +83,12 @@ int ff_str2ull_scaled(const char * str, ft_ull * ret_n)
         if (err != 0)
             break;
 
-		/* overflow? */
-		if (scale >= 8*sizeof(ft_ull) || n > (ft_ull)-1 >> scale) {
-			err = EOVERFLOW;
-			break;
-		}
-		n <<= scale;
+        /* overflow? */
+        if (scale >= 8*sizeof(ft_ull) || n > (ft_ull)-1 >> scale) {
+            err = EOVERFLOW;
+            break;
+        }
+        n <<= scale;
         * ret_n = n;
     } while (0);
     return err;
@@ -100,19 +100,19 @@ int ff_now(double & ret_time) {
 #ifdef FT_HAVE_GETTIMEOFDAY
     struct timeval tv;
     if ((err = gettimeofday(& tv, NULL)) == 0) {
-    	ret_time = (double) tv.tv_sec + (double) tv.tv_usec * 1e-6;
-    	return err;
+        ret_time = (double) tv.tv_sec + (double) tv.tv_usec * 1e-6;
+        return err;
     }
     /* error in gettimeofday(), fall back on time() */
 #else
 # warning gettimeofday() not found on this platform. timestamps and "time left" estimations will be less accurate
 #endif
-	errno = err = 0;
-	time_t now = time(NULL);
-	if (now == (time_t)-1)
-		err = -errno;
-	if (err == 0)
-		ret_time = (double) now;
+    errno = err = 0;
+    time_t now = time(NULL);
+    if (now == (time_t)-1)
+        err = -errno;
+    if (err == 0)
+        ret_time = (double) now;
     return err;
 }
 
@@ -215,8 +215,8 @@ char const * ff_pretty_time(double time, double * ret_pretty_time)
  * with [second|minute|hour|day|month|year] scale as appropriate
  */
 void ff_pretty_time2(double time,
-		ft_ull * ret_pretty_time1, char const ** ret_pretty_label1,
-		ft_ull * ret_pretty_time2, char const ** ret_pretty_label2)
+        ft_ull * ret_pretty_time1, char const ** ret_pretty_label1,
+        ft_ull * ret_pretty_time2, char const ** ret_pretty_label2)
 {
     ft_size i = 0;
     for (; i < fc_pretty_time_len - 1; i++) {
@@ -228,27 +228,27 @@ void ff_pretty_time2(double time,
     * ret_pretty_time1 = ff_pretty_number(time1);
     * ret_pretty_label1 = fc_pretty_time_unit[i];
     if (ret_pretty_time2 == NULL || ret_pretty_label2 == NULL)
-    	return;
+        return;
 
-	* ret_pretty_time2 = 0.0;
-	* ret_pretty_label2 = NULL;
+    * ret_pretty_time2 = 0;
+    * ret_pretty_label2 = NULL;
 
-	if (i == 0 || time1 <= 1.0 || time1 > 1.9)
-		return;
+    if (i == 0 || time1 <= 1.0 || time1 > 1.9)
+        return;
 
     time -= (ft_ull) time1 * fc_pretty_time[i];
     if (time <= 0.0)
-    	return;
+        return;
 
     ft_size j = 0;
     for (j = 0; j < fc_pretty_time_len - 1; j++) {
-    	if (time < fc_pretty_time[j+1])
-    		break;
+        if (time < fc_pretty_time[j+1])
+            break;
     }
     if (j + 1 == i) {
-    	* ret_pretty_time1 = 1;
-		* ret_pretty_time2 = ff_pretty_number(time / fc_pretty_time[j]);
-		* ret_pretty_label2 = fc_pretty_time_unit[j];
+        * ret_pretty_time1 = 1;
+        * ret_pretty_time2 = ff_pretty_number(time / fc_pretty_time[j]);
+        * ret_pretty_label2 = fc_pretty_time_unit[j];
     }
 }
 
@@ -261,18 +261,18 @@ void ff_pretty_time2(double time,
  * otherwise return ((ft_ull)(t/100 + 0.5)) * 100
  */
 ft_ull ff_pretty_number(double t) {
-	ft_ull n;
-	if (t <= 10.0)
-		n = t + 0.5;
-	else if (t <= 30.0)
-		n = 5 * (ft_ull)(t*0.2 + 0.5);
-	else if (t <= 100.0)
-		n = 10 * (ft_ull)(t*0.1 + 0.5);
-	else if (t <= 300.0)
-		n = 50 * (ft_ull)(t*0.02 + 0.5);
-	else
-		n = 100 * (ft_ull)(t*0.01 + 0.5);
-	return n;
+    ft_ull n;
+    if (t <= 10.0)
+        n = (ft_ull)(t + 0.5);
+    else if (t <= 30.0)
+        n = 5 * (ft_ull)(t*0.2 + 0.5);
+    else if (t <= 100.0)
+        n = 10 * (ft_ull)(t*0.1 + 0.5);
+    else if (t <= 300.0)
+        n = 50 * (ft_ull)(t*0.02 + 0.5);
+    else
+        n = 100 * (ft_ull)(t*0.01 + 0.5);
+    return n;
 }
 
 /**
@@ -282,36 +282,36 @@ ft_ull ff_pretty_number(double t) {
  * if time_left < 0, omits the part "estimated {time_left} left"
  */
 void ff_show_progressl(const char * caller_file, const char * caller_func, int caller_line,
-		ft_log_level log_level, const char * prefix, double percentage,
-		ft_uoff bytes_left, const char * suffix, double time_left)
+        ft_log_level log_level, const char * prefix, double percentage,
+        ft_uoff bytes_left, const char * suffix, double time_left)
 {
-	double pretty_len = 0.0;
+    double pretty_len = 0.0;
     const char * pretty_label = ff_pretty_size(bytes_left, & pretty_len);
 
     if (time_left < 0) {
-    	ff_log(log_level, 0, "%sprogress: %4.1f%% done, %5.1f %sbytes%s",
-    			prefix, percentage, pretty_len, pretty_label, suffix);
-    	return;
+        ff_log(log_level, 0, "%sprogress: %4.1f%% done, %5.1f %sbytes%s",
+                prefix, percentage, pretty_len, pretty_label, suffix);
+        return;
     }
 
-	ft_ull time_left1 = 0, time_left2 = 0;
-	const char * time_left_label1 = NULL, * time_left_label2 = NULL;
+    ft_ull time_left1 = 0, time_left2 = 0;
+    const char * time_left_label1 = NULL, * time_left_label2 = NULL;
 
-	ff_pretty_time2(time_left, & time_left1, & time_left_label1, & time_left2, & time_left_label2);
+    ff_pretty_time2(time_left, & time_left1, & time_left_label1, & time_left2, & time_left_label2);
 
-	/* we write something like "1 hour and 20 minutes" instead of just "1 hour" or "1.3 hours" */
-	if (time_left_label2 != NULL) {
-    	ff_logl(caller_file, caller_func, caller_line,
-    			log_level, 0, "%sprogress: %4.1f%% done, %5.1f %sbytes%s, estimated %2"FT_ULL" %s%s and %2"FT_ULL" %s%s left",
-    			prefix, percentage, pretty_len, pretty_label, suffix,
-    			time_left1, time_left_label1, (time_left1 != 1 ? "s": ""),
-    			time_left2, time_left_label2, (time_left2 != 1 ? "s": ""));
-	} else {
-		ff_logl(caller_file, caller_func, caller_line,
-				log_level, 0, "%sprogress: %4.1f%% done, %5.1f %sbytes%s, estimated %2"FT_ULL" %s%s left",
-    			prefix, percentage, pretty_len, pretty_label, suffix,
-    			time_left1, time_left_label1, (time_left1 != 1 ? "s": ""));
-	}
+    /* we write something like "1 hour and 20 minutes" instead of just "1 hour" or "1.3 hours" */
+    if (time_left_label2 != NULL) {
+        ff_logl(caller_file, caller_func, caller_line,
+                log_level, 0, "%sprogress: %4.1f%% done, %5.1f %sbytes%s, estimated %2"FT_ULL" %s%s and %2"FT_ULL" %s%s left",
+                prefix, percentage, pretty_len, pretty_label, suffix,
+                time_left1, time_left_label1, (time_left1 != 1 ? "s": ""),
+                time_left2, time_left_label2, (time_left2 != 1 ? "s": ""));
+    } else {
+        ff_logl(caller_file, caller_func, caller_line,
+                log_level, 0, "%sprogress: %4.1f%% done, %5.1f %sbytes%s, estimated %2"FT_ULL" %s%s left",
+                prefix, percentage, pretty_len, pretty_label, suffix,
+                time_left1, time_left_label1, (time_left1 != 1 ? "s": ""));
+    }
 }
 
 FT_NAMESPACE_END

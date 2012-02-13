@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.65])
-AC_INIT([fstransform], [0.9.0], [BUG-REPORT-ADDRESS])
+AC_INIT([fstransform], [0.9.1], [BUG-REPORT-ADDRESS])
 AC_CONFIG_SRCDIR([fsremap/src/remap.cc])
 AC_CONFIG_HEADERS([fsremap/src/config.hh])
 AC_CONFIG_AUX_DIR([tools])
@@ -14,19 +14,22 @@ AM_INIT_AUTOMAKE
 AC_PROG_CXX
 AC_PROG_INSTALL
 
-# Checks for libraries.
+AC_LANG(C++)
+
+# Checks for compiler characteristics
+FT_CXX_FEATURES
 
 # Checks for header files.
-AC_LANG(C++)
 AC_CHECK_HEADERS([cerrno  climits  cmath  cstdarg  cstdio  cstdlib  cstring  ctime \
                   errno.h limits.h math.h stdarg.h stdio.h stdlib.h string.h time.h \
                   dirent.h fcntl.h features.h stddef.h stdint.h \
                   linux/fiemap.h linux/fs.h sys/ioctl.h sys/mman.h sys/stat.h \
                   sys/statvfs.h sys/time.h sys/types.h sys/wait.h \
                   termios.h time.h unistd.h utime.h])
-AC_LANG(C)
 
-# Checks for typedefs, structures, and compiler characteristics.
+# Checks for libraries.
+
+# Checks for typedefs, and structures
 AC_TYPE_MODE_T
 AC_TYPE_OFF_T
 AC_TYPE_PID_T
@@ -47,14 +50,14 @@ AC_FUNC_FORK
 AC_FUNC_LSTAT_FOLLOWS_SLASHED_SYMLINK
 AC_FUNC_MALLOC
 AC_FUNC_MMAP
-AC_CHECK_FUNCS([execvp ftruncate gettimeofday getuid lchown chown localtime localtime_r \
+AC_CHECK_FUNCS([execvp ftruncate gettimeofday getuid lchown chown localtime_r localtime \
                memmove memset mkdir mkfifo mlock msync munmap posix_fallocate \
                random remove srandom strerror strftime time tzset \
                utimes utimensat waitpid])
 
 FT_NEED_ALL_FUNCS([execvp ftruncate memmove memset mkdir mkfifo msync munmap \
                    remove strerror strftime time waitpid])
-FT_NEED_ANY_FUNC([localtime localtime_r])
+FT_NEED_ANY_FUNC([localtime_r localtime])
 FT_NEED_ANY_FUNC([lchown chown])
 
 AC_CONFIG_FILES([Makefile fsremap/build/Makefile fsmove/build/Makefile fstransform/build/Makefile])

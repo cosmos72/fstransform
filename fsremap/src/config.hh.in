@@ -36,6 +36,10 @@
 /* Define to 1 if you have the `execvp' function. */
 #undef HAVE_EXECVP
 
+/* define if C++ compiler supports forcing and inhibiting template
+   instantiation */
+#undef HAVE_EXTERN_TEMPLATE
+
 /* Define to 1 if you have the <fcntl.h> header file. */
 #undef HAVE_FCNTL_H
 

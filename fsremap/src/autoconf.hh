@@ -40,19 +40,6 @@
 #endif
 
 
-/**
- * define if C++ compiler supports g++-style explicit template instantiation:
- * extern template ...<>; // declaration
- * template ...<>;        // instantiation
- */
-#ifndef FT_HAVE_EXTERN_TEMPLATE
-#  if defined(__cplusplus) && defined(__GNUC__)
-#    define FT_HAVE_EXTERN_TEMPLATE
-#  endif
-#endif /* FT_HAVE_EXTERN_TEMPLATE */
-
-
-
 /** define to compiler's own version of 'inline' keyword */
 #ifndef FT_INLINE
 #  if defined(__cplusplus)

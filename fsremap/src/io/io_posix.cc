@@ -959,8 +959,8 @@ int fr_io_posix::flush_copy_bytes(fr_dir_posix dir, ft_uoff from_offset, ft_uoff
     const ft_uoff dev_offset = read_dev ? from_offset : to_offset;
     const ft_uoff other_offset = read_dev ? to_offset : from_offset;
 
-    /* validate("label", N, ...) also checks if from/to + length overflows (ft_size)-1 */
-    int err = validate("ft_size", (ft_uoff)(ft_size)-1, dir, from_offset, to_offset, length);
+    /* validate("label", N, ...) also checks if from/to + length overflows (ft_uoff)-1 */
+    int err = validate("ft_uoff", (ft_uoff)-1, dir, from_offset, to_offset, length);
     if (err == 0)
         err = validate("ft_size", (ft_uoff)mmap_size, dir, 0, other_offset, length);
     if (err != 0)

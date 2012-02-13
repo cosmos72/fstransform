@@ -1,3 +1,13 @@
+From 0.9.0 to 0.9.1:
+
+  fsremap:
+    * fixed build errors on some Linux flavors (typically rpm-based ones)
+    * fixed internal error on 32-bit platforms while remapping devices > 4GB
+
+  fstransform:
+    * option '--show-time' is now enabled by default,
+      use '--show-time=no' to disable
+
 From 0.3.7 to 0.9.0:
 
   all:

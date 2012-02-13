@@ -33,10 +33,6 @@ public:
 
 private:
 
-    // report an assertion failure (and terminate the program)
-    void assert_fail(const_iterator where, const key_type & problem_key, const mapped_type & problem_value,
-                     const char * fmt, ...) const;
-
     /** compare two key+value extents and find relative position */
     static fr_extent_relation compare(const_iterator pos1,
                                       const_iterator pos2);
