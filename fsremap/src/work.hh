@@ -1,4 +1,22 @@
 /*
+ * fstransform - transform a file-system to another file-system type,
+ *               preserving its contents and without the need for a backup
+ *
+ * Copyright (C) 2011-2012 Massimiliano Ghilardi
+ * 
+ *     This program is free software: you can redistribute it and/or modify
+ *     it under the terms of the GNU General Public License as published by
+ *     the Free Software Foundation, either version 3 of the License, or
+ *     (at your option) any later version.
+ * 
+ *     This program is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU General Public License for more details.
+ * 
+ *     You should have received a copy of the GNU General Public License
+ *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
  * remap.hh
  *
  *  Created on: Feb 28, 2011
@@ -129,18 +147,22 @@ private:
     int close_storage();
 
 
-    /*
-     * called once by relocate() during the remapping phase.
+    /**
+     * called once by relocate() immediately before starting the remapping phase.
      *
-     * do we have an odd-sized (i.e. smaller than effective block size) last device block?
-     * it does not appear in any extent map: its length is zero in 1-block units !
+     * 1) check that last device block to be written is actually writable.
+     *    Reason: at least on Linux, if a filesystems is smaller than its containing device,
+     *    it often limits to its length the writable blocks in the device.
      *
-     * by itself it is not a problem and we could just ignore it,
-     * but it is likely that an equally odd-sized (or slightly smaller) last loop-file block will be present,
-     * and since its length is instead rounded UP to one block by the various io->read_extents() functions,
-     * the normal algorithm in relocate() would not find its final destination and enter an infinite loop (ouch)
+     * 2) check for corner care where we have an odd-sized (i.e. smaller than effective block size) last device block,
+     *    which does not appear in any extent map: its length is zero in 1-block units !
+     *
+     *    by itself it is not a problem and we could just ignore it,
+     *    but it is likely that an equally odd-sized (or slightly smaller) last loop-file block will be present,
+     *    and since its length is instead rounded UP to one block by the various io->read_extents() functions,
+     *    the normal algorithm in relocate() would not find its final destination and enter an infinite loop (ouch)
      */
-    int check_last_odd_sized_block();
+    int check_last_block();
 
 
     /** called by relocate(). move as many extents as possible from DEVICE to STORAGE */

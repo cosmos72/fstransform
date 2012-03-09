@@ -1,4 +1,22 @@
 /*
+ * fstransform - transform a file-system to another file-system type,
+ *               preserving its contents and without the need for a backup
+ *
+ * Copyright (C) 2011-2012 Massimiliano Ghilardi
+ *
+ *     This program is free software: you can redistribute it and/or modify
+ *     it under the terms of the GNU General Public License as published by
+ *     the Free Software Foundation, either version 3 of the License, or
+ *     (at your option) any later version.
+ *
+ *     This program is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU General Public License for more details.
+ *
+ *     You should have received a copy of the GNU General Public License
+ *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
  * move.cc
  *
  *  Created on: Aug 18, 2011
@@ -25,6 +43,7 @@ FT_NAMESPACE_BEGIN
 enum { FC_ARGS_COUNT = FT_IO_NS fm_io::FC_ARGS_COUNT };
 
 static char const* const* label = FT_IO_NS fm_io::label;
+static char const* const* LABEL = FT_IO_NS fm_io::LABEL;
 
 
 /** default constructor */
@@ -127,8 +146,11 @@ int fm_move::main(int argc, char ** argv)
 
 /** print command-line usage to stdout and return 0 */
 int fm_move::usage(const char * program_name) {
-    ff_log(FC_NOTICE, 0, "Usage: %s [OPTION]... %s %s [--exclude FILE...]\n", program_name, label[0], label[1]);
-    ff_log(FC_NOTICE, 0, "");
+    ff_log(FC_NOTICE, 0, "Usage: %s [OPTION]... %s %s [--exclude FILE...]", program_name, LABEL[0], LABEL[1]);
+    ff_log(FC_NOTICE, 0, "Recursively move files and folders from %s to %s,", LABEL[0], LABEL[1]);
+    ff_log(FC_NOTICE, 0, "even if %s and %s are almost full or share their free space", LABEL[0], LABEL[1]);
+    ff_log(FC_NOTICE, 0, "(for example if %s is a file system inside a loop-file _inside_ %s)\n", LABEL[0], LABEL[1]);
+
     return ff_log
     (FC_NOTICE, 0, "Supported options:\n"
      "  --help                Print this help and exit\n"

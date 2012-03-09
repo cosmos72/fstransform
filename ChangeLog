@@ -1,4 +1,25 @@
-From 0.9.0 to 0.9.1:
+From 0.9.1 to 0.9.2, Massimiliano Ghilardi 2012-03-08:
+
+  all:
+    * added explicit copyright statement to all source files
+
+  fsmove:
+    * added program description to '--help' output
+
+  fsremap:
+    * added check that last device block to be written is actually writeable.
+      Reason: at least on Linux, if a filesystems is smaller than its
+      containing device, it often limits to its own length the writable blocks
+      in the device.
+    * added program description to '--help' output
+
+  fstransform:
+    * renamed 'fstransform.sh' to 'fstransform'
+    * added check that source and target file systems are among the
+      tested ones: minix ext2 ext3 ext4 reiserfs jfs xfs
+    * added options '--help' and '--force-untested-file-systems'
+
+From 0.9.0 to 0.9.1, Massimiliano Ghilardi 2012-02-13:
 
   fsremap:
     * fixed build errors on some Linux flavors (typically rpm-based ones)
@@ -8,7 +29,7 @@ From 0.9.0 to 0.9.1:
     * option '--show-time' is now enabled by default,
       use '--show-time=no' to disable
 
-From 0.3.7 to 0.9.0:
+From 0.3.7 to 0.9.0, Massimiliano Ghilardi 2012-02-06:
 
   all:
     * replaced Eclipse-generated makefiles with automake+autoconf ones.
@@ -19,7 +40,7 @@ From 0.3.7 to 0.9.0:
       a device more than 90% full
 
   fsmove:
-    * added progress report
+    * added progress report and estimated time left
 
   fsremap:
     * zero-file is now optional. if not specified, fsremap performs
@@ -39,3 +60,33 @@ From 0.3.7 to 0.9.0:
       and fsremap refuses to run if loop-file length exceeds device size
       _rounded_down_ to file-system block size
     
+From 0.3.6 to 0.3.7, Massimiliano Ghilardi 2012-01-21:
+
+  fsremap:
+    * fixed a bug in the routine to show progress percentage.
+      This bug cause fsremap to crash while remapping the device,
+      leaving your data UNUSABLE.
+      
+      For this reason, PLEASE DO NOT USE FSTRANSFORM VERSION 0.3.6
+
+From 0.2.8 to 0.3.6, Massimiliano Ghilardi 2012-01-21:
+
+  fsremap:
+    * improved the routine to show progress percentage
+
+      This routine was found to be bugged and crash while remapping
+      the device, leaving your data UNUSABLE.
+      
+      For this reason, PLEASE DO NOT USE FSTRANSFORM VERSION 0.3.6
+      
+    * added check and workaround for device lengths not multiples of block size
+    * added check and workaround for incomplete information sometimes returned
+      by ioctl(FS_IOC_FIEMAP)
+
+  fsmove:
+    * added periodic checks for enough free space in both the source
+      and target file-systems
+    
+  fstransform:
+    * added script 'fstransform.sh', it executes automatically
+      all the steps needed to perform a full file-system transformation

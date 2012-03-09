@@ -35,7 +35,7 @@ subdir = .
 DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(top_srcdir)/configure \
 	$(top_srcdir)/fsremap/src/config.hh.in AUTHORS COPYING \
-	ChangeLog INSTALL NEWS tools/depcomp tools/install-sh \
+	ChangeLog INSTALL NEWS TODO tools/depcomp tools/install-sh \
 	tools/missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/acinclude.m4 \
@@ -674,7 +674,7 @@ uninstall-am:
 
 
 mrproper-distclean: distclean
-	rm -f fsremap/src/ft_config.hh
+	rm -f fsremap/src/ft_config.hh fstransform/build/fstransform
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

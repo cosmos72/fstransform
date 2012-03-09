@@ -1,4 +1,22 @@
 /*
+ * fstransform - transform a file-system to another file-system type,
+ *               preserving its contents and without the need for a backup
+ *
+ * Copyright (C) 2011-2012 Massimiliano Ghilardi
+ * 
+ *     This program is free software: you can redistribute it and/or modify
+ *     it under the terms of the GNU General Public License as published by
+ *     the Free Software Foundation, either version 3 of the License, or
+ *     (at your option) any later version.
+ * 
+ *     This program is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU General Public License for more details.
+ * 
+ *     You should have received a copy of the GNU General Public License
+ *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
  * work.t.hh
  *
  *  Created on: Feb 28, 2011
@@ -1008,7 +1026,7 @@ int fr_work<T>::relocate()
      * do we have an odd-sized (i.e. smaller than effective block size) last loop-file block?
      * it must be treated specially, see the next function for details.
      */
-    err = check_last_odd_sized_block();
+    err = check_last_block();
 
     /* initialize progress report */
     eta.clear();
@@ -1066,19 +1084,23 @@ void fr_work<T>::show_progress(ft_log_level log_level, const char * simul_msg)
 }
 
 
-/*
- * called once by relocate() during the remapping phase.
+/**
+ * called once by relocate() immediately before starting the remapping phase.
  *
- * do we have an odd-sized (i.e. smaller than effective block size) last device block?
- * it does not appear in any extent map: its length is zero in 1-block units !
+ * 1) check that last device block to be written is actually writable.
+ *    Reason: at least on Linux, if a filesystems is smaller than its containing device,
+ *    it often limits to its length the writable blocks in the device.
  *
- * by itself it is not a problem and we could just ignore it,
- * but it is likely that an equally odd-sized (or slightly smaller) last loop-file block will be present,
- * and since its length is instead rounded UP to one block by the various io->read_extents() functions,
- * the normal algorithm in relocate() would not find its final destination and enter an infinite loop (ouch)
+ * 2) check for corner care where we have an odd-sized (i.e. smaller than effective block size) last device block,
+ *    which does not appear in any extent map: its length is zero in 1-block units !
+ *
+ *    by itself it is not a problem and we could just ignore it,
+ *    but it is likely that an equally odd-sized (or slightly smaller) last loop-file block will be present,
+ *    and since its length is instead rounded UP to one block by the various io->read_extents() functions,
+ *    the normal algorithm in relocate() would not find its final destination and enter an infinite loop (ouch)
  */
 template<typename T>
-int fr_work<T>::check_last_odd_sized_block()
+int fr_work<T>::check_last_block()
 {
     ft_uoff eff_block_size_log2 = io->effective_block_size_log2();
     ft_uoff eff_block_size = (ft_uoff) 1 << eff_block_size_log2;
@@ -1086,8 +1108,10 @@ int fr_work<T>::check_last_odd_sized_block()
     ft_uoff dev_len = io->dev_length(), loop_file_len = io->loop_file_length();
     dev_len &= ~(eff_block_size - 1);
 
+
     if (loop_file_len <= dev_len)
-        return 0;
+        return io->check_last_block();
+
 
     ft_uoff odd_block_len = loop_file_len & (eff_block_size - 1);
 
@@ -1377,6 +1401,8 @@ int fr_work<T>::clear_free_space()
         end = toclear_map.end();
         for (; iter != end; ++iter) {
             const map_value_type & extent = *iter;
+#if 0
+            // some filesystems *MAY* leave their first block unused, so this check is too strict
             if (extent.first.physical == 0) {
                 ff_log(FC_FATAL, 0, "PANIC! this is a BUG in fsremap! tried to clear first block of remapped device!");
                 ff_log(FC_FATAL, 0, "\tABORTED clearing %s free space to prevent filesystem corruption.", label[FC_DEVICE]);
@@ -1388,7 +1414,9 @@ int fr_work<T>::clear_free_space()
                 err = -EFAULT;
                 break;
 
-            } else if ((err = io->zero(FC_TO_DEV, extent.first.physical, extent.second.length)) != 0)
+            } else
+#endif // 0
+            if ((err = io->zero(FC_TO_DEV, extent.first.physical, extent.second.length)) != 0)
                 break;
         }
         int err2;

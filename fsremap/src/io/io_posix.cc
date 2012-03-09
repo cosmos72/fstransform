@@ -1,4 +1,22 @@
 /*
+ * fstransform - transform a file-system to another file-system type,
+ *               preserving its contents and without the need for a backup
+ *
+ * Copyright (C) 2011-2012 Massimiliano Ghilardi
+ * 
+ *     This program is free software: you can redistribute it and/or modify
+ *     it under the terms of the GNU General Public License as published by
+ *     the Free Software Foundation, either version 3 of the License, or
+ *     (at your option) any later version.
+ * 
+ *     This program is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU General Public License for more details.
+ * 
+ *     You should have received a copy of the GNU General Public License
+ *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
  * io/io_posix.cc
  *
  *  Created on: Feb 28, 2011
@@ -819,6 +837,45 @@ int fr_io_posix::umount_dev()
     return err;
 }
 
+
+/**
+ * called once by work<T>::relocate() immediately before starting the remapping phase.
+ *
+ * checks that last device block to be written is actually writable.
+ * Reason: if linux filesystems are smaller than the device, they often limit the writable blocks in the device to their length.
+ */
+int fr_io_posix::check_last_block()
+{
+    ft_uoff dev_len = dev_length(), loop_file_len = loop_file_length();
+    int err = 0;
+    if (loop_file_len-- == 0)
+    	return err;
+
+    const char * label_dev   = label[FC_DEVICE];
+    int fd_dev = fd[FC_DEVICE];
+    char ch = '\0';
+    bool simulated = simulate_run();
+
+    for (int i = 0; err == 0 && i < 2; i++) {
+    	if ((err = ff_posix_lseek(fd_dev, loop_file_len)) != 0) {
+            err = ff_log(FC_ERROR, err, "I/O error in %s lseek(fd = %d, offset = %"FT_ULL", SEEK_SET)",
+            			 label_dev, fd_dev, (ft_ull)loop_file_len);
+            break;
+    	}
+
+    	if (i == 0) {
+    		if ((err = ff_posix_read(fd_dev, &ch, 1)) != 0)
+    			err = ff_log(FC_ERROR, err, "I/O error in %s read(fd = %d, offset = %"FT_ULL", len = 1)",
+    					label_dev, fd_dev, (ft_ull)loop_file_len);
+
+    	} else if (!simulated) {
+    		if ((err = ff_posix_write(fd_dev, &ch, 1)) != 0)
+    			err = ff_log(FC_ERROR, err, "last position to be written into %s (offset = %"FT_ULL") is NOT writable",
+    					label_dev, (ft_ull)loop_file_len);
+    	}
+    }
+    return err;
+}
 
 /**
  * actually copy a list of fragments from DEVICE to STORAGE, or from STORAGE or DEVICE, or from DEVICE to DEVICE.

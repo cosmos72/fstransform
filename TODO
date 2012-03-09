@@ -1,0 +1,4 @@
+* fsmove: use a larger buffer (1MB) to speed up backward copy.
+          beware of low free space!
+* fsremap: preemptively check that last device block is writable.
+          avoids troubles with file-systems significantly smaller than device

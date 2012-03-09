@@ -1,4 +1,28 @@
 #!/bin/dash
+#
+# fstransform - transform a file-system to another file-system type,
+#               preserving its contents and without the need for a backup
+#
+# Copyright (C) 2012 Massimiliano Ghilardi
+# 
+#     This program is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+# 
+#     This program is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+# 
+#     You should have received a copy of the GNU General Public License
+#     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# fstranform.sh
+#
+#  Created on: Jan 21, 2012
+#      Author: max
+#
 
 ____='           '
 PROG=fstransform
@@ -20,6 +44,7 @@ CMDS_missing=
 ERR=0
 DEVICE=
 FSTYPE=
+FSTYPES_TESTED="minix ext2 ext3 ext4 reiserfs jfs xfs"
 DEVICE_BLOCK_SIZE=
 DEVICE_SIZE_IN_BYTES=
 DEVICE_SIZE_IN_BLOCKS=
@@ -45,6 +70,7 @@ X_COPY_DEVICE=
 
 USER_ANSWER=
 USER_LOOP_SIZE_IN_BYTES=
+USER_FORCE_UNTESTED_FSTYPES=
 
 for cmd in $CMDS_bootstrap $CMDS $CMDS_optional; do
   eval "CMD_$cmd="
@@ -63,6 +89,35 @@ exec 5>/dev/null
 # after log_init_{tty,gui}(), file descriptor 1 will be tty or gui file descriptor
 
 
+show_usage() {
+  echo "Usage: $0 [OPTION]... DEVICE NEW-FILE-SYSTEM-TYPE"
+  echo "Transform file system inside DEVICE to NEW-FILE-SYSTEM-TYPE,"
+  echo "preserving its contents and without need for backup"
+  echo
+  echo "Options:"
+  echo "  --help                        Print this help and exit"
+  echo "  --new-size=SIZE               Set new file system length. default: device length"
+  echo "  --old-file-system=OLD-TYPE    Override current (old) file system type autodetection"
+  echo "  --force-untested-file-systems transform untested file systems (DANGEROUS)"
+  echo "  --irreversible          Speedup 'fsremap' execution: skip creating zero-file"
+  echo "  --no-questions          Never ask any question or confirmation"
+  echo "  --show-time[=yes|=no]   Show current time before each message. default: yes"
+  echo "  --loop-file=LOOP-FILE   Override loop-file path"
+  echo "  --loop-mount-point=PATH Override loop-file mount point"
+  echo "  --zero-file=ZERO-FILE   Override zero-file path"
+  echo "  --cmd-CMD-NAME=CMD-PATH Override external command autodetection"
+  echo "  --opts-fsmove=OPTS      Pass OPTS as additional options to 'fsmove'"
+  echo "  --opts-fsremap=OPTS     Pass OPTS as additional options to 'fsremap'"
+  echo "  --opts-mkfs=OPTS        Pass OPTS as options to 'mkfs'"
+  echo "  --opts-fsck-source=OPTS Override 'fsck' options for old file system. default: '-p -f'"
+  echo "  --opts-fsck-target=OPTS Override 'fsck' options for new file system. default: '-p -f'"
+  echo "  --x-OPTION=VALUE        Set internal, undocumented option. For maintainers only."
+}
+
+if test "$#" = 1 -a "$1" = "--help"; then
+  show_usage
+  exit 0
+fi
 
 
 # parse command line arguments and set USER_CMD_* variables accordingly
@@ -70,13 +125,17 @@ parse_args() {
   log_info "parsing command line arguments"
   for arg in "$@"; do
     case "$arg" in
-      --old-fstype=*)
+      --old-file-system=*)
         DEVICE_FSTYPE="`\"$CMD_expr\" match \"$arg\" '--old-fstype=\(.*\)'`"
 	log_info "device old (initial) file-system type '$DEVICE_FSTYPE' specified on command line"
         ;;
       --new-size=*)
         USER_LOOP_SIZE_IN_BYTES="`\"$CMD_expr\" match \"$arg\" '--new-size=\(.*\)'`"
 	log_info "device new (final) file-system length '$USER_LOOP_SIZE_IN_BYTES' bytes specified on command line"
+        ;;
+      --force-untested-file-systems)
+        USER_FORCE_UNTESTED_FSTYPES="yes"
+	log_info "forcing trasformation of untested file systems (DANGEROUS). '$arg' bytes specified on command line"
         ;;
       --irreversible)
         OPT_CREATE_ZERO_FILE=no
@@ -498,18 +557,19 @@ log_info "environment check passed."
 ERR=0
 
 check_command_line_args() {
-  if test "$DEVICE" = ""; then
-    if test "$FSTYPE" = ""; then
-      log_err "missing command-line arguments DEVICE and FSTYPE"
-    else
-      log_err "missing command-line argument DEVICE"
-    fi
-    exit 1
+  local my_missing=
+  if test "$DEVICE" != "" -a "$FSTYPE" != ""; then
+    return 0
+  elif test "$DEVICE" != ""; then
+    my_missing="argument FSTYPE"
+  elif test "$FSTYPE" != ""; then
+    my_missing="argument DEVICE"
+  else
+    my_missing="arguments DEVICE and FSTYPE"
   fi
-  if test "$FSTYPE" = ""; then
-    log_err "missing command-line argument FSTYPE"
-    exit 1
-  fi
+  log_err "missing command-line $my_missing."
+  log_err "Try '$0 --help' for more information"
+  exit 1
 }
 check_command_line_args
 
@@ -712,6 +772,56 @@ find_device_mount_point_and_fstype
 
 
 
+check_for_tested_fstypes() {
+  if test "$FSTYPE" = ""; then
+    log_err "target file system type not specified!"
+    exit 1
+  fi
+  local my_fstype_source_ok=no my_fstype_target_ok=no
+  for my_fstype in $FSTYPES_TESTED; do
+    if test "$DEVICE_FSTYPE" = "$my_fstype"; then
+      my_fstype_source_ok=yes
+      break
+    fi
+  done
+  for my_fstype in $FSTYPES_TESTED; do
+    if test "$FSTYPE" = "$my_fstype"; then
+      my_fstype_target_ok=yes
+      break
+    fi
+  done
+  if test "$my_fstype_source_ok" = "yes" -a "$my_fstype_target_ok" = "yes"; then
+    return 0
+  fi
+  
+  local my_log=log_err
+  if test "$USER_FORCE_UNTESTED_FSTYPES" = "yes"; then
+    my_log=log_warn
+  fi
+  if test "$my_fstype_source_ok" != "yes"; then
+    if test "$DEVICE_FSTYPE" = ""; then
+      "$my_log" "failed to detect device current file system type"
+    else
+      "$my_log" "this program is UNTESTED on device current file system '$DEVICE_FSTYPE' !"
+    fi
+  fi
+  if test "$my_fstype_target_ok" != "yes"; then
+    "$my_log" "this program is UNTESTED on target file system '$FSTYPE' !"
+  fi
+  "$my_log" "this program is tested ONLY on file systems: $FSTYPES_TESTED"
+  
+  if test "$USER_FORCE_UNTESTED_FSTYPES" = "yes"; then
+    "$my_log" "continuing anyway due to option '--force-untested-file-systems' (DANGEROUS)"
+    return 0
+  else
+    "$my_log" "cowardly refusing to run. you can use option '--force-untested-file-systems' if you know what you are doing (DANGEROUS, you can LOSE your DATA)"
+    exit 1
+  fi
+}
+check_for_tested_fstypes
+
+
+
 find_device_size() {
   capture_cmd DEVICE_SIZE_IN_BYTES "$CMD_blockdev" --getsize64 "$DEVICE"
   log_info "device raw size = $DEVICE_SIZE_IN_BYTES bytes"
@@ -790,7 +900,7 @@ create_loop_file() {
     fi
     log_info "sparse loop file will be $LOOP_SIZE_IN_BYTES bytes long (user specified $USER_LOOP_SIZE_IN_BYTES bytes)"
   fi
-  exec_cmd "$CMD_dd" if=/dev/zero of="$LOOP_FILE" bs=1 count=1 seek="$(( LOOP_SIZE_IN_BYTES - 1 ))" >/dev/null 2>/dev/null
+  exec_cmd "$CMD_dd" if=/dev/zero of="$LOOP_FILE" bs=1 count=1 seek="$(( LOOP_SIZE_IN_BYTES - 1 ))"
 }
 create_loop_file
 

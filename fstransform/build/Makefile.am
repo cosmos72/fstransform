@@ -1,7 +1,7 @@
-sbin_SCRIPTS = fstransform.sh
+sbin_SCRIPTS = fstransform
 
-fstransform.sh:  ../fstransform.sh
-	sed 's/%PACKAGE_VERSION%/$(PACKAGE_VERSION)/g' <$<  >$@
+fstransform:  ../fstransform.sh
+	sed 's/%PACKAGE_VERSION%/$(PACKAGE_VERSION)/g' <$< >$@
 	chmod +x $@
 
 ../fstransform.sh:

@@ -1,4 +1,22 @@
 /*
+ * fstransform - transform a file-system to another file-system type,
+ *               preserving its contents and without the need for a backup
+ *
+ * Copyright (C) 2011-2012 Massimiliano Ghilardi
+ * 
+ *     This program is free software: you can redistribute it and/or modify
+ *     it under the terms of the GNU General Public License as published by
+ *     the Free Software Foundation, either version 3 of the License, or
+ *     (at your option) any later version.
+ * 
+ *     This program is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU General Public License for more details.
+ * 
+ *     You should have received a copy of the GNU General Public License
+ *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
  * io/io.cc
  *
  *  Created on: Mar 1, 2011
@@ -25,6 +43,9 @@ FT_IO_NAMESPACE_BEGIN
 
 char const * const fr_io::label[] = {
         "device", "loop-file", "zero-file", "secondary-storage", "primary-storage", "storage", "free-space"
+};
+char const * const fr_io::LABEL[] = {
+        "DEVICE", "LOOP-FILE", "ZERO-FILE", "SECONDARY-STORAGE", "PRIMARY-STORAGE", "STORAGE", "FREE-SPACE"
 };
 
 
@@ -188,6 +209,19 @@ int fr_io::save_extents(const fr_vector<ft_uoff> & loop_file_extents,
         }
     }
     return err;
+}
+
+/**
+ * called once by work<T>::relocate() immediately before starting the remapping phase.
+ *
+ * must be overridden by sub-classes to check that last device block to be written is actually writable.
+ * Reason: at least on Linux, if a filesystems is smaller than its containing device, it often limits to its length the writable blocks in the device.
+ *
+ * default implementation: do nothing and return success (0)
+ */
+int fr_io::check_last_block()
+{
+	return 0;
 }
 
 

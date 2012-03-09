@@ -1,4 +1,22 @@
 /*
+ * fstransform - transform a file-system to another file-system type,
+ *               preserving its contents and without the need for a backup
+ *
+ * Copyright (C) 2011-2012 Massimiliano Ghilardi
+ * 
+ *     This program is free software: you can redistribute it and/or modify
+ *     it under the terms of the GNU General Public License as published by
+ *     the Free Software Foundation, either version 3 of the License, or
+ *     (at your option) any later version.
+ * 
+ *     This program is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU General Public License for more details.
+ * 
+ *     You should have received a copy of the GNU General Public License
+ *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
  * io/io.hh
  *
  *  Created on: Mar 1, 2011
@@ -34,7 +52,8 @@ public:
         FC_DEVICE = 0, FC_LOOP_FILE
     };
 
-    static char const * const label[]; // DEVICE, LOOP-FILE (and also others, but don't tell)
+    static char const * const label[]; // device, loop-file (and also others, but don't tell)
+    static char const * const LABEL[]; // DEVICE, LOOP-FILE (and also others, but don't tell)
 
     enum {
         FC_IO_EXTENTS_FILE_COUNT = 2,
@@ -298,6 +317,17 @@ public:
 
     /** call umount(8) on dev_path() */
     virtual int umount_dev() = 0;
+
+
+    /**
+     * called once by work<T>::relocate() immediately before starting the remapping phase.
+     *
+     * must be overridden by sub-classes to check that last device block to be written is actually writable.
+     * Reason: at least on Linux, if a filesystems is smaller than its containing device, it often limits to its length the writable blocks in the device.
+     *
+     * default implementation: do nothing and return success (0)
+     */
+    virtual int check_last_block();
 
     /**
      * perform buffering and coalescing of copy requests.

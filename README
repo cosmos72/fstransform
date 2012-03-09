@@ -29,7 +29,7 @@
 ###############################################################################
 ###############################################################################
 
-This document explains how use the script 'fstransform.sh'
+This document explains how use the script 'fstransform'
 to transform the contents of a Linux device - usually a disk partition -
 from a filesystem type to another.
 
@@ -41,6 +41,8 @@ both as source and as target:
 minix, ext2, ext3, ext4, reiserfs, jfs, xfs.
 
 Do NOT use the script with other filesystems unless you are willing to LOSE your data.
+
+In particular, fstransform does NOT (yet) support ntfs, msdos and vfat file systems.
 
 
 Common sense and experience tell that you should ALWAYS have a backup
@@ -74,7 +76,7 @@ BEFORE actually using the procedures described here.
 
 Enough legalese... now let's get to the interesting part.
 
-The script 'fstransform.sh' does the following:
+The script 'fstransform' does the following:
 
 it takes a device with a filesystem on it (even if almost full)
 and transforms the device to a different filesystem type,
@@ -129,8 +131,8 @@ in order manually set the secondary storage size,
 but please understand that using a too small secondary storage
 can slow down the procedure.
 
-To pass the same option to 'fstransform.sh', you must execute something like
-  fstransform.sh --opts-fsremap='-s <size>' <other-options-and-arguments> 
+To pass the same option to 'fstransform', you must execute something like
+  fstransform --opts-fsremap='-s <size>' <other-options-and-arguments> 
 
 
 PROCEDURE:
@@ -159,7 +161,7 @@ PROCEDURE:
 2) decide the target file-system type.
 
    For some combinations of the initial and final filesystems
-   it is not necessary to use 'fstransform.sh',
+   it is not necessary to use 'fstransform',
    as the same result can be obtained with much simpler - and SAFER - tools.
 
    For example, an 'ext2' or 'ext3' filesystem can be transformed into 'ext3' or 'ext4'
@@ -172,11 +174,11 @@ PROCEDURE:
    "convert Linux File System ext3 to ext4" 
    
    But for most combinations, the only way is either to do a full backup + format +
-   restore the data, or use 'fstransform.sh'
+   restore the data, or use 'fstransform'
 
 3) execute the script
 
-   fstransform.sh {device} {target-file-system-type}
+   fstransform {device} {target-file-system-type}
 
 4) follow the instructions - the script will tell you what it is doing
    and both 'fsmove' and 'fsremap' also show progress percentage and estimated time left.
@@ -201,3 +203,6 @@ PROCEDURE:
 
 
 Good luck!
+
+Massimiliano Ghilardi
+<paperinik@users.sf.net>
