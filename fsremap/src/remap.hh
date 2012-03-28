@@ -29,6 +29,7 @@
 #include "check.hh"
 
 #include "args.hh"         // for fr_args
+#include "io/persist.hh"   // for fr_persist
 #include "io/io.hh"        // for fr_io
 #include "io/io_posix.hh"  // for fr_io_posix
 #include "io/io_test.hh"   // for fr_io_test
@@ -41,17 +42,26 @@ class fr_remap
 {
 private:
     fr_job * this_job;
+    FT_IO_NS fr_persist * this_persist;
     FT_IO_NS fr_io * this_io;
     FT_UI_NS fr_ui * this_ui;
 
+    /** true if usage() or version() was called. */
+    bool quit_immediately;
+    
     /** cannot call copy constructor */
     fr_remap(const fr_remap &);
 
     /** cannot call assignment operator */
     const fr_remap & operator=(const fr_remap &);
 
+    /** display command-line usage to stdout and return 0 */
+    int usage(const char * program_name);
 
-    static int invalid_cmdline(const char * program_name, int err, const char * fmt, ...);
+    /** output version information and return 0 */
+    int version();
+
+    static int invalid_cmdline(const fr_args & args, int err, const char * fmt, ...);
 
     /** return EISCONN if remapper is initialized, else call quit_io() and return 0 */
     int check_is_closed();
@@ -60,7 +70,10 @@ private:
     int check_is_open();
 
     /** initialize job/persistence subsystem */
-    int init_job(const fr_args & argsd);
+    int init_job_persist(const fr_args & argsd);
+
+    /** quit job/persistence subsystem */
+    void quit_job_persist();
 
 
     /** initialize UI subsystem */
@@ -68,6 +81,8 @@ private:
     /** initialize tty UI subsystem */
     int init_ui_tty(const char * arg);
 
+    /** quit UI subsystem */
+    void quit_ui();
 
     int pre_init_io();
     void post_init_io(FT_IO_NS fr_io * io);
@@ -91,10 +106,6 @@ public:
      * if invoked with the only argument "--help", calls usage() and immediately returns 0
      */
     static int main(int argc, char const* const* argv);
-
-    /** print command-line usage to stdout and return 0 */
-    int usage(const char * program_name);
-
 
     FT_INLINE bool is_initialized() const { return this_io != NULL && this_io->is_open(); }
 

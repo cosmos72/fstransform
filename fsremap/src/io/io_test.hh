@@ -82,7 +82,7 @@ protected:
 
 public:
     /** constructor */
-    fr_io_test(fr_job & job);
+    fr_io_test(fr_persist & persist);
 
     /** destructor. calls close() */
     virtual ~fr_io_test();

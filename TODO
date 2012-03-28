@@ -1,4 +1,36 @@
+TODO
+
+* fstransform, fsmove: add persistence, i.e. the ability to resume a transformation
+       after CTRL-C, power failure or similar interruptions
+
 * fsmove: use a larger buffer (1MB) to speed up backward copy.
           beware of low free space!
+          
+* fsremap: add a graphical interface ? probably not so worth it...
+
+
+WONTDO
+* fsmove: if file system free space is critically low, launch 'xfs_fsr'
+          to try and free some space before giving up.
+  why not:
+  LIMITED USEFULNESS: only for 'xfs' file system
+  DANGEROUS: at least on linux with an almost-full source device
+      xfs_fsr can WORSEN the problem by triggering 'loop write error' kernel errors,
+      which mean the source device has not enough space to accommodate the loop file contents.
+      typically this CORRUPTS the file system inside target (loop) device!
+
+
+DONE in 0.9.3
+* all: check FHS (Filesystem Hierarchy Standard) and decide where to
+       put persistence data. decision: /var/tmp/fstransform/
+
+* fsremap: add persistence, i.e. the ability to resume a transformation
+       after CTRL-C, power failure or similar interruptions
+       
+* fstransform: also allow device to be UNMOUNTED instead of MOUNTED.
+       gives easier integration with gparted, and guarantees
+       that nobody is accessing the file-system inside device
+
+DONE in 0.9.2          
 * fsremap: preemptively check that last device block is writable.
-          avoids troubles with file-systems significantly smaller than device
+       avoids troubles on linux with file-systems significantly smaller than device

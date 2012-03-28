@@ -83,6 +83,12 @@ private:
     int check_free_space();
 
     /**
+     * use some file-system specific trickery to try and free some space.
+     * currently, it runs 'xfs_fsr <path>' which can free some space on 'xfs' file-systems
+     */
+    void try_to_make_free_space(const char * path);
+    
+    /**
      * fill 'stat' with information about the file/directory/special-device 'path'
      */
     int stat(const ft_string & path, ft_stat & stat);
@@ -176,8 +182,8 @@ private:
      */
     int copy_stat(const char * target, const ft_stat & stat);
 
-    /** create a target directory, copying its mode and other meta-data from 'stat' */
-    int create_dir(const ft_string & path, const ft_stat & stat);
+    /** create a target directory */
+    int create_dir(const ft_string & path);
 
     /**
      * remove a source directory, which must be empty

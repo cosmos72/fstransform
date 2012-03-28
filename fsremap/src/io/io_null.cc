@@ -38,11 +38,11 @@ char const * const ft_io_null::sim_msg = "(simulated) ";
 
 
 /** constructor */
-ft_io_null::ft_io_null(fr_job & job)
-: super_type(job)
+ft_io_null::ft_io_null(fr_persist & persist)
+: super_type(persist)
 {
     /* tell job that we're a simulation */
-    job.simulate_run(true);
+    job().simulate_run(true);
 }
 
 /** destructor. does nothing */

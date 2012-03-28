@@ -31,6 +31,12 @@
 # include <cstring>        // for strcmp()
 #endif
 
+#if defined(FT_HAVE_STRING_H)
+# include <stdlib.h>       // for atoi()
+#elif defined(FT_HAVE_CSTRING)
+# include <cstdlib>        // for atoi()
+#endif
+
 #include "log.hh"           // for ff_log()
 #include "map.hh"           // for fr_map<T>
 #include "vector.hh"        // for fr_vector<T>
@@ -48,9 +54,9 @@ FT_NAMESPACE_BEGIN
 
 
 enum {
-	FC_DEVICE = FT_IO_NS fr_io_posix::FC_DEVICE,
-	FC_LOOP_FILE = FT_IO_NS fr_io_posix::FC_LOOP_FILE,
-	FC_FILE_COUNT = FT_IO_NS fr_io_posix::FC_FILE_COUNT
+    FC_DEVICE = FT_IO_NS fr_io_posix::FC_DEVICE,
+    FC_LOOP_FILE = FT_IO_NS fr_io_posix::FC_LOOP_FILE,
+    FC_FILE_COUNT = FT_IO_NS fr_io_posix::FC_FILE_COUNT
 };
 
 static char const* const* label = FT_IO_NS fr_io::label;
@@ -62,21 +68,15 @@ static char const* const* LABEL = FT_IO_NS fr_io::LABEL;
 
 /** constructor */
 fr_remap::fr_remap()
-    : this_job(NULL), this_io(NULL), this_ui(NULL)
+    : this_job(NULL), this_persist(NULL), this_io(NULL), this_ui(NULL), quit_immediately(false)
 { }
 
-/** destructor. calls quit_io() */
+/** destructor. calls quit_io(), quit_ui() and quit_job_persist() */
 fr_remap::~fr_remap()
 {
     quit_io();
-    if (this_job != NULL) {
-        delete this_job;
-        this_job = NULL;
-    }
-    if (this_ui != NULL) {
-        delete this_ui;
-        this_ui = NULL;
-    }
+    quit_ui();
+    quit_job_persist();
 }
 
 /**
@@ -87,18 +87,15 @@ fr_remap::~fr_remap()
  * program_name, DEVICE, LOOP-FILE and ZERO-FILE.
  *
  * return 0 if success, else error.
- * if invoked with the only argument "--help", calls usage() and immediately returns 0
+ * if invoked with the argument "--help" or "--version", calls usage() or version() and immediately returns 0
  */
 int fr_remap::main(int argc, char const* const* argv)
 {
     fr_remap remapper;
 
-    if (argc == 2 && !strcmp("--help", argv[1]))
-        return remapper.usage(argv[0]);
-
     int err = remapper.init(argc, argv);
 
-    if (err == 0)
+    if (err == 0 && !remapper.quit_immediately)
         err = remapper.run();
     /*
      * note 1.2.2) fsremap::main() must check for unreported errors
@@ -107,70 +104,88 @@ int fr_remap::main(int argc, char const* const* argv)
     if (!ff_log_is_reported(err))
         err = ff_log(FC_ERROR, err, "failed with unreported error");
 
-    // not needed, destructor will call quit_io()
-    // remapper.quit_io();
-
     return err;
 }
 
 
 /** print command-line usage to stdout and return 0 */
-int fr_remap::usage(const char * program_name) {
+int fr_remap::usage(const char * program_name)
+{
+    quit_immediately = true;
 
     ff_log(FC_NOTICE, 0, "Usage: %s [OPTION]... %s %s [%s]", program_name, LABEL[0], LABEL[1], LABEL[2]);
+    ff_log(FC_NOTICE, 0, "  or:  %s [OPTION]... --resume-job=JOB_ID %s", program_name, LABEL[0]);
     ff_log(FC_NOTICE, 0, "Replace the contents of %s with the contents of %s, i.e. write %s onto %s",
-    		LABEL[FC_DEVICE], LABEL[FC_LOOP_FILE], LABEL[FC_LOOP_FILE], LABEL[FC_DEVICE]);
+            LABEL[FC_DEVICE], LABEL[FC_LOOP_FILE], LABEL[FC_LOOP_FILE], LABEL[FC_DEVICE]);
     ff_log(FC_NOTICE, 0, "even if %s is inside a file system _inside_ %s\n", LABEL[FC_LOOP_FILE], LABEL[FC_DEVICE]);
 
     return ff_log
-    (FC_NOTICE, 0, "Supported options:\n"
-     "  --help               Print this help and exit\n"
-     "  --                   End of options. treat subsequent parameters as arguments\n"
-     "                         even if they start with '-'\n"
-     "  -q, --quiet          Be quiet, print less output\n"
-     "  -qq                  Be very quiet, only print warnings or errors\n"
-     "  -v, --verbose        Be verbose, print what is being done\n"
-     "  -vv                  Be very verbose, print a lot of detailed output\n"
-     "  -vvv                 Be incredibly verbose (warning: prints TONS of output)\n"
-     "  -f, --force-run      Run even if some sanity checks fail\n"
+    (FC_NOTICE, 0, "Mandatory arguments to long options are mandatory for short options too.\n"
+     "  --                    end of options. treat subsequent parameters as arguments\n"
+     "                          even if they start with '-'\n"
+     "  -a, --no-questions    automatic run: do not ask any question\n"
+     "      --clear=all       clear all free blocks after remapping (default)\n"
+     "      --clear=minimal   (DANGEROUS) clear only overwritten free blocks\n"
+     "                          after remapping\n"
+     "      --clear=none      (DANGEROUS) do not clear any free blocks after remapping\n"
+     "      --cmd-umount=CMD  command to unmount %s (default: /bin/umount)\n"
+     "  -f, --force-run       continue even if some sanity checks fail\n"
+     "      --io=posix        use posix I/O (default)\n"
+     "      --io=self-test    perform in-memory self-test with random data\n"
+     "      --io=test         use test I/O. Arguments are:\n"
+     "                          DEVICE-LENGTH LOOP-FILE-EXTENTS FREE-SPACE-EXTENTS\n"
+     "  -m, --mem-buffer=RAM_SIZE[k|M|G|T|P|E|Z|Y]\n"
+     "                        set RAM buffer size (default: autodetect)\n"
      "  -n, --no-action, --simulate-run\n"
-     "                       Do not actually read or write any disk block\n"
-     "  -p, --no-questions   Run automatically, without asking any question\n"
-     "  --progress-tty TTY   Show full-text progress on tty device TTY\n"
-     "  -t, --dir DIR        Write storage and log files inside DIR (default: $HOME)\n"
-     "  -j, --job JOB_ID     Set JOB_ID to use (default: autodetect)\n"
-     "  --umount-cmd CMD     Command to unmount %s (default: /bin/umount)\n"
-     "  -m, --mem-buffer RAM_SIZE[k|M|G|T|P|E|Z|Y]\n"
-     "                       Set RAM buffer size (default: autodetect)\n"
-     "  -s, --secondary-storage SECONDARY_SIZE[k|M|G|T|P|E|Z|Y]\n"
-     "                       Set SECONDARY STORAGE file length (default: autodetect)\n"
-     "  -xp, --exact-primary-storage PRIMARY_SIZE[k|M|G|T|P|E|Z|Y]\n"
-     "                       Set *exact* PRIMARY STORAGE length, or fail\n"
-     "                       (default: autodetect)\n"
-     "  -xs, --exact-secondary-storage SECONDARY_SIZE[k|M|G|T|P|E|Z|Y]\n"
-     "                       Set *exact* SECONDARY STORAGE length, or fail\n"
-     "                       (default: autodetect)\n"
-     "  --clear-all          Clear all free blocks after remapping (default)\n"
-     "  --clear-minimal      DANGEROUS! Clear only overwritten free blocks\n"
-     "                         after remapping\n"
-     "  --clear-none         DANGEROUS! Do not clear any free blocks after remapping\n"
-     "  --posix              Use POSIX I/O (default)\n"
-     "  --test               Use test I/O. Arguments are:\n"
-     "                         DEVICE-LENGTH LOOP-FILE-EXTENTS FREE-SPACE-EXTENTS\n"
-     "  --self-test          Use self-test I/O. Performs self-test with random data\n",
+     "                        do not actually read or write any disk block\n"
+     "  -q, --quiet           be quiet, print less output\n"
+     "  -qq                   be very quiet, only print warnings or errors\n"
+     "      --resume-job=NUM  resume an interrupted job\n"
+     "  -s, --secondary-storage=SECONDARY_SIZE[k|M|G|T|P|E|Z|Y]\n"
+     "                        set secondary storage file length (default: autodetect)\n"
+     "  -t, --temp-dir=DIR    write storage and log files inside DIR\n"
+     "                          (default: /var/tmp/fstransform)\n"
+     "      --ui-tty=TTY      show full-text progress on tty device TTY\n"
+     "  -v, --verbose         be verbose\n"
+     "  -vv                   be very verbose\n"
+     "  -vvv                  be incredibly verbose (warning: prints lots of output)\n"
+     "  -xp, --exact-primary-storage=PRIMARY_SIZE[k|M|G|T|P|E|Z|Y]\n"
+     "                        set *exact* primary storage length, or fail\n"
+     "                          (default: autodetect)\n"
+     "  -xs, --exact-secondary-storage=SECONDARY_SIZE[k|M|G|T|P|E|Z|Y]\n"
+     "                        set *exact* secondary storage length, or fail\n"
+     "                          (default: autodetect)\n"
+     "       --x-OPTION=VALUE set internal, undocumented option. for maintainers only\n"
+     "       --help           display this help and exit\n"
+     "       --version        output version information and exit\n",
      label[FC_DEVICE]);
 }
 
 
-int fr_remap::invalid_cmdline(const char * program_name, int err, const char * fmt, ...)
+/** output version information and return 0 */
+int fr_remap::version()
 {
-    va_list args;
+    quit_immediately = true;
 
-    va_start(args, fmt);
-    err = ff_vlog(FC_ERROR, err, fmt, args);
-    va_end(args);
+    return ff_log(FC_NOTICE, 0,
+            "fsremap (fstransform utilities) " FT_VERSION "\n"
+            "Copyright (C) 2011-2012 Massimiliano Ghilardi\n"
+            "\n"
+            "License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.\n"
+            "This is free software: you are free to change and redistribute it.\n"
+            "There is NO WARRANTY, to the extent permitted by law.\n");
+}
 
-    ff_log(FC_NOTICE, 0, "Try `%s --help' for more information", program_name);
+
+int fr_remap::invalid_cmdline(const fr_args & args, int err, const char * fmt, ...)
+{
+    va_list vargs;
+
+    va_start(vargs, fmt);
+    err = ff_vlog(FC_ERROR, err, fmt, vargs);
+    va_end(vargs);
+
+    ff_log(FC_NOTICE, 0, "Try `%s --help' for more information", args.program_name);
     /* mark error as reported */
     return err ? err : -EINVAL;
 }
@@ -205,6 +220,13 @@ int fr_remap::check_is_open()
     return err;
 }
 
+static ft_size ff_str_index_of_plus_1(const char * haystack, char needle)
+{
+    const char * match = strchr(haystack, (int) needle);
+    if (match != NULL)
+        return match - haystack + 1;
+    return strlen(haystack);
+}
 /**
  * parse from command line and initialize all subsystems (job, I/O, log...)
  * return 0 if success, else error.
@@ -224,23 +246,138 @@ int fr_remap::init(int argc, char const* const* argv)
             break;
 
         if (argc == 0) {
-            err = invalid_cmdline("fsremap", 0, "missing arguments: %s %s [%s]", label[0], label[1], label[2]);
+            err = invalid_cmdline(args, 0, "missing arguments: %s %s [%s]", LABEL[0], LABEL[1], LABEL[2]);
             break;
         }
 
-        const char * arg, * program_name = argv[0];
+        const char * arg;
         ft_size io_args_n = 0;
         bool allow_opts = true;
 
+        args.program_name = argv[0];
+        
         // skip program_name
         while (err == 0 && --argc) {
             arg = * ++argv;
             if (allow_opts && arg[0] == '-') {
 
-                /* -- end of options*/
+                ft_size opt_len = ff_str_index_of_plus_1(arg, '=');
+                bool is_short_opt = arg[1] != '-';
+
+                const char * opt_arg = argc > 1 && is_short_opt ? argv[1] : arg + opt_len;
+
+                /* -- means end of options*/
                 if (!strcmp(arg, "--"))
                     allow_opts = false;
 
+                /* -a, --no-questions: run automatically without asking any confirmation  */
+                else if (!strcmp(arg, "-a") || !strcmp(arg, "--no-questions")) {
+                    args.ask_questions = false;
+                }
+                /* --clear=all, --clear=minimal, --clear=none */
+                else if ((new_clear = FC_CLEAR_ALL,   !strcmp(arg, "--clear=all"))
+                    || (new_clear = FC_CLEAR_MINIMAL, !strcmp(arg, "--clear=minimal"))
+                    || (new_clear = FC_CLEAR_NONE,    !strcmp(arg, "--clear=none"))) {
+
+                    if (args.job_clear == FC_CLEAR_AUTODETECT)
+                        args.job_clear = new_clear;
+                    else
+                        err = invalid_cmdline(args, 0,
+                                "options --clear=all, --clear=minimal and --clear=none are mutually exclusive");
+                }
+                /* --cmd-umount=CMD */
+                else if (!strncmp(arg, "--cmd-umount=", opt_len)) {
+                    args.umount_cmd = opt_arg;
+                }
+                /* -f, --force-run: consider failed sanity checks as WARNINGS (which let execution continue) instead of ERRORS (which stop execution) */
+                else if (!strcmp(arg, "-f") || !strcmp(arg, "--force-run")) {
+                    args.force_run = true;
+                }
+                /* --io=posix, --io=test, --io=self-test */
+                else if ((io_kind = FC_IO_POSIX,   !strcmp(arg, "--io=posix"))
+                    || (io_kind = FC_IO_TEST,      !strcmp(arg, "--io=test"))
+                    || (io_kind = FC_IO_SELF_TEST, !strcmp(arg, "--io=self-test")))
+                {
+                    if (args.io_kind == FC_IO_AUTODETECT)
+                        args.io_kind = io_kind;
+                    else
+                        err = invalid_cmdline(args, 0,
+                                "options --io=posix, --io=test and --io=self-test are mutually exclusive");
+                }
+                /* -m, --mem-buffer=RAM_SIZE[k|M|G|T|P|E|Z|Y] */
+                else if ((argc > 1 && !strcmp(arg, "-m")) || !strncmp(arg, "--mem-buffer=", opt_len)) {
+                    
+                    if ((err = ff_str2un_scaled(opt_arg, & args.storage_size[FC_MEM_BUFFER_SIZE])) != 0) {
+                        err = invalid_cmdline(args, err, "invalid memory buffer size '%s'", opt_arg);
+                        break;
+                    }
+                    if (is_short_opt)
+                        --argc, ++argv;
+                }
+                /* -n, --no-action, --simulate-run: do not read or write device blocks  */
+                else if (!strcmp(arg, "-n") || !strcmp(arg, "--no-action") || !strcmp(arg, "--simulate-run")) {
+                    args.simulate_run = true;
+                }
+                /* --resume-job=JOB_ID */
+                else if (!strncmp(arg, "--resume-job=", opt_len)) {
+                    if (args.job_id != FC_JOB_ID_AUTODETECT) {
+                        err = invalid_cmdline(args, err, "option --resume-job=JOB_ID can be specified only once");
+                        break;
+                    }
+                    if ((err = ff_str2un(opt_arg, & args.job_id)) != 0 || args.job_id == FC_JOB_ID_AUTODETECT) {
+                        err = invalid_cmdline(args, err, "invalid job id '%s'", opt_arg);
+                        break;
+                    }
+                    if (is_short_opt)
+                        --argc, ++argv;
+                }
+                /* -s, --secondary-storage=SECONDARY_SIZE[k|M|G|T|P|E|Z|Y] */
+                else if ((argc > 1 && !strcmp(arg, "-s")) || !strncmp(arg, "--secondary-storage=", opt_len)) {
+
+                    if ((err = ff_str2un_scaled(opt_arg, & args.storage_size[FC_SECONDARY_STORAGE_SIZE])) != 0) {
+                        err = invalid_cmdline(args, err, "invalid secondary storage size '%s'", opt_arg);
+                        break;
+                    }
+                    if (is_short_opt)
+                        --argc, ++argv;
+                }
+                /* -t, --temp-dir=DIR */
+                else if ((argc > 1 && !strcmp(arg, "-t")) || !strncmp(arg, "--temp-dir=", opt_len)) {
+                    args.root_dir = opt_arg;
+                    if (is_short_opt)
+                        --argc, ++argv;
+                }
+                /* --ui-tty=TTY */
+                else if (!strncmp(arg, "--ui-tty=", opt_len)) {
+                    args.ui_kind = FC_UI_TTY;
+                    args.ui_arg = opt_arg;
+                }
+                /* --x-log-FILE=LEVEL */
+                else if (!strncmp(arg, "--x-log-", 8)) {
+                	ft_string logger_name(arg + 8, opt_len - 9); // 9 == 8 for "--x-log-" plus 1 for '='
+                	ft_log_level logger_level = (ft_log_level) atoi(opt_arg);
+                	ft_log::get_logger(logger_name).set_level(logger_level);
+                }
+                /* -xp, --exact-primary-storage=PRIMARY_SIZE[k|M|G|T|P|E|Z|Y] */
+                else if ((argc > 1 && !strcmp(arg, "-xp")) || !strncmp(arg, "--exact-primary-storage=", opt_len)) {
+                    
+                    if ((err = ff_str2un_scaled(opt_arg, & args.storage_size[FC_PRIMARY_STORAGE_EXACT_SIZE])) != 0) {
+                        err = invalid_cmdline(args, err, "invalid primary storage exact size '%s'", opt_arg);
+                        break;
+                    }
+                    if (is_short_opt)
+                        --argc, ++argv;
+                }
+                /* -xs, --exact-secondary-storage=SECONDARY_SIZE[k|M|G|T|P|E|Z|Y] */
+                else if ((argc > 1 && !strcmp(arg, "-xs")) || !strncmp(arg, "--exact-secondary-storage=", opt_len)) {
+                    
+                    if ((err = ff_str2un_scaled(opt_arg, & args.storage_size[FC_SECONDARY_STORAGE_EXACT_SIZE])) != 0) {
+                        err = invalid_cmdline(args, err, "invalid secondary storage exact size '%s'", opt_arg);
+                        break;
+                    }
+                    if (is_short_opt)
+                        --argc, ++argv;
+                }
                 /* -q, --quiet decrease verbosity by one */
                 /* -qq decrease verbosity by two */
                 /* -v, --verbose increase verbosity by one */
@@ -255,96 +392,16 @@ int fr_remap::init(int argc, char const* const* argv)
                     if (level == FC_INFO)
                         level = new_level;
                     else {
-                        err = invalid_cmdline(program_name, 0, "options -q, -qq, -v, -vv, -vvv, --quiet, --verbose are mutually exclusive");
+                        err = invalid_cmdline(args, 0,
+                                "options -q, -qq, -v, -vv, -vvv, --quiet, --verbose are mutually exclusive");
                         break;
                     }
-                }
-                /* -f, --force-run: consider failed sanity checks as WARNINGS (which let execution continue) instead of ERRORS (which stop execution) */
-                else if (!strcmp(arg, "-f") || !strcmp(arg, "--force-run")) {
-                    args.force_run = true;
-                }
-                /* -n, --no-action, --simulate-run: do not read or write device blocks  */
-                else if (!strcmp(arg, "-n") || !strcmp(arg, "--no-action") || !strcmp(arg, "--simulate-run")) {
-                    args.simulate_run = true;
-                }
-                /* -p, --no-questions: run automatically without asking any confirmation  */
-                else if (!strcmp(arg, "-p") || !strcmp(arg, "--no-questions")) {
-                    args.ask_questions = false;
-                }
-                /* --progress-tty */
-                else if (argc > 1 && (!strcmp(arg, "--progress-tty"))) {
-                    args.ui_kind = FC_UI_TTY;
-                    --argc, args.ui_arg = *++argv;
-                }
-                /* -t directory */
-                else if (argc > 1 && (!strcmp(arg, "-t") || !strcmp(arg, "--dir"))) {
-                    --argc, args.root_dir = *++argv;
-                }
-                /* --umount-cmd */
-                else if (argc > 1 && (!strcmp(arg, "--umount-cmd"))) {
-                    --argc, args.umount_cmd = *++argv;
-                }
-                /* -j job_id */
-                else if (argc > 1 && (!strcmp(arg, "-j") || !strcmp(arg, "--job"))) {
-                    if ((err = ff_str2un(argv[1], & args.job_id)) != 0) {
-                        err = invalid_cmdline(program_name, err, "invalid job id '%s'", argv[1]);
-                        break;
-                    }
-                    --argc, ++argv;
-                }
-                /* -m mem-buffer-size[k|M|G|T|P|E|Z|Y] */
-                else if (argc > 1 && (!strcmp(arg, "-m") || !strcmp(arg, "--mem-buffer"))) {
-                    if ((err = ff_str2un_scaled(argv[1], & args.storage_size[FC_MEM_BUFFER_SIZE])) != 0) {
-                        err = invalid_cmdline(program_name, err, "invalid memory buffer size '%s'", argv[1]);
-                        break;
-                    }
-                    --argc, ++argv;
-                }
-                /* -s secondary-storage-size[k|M|G|T|P|E|Z|Y] */
-                else if (argc > 1 && (!strcmp(arg, "-s") || !strcmp(arg, "--secondary-storage"))) {
-                    if ((err = ff_str2un_scaled(argv[1], & args.storage_size[FC_SECONDARY_STORAGE_SIZE])) != 0) {
-                        err = invalid_cmdline(program_name, err, "invalid secondary storage size '%s'", argv[1]);
-                        break;
-                    }
-                    --argc, ++argv;
-                }
-                /* -xp exact-primary-storage-size[k|M|G|T|P|E|Z|Y] */
-                else if (argc > 1 && (!strcmp(arg, "-xp") || !strcmp(arg, "--exact-primary-storage"))) {
-                    if ((err = ff_str2un_scaled(argv[1], & args.storage_size[FC_PRIMARY_STORAGE_EXACT_SIZE])) != 0) {
-                        err = invalid_cmdline(program_name, err, "invalid primary storage exact size '%s'", argv[1]);
-                        break;
-                    }
-                    --argc, ++argv;
-                }
-                /* -xs exact-secondary-storage-size[k|M|G|T|P|E|Z|Y] */
-                else if (argc > 1 && (!strcmp(arg, "-xs") || !strcmp(arg, "--exact-secondary-storage"))) {
-                    if ((err = ff_str2un_scaled(argv[1], & args.storage_size[FC_SECONDARY_STORAGE_EXACT_SIZE])) != 0) {
-                        err = invalid_cmdline(program_name, err, "invalid secondary storage exact size '%s'", argv[1]);
-                        break;
-                    }
-                    --argc, ++argv;
-                }
-                /* --clear-all, --clear-minimal, --clear-none */
-                else if ((new_clear = FC_CLEAR_ALL,   !strcmp(arg, "--clear-all"))
-                    || (new_clear = FC_CLEAR_MINIMAL, !strcmp(arg, "--clear-minimal"))
-                    || (new_clear = FC_CLEAR_NONE,    !strcmp(arg, "--clear-none"))) {
-
-                    if (args.job_clear == FC_CLEAR_AUTODETECT)
-                        args.job_clear = new_clear;
-                    else
-                        err = invalid_cmdline(program_name, 0, "options --clear-all, --clear-minimal and --clear-none are mutually exclusive");
-                }
-                /* --posix, --test, --self-test */
-                else if ((io_kind = FC_IO_POSIX,   !strcmp(arg, "--posix"))
-                    || (io_kind = FC_IO_TEST,      !strcmp(arg, "--test"))
-                    || (io_kind = FC_IO_SELF_TEST, !strcmp(arg, "--self-test")))
-                {
-                    if (args.io_kind == FC_IO_AUTODETECT)
-                        args.io_kind = io_kind;
-                    else
-                        err = invalid_cmdline(program_name, 0, "options --posix, --test and --self-test are mutually exclusive");
+                } else if (!strcmp(arg, "--help")) {
+                    return usage(args.program_name);
+                } else if (!strcmp(arg, "--version")) {
+                    return version();
                 } else {
-                    err = invalid_cmdline(program_name, 0, "unknown option: '%s'", arg);
+                    err = invalid_cmdline(args, 0, "unknown option: '%s'", arg);
                     break;
                 }
                 continue;
@@ -353,7 +410,7 @@ int fr_remap::init(int argc, char const* const* argv)
             if (io_args_n < FC_FILE_COUNT)
                 args.io_args[io_args_n++] = arg;
             else
-                err = invalid_cmdline(program_name, 0, "too many arguments");
+                err = invalid_cmdline(args, 0, "too many arguments");
         }
 
         if (err == 0) {
@@ -366,48 +423,50 @@ int fr_remap::init(int argc, char const* const* argv)
                 args.io_kind = FC_IO_POSIX;
 
             if (args.io_kind == FC_IO_POSIX) {
-                switch (io_args_n) {
-                    case 0:
-                        err = invalid_cmdline(program_name, 0, "missing arguments: %s %s [%s]", label[0], label[1], label[2]);
-                        break;
-                    case 1:
-                        err = invalid_cmdline(program_name, 0, "missing arguments: %s [%s]", label[1], label[2]);
-                        break;
-                    default:
-                        break;
+                if (args.job_id == FC_JOB_ID_AUTODETECT) {
+                    if (io_args_n == 0) {
+                        err = invalid_cmdline(args, 0, "missing arguments: %s %s [%s]", LABEL[0], LABEL[1], LABEL[2]);
+                    } else if (io_args_n == 1) {
+                        err = invalid_cmdline(args, 0, "missing arguments: %s [%s]", LABEL[1], LABEL[2]);
+                    } else if (io_args_n == 2 || io_args_n == 3) {
+                         /* ok */
+                    } else
+                        err = invalid_cmdline(args, 0, "too many arguments");
+                } else {
+                    if (io_args_n == 0) {
+                        err = invalid_cmdline(args, 0, "missing argument: %s", LABEL[0]);
+                    } else if (io_args_n == 1) {
+                        /* ok */
+                    } else
+                        err = invalid_cmdline(args, 0, "too many arguments");
                 }
             } else if (args.io_kind == FC_IO_TEST) {
-                switch (io_args_n) {
-                    case 0:
-                        err = invalid_cmdline(program_name, 0, "missing arguments: %s %s %s", label[0], label[1], label[2]);
-                        break;
-                    case 1:
-                        err = invalid_cmdline(program_name, 0, "missing arguments: %s %s", label[1], label[2]);
-                        break;
-                    case 2:
-                        err = invalid_cmdline(program_name, 0, "missing argument: %s", label[2]);
-                        break;
-                    default:
-                        break;
-                }
+                if (io_args_n == 0) {
+                    err = invalid_cmdline(args, 0, "missing arguments: %s %s %s", LABEL[0], LABEL[1], LABEL[2]);
+                } else if (io_args_n == 1) {
+                    err = invalid_cmdline(args, 0, "missing arguments: %s %s", LABEL[1], LABEL[2]);
+                } else if (io_args_n == 2) {
+                    err = invalid_cmdline(args, 0, "missing argument: %s", LABEL[2]);
+                } else if (io_args_n == 3) {
+                    /* ok */
+                } else
+                    err = invalid_cmdline(args, 0, "too many arguments");
             }
         }
     } while (0);
 
     if (err == 0) {
-        if (level <= FC_DEBUG) {
-            /* note 1.4.1) -v enables FC_FMT_LEVEL_MSG also for stdout/stderr */
-            /* note 1.4.2) -vv enables FC_FMT_DATETIME_LEVEL_MSG also for stdout/stderr */
-            ft_log_fmt format = level == FC_DEBUG ? FC_FMT_LEVEL_MSG : FC_FMT_DATETIME_LEVEL_MSG;
-
-            ff_log_register_range(stdout, format, level,   FC_NOTICE);
-            ff_log_register_range(stderr, format, FC_WARN, FC_FATAL);
-        }
-        if (level > FC_INFO)
-            ff_log_unregister_range(stdout, FC_INFO, (ft_log_level)(level - 1));
-
         /* always enable at least DEBUG level, to let fsremap.log collect all messages from DEBUG to FATAL */
-        ff_log_set_threshold(level < FC_DEBUG ? level : FC_DEBUG);
+        ft_log::get_root_logger().set_level(level < FC_DEBUG ? level : FC_DEBUG);
+
+        /* note 1.4.1) -v enables FC_FMT_LEVEL_MSG also for stdout/stderr */
+        /* note 1.4.2) -vv enables FC_FMT_DATETIME_LEVEL_MSG also for stdout/stderr */
+        ft_log_fmt format = level < FC_DEBUG ? FC_FMT_DATETIME_LEVEL_MSG : level == FC_DEBUG ? FC_FMT_LEVEL_MSG : FC_FMT_MSG;
+        if (format != FC_FMT_MSG)
+            ft_log_appender::redefine(stderr, format, FC_WARN);
+
+        ft_log_appender::redefine(stdout, format, level, FC_NOTICE);
+        
         
         err = init(args);
     }
@@ -424,7 +483,7 @@ int fr_remap::init(const fr_args & args)
 {
     int err;
     do {
-        if ((err = init_job(args)) != 0)
+        if ((err = init_job_persist(args)) != 0)
             break;
         if ((err = init_ui(args)) != 0)
             break;
@@ -438,18 +497,45 @@ int fr_remap::init(const fr_args & args)
 
 
 /** initialize job/persistence subsystem */
-int fr_remap::init_job(const fr_args & args)
+int fr_remap::init_job_persist(const fr_args & args)
 {
-    if (this_job != NULL)
-        return 0;
+    fr_job * job = this_job;
+    FT_IO_NS fr_persist * persist = this_persist;
+    int err = 0;
 
-    fr_job * job = new fr_job();
-    int err = job->init(args);
-    if (err == 0)
-        this_job = job;
-    else
-        delete job;
+    if ((job == NULL) != (persist == NULL)) {
+        ff_log(FC_FATAL, 0, "BUG! half-initialized state detected in init_job_persist(): job %s NULL, persist %s NULL",
+                (job == NULL ? "==" : "!="), (persist == NULL ? "==" : "!="));
+        return -EINVAL;
+    }
+
+    if (job == NULL) {
+        job = new fr_job();
+        if ((err = job->init(args)) != 0) {
+            quit_job_persist();
+            return err;
+        }
+    }
+    if (persist == NULL) {
+        persist = new FT_IO_NS fr_persist(* job);
+        if ((err = persist->open()) != 0) {
+            quit_job_persist();
+            return err;
+        }
+    }
+    this_job = job;
+    this_persist = persist;
     return err;
+}
+
+/** quit job/persistence subsystem */
+void fr_remap::quit_job_persist()
+{
+    delete this_persist;
+    delete this_job;
+    this_persist = NULL;
+    this_job = NULL;
+    quit_immediately = false;
 }
 
 /** initialize UI subsystem */
@@ -480,22 +566,22 @@ int fr_remap::init_ui(const fr_args & args)
 /** initialize UI subsystem */
 int fr_remap::init_ui_tty(const char * arg)
 {
-    FT_UI_NS fr_ui_tty * ui_tty = NULL;
-    int err;
+    FT_UI_NS fr_ui_tty * ui_tty = new FT_UI_NS fr_ui_tty();
 
-    do {
-        ui_tty = new FT_UI_NS fr_ui_tty();
-
-        if ((err = ui_tty->init(arg)) != 0)
-            break;
-
+    int err = ui_tty->init(arg);
+    if (err == 0)
         this_ui = ui_tty;
-    } while (0);
-
-    if (err != 0 && ui_tty != NULL)
+    else
         delete ui_tty;
 
     return err;
+}
+
+/** quit UI subsystem */
+void fr_remap::quit_ui()
+{
+    delete this_ui;
+    this_ui = NULL;
 }
 
 
@@ -536,12 +622,12 @@ int fr_remap::init_io_posix(const fr_args & args)
     int err;
     if ((err = pre_init_io()) == 0) {
 
-        FT_IO_NS fr_io_posix * io_posix = new FT_IO_NS fr_io_posix(* this_job);
+        FT_IO_NS fr_io_posix * io = new FT_IO_NS fr_io_posix(* this_persist);
 
-        if ((err = io_posix->open(args)) == 0)
-            post_init_io(io_posix);
+        if ((err = io->open(args)) == 0)
+            post_init_io(io);
         else
-            delete io_posix;
+            delete io;
     }
     return err;
 }
@@ -556,12 +642,12 @@ int fr_remap::init_io_test(const fr_args & args)
     int err;
     if ((err = pre_init_io()) == 0) {
 
-        FT_IO_NS fr_io_test * io_test = new FT_IO_NS fr_io_test(* this_job);
+        FT_IO_NS fr_io_test * io = new FT_IO_NS fr_io_test(* this_persist);
 
-        if ((err = io_test->open(args)) == 0)
-            post_init_io(io_test);
+        if ((err = io->open(args)) == 0)
+            post_init_io(io);
         else
-            delete io_test;
+            delete io;
     }
     return err;
 }
@@ -575,12 +661,12 @@ int fr_remap::init_io_self_test(const fr_args & args)
     int err;
     if ((err = pre_init_io()) == 0) {
 
-        FT_IO_NS fr_io_self_test * io_self_test = new FT_IO_NS fr_io_self_test(* this_job);
+        FT_IO_NS fr_io_self_test * io = new FT_IO_NS fr_io_self_test(* this_persist);
 
-        if ((err = io_self_test->open(args)) == 0)
-            post_init_io(io_self_test);
+        if ((err = io->open(args)) == 0)
+            post_init_io(io);
         else
-            delete io_self_test;
+            delete io;
     }
     return err;
 }
@@ -588,8 +674,8 @@ int fr_remap::init_io_self_test(const fr_args & args)
 int fr_remap::pre_init_io()
 {
     int err = check_is_closed();
-    if (err == 0 && this_job == NULL) {
-        ff_log(FC_ERROR, 0, "error: cannot start I/O subsystem, job must be initialized first");
+    if (err == 0 && this_persist == NULL) {
+        ff_log(FC_ERROR, 0, "error: cannot start I/O subsystem, persistence must be initialized first");
         err = -ENOTCONN;
     }
     return err;
@@ -605,10 +691,8 @@ void fr_remap::post_init_io(FT_IO_NS fr_io * io)
 /** shutdown remapper. closes configured I/O and deletes it */
 void fr_remap::quit_io()
 {
-    if (this_io != NULL) {
-        delete this_io;
-        this_io = NULL;
-    }
+    delete this_io;
+    this_io = NULL;
 }
 
 /**

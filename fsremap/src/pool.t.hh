@@ -150,7 +150,6 @@ typename fr_pool<T>::map_iterator fr_pool<T>::allocate_fragment(map_iterator map
 template<typename T>
 void fr_pool<T>::allocate_all(fr_map<T> & map, fr_map<T> & map_allocated)
 {
-    iterator iter, end = this->end();
     map_iterator map_iter = map.begin(), map_iter_tmp, map_end = map.end();
     while (map_iter != map_end && !this->empty()) {
         map_iter_tmp = map_iter;

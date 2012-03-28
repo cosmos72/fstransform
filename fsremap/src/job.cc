@@ -43,17 +43,18 @@
 #endif
 
 
-#include "io/util.hh" // for ff_mkdir()
+#include "args.hh"    // for FC_JOB_ID_AUTODETECT
 #include "job.hh"     // for fr_job
-#include "log.hh"     // for ff_log*()
+#include "io/util.hh" // for ff_mkdir()
 
 
 FT_NAMESPACE_BEGIN
 
 /** default constructor */
 fr_job::fr_job()
-    : this_dir(), this_log_file(NULL), this_id(0), this_clear(FC_CLEAR_AUTODETECT),
-    this_force_run(false), this_simulate_run(false), this_ask_questions(true)
+    : this_dir(), this_log_file(NULL), this_log_appender(NULL),
+    this_id(FC_JOB_ID_AUTODETECT), this_clear(FC_CLEAR_AUTODETECT),
+    this_force_run(false), this_simulate_run(false), this_resume_job(false), this_ask_questions(true)
 {
     for (ft_size i = 0; i < FC_STORAGE_SIZE_N; i++)
         this_storage_size[i] = 0;
@@ -63,6 +64,81 @@ fr_job::fr_job()
 fr_job::~fr_job()
 {
     quit();
+}
+
+/** initialize this job, or return error */
+int fr_job::init(const fr_args & args)
+{
+    if (args.root_dir != NULL)
+        this_dir = args.root_dir;
+    else
+        this_dir = "/var/tmp";
+
+    const char * path = this_dir.c_str();
+    (void) FT_IO_NS ff_mkdir(path);
+    
+    this_dir += "/fstransform";
+    path = this_dir.c_str();
+    (void) FT_IO_NS ff_mkdir(path);
+
+    this_dir += "/fsremap.job.";
+    ft_size len = this_dir.size();
+    ft_uint i, job_min = 1, job_max = 1000000;
+    int err = 0;
+
+    /* copy flags */
+    this_resume_job = args.job_id != FC_JOB_ID_AUTODETECT;
+    this_force_run = args.force_run;
+    this_simulate_run = args.simulate_run;
+    this_ask_questions = args.ask_questions;
+
+    if (this_resume_job)
+        /* force job_id */
+        job_min = args.job_id, job_max = args.job_id + 1;
+
+    path = this_dir.c_str();
+
+    for (i = job_min; i != job_max; i++) {
+        // 1 + 3*sizeof(ft_uint) chars are enough to safely print (ft_uint)
+        this_dir.resize(len + 2 + 3*sizeof(ft_uint));
+        sprintf(& this_dir[len], "%"FT_ULL, (ft_ull) i);
+        this_dir.resize(len + strlen(& this_dir[len]));
+
+        path = this_dir.c_str();
+
+        if (!this_resume_job)
+            err = FT_IO_NS ff_mkdir(path);
+
+        if (err == 0 && (err = init_log()) == 0) {
+            ff_log(FC_NOTICE, 0, "fsremap: %s job %"FT_ULL", persistence data and logs are in '%s'",
+                   this_resume_job ? "resuming" : "starting", (ft_ull)i, path);
+            if (!this_resume_job) {
+                ff_log(FC_NOTICE, 0, "if this job is interrupted, for example by a power failure,");
+                ff_log(FC_NOTICE, 0, "you CAN RESUME it with: %s%s -q --resume-job=%"FT_ULL" -- %s",
+                       args.program_name, this_simulate_run ? " -n" : "", (ft_ull)i, args.io_args[0]);
+            }
+            break;
+        }
+    }
+    if (i == job_max) {
+        if (this_resume_job)
+            err = ff_log(FC_ERROR, err, "failed to resume job id %"FT_ULL " from directory '%s'", (ft_ull) args.job_id, path);
+        else
+            err = ff_log(FC_ERROR, err, "failed to locate a free job id, tried range %"FT_ULL"...%"FT_ULL, (ft_ull) job_min, (ft_ull) (job_max-1));
+    }
+    if (err != 0) {
+        quit();
+        return err;
+    }
+    
+    for (ft_size l = 0; l < FC_STORAGE_SIZE_N; l++)
+        this_storage_size[l] = args.storage_size[l];
+    this_id = i;
+    this_clear = args.job_clear;
+        
+
+    return err;
+
 }
 
 /** initialize logging subsystem, or return error */
@@ -79,97 +155,26 @@ int fr_job::init_log()
     (void) setvbuf(this_log_file, NULL, _IOLBF, 0);
 
     /* note 1.4.3) fsremap.log always uses FC_FMT_DATETIME_LEVEL_CALLER_MSG */
-    ff_log_register_range(this_log_file, FC_FMT_DATETIME_LEVEL_CALLER_MSG);
+    this_log_appender = new ft_log_appender(this_log_file, FC_FMT_DATETIME_LEVEL_CALLER_MSG);
+
+    ft_log::get_root_logger().add_appender(* this_log_appender);
     return 0;
-}
-
-
-/** initialize this job, or return error */
-int fr_job::init(const fr_args & args)
-{
-    const char * user_home = NULL;
-    if (args.root_dir == NULL) {
-        user_home = getenv("HOME");
-        if (user_home != NULL) {
-            this_dir = user_home;
-            this_dir += '/';
-        }
-    } else {
-        this_dir = args.root_dir;
-        this_dir += '/';
-    }
-    this_dir += ".fstransform";
-
-    const char * path = this_dir.c_str();
-
-    if (args.root_dir == NULL && user_home == NULL)
-        ff_log(FC_WARN, 0, "$HOME is not set, persistent storage will use sub-folders of '%s' in current directory", path);
-
-    (void) FT_IO_NS ff_mkdir(path);
-
-    this_dir += "/fsremap.job.";
-    ft_size len = this_dir.size();
-    ft_uint i, job_min = 1, job_max = 1000000;
-    int err = 0;
-
-    if (args.job_id != 0)
-        /* force job_id */
-        job_min = args.job_id, job_max = args.job_id + 1;
-
-    path = this_dir.c_str();
-
-    for (i = job_min; i != job_max; i++) {
-        // 1 + 3*sizeof(ft_uint) chars are enough to safely print (ft_uint)
-        this_dir.resize(len + 2 + 3*sizeof(ft_uint));
-        sprintf(& this_dir[len], "%"FT_ULL, (ft_ull) i);
-        this_dir.resize(len + strlen(& this_dir[len]));
-
-        path = this_dir.c_str();
-
-        if ((err = FT_IO_NS ff_mkdir(path)) == 0
-                && (err = init_log()) == 0)
-        {
-            ff_log(FC_NOTICE, 0, "fsremap: starting job %"FT_ULL, (ft_ull)i);
-            ff_log(FC_INFO, 0, "job persistent data and logs will be in '%s'", path);
-            break;
-        }
-    }
-    if (i == job_max) {
-        if (args.job_id != 0)
-            err = ff_log(FC_ERROR, err, "failed to create persistent data folder '%s' for job id %"FT_ULL, path, (ft_ull) args.job_id);
-        else
-            err = ff_log(FC_ERROR, err, "failed to locate a free job id, tried range %"FT_ULL"...%"FT_ULL, (ft_ull) job_min, (ft_ull) (job_max-1));
-    }
-    if (err != 0) {
-        quit();
-        return err;
-    }
-    
-    for (ft_size l = 0; l < FC_STORAGE_SIZE_N; l++)
-        this_storage_size[l] = args.storage_size[l];
-    this_id = i;
-    this_clear = args.job_clear;
-        
-    /* copy flags */
-    this_force_run = args.force_run;
-    this_simulate_run = args.simulate_run;
-    this_ask_questions = args.ask_questions;
-
-    return err;
-
 }
 
 void fr_job::quit()
 {
+    if (this_log_appender != NULL) {
+        ft_log::get_root_logger().remove_appender(* this_log_appender);
+        this_log_appender = NULL;
+    }
     if (this_log_file != NULL) {
-        ff_log_unregister_range(this_log_file);
         fclose(this_log_file);
         this_log_file = NULL;
     }
     this_dir.clear();
     for (ft_size i = 0; i < FC_STORAGE_SIZE_N; i++)
         this_storage_size[i] = 0;
-    this_id = 0;
+    this_id = FC_JOB_ID_AUTODETECT;
 }
 
 FT_NAMESPACE_END

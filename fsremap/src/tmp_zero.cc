@@ -60,6 +60,8 @@
 
 FT_IO_NAMESPACE_BEGIN
 
+#ifdef FR_TEST_WRITE_ZEROES
+
 /**
  * argv[0] = program_name
  * argv[1] = device length
@@ -72,6 +74,11 @@ int ff_zero_loop_file_holes(int argc, char ** argv)
     char const* const* const args = argv + 1;
     int dev_fd = -1, err;
     do {
+    	if (argc <= 2) {
+            ff_log(FC_ERROR, 0, "Usage: %s DEVICE FILE", argv[0]);
+            err = -EINVAL;
+    		break;
+    	}
         if ((dev_fd = ::open(args[0], O_RDWR)) < 0) {
             err = ff_log(FC_ERROR, errno, "error opening device '%s'", args[0]);
             break;
@@ -137,5 +144,7 @@ int ff_zero_loop_file_holes(int argc, char ** argv)
         close(dev_fd);
     return err;
 }
+
+#endif /* FR_TEST_WRITE_ZEROES */
 
 FT_IO_NAMESPACE_END

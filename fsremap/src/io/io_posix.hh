@@ -140,12 +140,6 @@ protected:
     int create_secondary_storage(ft_size secondary_len);
 
     /**
-     * remove SECONDARY-STORAGE in job.job_dir() + '.storage.bin'
-     * return 0 if success, else error
-     */
-    int remove_secondary_storage();
-
-    /**
      * actually copy a list of fragments from DEVICE to STORAGE, or from STORAGE or DEVICE, or from DEVICE to DEVICE.
      * note: parameters are in bytes!
      * return 0 if success, else error.
@@ -179,7 +173,7 @@ protected:
 
 public:
     /** constructor */
-    fr_io_posix(fr_job & job);
+    fr_io_posix(fr_persist & persist);
 
     /** destructor. calls close() */
     virtual ~fr_io_posix();
@@ -226,8 +220,11 @@ public:
      */
     virtual int zero_primary_storage();
 
-    /** close, munmap() and remove() SECONDARY-STORAGE. called by close() and by work<T>::close_storage() */
+    /** close and munmap() SECONDARY-STORAGE. called by close() and by work<T>::close_storage() */
     virtual int close_storage();
+    
+    /** called to remove SECONDARY-STORAGE from file system if execution is completed successfully */
+    virtual int remove_storage_after_success();
 };
 
 FT_IO_NAMESPACE_END

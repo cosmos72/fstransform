@@ -7,53 +7,39 @@
 #########        THAT MAY COMPLETELY AND IRREVERSIBLY DELETE          #########
 #########                ALL THE DATA ON YOUR DISKS                   #########
 #########                                                             #########
-#########                                                             #########
 #########         THE AUTHOR DECLINES ALL RESPONSIBILITIES            #########
 #########               FOR ANY DAMAGE THAT MAY DERIVE                #########
 #########           FROM USING THE PROGRAMS AND PROCEDURES            #########
 #########               DESCRIBED IN THIS DOCUMENT                    #########
 #########                                                             #########
-#########                                                             #########
-#########                   IF YOU CANNOT COMPLY                      #########
-#########      WITH THE TERMS AND DISCLAIMERS STATED ABOVE,           #########
-#########                 PLEASE STOP READING NOW                     #########
-#########    AND DO NOT TRY TO USE THE PROGRAMS AND PROCEDURES        #########
-#########               EXPLAINED IN THIS DOCUMENT                    #########
-#########                                                             #########
-#########                                                             #########
-#########                  IF YOU KEEP READING,                       #########
-#########       YOU MUST UNDERSTAND AND ACCEPT ALL THE RISKS          #########
-#########                   BEFORE PROCEEDING                         #########
-#########                                                             #########
 ###############################################################################
 ###############################################################################
 ###############################################################################
 
-This document explains how use the script 'fstransform'
-to transform the contents of a Linux device - usually a disk partition -
-from a filesystem type to another.
+This document explains how use the programs 'fstransform', 'fsmove'
+and 'fsremap' to transform the contents of a Linux device
+- usually a disk partition - from a filesystem type to another
+while preserving its contents.
 
 For example, a disk partition can be transformed from 'jfs' to 'ext4',
-or from 'ext2' to 'xfs', or many other combinations.
+or from 'ext2' to 'xfs', or many other combinations. 
 
-Currently, the script has been tested on the following filesystems
-both as source and as target:
-minix, ext2, ext3, ext4, reiserfs, jfs, xfs.
+Currently, the programs mentioned above have been tested on Linux
+with the following filesystems, both as source and as target:
+ext2, ext3, ext4, reiserfs, jfs, xfs.
 
-Do NOT use the script with other filesystems unless you are willing to LOSE your data.
+Do NOT use these programs with other filesystems
+unless you are willing to LOSE your data.
 
-In particular, fstransform does NOT (yet) support ntfs, msdos and vfat file systems.
-
+In particular, they do NOT (yet) support ntfs, msdos and vfat file systems.
 
 Common sense and experience tell that you should ALWAYS have a backup
-of your valuable data.
+of your valuable data: while the programs do NOT need to backup your data
+to operate, YOU need a backup in case something goes wrong.
 
-This script is intended for those cases where such backup is either already done,
-or is not feasible or unnecessary, typically because the data is not valuable.
-
-There is ALWAYS a possibility that the script will irreversibly delete
-ALL the data on the device you run it on, even if you use
-a tested combination of filesystems.
+The programs have been tested carefully, yet there is ALWAYS a possibility
+that they will irreversibly delete ALL the data on the device you run them on,
+even if you use a tested combination of filesystems.
 
 All this foreword means only one thing:
 
@@ -62,21 +48,13 @@ All this foreword means only one thing:
 The author declines ALL responsibilities for ANY damage that may derive
 from using the programs and procedures described in this document.
 
-No matter how unpleasant is for you to read the statements above,
-they are necessary to clarify the point, and also to protect you and the author
-from problems, because transforming a device from one filesystem to another
-WITHOUT backup is a RISKY procedure.
-
-If you are still reading, you MUST understand and accept all the RISKS
-BEFORE actually using the procedures described here.
-
 ###############################################################################
 ###############################################################################
 ###############################################################################
 
 Enough legalese... now let's get to the interesting part.
 
-The script 'fstransform' does the following:
+The program 'fstransform' does the following:
 
 it takes a device with a filesystem on it (even if almost full)
 and transforms the device to a different filesystem type,
@@ -88,7 +66,7 @@ It works even if the filesystem is almost full
 and even if it contains very large files, for example if some files
 are larger than half the device or larger than the available space.
 
-There are four requirements for the script to have a chance to succeed:
+There are four requirements for fstransform to have a chance to succeed:
 
 1) the device must have a little free space, typically at least 5%
 
@@ -121,9 +99,9 @@ There are four requirements for the script to have a chance to succeed:
 
 FOREWORD:
 
-If the original device is almost full, the tool 'fsremap'
+If the original device is almost full, the program 'fsremap'
 will create a relatively small backup file ("secondary storage")
-in your $HOME directory.
+inside the directory /var/tmp/fstransform.
 This secondary storage file will be at most as large as half your free RAM.
 
 You can pass the option '-s <size>[k|M|G|T|P|E|Y|Z]' to the tool 'fsremap'
@@ -151,7 +129,8 @@ PROCEDURE:
    Below, they will be referred as {fsmove} and {fsremap}
 
 
-1) mount read-write the device you want to remap to a new file-system type
+1) OPTIONAL - CAN BE SKIPPED
+   mount read-write the device you want to remap to a new file-system type
 
    mount {device} {device-mount-point} [your-options]
 
@@ -164,8 +143,8 @@ PROCEDURE:
    it is not necessary to use 'fstransform',
    as the same result can be obtained with much simpler - and SAFER - tools.
 
-   For example, an 'ext2' or 'ext3' filesystem can be transformed into 'ext3' or 'ext4'
-   using the program 'tune2fs'.
+   For example, an 'ext2' or 'ext3' filesystem can be transformed into 'ext3'
+   or 'ext4' using the program 'tune2fs'.
    
    Explaining how to use 'tune2fs' is beyond the scope of this document,
    just read its man-page or search on the Internet for one of
@@ -176,31 +155,37 @@ PROCEDURE:
    But for most combinations, the only way is either to do a full backup + format +
    restore the data, or use 'fstransform'
 
-3) execute the script
+3) execute the program
 
    fstransform {device} {target-file-system-type}
 
-4) follow the instructions - the script will tell you what it is doing
-   and both 'fsmove' and 'fsremap' also show progress percentage and estimated time left.
+4) follow the instructions - the program will tell you what it is doing,
+   and will also call 'fsmove' and 'fsremap' which show progress percentage
+   and estimated time left.
    
-   Note that 'fsmove' and 'fsremap' approximately need the same time to run,
+   Note that 'fsmove' and 'fsremap' need approximately the same time to run,
    so if 'fsmove' tells you that it will need 2 hours, 'fsmove' will
    likely need a similar amount of time, for a total of 4 hours.
-   
-   In case there are errors, you can even try to fix them instead of aborting the script
+
+   In case there are errors, you can even try to fix them instead of
+   aborting the execution (if you know what you are doing).
    
 5) be PATIENT. Transforming a large device takes a LONG time...
    On a fairly fast disk, it takes about 1 minute per 1 gigabyte.
    It means transforming 250GB of takes about 4 hours.
-   Solid state disks (SSD) can be MUCH faster.
+   Solid state disks (SSD) can be much faster.
    
-   Also, you should count the _used_ disk space, not the _total_ one.
+6) if something goes really wrong, check in /var/tmp/fstransform
+   for the log files
+   fstransform.log.<NNN> and fsremap.job.<MMM>/fsremap.log
+   they are ABSOLUTELY necessary if you want someone to analyze the problem
+   - but unless you are very lucky you can forget about recovering your data...
 
-6) if something goes really wrong, check in $HOME/.fstransform
-   for the log-files produced by the script: they are absolutely necessary
-   if you want someone to analyze the problem
-   - but in most cases you can forget about recovering your data... 
-
+7) if for some reason the execution is interrupted while 'fsremap' is running,
+   for example due to a power failure, it is possible to resume it
+   by running 'fsremap --resume-job=<MMM> {device}'.
+   Also, 'fsremap' will show at its startup the exact command line
+   needed to resume its execution.
 
 Good luck!
 

@@ -1,4 +1,4 @@
-/**
+/*
  * fstransform - transform a file-system to another file-system type,
  *               preserving its contents and without the need for a backup
  *
@@ -17,31 +17,27 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * this file contains no-longer-used code:
- * the macros conditionally defined here
- * are instead autodetected by 'configure' script
+ * io/util_posix.hh
+ *
+ *  Created on: Mar 27, 2012
+ *      Author: max
  */
+#ifndef FSMOVE_IO_POSIX_UTIL_HH
+#define FSMOVE_IO_POSIX_UTIL_HH
 
-/** define if <termios.h> exists and is usable */
-#ifndef FT_HAVE_TERMIOS_H
-#  if defined(__unix__)
-#    define FT_HAVE_TERMIOS_H
-#  endif
-#endif /* FT_HAVE_TERMIOS_H */
+#include "../first.hh" // for FT_HAVE_*
 
+FT_IO_NAMESPACE_BEGIN
 
-/** define if localtime_r() is supported - otherwise, localtime() will be used */
-#ifndef FT_HAVE_LOCALTIME_R
-#  if _POSIX_C_SOURCE >= 1 || _XOPEN_SOURCE || _BSD_SOURCE || _SVID_SOURCE || _POSIX_SOURCE
-#    define FT_HAVE_LOCALTIME_R
-#  endif
-#endif /* FT_HAVE_LOCALTIME_R */
+/**
+ * spawn a system command, wait for it to complete and return its exit status.
+ * argv[0] is conventionally the program name.
+ * argv[1...] are program arguments and must be terminated with a NULL pointer.
+ */
+int ff_posix_exec_silent(const char * path, const char * const argv[]);
 
 
-/** define if fallocate() is supported */
-#ifndef FT_HAVE_FALLOCATE
-#  if _XOPEN_SOURCE >= 600
-#    define FT_HAVE_FALLOCATE
-#  endif
-#endif /* FT_HAVE_FALLOCATE */
+FT_IO_NAMESPACE_END
 
+
+#endif /* FSREMAP_IO_POSIX_UTIL_HH */

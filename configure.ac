@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.65])
-AC_INIT([fstransform], [0.9.2], [BUG-REPORT-ADDRESS])
+AC_INIT([fstransform], [0.9.3], [BUG-REPORT-ADDRESS])
 AC_CONFIG_SRCDIR([fsremap/src/remap.cc])
 AC_CONFIG_HEADERS([fsremap/src/config.hh])
 AC_CONFIG_AUX_DIR([tools])
@@ -50,13 +50,12 @@ AC_FUNC_FORK
 AC_FUNC_LSTAT_FOLLOWS_SLASHED_SYMLINK
 AC_FUNC_MALLOC
 AC_FUNC_MMAP
-AC_CHECK_FUNCS([execvp ftruncate gettimeofday getuid lchown chown localtime_r localtime \
-               memmove memset mkdir mkfifo mlock msync munmap posix_fallocate \
-               random remove srandom strerror strftime time tzset \
-               utimes utimensat waitpid])
+AC_CHECK_FUNCS([execvp fallocate posix_fallocate fdatasync fileno fsync ftruncate gettimeofday getuid \
+               lchown chown localtime_r localtime memmove memset mkdir mkfifo mlock msync munmap \
+               random remove srandom strerror strftime sync time tzset utimes utimensat waitpid])
 
-FT_NEED_ALL_FUNCS([execvp ftruncate memmove memset mkdir mkfifo msync munmap \
-                   remove strerror strftime time waitpid])
+FT_NEED_ALL_FUNCS([execvp fileno ftruncate memmove memset mkdir mkfifo msync munmap \
+                   remove strerror strftime sync time waitpid])
 FT_NEED_ANY_FUNC([localtime_r localtime])
 FT_NEED_ANY_FUNC([lchown chown])
 

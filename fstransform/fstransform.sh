@@ -33,7 +33,7 @@ BOOT_CMD_which=which
 CMDS_bootstrap="which expr id"
 CMDS="stat mkfifo blockdev losetup fsck mkfs mount umount mkdir rmdir rm dd sync fsmove fsremap"
 # optional commands
-CMDS_optional="date sleep"
+CMDS_optional="sleep date"
 # commands that may need different variants for source and target file-systems
 CMDS_dual="fsck"
 # commands not found in environment
@@ -48,6 +48,7 @@ FSTYPES_TESTED="minix ext2 ext3 ext4 reiserfs jfs xfs"
 DEVICE_BLOCK_SIZE=
 DEVICE_SIZE_IN_BYTES=
 DEVICE_SIZE_IN_BLOCKS=
+DEVICE_IS_INITIALLY_MOUNTED=
 DEVICE_MOUNT_POINT=
 DEVICE_FSTYPE=
 LOOP_FILE=
@@ -56,13 +57,13 @@ LOOP_SIZE_IN_BYTES=
 LOOP_MOUNT_POINT=
 ZERO_FILE=
 
-OPT_CREATE_ZERO_FILE=yes
+OPT_CREATE_ZERO_FILE=no
 OPT_ASK_QUESTIONS=yes
 OPT_TTY_SHOW_TIME=yes
 
 OPTS_fsmove=
 OPTS_fsremap=
-OPTS_mkfs=
+OPTS_mkfs="-q"
 OPTS_fsck_source="-p -f"
 OPTS_fsck_target="-p -f"
 X_COPY_LOOP_FILE=
@@ -80,8 +81,14 @@ for cmd in $CMDS_dual; do
   eval "CMD_${cmd}_target="
 done
 
-FIFO_OUT="/tmp/fstransform.out.$$"
-FIFO_ERR="/tmp/fstransform.err.$$"
+TMP_DIR="/tmp"
+VAR_TMP_DIR="/var/tmp"
+
+FIFO_OUT="$TMP_DIR/fstransform.out.$$"
+FIFO_ERR="$TMP_DIR/fstransform.err.$$"
+
+PROG_DIR="$VAR_TMP_DIR/fstransform"
+PROG_LOG_FILE="$VAR_TMP_DIR/fstransform/fstransform.log.$$"
 
 # after log_init_file(), file descriptor 5 will be log file ~/.fstransform/fstransform.$$
 exec 5>/dev/null
@@ -98,25 +105,37 @@ show_usage() {
   echo "  --help                        Print this help and exit"
   echo "  --new-size=SIZE               Set new file system length. default: device length"
   echo "  --old-file-system=OLD-TYPE    Override current (old) file system type autodetection"
-  echo "  --force-untested-file-systems transform untested file systems (DANGEROUS)"
-  echo "  --irreversible          Speedup 'fsremap' execution: skip creating zero-file"
+  echo "  --force-untested-file-systems Transform also untested file systems (DANGEROUS)"
+  echo "  --list-source-file-systems    Print list of file systems supported as source"
+  echo "  --list-target-file-systems    Print list of file systems supported as target"
+  echo "  --reversible[=yes|no]   Create zero-file, fsremap will do a reversible transformation"
+  echo "                                default: no"
   echo "  --no-questions          Never ask any question or confirmation"
   echo "  --show-time[=yes|=no]   Show current time before each message. default: yes"
   echo "  --loop-file=LOOP-FILE   Override loop-file path"
   echo "  --loop-mount-point=PATH Override loop-file mount point"
   echo "  --zero-file=ZERO-FILE   Override zero-file path"
-  echo "  --cmd-CMD-NAME=CMD-PATH Override external command autodetection"
+  echo "  --cmd-CMD-NAME=CMD-PATH Set external command CMD-NAME to use. default: autodetected"
   echo "  --opts-fsmove=OPTS      Pass OPTS as additional options to 'fsmove'"
   echo "  --opts-fsremap=OPTS     Pass OPTS as additional options to 'fsremap'"
-  echo "  --opts-mkfs=OPTS        Pass OPTS as options to 'mkfs'"
+  echo "  --opts-mkfs=OPTS        Pass OPTS as options to 'mkfs'. default: '-q'"
   echo "  --opts-fsck-source=OPTS Override 'fsck' options for old file system. default: '-p -f'"
   echo "  --opts-fsck-target=OPTS Override 'fsck' options for new file system. default: '-p -f'"
   echo "  --x-OPTION=VALUE        Set internal, undocumented option. For maintainers only."
 }
 
-if test "$#" = 1 -a "$1" = "--help"; then
-  show_usage
-  exit 0
+show_tested_fstypes() {
+  for fstype in $FSTYPES_TESTED; do
+    echo "$fstype"
+  done
+}
+
+if test "$#" = 1; then
+  case "$1" in
+    --help) show_usage; exit 0;;
+    --list-source-file-systems) show_tested_fstypes; exit 0;;
+    --list-target-file-systems) show_tested_fstypes; exit 0;;
+  esac
 fi
 
 
@@ -137,9 +156,13 @@ parse_args() {
         USER_FORCE_UNTESTED_FSTYPES="yes"
 	log_info "forcing trasformation of untested file systems (DANGEROUS). '$arg' bytes specified on command line"
         ;;
-      --irreversible)
+      --reversible|--reversible=yes)
+        OPT_CREATE_ZERO_FILE=yes
+	log_info "zero file will be created, '$arg' specified on command line"
+        ;;
+      --reversible=no)
         OPT_CREATE_ZERO_FILE=no
-	log_info "zero file will not be created, '$arg' specified on command line"
+	log_info "skipping creation of zero file, '$arg' specified on command line"
         ;;
       --no-questions)
         OPT_ASK_QUESTIONS=no
@@ -282,9 +305,7 @@ log_def_file() {
 }
 
 log_init_file() {
-  PROG_LOG_FILE="$HOME/.fstransform/fstransform.log.$$"
-
-  "$CMD_mkdir" -p "$HOME/.fstransform" >/dev/null 2>&1
+  "$CMD_mkdir" -p "$PROG_DIR" >/dev/null 2>&1
   > "$PROG_LOG_FILE" >/dev/null 2>&1
   
   if test -w "$PROG_LOG_FILE"; then
@@ -627,12 +648,45 @@ create_fifo_out_err() {
 }
 create_fifo_out_err
 
-cleanup() {
+CLEANUP_SIGNALS="HUP INT QUIT ILL TRAP ABRT BUS FPE KILL SEGV PIPE TERM URG XCPU XFSZ VTALRM PROF IO PWR SYS"
+CLEANUP_0=
+CLEANUP_1=
+CLEANUP_2=
+CLEANUP_3=
+CLEANUP_4=
+
+do_cleanup() {
+  trap - 0 $CLEANUP_SIGNALS
+  
+  if test "$CLEANUP_4" != ""; then
+    eval "$CLEANUP_4" >/dev/null 2>/dev/null
+  fi
+  if test "$CLEANUP_3" != ""; then
+    eval "$CLEANUP_3" >/dev/null 2>/dev/null
+  fi
+  if test "$CLEANUP_2" != ""; then
+    eval "$CLEANUP_2" >/dev/null 2>/dev/null
+  fi
+  if test "$CLEANUP_1" != ""; then
+    eval "$CLEANUP_1" >/dev/null 2>/dev/null
+  fi
+  if test "$CLEANUP_0" != ""; then
+    eval "$CLEANUP_0" >/dev/null 2>/dev/null
+  fi
   remove_fifo_out_err
   log_quit
 }
+cleanup_on_exit() {
+  do_cleanup
+  log_quit
+}
+cleanup_on_signal() {
+  do_cleanup
+  exit 1
+}
+trap cleanup_on_exit 0
+trap cleanup_on_signal $CLEANUP_SIGNALS
 
-trap cleanup 0
 
 
 
@@ -673,21 +727,22 @@ read_cmd_err() {
   read_cmd_out_err "$1" "$FIFO_ERR" "warn: "
 }
 
-exec_cmd() {
+exec_cmd_noquit() {
   read_cmd_out "$1"
   "$@" >"$FIFO_OUT" 2>"$FIFO_OUT"
   ERR="$?"
   wait
+}
+
+exec_cmd() {
+  exec_cmd_noquit "$@"
   exec_cmd_status "$@"
 }
 
 # treat 'fsck' programs specially:
 # they exit with status 1 to indicate that file-system errors were corrected
 exec_cmd_fsck() {
-  read_cmd_out "$1"
-  "$@" >"$FIFO_OUT" 2>"$FIFO_OUT"
-  ERR="$?"
-  wait
+  exec_cmd_noquit "$@"
   exec_cmd_status_fsck "$@"
 }
 
@@ -709,6 +764,13 @@ capture_cmd() {
 }
 
 
+check_device_is_block_special() {
+  if test ! -b "$DEVICE"; then
+    log_err "argument '$DEVICE' is NOT a block special device! Aborting."
+    exit 1
+  fi
+}
+check_device_is_block_special
 
 
 log_info "preparing to transform device '$DEVICE' to file-system type '$FSTYPE'"
@@ -724,15 +786,38 @@ echo_device_mount_point_and_fstype() {
   done
 }
 
+initial_mount_device() {
+  DEVICE_MOUNT_POINT="$TMP_DIR/fstransform.mount.$$"
+  "$CMD_mkdir" -p "$DEVICE_MOUNT_POINT" >/dev/null 2>&1
+  
+  CLEANUP_0="'$CMD_rmdir' '$DEVICE_MOUNT_POINT'"
+  
+  if test "$DEVICE_FSTYPE" != ""; then
+    exec_cmd "$CMD_mount" -t "$DEVICE_FSTYPE" "$DEVICE" "$DEVICE_MOUNT_POINT"
+  else
+    exec_cmd "$CMD_mount" "$DEVICE" "$DEVICE_MOUNT_POINT"
+  fi
+  CLEANUP_0="'$CMD_umount' '$DEVICE'; $CLEANUP_0"
+}
+
 find_device_mount_point_and_fstype() {
   local my_dev="$DEVICE"
+  local my_mount_point= my_fstype= my_now=
   local ret="`echo_device_mount_point_and_fstype \"$my_dev\"`"
   if test "$ret" = ""; then
-    log_err "device '$my_dev' not found in the output of command $CMD_mount"
-    log_err_add "maybe device '$my_dev' is not mounted?"
-    exit 1
+    log_info "device '$my_dev' not found in the output of command $CMD_mount, assuming it is not mounted"
+    initial_mount_device
+    local ret="`echo_device_mount_point_and_fstype \"$my_dev\"`"
+    if test "$ret" = ""; then
+      log_err "just mounted device '$my_dev' at mount point '$DEVICE_MOUNT_POINT'"
+      log_err_add "but still cannot find it in the output of command $CMD_mount"
+      log_err_add "I give up, sorry"
+      exit 1
+    fi
+    my_now=" now"
+  else
+    DEVICE_IS_INITIALLY_MOUNTED=yes
   fi
-  local my_mount_point= my_fstype=
   for i in $ret; do
     if test "$my_mount_point" = ""; then
       my_mount_point="$i"
@@ -740,7 +825,7 @@ find_device_mount_point_and_fstype() {
       my_fstype="$i"
     fi
   done
-  log_info "device is mounted at '$my_mount_point' with file-system type '$my_fstype'"
+  log_info "device is$my_now mounted at '$my_mount_point' with file-system type '$my_fstype'"
   if test ! -e "$my_mount_point"; then
     log_err "mount point '$my_mount_point' does not exist."
     log_err_add "maybe device '$my_dev' is mounted on a path containing spaces?"
@@ -864,10 +949,7 @@ create_loop_or_zero_file() {
     log_info "overwriting $my_kind file '$my_file' inside device '$DEVICE'..."
   fi
   
-  read_cmd_out "$PROG"
-  > "$my_file" 2>"$FIFO_OUT"
-  ERR="$?"
-  wait
+  exec_cmd_noquit "$CMD_dd" "if=/dev/zero" "of=$my_file" bs=1 count=1
   if test "$ERR" != 0; then
     log_err "failed to create or truncate '$my_file' to zero bytes"
     log_err_add "maybe device '$DEVICE' is full or mounted read-only?"
@@ -879,6 +961,8 @@ create_loop_or_zero_file() {
 create_loop_file() {
   create_loop_or_zero_file loop LOOP_FILE "$LOOP_FILE"
   
+  CLEANUP_1="'$CMD_rm' -f '$LOOP_FILE'"
+
   # loop file length is = device size truncated down to a multiple of its block size:
   # avoids annoying problems if device's last block has an odd length
   
@@ -909,6 +993,8 @@ connect_loop_device() {
   capture_cmd LOOP_DEVICE "$CMD_losetup" -f
   exec_cmd "$CMD_losetup" "$LOOP_DEVICE" "$LOOP_FILE"
   log_info "connected loop device '$LOOP_DEVICE' to file '$LOOP_FILE'"
+  
+  CLEANUP_2="'$CMD_losetup' -d '$LOOP_DEVICE'"
 }
 connect_loop_device
 
@@ -928,20 +1014,22 @@ disconnect_loop_device() {
     fi
   done
   log_info "disconnected loop device '$LOOP_DEVICE' from file '$LOOP_FILE'"
+
+  CLEANUP_2=
 }
 
 
 format_loop_device() {
   log_info "formatting loop device '$LOOP_DEVICE' with file-system type '$FSTYPE'..."
-  exec_cmd "$CMD_mkfs" -t "$FSTYPE" -q $OPTS_mkfs "$LOOP_DEVICE"
+  exec_cmd "$CMD_mkfs" -t "$FSTYPE" $OPTS_mkfs "$LOOP_DEVICE"
 }
 format_loop_device
 
 
 mount_loop_file() {
   if test "$LOOP_MOUNT_POINT" = ""; then
-    LOOP_MOUNT_POINT="/tmp/fstransform.mount.$$"
-    exec_cmd "$CMD_mkdir" "$LOOP_MOUNT_POINT"    
+    LOOP_MOUNT_POINT="$TMP_DIR/fstransform.loop.$$"
+    exec_cmd "$CMD_mkdir" "$LOOP_MOUNT_POINT"
   else
     "$CMD_expr" match "$LOOP_MOUNT_POINT" "/.*" >/dev/null 2>/dev/null
     ERR="$?"
@@ -973,6 +1061,8 @@ mount_loop_file() {
   log_info "mounting loop device '$LOOP_DEVICE' on '$LOOP_MOUNT_POINT' ..."
   exec_cmd "$CMD_mount" -t "$FSTYPE" "$LOOP_DEVICE" "$LOOP_MOUNT_POINT"
   log_info "loop device '$LOOP_DEVICE' mounted successfully."
+  
+  CLEANUP_3="'$CMD_umount' $LOOP_DEVICE"
 }
 mount_loop_file
 
@@ -1001,13 +1091,21 @@ move_device_contents_into_loop_file() {
   fi
   log_info "moving '$DEVICE' contents into the loop file."
   log_info "this may take a long time, please be patient..."
+  
+  # do not remove $LOOP_FILE anymore: in a moment it will contain users' data!
+  CLEANUP_1=
+  
   exec_cmd "$CMD_fsmove" $OPTS_fsmove -- "$DEVICE_MOUNT_POINT" "$LOOP_MOUNT_POINT" --exclude "$LOOP_FILE"
+  
 }
 move_device_contents_into_loop_file
 
 umount_and_fsck_loop_file() {
   log_info "unmounting and running '$CMD_fsck_target' (disk check) on loop file '$LOOP_FILE'"
   exec_cmd "$CMD_umount" "$LOOP_DEVICE"
+  
+  CLEANUP_3=
+
   # ignore errors if removing "$LOOP_MOUNT_POINT" fails
   "$CMD_rmdir" "$LOOP_MOUNT_POINT" >/dev/null 2>/dev/null
   exec_cmd_fsck "$CMD_fsck_target" $OPTS_fsck_target "$LOOP_DEVICE"
@@ -1027,10 +1125,13 @@ create_zero_file() {
     return 0
   fi
   create_loop_or_zero_file zero ZERO_FILE "$ZERO_FILE"
+  
+  CLEANUP_4="'$CMD_rm' -f '$ZERO_FILE'"
+  
   log_info "filling '$ZERO_FILE' with zeroes until device '$DEVICE' is full"
   log_info_add "needed by '$CMD_fsremap' to locate unused space."
   log_info_add "this may take a while, please be patient..."
-  
+
   # trying to fill a device until it fails with "no space left on device" is not very nice
   # and can probably cause file-system corruption if device happens to be a loop-mounted file
   # which contains non-synced data.
@@ -1087,11 +1188,16 @@ remap_device_and_sync() {
   fi
   
   log_info "launching '$CMD_fsremap' in REAL mode to perform in-place remapping."
+  
+  # starting to remap device, $ZERO_FILE will not exist anymore
+  CLEANUP_4=
+  
   if test "$OPT_CREATE_ZERO_FILE" = "yes"; then
-    exec_cmd "$CMD_fsremap" -q $my_OPTS_fsremap -- "$DEVICE" "$LOOP_FILE" "$ZERO_FILE"
+    exec_cmd "$CMD_fsremap" -q --cmd-umount="$CMD_umount" $my_OPTS_fsremap -- "$DEVICE" "$LOOP_FILE" "$ZERO_FILE"
   else
-    exec_cmd "$CMD_fsremap" -q $my_OPTS_fsremap -- "$DEVICE" "$LOOP_FILE"
+    exec_cmd "$CMD_fsremap" -q --cmd-umount="$CMD_umount" $my_OPTS_fsremap -- "$DEVICE" "$LOOP_FILE"
   fi
+  
   exec_cmd "$CMD_sync"
   
 
@@ -1111,10 +1217,16 @@ fsck_device() {
 }
 fsck_device
 
-mount_device() {
+
+final_mount_device() {
   log_info "mounting transformed device '$DEVICE'"
   exec_cmd "$CMD_mount" -t "$FSTYPE" "$DEVICE" "$DEVICE_MOUNT_POINT"
+  log_info "completed successfully. your new '$FSTYPE' file-system is mounted at '$DEVICE_MOUNT_POINT'"
 }
-mount_device
 
-log_info "completed successfully. your new '$FSTYPE' file-system is mounted at '$DEVICE_MOUNT_POINT'"
+if test "$DEVICE_IS_INITIALLY_MOUNTED" = "yes"; then
+  final_mount_device
+else
+  log_info "completed successfully. device '$DEVICE' now contains '$FSTYPE' file-system"
+fi
+

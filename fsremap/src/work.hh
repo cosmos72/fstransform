@@ -87,6 +87,7 @@ private:
 public:
     /** print map contents to log */
     static void show(const char * label1, const char * label2, ft_uoff effective_block_size, const fr_map<T> & map, ft_log_level level = (ft_log_level)FC_SHOW_DEFAULT_LEVEL);
+
 private:
     /**
      * call check(io) to ensure that io.dev_length() can be represented by T,
@@ -121,7 +122,7 @@ private:
      *
      * updates storage_map to contain the PRIMARY-STORAGE extents actually used.
      */
-    void fill_io_primary_storage(ft_size primary_size);
+    void fill_io_primary_storage_extents(ft_size primary_size);
 
     /**
      * creates on-disk secondary storage, used as (small) backup area during relocate().
@@ -144,7 +145,7 @@ private:
     int clear_free_space();
 
     /** called after relocate() and clear_free_space(). closes storage */
-    int close_storage();
+    int close_storage_after_success();
 
 
     /**
@@ -196,9 +197,11 @@ private:
      */
     int move_fragment(map_iterator from_iter, map_iterator to_free_iter, fr_dir dir, T & ret_moved);
 
+    /** read or write next step from persistence file */
+    int update_persistence();
 
     /** show progress status and E.T.A. */
-    void show_progress(ft_log_level log_level, const char * simul_msg);
+    void show_progress(ft_log_level log_level);
 
 public:
     /** default constructor */

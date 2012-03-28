@@ -29,12 +29,16 @@
 #elif defined(FT_HAVE_CERRNO)
 # include <cerrno>         // for errno, EOVERFLOW, ENOTBLK, EINTR
 #endif
+
 #if defined(FT_HAVE_STDLIB_H)
-# include <stdlib.h>       // for exit()
+# include <stdlib.h>       // for exit(), posix_fallocate()
 #elif defined(FT_HAVE_CSTDLIB)
-# include <cstdlib>        // for exit()
+# include <cstdlib>        // for exit(), posix_fallocate()
 #endif
 
+#ifdef FT_HAVE_FCNTL_H
+# include <fcntl.h>        // for fallocate()
+#endif
 #ifdef FT_HAVE_UNISTD_H
 # include <unistd.h>       // for fork(), execvp()
 #endif
@@ -223,6 +227,38 @@ int ff_posix_write(int fd, const void * mem, ft_uoff length)
         length -= (ft_uoff) sent;
     }
     return 0;
+}
+
+/**
+ * preallocate and fill with zeroes 'length' bytes on disk for a file descriptor.
+ * uses fallocate() if available, else posix_fallocate(), else plain write() loop.
+ */
+int ff_posix_fallocate(int fd, ft_off length, const ft_string & err_msg)
+{
+	int err = 0;
+#if defined(FT_HAVE_FALLOCATE)
+	if ((err = fallocate(fd, 0, 0, length)) != 0)
+#elif defined(FT_HAVE_POSIX_FALLOCATE)
+	if ((err = posix_fallocate(fd, 0, length)) != 0)
+#endif /* FT_HAVE_FALLOCATE */
+	{
+		/* fall back on write() */
+		enum { zero_len = 64*1024 };
+		char zero[zero_len];
+		ft_off pos = 0;
+		ft_size chunk;
+
+		while (pos < length) {
+			// safe cast ft_uoff -> ft_size, the value is <= zero_len
+			chunk = (ft_size) ff_min2<ft_off>(zero_len, length - pos);
+			if ((err = ff_posix_write(fd, zero, chunk)) != 0) {
+				err = ff_log(FC_ERROR, errno, "%s", err_msg.c_str());
+				break;
+			}
+			pos += chunk;
+		}
+	}
+	return err;
 }
 
 /**

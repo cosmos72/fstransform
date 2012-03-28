@@ -41,8 +41,8 @@
 FT_IO_NAMESPACE_BEGIN
 
 /** constructor */
-fr_io_test::fr_io_test(fr_job & job)
-: super_type(job)
+fr_io_test::fr_io_test(fr_persist & persist)
+: super_type(persist)
 {
     /* mark fd[] as invalid: they are not open yet */
     for (ft_size i = 0; i < FC_FILE_COUNT; i++)
@@ -66,7 +66,7 @@ int fr_io_test::open(const fr_args & args)
 {
     if (is_open()) {
         // already open!
-        ff_log(FC_ERROR, 0, "unexpected call, I/O is already open");
+        ff_log(FC_ERROR, 0, "unexpected call to io_test::open(), I/O is already open");
         return EISCONN;
     }
     int err = fr_io::open(args);
@@ -81,13 +81,14 @@ int fr_io_test::open(const fr_args & args)
         return ff_log(FC_ERROR, errno, "error parsing %s '%s'", extents_label[i], io_args[i]);
     }
 
-    for (i = FC_DEVICE_LENGTH+1; i < FC_FILE_COUNT; i++) {
-        if ((this_f[i] = fopen(io_args[i], "r")) == NULL) {
-            err = ff_log(FC_ERROR, errno, "error opening %s '%s'", extents_label[i], io_args[i]);
-            break;
-        }
+    if (!is_replaying()) {
+		for (i = FC_DEVICE_LENGTH+1; i < FC_FILE_COUNT; i++) {
+			if ((this_f[i] = fopen(io_args[i], "r")) == NULL) {
+				err = ff_log(FC_ERROR, errno, "error opening %s '%s'", extents_label[i], io_args[i]);
+				break;
+			}
+		}
     }
-
     if (err == 0) {
         dev_length(dev_len);
         dev_path("<test-device>");
@@ -159,7 +160,8 @@ int fr_io_test::read_extents(fr_vector<ft_uoff> & loop_file_extents,
     int err = 0;
     do {
         if (!is_open_extents()) {
-            err = ENOTCONN; // not open!
+            ff_log(FC_ERROR, 0, "unexpected call to io_test::read_extents(), I/O is not open");
+            err = -ENOTCONN; // not open!
             break;
         }
         /* ff_load_extents_file() appends to fr_vector<ft_uoff>, does NOT overwrite it */

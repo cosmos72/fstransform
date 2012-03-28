@@ -151,22 +151,35 @@ int fm_move::usage(const char * program_name) {
     ff_log(FC_NOTICE, 0, "even if %s and %s are almost full or share their free space", LABEL[0], LABEL[1]);
     ff_log(FC_NOTICE, 0, "(for example if %s is a file system inside a loop-file _inside_ %s)\n", LABEL[0], LABEL[1]);
 
-    return ff_log
-    (FC_NOTICE, 0, "Supported options:\n"
-     "  --help                Print this help and exit\n"
-     "  --                    End of options. treat subsequent parameters as arguments\n"
+    return ff_log(FC_NOTICE, 0,
+     "Mandatory arguments to long options are mandatory for short options too.\n"
+     "  --                    end of options. treat subsequent parameters as arguments\n"
      "                          even if they start with '-'\n"
-     "  -q, --quiet           Be quiet, print less output\n"
-     "  -qq                   Be very quiet, only print warnings or errors\n"
-     "  -v, --verbose         Be verbose, print what is being done\n"
-     "  -vv                   Be very verbose, print a lot of detailed output\n"
-     "  -vvv                  Be incredibly verbose (warning: prints TONS of output)\n"
-     "  -f, --force-run       Run even if some sanity checks fail\n"
+     "  -e, --exclude FILE... skip these files, i.e. do not move them.\n"
+     "                          must be last argument\n"
+     "  -f, --force-run       run even if some safety checks fail\n"
+     "      --io=posix        use POSIX I/O (default)\n"
      "  -n, --no-action, --simulate-run\n"
-     "                        Do not actually write any file or directory\n"
-     "  --posix               Use POSIX I/O (default)\n"
-     "  -e, --exclude FILE... Skip these files, i.e. do not move them.\n"
-     "                        Must be last argument\n");
+     "                        do not actually move any file or directory\n"
+     "  -q, --quiet           be quiet\n"
+     "  -qq                   be very quiet, only print warnings or errors\n"
+     "  -v, --verbose         be verbose, print what is being done\n"
+     "  -vv                   be very verbose, print a lot of detailed output\n"
+     "  -vvv                  be incredibly verbose (warning: prints LOTS of output)\n"
+     "      --help            display this help and exit\n"
+     "      --version         output version information and exit\n");
+}
+
+/** output version information and return 0 */
+int fm_move::version()
+{
+    return ff_log(FC_NOTICE, 0,
+            "fsmove (fstransform utilities) " FT_VERSION "\n"
+            "Copyright (C) 2011-2012 Massimiliano Ghilardi\n"
+            "\n"
+            "License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.\n"
+            "This is free software: you are free to change and redistribute it.\n"
+            "There is NO WARRANTY, to the extent permitted by law.\n");
 }
 
 int fm_move::invalid_cmdline(const char * program_name, int err, const char * fmt, ...)
@@ -294,18 +307,18 @@ int fm_move::init(int argc, char const* const* argv)
     } while (0);
 
     if (err == 0) {
+        ft_log_fmt format = level < FC_DEBUG ? FC_FMT_DATETIME_LEVEL_MSG : level == FC_DEBUG ? FC_FMT_LEVEL_MSG : FC_FMT_MSG;
+        
         if (level <= FC_DEBUG) {
             /* note 1.4.1) -v enables FC_FMT_LEVEL_MSG also for stdout/stderr */
             /* note 1.4.2) -vv enables FC_FMT_DATETIME_LEVEL_MSG also for stdout/stderr */
-            ft_log_fmt format = level == FC_DEBUG ? FC_FMT_LEVEL_MSG : FC_FMT_DATETIME_LEVEL_MSG;
+            ft_log_appender::redefine(stdout, format, level, FC_NOTICE);
+            ft_log_appender::redefine(stderr, format, FC_WARN);
 
-            ff_log_register_range(stdout, format, level,   FC_NOTICE);
-            ff_log_register_range(stderr, format, FC_WARN, FC_FATAL);
-        }
-        if (level > FC_INFO)
-            ff_log_unregister_range(stdout, FC_INFO, (ft_log_level)(level - 1));
+        } else if (level > FC_INFO)
+            ft_log_appender::redefine(stdout, format, level);
 
-        ff_log_set_threshold(level);
+        ft_log::get_root_logger().set_level(level);
 
         err = init(args);
     }

@@ -47,6 +47,12 @@ private:
     /** cannot call assignment operator */
     const fm_move & operator=(const fm_move &);
 
+    /** display command-line usage to stdout and return 0 */
+    int usage(const char * program_name);
+
+    /** output version information and return 0 */
+    int version();
+
     static int invalid_cmdline(const char * program_name, int err, const char * fmt, ...);
 
     /** return EISCONN if remapper is initialized, else call quit_io() and return 0 */
@@ -79,9 +85,6 @@ public:
      * return 0 if success, else error.
      */
     static int main(int argc, char ** argv);
-
-    /** print command-line usage to stdout and return 0 */
-    int usage(const char * program_name);
 
     bool is_initialized() const;
 

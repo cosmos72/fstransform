@@ -9,6 +9,7 @@ fsmove_SOURCES = \
   ../src/io/io.cc \
   ../src/io/io_posix.cc \
   ../src/io/io_posix_dir.cc \
+  ../src/io/util_posix.cc \
   ../src/log.cc \
   ../src/main.cc \
   ../src/misc.cc \

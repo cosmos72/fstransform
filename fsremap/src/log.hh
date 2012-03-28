@@ -26,7 +26,7 @@
 #ifndef FSTRANSFORM_LOG_HH
 #define FSTRANSFORM_LOG_HH
 
-#include "check.hh"
+#include "types.hh"      /* for ft_string */
 
 #if defined(FT_HAVE_ERRNO_H)
 # include <errno.h>      /* for EINVAL */
@@ -44,7 +44,9 @@
 # include <cstdio>       /* for FILE. also for stdout, stderr used by log.cc */
 #endif
 
-FT_EXTERN_C_BEGIN
+#include <list>          /* for std::list<T>  */
+#include <map>           /* for std::map<K,V> */
+
 FT_NAMESPACE_BEGIN
 
 
@@ -60,15 +62,15 @@ FT_NAMESPACE_BEGIN
 
 
 /* FC_FATAL is reserved for things that should not happen, i.e. bugs in the program or in the operating system. */
-typedef enum ft_log_level_e { FC_DUMP, FC_TRACE, FC_DEBUG, FC_INFO, FC_NOTICE, FC_WARN, FC_ERROR, FC_FATAL } ft_log_level;
+enum ft_log_level { FC_LEVEL_NOT_SET, FC_DUMP, FC_TRACE, FC_DEBUG, FC_INFO, FC_NOTICE, FC_WARN, FC_ERROR, FC_FATAL };
 
 
-typedef enum ft_log_fmt_e {
+enum ft_log_fmt {
     FC_FMT_MSG, /* message only */
     FC_FMT_LEVEL_MSG, /* level + message */
     FC_FMT_DATETIME_LEVEL_MSG, /* datetime + level + message */
     FC_FMT_DATETIME_LEVEL_CALLER_MSG, /* datetime + level + [file.func(line)] + message */
-} ft_log_fmt;
+};
 
 
 /**
@@ -77,11 +79,13 @@ typedef enum ft_log_fmt_e {
  * else append "\n"
  * finally return err
  */
+#define ff_log_is_enabled(level)        ff_logl_is_enabled(FT_THIS_FILE, level)
 #define ff_log(level, err, ...)         ff_logl(FT_THIS_FILE, FT_THIS_FUNCTION, FT_THIS_LINE, level, err, __VA_ARGS__)
 #define ff_vlog(level, err, fmt, vargs) ff_logv(FT_THIS_FILE, FT_THIS_FUNCTION, FT_THIS_LINE, level, err, fmt, vargs)
 
-int ff_logl(const char * caller_file, const char * caller_func, int caller_line, ft_log_level level, int err, const char * fmt, ...);
-int ff_logv(const char * caller_file, const char * caller_func, int caller_line, ft_log_level level, int err, const char * fmt, va_list args);
+bool ff_logl_is_enabled(const char * caller_file, ft_log_level level);
+int  ff_logl(const char * caller_file, const char * caller_func, int caller_line, ft_log_level level, int err, const char * fmt, ...);
+int  ff_logv(const char * caller_file, const char * caller_func, int caller_line, ft_log_level level, int err, const char * fmt, va_list args);
 
 
 #if defined(EINVAL) && EINVAL < 0
@@ -90,49 +94,116 @@ int ff_logv(const char * caller_file, const char * caller_func, int caller_line,
 #  define ff_log_is_reported(err) ((err) <= 0)
 #endif
 
+struct ft_log_event
+{
+    const char * str_now, * file, * file_suffix, * function, * fmt;
+    int file_len, line, err;
+    ft_log_level level;
+    va_list vargs;
+};
 
-/**
- * flush all buffered streams used to log messages for specified level
- */
-void ff_log_flush(ft_log_level level);
+class ft_log_appender {
+private:
+    FILE * stream;
+    ft_log_fmt format;
+    ft_log_level min_level, max_level;
+    
+    /** destructor. */
+    ~ft_log_appender();
 
-/**
- * add 'stream' to the list of streams receiving log messages
- * with seriousness between min_level and max_level (inclusive)
- *
- * by default, all WARN messages or more serious are sent to stderr
- * and all NOTICE messages or less serious are sent to stdout
- * note: by default, messages less serious than INFO are suppressed, see ff_log_set_threshold()
- */
-void ff_log_register_range(FILE * stream, ft_log_fmt format, ft_log_level min_level = FC_TRACE, ft_log_level max_level = FC_FATAL);
+    /** list of all appenders */
+    static std::list<ft_log_appender *> & get_all_appenders();
 
-/**
- * remove 'stream' from the list of streams receiving log messages
- * at least as serious as 'level'.
- */
-void ff_log_unregister_range(FILE * stream, ft_log_level min_level = FC_TRACE, ft_log_level max_level = FC_FATAL);
+public:
+    /** constructor. */
+    ft_log_appender(FILE * stream, ft_log_fmt format = FC_FMT_MSG, ft_log_level min_level = FC_TRACE, ft_log_level max_level = FC_FATAL);
+    
+    FT_INLINE void set_format(ft_log_fmt format) { this->format = format; }
 
-/**
- * return least serious level that is not suppressed.
- * by default, all messages less serious than 'FC_DEBUG' are suppressed on all streams
- */
-ft_log_level ff_log_get_threshold();
+    FT_INLINE void set_min_level(ft_log_level min_level) { this->min_level = min_level; }
+    FT_INLINE void set_max_level(ft_log_level max_level) { this->max_level = max_level; }
+    
+    /** write a log message to stream */
+    void append(ft_log_event & event);
 
-/**
- * tell ff_log() and ff_vlog() to suppress printing of messages less serious than 'level'.
- *
- * by default, all messages less serious than 'FC_DEBUG' are suppressed on all streams
- */
-void ff_log_set_threshold(ft_log_level level);
+    /** flush this appender */
+    void flush();
+    
+    /** flush all buffered streams used to log messages for specified level */
+    static void flush_all(ft_log_level level);
 
-/**
- * return true if printing specified message level is enabled,
- * i.e. not suppressed and there are streams that will actually receive it
- */
-bool ff_log_is_enabled(ft_log_level level);
+    /** set format and min/max levels of this appender */
+    void redefine(ft_log_fmt format = FC_FMT_MSG, ft_log_level min_level = FC_DEBUG, ft_log_level max_level = FC_FATAL);
 
+    /** set format and min/max levels of all appenders attached to stream */
+    static void redefine(FILE * stream, ft_log_fmt format = FC_FMT_MSG, ft_log_level min_level = FC_DEBUG, ft_log_level max_level = FC_FATAL);
+};
+
+                    
+class ft_log {
+private:
+    typedef std::map<ft_string, ft_log *>::iterator all_loggers_iterator;
+
+	friend class ft_log_appender;
+
+    const ft_string * name;
+    ft_log * parent;
+    std::list<ft_log_appender *> appenders;
+    ft_log_level level; /* events less severe than level will be suppressed */
+
+    /** initialize loggers and appenders. */
+    static void initialize();
+
+    /** return map of all existing loggers. */
+    static std::map<ft_string, ft_log *> & get_all_loggers();
+    
+    /** constructor. */
+    ft_log(const ft_string & name, ft_log * parent, ft_log_level level = FC_LEVEL_NOT_SET);
+
+    /** destructor. */
+    ~ft_log();
+
+    /** find or create parent logger given child name. */
+    static ft_log & get_parent(const ft_string & child_logger_name);
+
+    /** log a message (skip level check) */
+    void append(ft_log_event & event);
+    
+public:
+
+    /** return root logger */
+    static ft_log & get_root_logger();
+
+    /** find or create a logger by name */
+    static ft_log & get_logger(const ft_string & logger_name);
+
+    /** log a message (unless its level is suppressed) */
+    void log(ft_log_event & event);
+
+    /** return true if level is enabled (i.e. not suppressed) for this logger. */
+    FT_INLINE bool is_enabled(ft_log_level level) const { return level >= get_effective_level(); }
+
+
+    /** get logger name. */
+    FT_INLINE const ft_string & get_name() const { return * name; }
+    
+    /** return the level, i.e. least serious level that is not suppressed. */
+    FT_INLINE ft_log_level get_level() const { return level; }
+
+    /** set the level, i.e. least serious level that is not suppressed. */
+    FT_INLINE void set_level(ft_log_level level) { this->level = level; }
+
+    /** return the effective level: if level is set return it, otherwise return parent effective level. */
+    ft_log_level get_effective_level() const;
+
+
+    /** add an appender */
+    void add_appender(ft_log_appender & appender);
+    
+    /** remove an appender */
+    void remove_appender(ft_log_appender & appender);
+};
 
 FT_NAMESPACE_END
-FT_EXTERN_C_END
 
 #endif /* FSTRANSFORM_LOG_HH */

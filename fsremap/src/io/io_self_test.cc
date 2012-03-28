@@ -34,8 +34,8 @@ FT_IO_NAMESPACE_BEGIN
 
 
 /** constructor */
-fr_io_self_test::fr_io_self_test(fr_job & job)
-: super_type(job), this_block_size_log2(0)
+fr_io_self_test::fr_io_self_test(fr_persist & persist)
+: super_type(persist), this_block_size_log2(0)
 { }
 
 
@@ -57,7 +57,11 @@ int fr_io_self_test::open(const fr_args & args)
     if (is_open()) {
         // already open!
         ff_log(FC_ERROR, 0, "unexpected call, I/O is already open");
-        return EISCONN;
+        return -EISCONN;
+    }
+    if (is_replaying()) {
+    	ff_log(FC_ERROR, 0, "resuming job is meaningless for self-test I/O");
+    	return -EINVAL;
     }
     int err = fr_io::open(args);
     if (err != 0)

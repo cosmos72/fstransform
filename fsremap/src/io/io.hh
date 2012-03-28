@@ -36,6 +36,7 @@
 #include "../map.hh"         // for fr_map<T>
 #include "../ui/ui.hh"       // for fr_ui
 
+#include "persist.hh"        // for ft_persist
 #include "request.hh"        // for ft_request
 
 
@@ -70,6 +71,7 @@ private:
     const char * this_dev_path;
     const char * this_umount_cmd;
     fr_job & this_job;
+    fr_persist & this_persist;
     FT_UI_NS fr_ui * this_ui;
     fr_dir request_dir;
     bool this_delegate_ui;
@@ -176,7 +178,7 @@ protected:
 
 public:
     /** constructor */
-    fr_io(fr_job & job);
+    fr_io(fr_persist & persist);
 
     /**
      * destructor.
@@ -248,12 +250,18 @@ public:
     FT_INLINE void job_clear(fr_clear_free_space clear) { this_job.job_clear(clear); }
 
 
-    /* return the UI currently use, or NULL if not set */
+    /* return the UI to use, or NULL if not set */
     FT_INLINE FT_UI_NS fr_ui * ui() const { return this_ui; }
 
     /* set the UI to use. specify NULL to unset */
     FT_INLINE void ui(FT_UI_NS fr_ui * ui) { this_ui = ui; }
 
+
+    /* return the persistence to use, or NULL if not set */
+    FT_INLINE fr_persist & persist() const { return this_persist; }
+
+    /** return true if replaying persistence */
+    FT_INLINE bool is_replaying() const { return this_persist.is_replaying(); }
 
     /**
      * return true if I/O classes should be less strict on sanity checks
@@ -282,7 +290,7 @@ public:
      * if successful, calls effective_block_size_log2() to compute and remember effective block size
      */
     int load_extents(fr_vector<ft_uoff> & loop_file_extents,
-                     fr_vector<ft_uoff> & free_space_extents);
+                     fr_vector<ft_uoff> & free_space_extents, ft_uoff & block_size_bitmask);
 
     /**
      * saves extents to files job.job_dir() + '/loop_extents.txt' and job.job_dir() + '/free_space_extents.txt'
@@ -396,6 +404,9 @@ public:
 
     /** called after relocate() and clear_free_space(). closes storage */
     virtual int close_storage() = 0;
+    
+    /** called to remove storage from file system if execution is completed successfully */
+    virtual int remove_storage_after_success();
 };
 
 

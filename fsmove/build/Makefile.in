@@ -50,8 +50,8 @@ am__installdirs = "$(DESTDIR)$(sbindir)"
 PROGRAMS = $(sbin_PROGRAMS)
 am_fsmove_OBJECTS = args.$(OBJEXT) assert.$(OBJEXT) eta.$(OBJEXT) \
 	inode_cache.$(OBJEXT) disk_stat.$(OBJEXT) io.$(OBJEXT) \
-	io_posix.$(OBJEXT) io_posix_dir.$(OBJEXT) log.$(OBJEXT) \
-	main.$(OBJEXT) misc.$(OBJEXT) move.$(OBJEXT)
+	io_posix.$(OBJEXT) io_posix_dir.$(OBJEXT) util_posix.$(OBJEXT) \
+	log.$(OBJEXT) main.$(OBJEXT) misc.$(OBJEXT) move.$(OBJEXT)
 fsmove_OBJECTS = $(am_fsmove_OBJECTS)
 fsmove_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/fsremap/src
@@ -163,6 +163,7 @@ fsmove_SOURCES = \
   ../src/io/io.cc \
   ../src/io/io_posix.cc \
   ../src/io/io_posix_dir.cc \
+  ../src/io/util_posix.cc \
   ../src/log.cc \
   ../src/main.cc \
   ../src/misc.cc \
@@ -261,6 +262,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/main.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/misc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/move.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/util_posix.Po@am__quote@
 
 .cc.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -387,6 +389,20 @@ io_posix_dir.obj: ../src/io/io_posix_dir.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/io/io_posix_dir.cc' object='io_posix_dir.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o io_posix_dir.obj `if test -f '../src/io/io_posix_dir.cc'; then $(CYGPATH_W) '../src/io/io_posix_dir.cc'; else $(CYGPATH_W) '$(srcdir)/../src/io/io_posix_dir.cc'; fi`
+
+util_posix.o: ../src/io/util_posix.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT util_posix.o -MD -MP -MF $(DEPDIR)/util_posix.Tpo -c -o util_posix.o `test -f '../src/io/util_posix.cc' || echo '$(srcdir)/'`../src/io/util_posix.cc
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/util_posix.Tpo $(DEPDIR)/util_posix.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/io/util_posix.cc' object='util_posix.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o util_posix.o `test -f '../src/io/util_posix.cc' || echo '$(srcdir)/'`../src/io/util_posix.cc
+
+util_posix.obj: ../src/io/util_posix.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT util_posix.obj -MD -MP -MF $(DEPDIR)/util_posix.Tpo -c -o util_posix.obj `if test -f '../src/io/util_posix.cc'; then $(CYGPATH_W) '../src/io/util_posix.cc'; else $(CYGPATH_W) '$(srcdir)/../src/io/util_posix.cc'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/util_posix.Tpo $(DEPDIR)/util_posix.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/io/util_posix.cc' object='util_posix.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o util_posix.obj `if test -f '../src/io/util_posix.cc'; then $(CYGPATH_W) '../src/io/util_posix.cc'; else $(CYGPATH_W) '$(srcdir)/../src/io/util_posix.cc'; fi`
 
 log.o: ../src/log.cc
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT log.o -MD -MP -MF $(DEPDIR)/log.Tpo -c -o log.o `test -f '../src/log.cc' || echo '$(srcdir)/'`../src/log.cc

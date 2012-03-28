@@ -89,7 +89,7 @@ template<typename T1, typename T2>
 int ff_narrow(T1 n, T2 * ret_n)
 {
     T2 n2 = (T2) n;
-    if ((n2 < 0) != (n < 0) || n != (T1) n2)
+    if ((n < 0) != (n2 < 0) || n != (T1) n2)
         return EOVERFLOW;
     * ret_n = n2;
     return 0;

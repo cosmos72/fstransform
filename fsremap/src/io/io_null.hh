@@ -103,7 +103,7 @@ protected:
 
 public:
     /** constructor */
-    ft_io_null(fr_job & job);
+    ft_io_null(fr_persist & persist);
 
     /** destructor. does nothing. */
     virtual ~ft_io_null();

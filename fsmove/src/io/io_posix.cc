@@ -24,8 +24,6 @@
  */
 
 #include "../first.hh"
-#include "../assert.hh"    // for ff_assert()
-#include "../misc.hh"      // for ff_min2()
 
 
 #if defined(FT_HAVE_CERRNO)
@@ -76,11 +74,14 @@
 
 
 
+#include "../assert.hh"    // for ff_assert()
 #include "../log.hh"       // for ff_log()
+#include "../misc.hh"      // for ff_min2()
 
 #include "disk_stat.hh"    // for fm_disk_stat::THRESHOLD_MIN
 #include "io_posix.hh"     // for fm_io_posix
 #include "io_posix_dir.hh" // for fm_io_posix_dir
+#include "util_posix.hh"   // for ff_posix_exec_silent()
 
 #ifndef PATH_MAX
 # define PATH_MAX 4096
@@ -138,7 +139,7 @@ bool fm_io_posix::enough_free_space(ft_uoff bytes_to_write, bool first_time)
         half_free_space >>= 1;
 
     return half_free_space > bytes_to_write
-            && half_free_space - bytes_to_write > bytes_copied_since_last_check;
+        && half_free_space - bytes_to_write > bytes_copied_since_last_check;
 }
 
 /**
@@ -149,7 +150,7 @@ bool fm_io_posix::enough_free_space(ft_uoff bytes_to_write, bool first_time)
  */
 int fm_io_posix::periodic_check_free_space(ft_size bytes_just_written, ft_uoff bytes_to_write)
 {
-	add_work_done(bytes_just_written);
+    add_work_done(bytes_just_written);
 
     bytes_copied_since_last_check += bytes_just_written;
 
@@ -184,17 +185,46 @@ int fm_io_posix::disk_stat(const char * path, fm_disk_stat & disk_stat)
 {
     struct statvfs buf;
     int err = 0;
-    if (::statvfs(path, & buf) != 0)
-        err = ff_log(FC_ERROR, errno, "failed to statvfs() `%s'", path);
-    else {
+
+    for (int i = 0; i < 2; i++) {
+        if (::statvfs(path, & buf) != 0)
+            return ff_log(FC_ERROR, errno, "failed to statvfs() `%s'", path);
+        
         ft_uoff disk_total = (ft_uoff) buf.f_bsize * (ft_uoff) buf.f_blocks;
         ft_uoff disk_free =  (ft_uoff) buf.f_bsize * (ft_uoff) buf.f_bfree;
         disk_stat.set_total(disk_total);
+
+        if (i == 0 && disk_stat.is_too_low_free_space(disk_free)) {
+            try_to_make_free_space(path);
+            continue;
+        }
         err = disk_stat.set_free(disk_free);
+        break;
     }
     return err;
 }
 
+
+/**
+ * use some file-system specific trickery and try to free some space.
+ */
+void fm_io_posix::try_to_make_free_space(const char * path)
+{
+#if 0
+    /* 
+     * we COULD run 'xfs_fsr <path>' and try to free some space on 'xfs' file-systems,
+     * but at least on linux with an almost-full source device
+     * xfs_fsr can WORSEN the problem by triggering 'loop write error' kernel errors,
+     * which mean the source device has not enough space to accommodate the loop file contents.
+     * typically this CORRUPTS the file system inside target (loop) device!
+     */
+    const char * cmd = "xfs_fsr";
+    const char * const args[] = { cmd, path, NULL };
+    
+    if (ff_posix_exec_silent(cmd, args) == 0)
+        ff_log(FC_INFO, 0, "successfully executed '%s %s' to free some disk space", args[0], args[1]);
+#endif
+}
 
 
 /**
@@ -277,7 +307,7 @@ int fm_io_posix::move(const ft_string & source_path, const ft_string & target_pa
          *
          * Exception: we allow a 'lost+found' directory to exist inside target_root()
          */
-        if ((err = this->create_dir(target_path, stat)) != 0)
+        if ((err = this->create_dir(target_path)) != 0)
             break;
 
 
@@ -570,12 +600,10 @@ int fm_io_posix::copy_stream(int in_fd, int out_fd, const ft_stat & stat, const 
     }
 
     /* not enough free space, use backward copy + progressively truncate source file */
-    if (ff_log_is_enabled(FC_INFO)) {
-        double pretty_size = 0.0;
-        const char * pretty_label = ff_pretty_size((ft_uoff) file_size, & pretty_size);
-        ff_log(FC_INFO, 0, "using backward copy and truncate for file `%s': less than %.2f %sbytes free space left",
-        		target, pretty_size, pretty_label);
-    }
+    double pretty_size = 0.0;
+    const char * pretty_label = ff_pretty_size((ft_uoff) file_size, & pretty_size);
+    ff_log(FC_INFO, 0, "using backward copy and truncate for file `%s': less than %.2f %sbytes free space left",
+           target, pretty_size, pretty_label);
 
     if (::lseek(in_fd, 0, SEEK_END) != file_size)
         return ff_log(FC_ERROR, errno, "error seeking to end of file `%s'", source);
@@ -949,7 +977,7 @@ bool fm_io_posix::is_target_lost_found(const ft_string & path) const
 
 
 /** create a target directory, copying its mode and other meta-data from 'stat' */
-int fm_io_posix::create_dir(const ft_string & path, const ft_stat & stat)
+int fm_io_posix::create_dir(const ft_string & path)
 {
     const char * dir = path.c_str();
     int err = 0;

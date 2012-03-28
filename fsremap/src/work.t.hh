@@ -190,7 +190,7 @@ int fr_work<T>::run(fr_vector<ft_uoff> & loop_file_extents,
         && (err = start_ui()) == 0
         && (err = relocate()) == 0
         && (err = clear_free_space()) == 0
-        && (err = close_storage()) == 0;
+        && (err = close_storage_after_success()) == 0;
 
     if (err == 0) {
         ff_log(FC_NOTICE, 0, "%sjob completed.", io.simulate_run() ? "(simulated) " : "");
@@ -353,10 +353,9 @@ int fr_work<T>::analyze(fr_vector<ft_uoff> & loop_file_extents,
      */
     {
         fr_vector<ft_uoff>::const_iterator iter = free_space_extents.begin(), end = free_space_extents.end();
-        T physical, logical, length;
+        T physical, length;
         for (; iter != end; ++iter) {
             physical = iter->first.physical >> eff_block_size_log2;
-            logical = iter->second.logical >> eff_block_size_log2;
             length = iter->second.length >> eff_block_size_log2;
             dev_free.insert(physical, physical, length, FC_DEFAULT_USER_DATA);
         }
@@ -686,9 +685,20 @@ int fr_work<T>::create_storage()
 
     ft_size req_mem_buffer_size = io->job_storage_size(FC_MEM_BUFFER_SIZE);
     ft_size req_secondary_size = io->job_storage_size(FC_SECONDARY_STORAGE_SIZE);
-    const ft_size req_primary_size_exact = io->job_storage_size(FC_PRIMARY_STORAGE_EXACT_SIZE);
-    const ft_size req_secondary_size_exact = io->job_storage_size(FC_SECONDARY_STORAGE_EXACT_SIZE);
+    
+    ft_size tmp_primary_size_exact = 0, tmp_secondary_size_exact = 0;
+    FT_IO_NS fr_persist & persist = io->persist();
+    bool persist_has_sizes_exact = persist.is_replaying();
+    {
+        int err = persist.get_storage_sizes_exact(tmp_primary_size_exact, tmp_secondary_size_exact);
+        if (err != 0)
+            return err;
+    }
+
+    const ft_size req_primary_size_exact = tmp_primary_size_exact;
+    const ft_size req_secondary_size_exact = tmp_secondary_size_exact;
     const ft_size req_total_size_exact = req_primary_size_exact + req_secondary_size_exact;
+   
 
     double free_pretty_len = 0.0;
     const char * free_pretty_unit = ff_pretty_size(free_ram_or_min, & free_pretty_len);
@@ -863,8 +873,20 @@ int fr_work<T>::create_storage()
     io->job_storage_size(FC_PRIMARY_STORAGE_EXACT_SIZE, primary_size);
     io->job_storage_size(FC_SECONDARY_STORAGE_EXACT_SIZE, secondary_size);
 
+    /*
+     * also save exact primary/secondary storage exact sizes to persistence,
+     * in case this jobs gets interrupted and somebody else will try to resume it later.
+     * 
+     * mem_buffer_size is not saved because it does not influence the remapping algorithm.
+     */
+    if (!persist_has_sizes_exact) {
+        int err = persist.set_storage_sizes_exact(primary_size, secondary_size);
+        if (err != 0)
+            return err;
+    }
+
     /* fill io->primary_storage() with PRIMARY-STORAGE extents actually used */
-    fill_io_primary_storage(primary_size);
+    fill_io_primary_storage_extents(primary_size);
 
     return io->create_storage(secondary_size, mem_buffer_size);
 }
@@ -879,7 +901,7 @@ int fr_work<T>::create_storage()
  * updates storage_map to contain the PRIMARY-STORAGE extents actually used.
  */
 template<typename T>
-void fr_work<T>::fill_io_primary_storage(ft_size primary_size)
+void fr_work<T>::fill_io_primary_storage_extents(ft_size primary_size)
 {
     const ft_uoff primary_len = (ft_uoff) primary_size;
     const ft_uoff eff_block_size_log2 = io->effective_block_size_log2();
@@ -981,10 +1003,16 @@ int fr_work<T>::relocate()
                 ff_log(FC_WARN, 0, "press ENTER when done, or CTRL+C to quit");
                 err = 0;
             } else {
-                err = ff_log(FC_ERROR, err, "unmount %s '%s' failed", label[FC_DEVICE], dev_path);
-                ff_log(FC_ERROR, 0, "    you could unmount it yourself and continue");
-                ff_log(FC_ERROR, 0, "    but this is a non-interactive run, so fsremap will exit now");
-                ff_log(FC_ERROR, 0, "exiting.");
+                const bool is_replaying = io->is_replaying();
+                ff_log(is_replaying ? FC_WARN : FC_ERROR, 0, "unmount %s '%s' failed", label[FC_DEVICE], dev_path);
+                ff_log(is_replaying ? FC_WARN : FC_ERROR, 0, "    you could unmount it yourself and continue");
+                if (is_replaying) {
+                    ff_log(FC_WARN,  0, "    but this is a non-interactive job resume, so fsremap will try to continue anyway");
+                    err = 0;
+                } else {
+                    ff_log(FC_ERROR, 0, "    but this is a non-interactive run, so fsremap will exit now");
+                    ff_log(FC_ERROR, 0, "exiting.");
+                }
             }
         }
 
@@ -1026,25 +1054,34 @@ int fr_work<T>::relocate()
      * do we have an odd-sized (i.e. smaller than effective block size) last loop-file block?
      * it must be treated specially, see the next function for details.
      */
-    err = check_last_block();
+    if ((err = check_last_block()) != 0)
+        return err;
 
     /* initialize progress report */
     eta.clear();
     eta.add(0.0);
 
+    err = update_persistence();
+
     while (err == 0 && !(dev_map.empty() && storage_map.empty())) {
 
         if (!dev_map.empty() && !storage_free.empty())
             err = fill_storage();
+        if (err == 0)
+            err = update_persistence();
 
         if (err == 0)
-            show_progress(FC_NOTICE, simul_msg);
+            show_progress(FC_NOTICE);
 
         if (err == 0 && !dev_map.empty())
             err = move_to_target(FC_FROM_DEV);
+        if (err == 0)
+            err = update_persistence();
 
         if (err == 0 && !storage_map.empty())
             err = move_to_target(FC_FROM_STORAGE);
+        if (err == 0)
+            err = update_persistence();
     }
     if (err == 0)
         ff_log(FC_INFO, 0, "%sblocks remapping completed.", simul_msg);
@@ -1052,10 +1089,22 @@ int fr_work<T>::relocate()
     return err;
 }
 
+/** read or write next step from persistence file */
+template<typename T>
+int fr_work<T>::update_persistence()
+{
+    T dev_used = dev_map.used_count(), storage_used = storage_map.used_count();
+
+    return io->persist().next((ft_ull) dev_used, (ft_ull) storage_used);
+}
+
+
 /** show progress status and E.T.A. */
 template<typename T>
-void fr_work<T>::show_progress(ft_log_level log_level, const char * simul_msg)
+void fr_work<T>::show_progress(ft_log_level log_level)
 {
+    const char * simul_msg = io->simulate_run() ? "(simulated) " : io->is_replaying() ? "(replaying) " : "";
+
     const ft_uoff eff_block_size_log2 = io->effective_block_size_log2();
 
     T dev_used = dev_map.used_count(), storage_used = storage_map.used_count();
@@ -1065,12 +1114,13 @@ void fr_work<T>::show_progress(ft_log_level log_level, const char * simul_msg)
 
     if (work_total != 0) {
         percentage = 1.0 - ((double)dev_used + 0.5 * (double)storage_used) / (double)work_total;
-        time_left = eta.add(percentage);
+
+        if (simul_msg[0] == '\0')
+            time_left = eta.add(percentage);
+        else
+            eta.clear();
         percentage *= 100.0;
     }
-
-    if (io->simulate_run())
-        time_left = -1.0;
 
     ff_show_progress(log_level, simul_msg, percentage, total_len, " still to relocate", time_left);
 
@@ -1136,7 +1186,8 @@ int fr_work<T>::fill_storage()
     map_iterator from_iter = dev_map.begin(), from_pos, from_end = dev_map.end();
     T moved = 0, from_used_count = dev_map.used_count(), to_free_count = storage_map.free_count();
     const bool simulated = io->simulate_run();
-    const char * simul_msg = simulated ? "(simulated) " : "";
+    const bool replaying = io->is_replaying();
+    const char * simul_msg = simulated ? "(simulated) " : replaying ? "(replaying) " : "";
 
     double pretty_len = 0.0;
     const char * pretty_label = ff_pretty_size((ft_uoff)ff_min2<T>(from_used_count, to_free_count)
@@ -1293,7 +1344,7 @@ int fr_work<T>::move_to_target(fr_from from)
     const fr_dir dir = from == FC_FROM_DEV ? FC_DEV2DEV : FC_STORAGE2DEV;
     int err = 0;
     const bool simulated = io->simulate_run();
-    const char * simul_msg = simulated ? "(simulated) " : "";
+    const char * simul_msg = simulated ? "(simulated) " : io->is_replaying() ? "(replaying) " : "";
 
     /* find all DEVICE or STORAGE extents that can be moved to their final destination into DEVICE free space */
     movable.intersect_all_all(from_transpose, dev_free, FC_PHYSICAL1);
@@ -1383,14 +1434,14 @@ int fr_work<T>::clear_free_space()
         const char * pretty_label = ff_pretty_size(toclear_len, & pretty_len);
         switch (job_clear) {
             case FC_CLEAR_MINIMAL:
-                ff_log(FC_INFO, 0, "%sclearing %.2f %sbytes free space from %s to remove temporary data (%s and device backup)...",
-                       sim_msg, pretty_len, pretty_label, label[FC_DEVICE], label[FC_PRIMARY_STORAGE]);
+                ff_log(FC_NOTICE, 0, "%sclearing %.2f %sbytes free space from %s to remove temporary data (%s and %s backup)...",
+                       sim_msg, pretty_len, pretty_label, label[FC_DEVICE], label[FC_PRIMARY_STORAGE], label[FC_DEVICE]);
                 err = io->zero_primary_storage();
                 break;
             default:
             case FC_CLEAR_ALL:
             case FC_CLEAR_NONE:
-                ff_log(FC_INFO, 0, "%sclearing %.2f %sbytes %s from %s ...",
+                ff_log(FC_NOTICE, 0, "%sclearing %.2f %sbytes %s from %s ...",
                        sim_msg, pretty_len, pretty_label, job_clear == FC_CLEAR_NONE ? "UNWRITTEN blocks" : label[FC_FREE_SPACE], label[FC_DEVICE]);
                 break;
         }
@@ -1409,7 +1460,7 @@ int fr_work<T>::clear_free_space()
                 ff_log(FC_FATAL, 0, "\tSuspending process to allow debugging... press ENTER or CTRL+C to quit.");
                 char ch;
                 if (::read(0, &ch, 1) < 0) {
-                	ff_log(FC_WARN, errno, "read(stdin) failed");
+                    ff_log(FC_WARN, errno, "read(stdin) failed");
                 }
                 err = -EFAULT;
                 break;
@@ -1436,9 +1487,12 @@ int fr_work<T>::clear_free_space()
 
 /** called after relocate() and clear_free_space(). closes storage */
 template<typename T>
-int fr_work<T>::close_storage()
+int fr_work<T>::close_storage_after_success()
 {
-    return io->close_storage();
+    int err = io->close_storage();
+    if (err == 0)
+        err = io->remove_storage_after_success();
+    return err;
 }
 
 FT_NAMESPACE_END

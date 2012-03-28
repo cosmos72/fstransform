@@ -36,9 +36,9 @@
 # include <cstdio>         // for remove()
 #endif
 #if defined(FT_HAVE_STDLIB_H)
-# include <stdlib.h>       // for malloc(), free(), posix_fallocate()
+# include <stdlib.h>       // for malloc(), free()
 #elif defined(FT_HAVE_CSTDLIB)
-# include <cstdlib>        // for malloc(), free(), posix_fallocate()
+# include <cstdlib>        // for malloc(), free()
 #endif
 #if defined(FT_HAVE_STRING_H)
 # include <string.h>       // for memset()
@@ -53,7 +53,7 @@
 # include <sys/stat.h>     //  "    "
 #endif
 #ifdef FT_HAVE_FCNTL_H
-# include <fcntl.h>        //  "    "
+# include <fcntl.h>        //  "    "   , fallocate()
 #endif
 #ifdef FT_HAVE_UNISTD_H
 # include <unistd.h>       // for close()
@@ -85,8 +85,8 @@ FT_IO_NAMESPACE_BEGIN
 
 
 /** default constructor */
-fr_io_posix::fr_io_posix(fr_job & job)
-: super_type(job), storage_mmap(MAP_FAILED), buffer_mmap(MAP_FAILED),
+fr_io_posix::fr_io_posix(fr_persist & persist)
+: super_type(persist), storage_mmap(MAP_FAILED), buffer_mmap(MAP_FAILED),
   storage_mmap_size(0), buffer_mmap_size(0), this_dev_blkdev(0)
 {
     /* mark fd[] as invalid: they are not open yet */
@@ -345,10 +345,11 @@ int fr_io_posix::open(const fr_args & args)
         if ((err = open_dev(path[i])) != 0)
             break;
         
-        for (i = FC_DEVICE + 1; i < FC_FILE_COUNT; i++) {
-            if ((err = open_file(i, path[i])) != 0)
-                break;
-        }
+        if (!is_replaying())
+			for (i = FC_DEVICE + 1; i < FC_FILE_COUNT; i++)
+				if ((err = open_file(i, path[i])) != 0)
+					break;
+
     } while (0);
 
     if (err != 0)
@@ -365,9 +366,10 @@ int fr_io_posix::open(const fr_args & args)
  */
 void fr_io_posix::close()
 {
-    close_storage();
     for (ft_size i = 0; i < FC_FILE_COUNT; i++)
         close0(i);
+
+    close_storage();
 
     super_type::close();
 }
@@ -409,7 +411,8 @@ int fr_io_posix::read_extents(fr_vector<ft_uoff> & loop_file_extents,
     int err = 0;
     do {
         if (!is_open_extents()) {
-            err = ENOTCONN; // not open!
+            ff_log(FC_ERROR, 0, "unexpected call to io_posix::read_extents(), I/O is not open");
+            err = -ENOTCONN; // not open!
             break;
         }
 
@@ -459,7 +462,10 @@ void fr_io_posix::close_extents()
 	close0(FC_LOOP_FILE);
 }
 
-/** close, munmap() and remove() SECONDARY-STORAGE. called by close() and by work<T>::close_storage() */
+/**
+ * close and munmap() SECONDARY-STORAGE. does NOT remove it from file system!
+ * called by close() and by work<T>::close_storage()
+ */
 int fr_io_posix::close_storage()
 {
     int err = 0;
@@ -489,7 +495,6 @@ int fr_io_posix::close_storage()
     if (err == 0) {
         close0(i);
         close0(j);
-        err = remove_secondary_storage();
     }
     return err;
 }
@@ -721,6 +726,8 @@ int fr_io_posix::create_secondary_storage(ft_size len)
     filepath += "/storage.bin";
     const char * path = filepath.c_str();
     int err = 0;
+    const bool simulated = simulate_run();
+    const bool replaying = is_replaying();
 
     do {
         const ft_off s_len = (ft_off) len;
@@ -729,75 +736,77 @@ int fr_io_posix::create_secondary_storage(ft_size len)
             break;
         }
         
-        if ((fd[j] = ::open(path, O_RDWR|O_CREAT|O_TRUNC, 0600)) < 0) {
+        double pretty_len = 0.0;
+        const char * pretty_label = ff_pretty_size(len, & pretty_len);
+        const char * simulated_msg = simulated ? " (simulated)" : "";
+
+        if ((fd[j] = ::open(path, replaying ? O_RDWR : O_RDWR|O_CREAT|O_TRUNC, 0600)) < 0) {
             err = ff_log(FC_ERROR, errno, "error in %s open('%s')", label[j], path);
+            if (replaying && err == -ENOENT)
+            	ff_log(FC_ERROR, 0, "you probably tried to resume a COMPLETED job");
             break;
         }
 
-        double pretty_len = 0.0;
-        const char * pretty_label = ff_pretty_size(len, & pretty_len);
-        const bool simulated = simulate_run();
+        if (replaying) {
+        	ft_uoff actual_len = 0;
+        	err = ff_posix_size(fd[j], & actual_len);
+        	if (err != 0) {
+            	err = ff_log(FC_ERROR, err, "%s: fstat('%s') failed", label[j], path);
 
-        ff_log(FC_INFO, 0, "%s:%s writing %.2f %sbytes to '%s' ...", label[j], (simulated ? " (simulated)" : ""), pretty_len, pretty_label, path);
-
-        if (simulated) {
-            if ((err = ff_posix_lseek(fd[j], len - 1)) != 0) {
-                err = ff_log(FC_ERROR, errno, "error in %s lseek('%s', offset = %"FT_ULL" - 1)", label[j], path, (ft_ull)len);
-                break;
-            }
-            char zero = '\0';
-            if ((err = ff_posix_write(fd[j], & zero, 1)) != 0) {
-                err = ff_log(FC_ERROR, errno, "error in %s write('%s', '\\0', length = 1)", label[j], path);
-                break;
-            }
+        	} else if (actual_len != (ft_uoff) len) {
+            	ff_log(FC_ERROR, 0, "%s: file '%s' is %"FT_ULL" bytes long, expecting %"FT_ULL" bytes instead",
+            			label[j], path, (ft_ull) actual_len, (ft_ull) len);
+            	err = -EINVAL;
+        	} else
+        		ff_log(FC_INFO, 0, "%s: opened existing file '%s', is %.2f %sbytes long", label[j],
+        				path, pretty_len, pretty_label);
         } else {
-            
-#ifdef FT_HAVE_POSIX_FALLOCATE
-            /* try with posix_fallocate() */
-            if ((err = posix_fallocate(fd[j], 0, s_len)) != 0) {
-#endif /* FT_HAVE_POSIX_FALLOCATE */
-                
-                /* else fall back on write() */
-                enum { zero_len = 64*1024 };
-                char zero[zero_len];
-                ft_size pos = 0, chunk;
-                
-                while (pos < len) {
-                    chunk = ff_min2<ft_size>(zero_len, len - pos);
-                    if ((err = ff_posix_write(fd[j], zero, chunk)) != 0) {
-                        err = ff_log(FC_ERROR, errno, "error in %s write('%s')", label[j], path);
-                        break;
-                    }
-                    pos += chunk;
-                }
-#ifdef FT_HAVE_POSIX_FALLOCATE
-            }
-#endif /* FT_HAVE_POSIX_FALLOCATE */
+        	ff_log(FC_INFO, 0, "%s:%s writing %.2f %sbytes to '%s' ...", label[j], simulated_msg,
+        			pretty_len, pretty_label, path);
+        	if (simulated) {
+				if ((err = ff_posix_lseek(fd[j], len - 1)) != 0) {
+					err = ff_log(FC_ERROR, errno, "error in %s lseek('%s', offset = %"FT_ULL" - 1)", label[j], path, (ft_ull)len);
+					break;
+				}
+				char zero = '\0';
+				if ((err = ff_posix_write(fd[j], & zero, 1)) != 0) {
+					err = ff_log(FC_ERROR, errno, "error in %s write('%s', '\\0', length = 1)", label[j], path);
+					break;
+				}
+			} else {
+				ft_string err_msg = ft_string("error in ") + label[j] + "write('" + path + "')";
+
+				err = ff_posix_fallocate(fd[j], s_len, err_msg);
+			}
+        	if (err == 0)
+        		ff_log(FC_INFO, 0, "%s:%s file created", label[j], simulated_msg);
         }
+        if (err != 0)
+        	break;
         
         /* remember secondary_storage details */
         fr_extent<ft_uoff> & extent = secondary_storage();
         extent.physical() = extent.logical() = 0;
         extent.length() = len;
 
-        ff_log(FC_INFO, 0, "%s:%s file created", label[j], (simulated ? " (simulated)" : ""));
 
     } while (0);
 
     if (err != 0) {
-        const bool need_remove = is_open0(j);
+        const bool need_remove = !replaying && is_open0(j);
         close0(fd[j]);
-        if (need_remove && remove(path) != 0)
+        if (need_remove && remove(path) != 0 && errno != ENOENT)
             ff_log(FC_WARN, errno, "removing %s file '%s' failed", label[j], path);
     }
     return err;
 }
 
 /**
- * remove SECONDARY-STORAGE in job.job_dir() + '.storage.bin'
+ * called to remove SECONDARY-STORAGE file job.job_dir() + '/storage.bin' from file system
+ * if execution is completed successfully
  * return 0 if success, else error
  */
-int fr_io_posix::remove_secondary_storage()
+int fr_io_posix::remove_storage_after_success()
 {
     enum { j = FC_SECONDARY_STORAGE };
 
@@ -805,10 +814,9 @@ int fr_io_posix::remove_secondary_storage()
     filepath += "/storage.bin";
     const char * path = filepath.c_str();
 
-    int err = 0;
     if (remove(path) != 0 && errno != ENOENT)
-        err = ff_log(FC_WARN, errno, "removing %s file '%s' failed", label[j], path);
-    return err;
+        ff_log(FC_WARN, errno, "removing %s file '%s' failed", label[j], path);
+    return 0;
 }
 
 /** call umount(8) on dev_path() */
@@ -834,6 +842,8 @@ int fr_io_posix::umount_dev()
     if (err == 0)
         ff_log(FC_NOTICE, 0, "successfully unmounted %s '%s'", label[FC_DEVICE], dev);
 
+    (void) sync(); // sync() returns void
+
     return err;
 }
 
@@ -846,7 +856,7 @@ int fr_io_posix::umount_dev()
  */
 int fr_io_posix::check_last_block()
 {
-    ft_uoff dev_len = dev_length(), loop_file_len = loop_file_length();
+    ft_uoff loop_file_len = loop_file_length();
     int err = 0;
     if (loop_file_len-- == 0)
     	return err;

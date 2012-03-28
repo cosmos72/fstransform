@@ -34,7 +34,8 @@
 # include <cstdio>         // for FILE. also for sprintf() used in job.cc
 #endif
 
-#include "args.hh"     // for fr_args
+#include "args.hh"     // for fr_args, FC_STORAGE_SIZE_N
+#include "log.hh"      // for ft_log_appender
 
 FT_NAMESPACE_BEGIN
 
@@ -45,9 +46,10 @@ private:
     ft_size this_storage_size[FC_STORAGE_SIZE_N];
 
     FILE * this_log_file;
+    ft_log_appender * this_log_appender;
     ft_uint this_id;
     fr_clear_free_space this_clear;
-    bool this_force_run, this_simulate_run, this_ask_questions;
+    bool this_force_run, this_simulate_run, this_resume_job, this_ask_questions;
 
     /** initialize logging subsystem */
     int init_log();
@@ -105,13 +107,14 @@ public:
      */
     FT_INLINE void force_run(bool force_flag) { this_force_run = force_flag; }
 
-    
     /** return true if I/O classes should simulate run, i.e. run WITHOUT reading or writing device blocks */
     FT_INLINE bool simulate_run() const { return this_simulate_run; }
 
     /** set to true if I/O classes should simulate run, i.e. run WITHOUT reading or writing device blocks */
     FT_INLINE void simulate_run(bool simulate_flag) { this_simulate_run = simulate_flag; }
     
+    /** return true if resuming an existing job */
+    FT_INLINE bool resuming_job() const { return this_resume_job; }
 
     /** return true if classes can ask questions to the user and read answers from stdin */
     FT_INLINE bool ask_questions() const { return this_ask_questions; }

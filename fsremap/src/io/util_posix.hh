@@ -54,7 +54,6 @@ int ff_posix_blkdev_size(int fd, ft_uoff * ret_size);
 /** create a directory */
 int ff_posix_mkdir(const char * path, ft_mode mode = 0755);
 
-
 /**
  * seek file descriptor to specified position from file beginning.
  * note: if an error is returned, file descriptor position will be undefined!
@@ -68,13 +67,18 @@ int ff_posix_lseek(int fd, ft_uoff pos);
  */
 int ff_posix_read(int fd, void * mem, ft_uoff length);
 
-
 /**
  * write to a file descriptor.
  * keep retrying in case of EINTR or short writes.
  * on return, ret_length will be increased by the number of bytes actually written
  */
 int ff_posix_write(int fd, const void * mem, ft_uoff length);
+
+/**
+ * preallocate and fill with zeroes 'length' bytes on disk for a file descriptor.
+ * uses fallocate() if available, else posix_fallocate(), else plain write() loop.
+ */
+int ff_posix_fallocate(int fd, ft_off length, const ft_string & err_msg);
 
 /**
  * spawn a system command, wait for it to complete and return its exit status.
