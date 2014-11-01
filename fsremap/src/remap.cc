@@ -50,7 +50,7 @@
 # include "io/io_prealloc.hh"  // for fr_io_prealloc
 #endif
 #include "io/io_self_test.hh" // for fr_io_self_test
-#include "io/util.hh"         // for ff_mkdir()
+#include "io/util_dir.hh"     // for ff_mkdir()
 
 
 FT_NAMESPACE_BEGIN

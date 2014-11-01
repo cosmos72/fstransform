@@ -57,21 +57,25 @@ FT_IO_NAMESPACE_BEGIN
  * create a directory, return 0 (success) or error.
  * note: path MUST NOT end with '/'
  */
-int ff_posix_mkdir(const char * path, ft_mode mode)
+int ff_mkdir(const char * path, ft_mode mode)
 {
+#ifdef __USE_POSIX
     int err = mkdir(path, mode);
     return err != 0 ? errno : 0;
+#else
+    return ENOSYS;
+#endif
 }
 
-int ff_posix_mkdir_or_warn(const char * path, ft_mode mode)
+int ff_mkdir_or_warn(const char * path, ft_mode mode)
 {
-	int err = ff_posix_mkdir(path, mode);
+	int err = ff_mkdir(path, mode);
 	if (err != 0 && err != EEXIST)
 		err = ff_log(FC_WARN, err, "failed to create directory `%s'", path);
 	return err;
 }
 
-int ff_posix_mkdir_recursive(const ft_string & path)
+int ff_mkdir_recursive(const ft_string & path)
 {
 	ft_string partial;
 	size_t len = path.length();
@@ -82,7 +86,7 @@ int ff_posix_mkdir_recursive(const ft_string & path)
 	{
 		// if path starts with "/", try to create "/", NOT the unnamed directory ""
 		partial.assign(start, slash == start ? 1 : slash - start);
-		err = ff_posix_mkdir_or_warn(partial.c_str(), 0700);
+		err = ff_mkdir_or_warn(partial.c_str(), 0700);
 		if (err != 0 && err != EEXIST)
 			return err;
 
@@ -90,11 +94,11 @@ int ff_posix_mkdir_recursive(const ft_string & path)
 	}
 	// if path does not end with "/", create the last segment
 	if (len != 0 && prev != end)
-		err = ff_posix_mkdir_or_warn(path.c_str(), 0700);
+		err = ff_mkdir_or_warn(path.c_str(), 0700);
 	return err;
 }
 
-int ff_posix_remove_recursive(const ft_string & path)
+int ff_remove_recursive(const ft_string & path)
 {
 	return ENOSYS;
 }

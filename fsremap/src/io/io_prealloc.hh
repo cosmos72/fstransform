@@ -44,7 +44,7 @@ private:
 
     static const char * const MP_LABEL[FC_MOUNT_POINTS_N];
 
-    // inode cache. used to examine only once multiple links to the same file
+    // inode-cache. used to examine only once multiple links to the same file
     ft_inode_cache_mem<ft_nlink> this_inode_cache;
 
     // device and loop mount points

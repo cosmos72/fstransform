@@ -19,8 +19,8 @@ fsremap_SOURCES = \
   ../src/io/io_self_test.cc \
   ../src/io/io_test.cc \
   ../src/io/persist.cc \
+  ../src/io/util_dir.cc \
   ../src/io/util_posix.cc \
-  ../src/io/util_posix_dir.cc \
   ../src/job.cc \
   ../src/log.cc \
   ../src/main.cc \

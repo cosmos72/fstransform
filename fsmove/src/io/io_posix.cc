@@ -562,16 +562,15 @@ int fm_io_posix::move_rename(const char * source, const char * target)
  */
 int fm_io_posix::hard_link(const ft_stat & stat, const ft_string & target_path)
 {
-    ft_string cached_link;
-    bool found = false;
+    ft_string cached_link = target_path;
+    int err;
 
     if (stat.st_nlink > 1) {
         /*
          * source path has 2 or more links.
          * check if it is cached already, or add it to detect further links to the same file/device
          */
-        cached_link = target_path;
-        found = inode_cache_find_or_add(stat.st_ino, cached_link);
+        err = inode_cache_find_or_add(stat.st_ino, cached_link);
     } else {
         /*
          * source path has only 1 link. it can be either:
@@ -583,24 +582,21 @@ int fm_io_posix::hard_link(const ft_stat & stat, const ft_string & target_path)
          * in any case, if a cached inode is found, we erase it
          * because it is guaranteed that no more links to this inode will ever be found.
          */
-    	found = inode_cache_find_and_delete(stat.st_ino, cached_link);
+    	err = inode_cache_find_and_delete(stat.st_ino, cached_link);
     }
-    int err = 0;
-    do {
-        if (!found) {
-            // fake error to tell caller that inode was not in inode_cache
-            err = EAGAIN;
-            break;
-        }
 
+    if (err == 0) {
+    	// fake error to tell caller that inode was not in cache
+    	err = EAGAIN;
+    }
+    else if (err == 1) {
+    	// inode found in cache
         const char * link_to = cached_link.c_str(), * link_from = target_path.c_str();
-        if (::link(link_to, link_from) != 0) {
+        if (::link(link_to, link_from) != 0)
             err = ff_log(FC_ERROR, errno, "failed to create target hard link `%s'\t-> `%s'", link_from, link_to);
-            break;
-        }
-
-    } while (0);
-
+        else
+        	err = 0;
+    }
     return err;
 }
 

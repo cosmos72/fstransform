@@ -65,36 +65,41 @@ public:
     virtual ~ft_inode_cache_mem()
     { }
     
-    /* initialize the inode cache. return 0 on success, else return error */
+    /* initialize the inode-cache. return 0 on success, else return error */
     virtual int init() { return 0; }
 
     /**
-     * return true and set payload of cached inode if found, else add it to cache and return false
-     * if false is returned, erase() must be called on the same inode when done with payload!
+     * if cached inode found, set payload and return 1.
+     * Otherwise add it to cache and return 0.
+     * On error, return < 0.
+     * if returns 0, erase() must be called on the same inode when done with payload!
      */
-    virtual bool find_or_add(ft_inode inode, V & payload)
+    virtual int find_or_add(ft_inode inode, V & inout_payload)
     {
-        ff_assert(payload != this->zero_payload);
+        ff_assert(inout_payload != this->zero_payload);
 
         V & value = map[inode];
         if (value == this->zero_payload) {
-            value = payload;
-            return false;
+            value = inout_payload;
+            return 0;
         }
-        payload = value;
-        return true;
+        inout_payload = value;
+        return 1;
     }
 
-    /** return true and set payload of cached inode if found, else return false */
-    virtual bool find_and_delete(ft_inode inode, V & result_payload)
+    /**
+     * if cached inode found, set payload, remove cached inode and return 1.
+     * Otherwise return 0. On error, return < 0.
+     */
+    virtual int find_and_delete(ft_inode inode, V & result_payload)
     {
         typename map_type::iterator iter = map.find(inode);
         if (iter == map.end())
-            return false;
+            return 0;
 
         result_payload = iter->second;
         map.erase(iter);
-        return true;
+        return 1;
     }
 
     virtual void clear()

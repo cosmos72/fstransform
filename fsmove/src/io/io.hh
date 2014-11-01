@@ -72,10 +72,10 @@ private:
 
 protected:
 
-    FT_INLINE bool inode_cache_find_or_add(ft_inode inode, ft_string & path) {
+    FT_INLINE int inode_cache_find_or_add(ft_inode inode, ft_string & path) {
         return this_inode_cache->find_or_add(inode, path);
     }
-    FT_INLINE bool inode_cache_find_and_delete(ft_inode inode, ft_string & path) {
+    FT_INLINE int inode_cache_find_and_delete(ft_inode inode, ft_string & path) {
         return this_inode_cache->find_and_delete(inode, path);
     }
 

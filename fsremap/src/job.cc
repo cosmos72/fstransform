@@ -45,7 +45,7 @@
 
 #include "args.hh"    // for FC_JOB_ID_AUTODETECT
 #include "job.hh"     // for fr_job
-#include "io/util.hh" // for ff_mkdir()
+#include "io/util_dir.hh" // for ff_mkdir()
 
 
 FT_NAMESPACE_BEGIN

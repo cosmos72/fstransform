@@ -40,7 +40,7 @@ protected:
 
 	enum FT_ICP_OPTIONS { FT_ICP_READONLY, FT_ICP_READWRITE };
 
-	static bool readlink(const ft_string & src, ft_string & dst);
+	static int readlink(const ft_string & src, ft_string & dst);
 	int build_path(const ft_string & rel, ft_string & abs, FT_ICP_OPTIONS options) const;
 
 public:
@@ -59,17 +59,22 @@ public:
     /* guaranteed NOT to end with '/', unless it's exactly the path "/" */
     const char * get_path() const { return path.c_str(); }
 
-    /* initialize the inode cache. return 0 on success, else return error */
-    virtual int init();
+    /* initialize the inode-cache. return 0 on success, else return error */
+    int init();
 
     /**
-     * return true and set payload of cached inode if found, else add it to cache and return false
-     * if false is returned, erase() must be called on the same inode when done with payload!
+     * if cached inode found, set payload and return 1.
+     * Otherwise add it to cache and return 0.
+     * On error, return < 0.
+     * if returns 0, erase() must be called on the same inode when done with payload!
      */
-    bool find_or_add(const ft_string & inode, ft_string & payload);
+    int find_or_add(const ft_string & inode, ft_string & payload);
 
-    /** return true and set payload of cached inode if found, else return false */
-    bool find_and_delete(const ft_string & inode, ft_string & result_payload);
+    /**
+     * if cached inode found, set payload, remove cached inode and return 1.
+     * Otherwise return 0. On error, return < 0.
+     */
+    int find_and_delete(const ft_string & inode, ft_string & result_payload);
 
     void clear();
 };
@@ -106,29 +111,34 @@ public:
     virtual ~ft_inode_cache_posix_v()
     { }
     
-    /* initialize the inode cache. return 0 on success, else return error */
+    /* initialize the inode-cache. return 0 on success, else return error */
     virtual int init() { return mixin_type::init(); }
 
     /**
-     * return true and set payload of cached inode if found, else add it to cache and return false
-     * if false is returned, erase() must be called on the same inode when done with payload!
+     * if cached inode found, set payload and return 1.
+     * Otherwise add it to cache and return 0.
+     * On error, return < 0.
+     * if returns 0, find_and_delete() must be called on the same inode when done with payload!
      */
-    virtual bool find_or_add(ft_inode inode, V & payload)
+    virtual int find_or_add(ft_inode inode, V & payload)
     {
     	ft_string s_inode, s_payload;
     	ff_copy(payload, s_payload);
     	ff_copy(inode, s_inode);
-    	bool ret = mixin_type::find_or_add(s_inode, s_payload);
+    	int ret = mixin_type::find_or_add(s_inode, s_payload);
     	ff_copy(s_payload, payload);
     	return ret;
     }
 
-    /** return true and set payload of cached inode if found, else return false */
-    virtual bool find_and_delete(ft_inode inode, V & result_payload)
+    /**
+     * if cached inode found, set payload, remove cached inode and return 1.
+     * Otherwise return 0. On error, return < 0.
+     */
+    virtual int find_and_delete(ft_inode inode, V & result_payload)
     {
     	ft_string s_inode, s_payload;
     	ff_copy(inode, s_inode);
-    	bool ret = mixin_type::find_and_delete(s_inode, s_payload);
+    	int ret = mixin_type::find_and_delete(s_inode, s_payload);
     	ff_copy(s_payload, result_payload);
     	return ret;
     }

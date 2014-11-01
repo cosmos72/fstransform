@@ -13,8 +13,8 @@ fsmove_SOURCES = \
   ../src/io/io_posix.cc \
   ../src/io/io_posix_dir.cc \
   ../src/io/io_prealloc.cc \
+  ../src/io/util_dir.cc \
   ../src/io/util_posix.cc \
-  ../src/io/util_posix_dir.cc \
   ../src/log.cc \
   ../src/main.cc \
   ../src/misc.cc \

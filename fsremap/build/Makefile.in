@@ -104,8 +104,8 @@ am_fsremap_OBJECTS = ../src/arch/mem.$(OBJEXT) \
 	../src/io/io_null.$(OBJEXT) ../src/io/io_posix.$(OBJEXT) \
 	../src/io/io_posix_dir.$(OBJEXT) \
 	../src/io/io_self_test.$(OBJEXT) ../src/io/io_test.$(OBJEXT) \
-	../src/io/persist.$(OBJEXT) ../src/io/util_posix.$(OBJEXT) \
-	../src/io/util_posix_dir.$(OBJEXT) ../src/job.$(OBJEXT) \
+	../src/io/persist.$(OBJEXT) ../src/io/util_dir.$(OBJEXT) \
+	../src/io/util_posix.$(OBJEXT) ../src/job.$(OBJEXT) \
 	../src/log.$(OBJEXT) ../src/main.$(OBJEXT) \
 	../src/map.$(OBJEXT) ../src/map_stat.$(OBJEXT) \
 	../src/misc.$(OBJEXT) ../src/mstring.$(OBJEXT) \
@@ -276,8 +276,8 @@ fsremap_SOURCES = \
   ../src/io/io_self_test.cc \
   ../src/io/io_test.cc \
   ../src/io/persist.cc \
+  ../src/io/util_dir.cc \
   ../src/io/util_posix.cc \
-  ../src/io/util_posix_dir.cc \
   ../src/job.cc \
   ../src/log.cc \
   ../src/main.cc \
@@ -419,9 +419,9 @@ clean-sbinPROGRAMS:
 	../src/io/$(DEPDIR)/$(am__dirstamp)
 ../src/io/persist.$(OBJEXT): ../src/io/$(am__dirstamp) \
 	../src/io/$(DEPDIR)/$(am__dirstamp)
-../src/io/util_posix.$(OBJEXT): ../src/io/$(am__dirstamp) \
+../src/io/util_dir.$(OBJEXT): ../src/io/$(am__dirstamp) \
 	../src/io/$(DEPDIR)/$(am__dirstamp)
-../src/io/util_posix_dir.$(OBJEXT): ../src/io/$(am__dirstamp) \
+../src/io/util_posix.$(OBJEXT): ../src/io/$(am__dirstamp) \
 	../src/io/$(DEPDIR)/$(am__dirstamp)
 ../src/job.$(OBJEXT): ../src/$(am__dirstamp) \
 	../src/$(DEPDIR)/$(am__dirstamp)
@@ -500,8 +500,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/io/$(DEPDIR)/io_self_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/io/$(DEPDIR)/io_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/io/$(DEPDIR)/persist.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/io/$(DEPDIR)/util_dir.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/io/$(DEPDIR)/util_posix.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/io/$(DEPDIR)/util_posix_dir.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/ui/$(DEPDIR)/ui.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/ui/$(DEPDIR)/ui_tty.Po@am__quote@
 

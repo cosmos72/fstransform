@@ -57,19 +57,22 @@ public:
     virtual ~ft_inode_cache()
     { }
 
-    /* initialize the inode cache. return 0 on success, else return error */
+    /* initialize the inode-cache. return 0 on success, else return error */
     virtual int init() = 0;
 
     /**
-     * return true and set payload of cached inode if found, else add inode and payload to cache and return false
-     * if false is returned, erase() must be called on the same inode when done with payload!
+     * if cached inode found, set payload and return 1.
+     * Otherwise add it to cache and return 0.
+     * On error, return < 0.
+     * if returns 0, erase() must be called on the same inode when done with payload!
      */
-    virtual bool find_or_add(ft_inode inode, V & inout_payload) = 0;
+    virtual int find_or_add(ft_inode inode, V & inout_payload) = 0;
 
     /**
-     * return true and set payload of cached inode if found, else return false
+     * if cached inode found, set payload, remove inode from cache and return 1.
+     * Otherwise return 0. On error, return < 0.
      */
-    virtual bool find_and_delete(ft_inode inode, V & result_payload) = 0;
+    virtual int find_and_delete(ft_inode inode, V & result_payload) = 0;
 
     virtual void clear() = 0;
 };

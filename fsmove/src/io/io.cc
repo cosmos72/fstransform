@@ -129,7 +129,7 @@ int fm_io::open(const fm_args & args)
             for (; * exclude_list != NULL; ++exclude_list)
                 this_exclude_set.insert(* exclude_list);
         }
-        // do NOT move the inode cache!
+        // do NOT move the inode-cache!
         if (inode_cache_path != NULL)
         {
             this_exclude_set.insert(inode_cache_path);
