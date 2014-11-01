@@ -1,0 +1,62 @@
+TODO
+
+* fstransform, fsmove: add persistence, i.e. the ability to resume a transformation
+       after CTRL-C, power failure or similar interruptions
+
+* fsmove: use a larger buffer (1MB) to speed up backward copy.
+          Worth it? beware of low free space...
+          
+* fsremap: add a graphical interface ? probably not so worth it...
+
+* all: port to FreeBSD. see this:
+       Procedure to mount file system images under FreeBSD
+       First you have to create virtual device, using this command:
+       # mdconfig -a -t vnode -f /path/to/image.iso -u 1
+       The "mdconfig" command creates a device and prints the name. Just
+       append that to "/dev/" and use it for whatever you need:
+       # newfs /dev/md1
+       # mount /dev/md1 /mnt
+       To unmount the image use command:
+       # umount /mnt
+       Once unmounted, you can unconfigure the device with
+       # mdconfig -d -u 1
+
+       Also, many system files, as /lib/libc.so.7 are set as
+       'simmutable' (cannot open O_RDWR) and 'sunlink' (cannot unlink)
+       so fsmove fails
+       
+       Furthermore, fsmove df-like stats do not work on FreeBSD:
+       they seem to report usage of root file system
+       
+       Additionally, fsremap wraps calls to ff_posix_mkdir() with
+       #ifdef __USE_POSIX, which is undefined by default on FreeBSD,
+       causing ff_mkdir() to fail with ENOSYS.
+
+       Finally, 'umount' wants mount-point instead of device.
+       And how to 'mount -o remount,ro <mount-point>' ?
+
+WONTDO
+* fsmove: if file system free space is critically low, launch 'xfs_fsr'
+          to try and free some space before giving up.
+  why not:
+  LIMITED USEFULNESS: only for 'xfs' file system
+  DANGEROUS: at least on linux with an almost-full source device
+      xfs_fsr can WORSEN the problem by triggering 'loop write error' kernel errors,
+      which mean the source device has not enough space to accommodate the loop file contents.
+      typically this CORRUPTS the file system inside target (loop) device!
+
+
+DONE in 0.9.3
+* all: check FHS (Filesystem Hierarchy Standard) and decide where to
+       put persistence data. decision: /var/tmp/fstransform/
+
+* fsremap: add persistence, i.e. the ability to resume a transformation
+       after CTRL-C, power failure or similar interruptions
+       
+* fstransform: also allow device to be UNMOUNTED instead of MOUNTED.
+       gives easier integration with gparted, and guarantees
+       that nobody is accessing the file-system inside device
+
+DONE in 0.9.2          
+* fsremap: preemptively check that last device block is writable.
+       avoids troubles on linux with file-systems significantly smaller than device

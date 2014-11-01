@@ -1,0 +1,262 @@
+###############################################################################
+###############################################################################
+###############################################################################
+#########                                                             #########
+#########                                                             #########
+#########     THIS DOCUMENT IS SUPERSEDED BY README.fstransform       #########
+#########                                                             #########
+#########                                                             #########
+#########     PLEASE SEE README.fstransform INSTEAD OF THIS FILE      #########
+#########                                                             #########
+#########                                                             #########
+###############################################################################
+###############################################################################
+###############################################################################
+
+
+
+
+
+###############################################################################
+###############################################################################
+###############################################################################
+#########                                                             #########
+#########             THIS DOCUMENT EXPLAINS HOW TO USE               #########
+#########               RISKY PROGRAMS AND PROCEDURES                 #########
+#########         THAT MAY COMPLETELY AND IRREVERSIBLY RUIN           #########
+#########                 THE DATA ON YOUR DISKS                      #########
+#########                                                             #########
+#########                                                             #########
+#########         THE AUTHOR DECLINES ALL RESPONSIBILITIES            #########
+#########               FOR ANY DAMAGE THAT MAY DERIVE                #########
+#########           FROM USING THE PROGRAMS AND PROCEDURES            #########
+#########               DESCRIBED IN THIS DOCUMENT                    #########
+#########                                                             #########
+#########                                                             #########
+#########                   IF YOU CANNOT COMPLY                      #########
+#########       WITH THE TERMS AND DISCLAIMERS STATED ABOVE,          #########
+#########                 PLEASE STOP READING NOW                     #########
+#########    AND DO NOT TRY TO USE THE PROGRAMS AND PROCEDURES        #########
+#########               EXPLAINED IN THIS DOCUMENT                    #########
+#########                                                             #########
+#########                                                             #########
+#########                  IF YOU KEEP READING,                       #########
+#########       YOU MUST UNDERSTAND AND ACCEPT ALL THE RISKS          #########
+#########                   BEFORE PROCEEDING                         #########
+#########                                                             #########
+###############################################################################
+###############################################################################
+###############################################################################
+
+
+
+This document explains how to manually use 'fsremap' and 'fsmove',
+bypassing the MUCH simpler and more user-friendly script 'fstransform.sh'
+
+It is useful only if a user does not want or cannot use the script 'fstransform.sh'
+for some reason, or for those folks that want to know the internal procedure
+used by 'fstransform.sh'.
+
+It explains which steps must be manually performed _as_root_ by a user,
+invoking existing tools (mount, umount, dd, losetup, mkfs.*, fsck.*)
+as well as 'fsremap' and 'fsmove', to convert a device from a filesystem to another,
+WITHOUT using 'fstransform.sh'.
+
+These steps are automated by 'fstransform.sh', but they are also kept here
+1) for historical reasons
+2) to document the internal procedure used by 'fstransform.sh'
+3) in case 'fstransform.sh' cannot be used
+
+So, let's get started.
+
+FOREWORD:
+
+If the original device is almost full, the algorithm used by fsremap
+will create a backup file ("secondary storage", it will be up to
+half your free RAM) in your $HOME directory.
+
+You can use the option '-s <size>[k|M|G|T|P|E|Y|Z]' to manually set the secondary storage size,
+but please understand that using a too small secondary storage can slow down fsremap.
+
+
+PROCEDURE:
+
+If you are still reading, let's see to how to actually use fsremap and fsmove:
+
+0) compile them. Running "make" should suffice on any recent Linux
+   machine, as long as g++ is installed.
+   
+   You will get two executables, fsmove and fsremap.
+   They will be located at
+     fstransform-{version}-src/fsmove/Release/fsmove
+   and
+     fstransform-{version}-src/fsremap/Release/fsmap
+   
+   You are suggested to either run "make install" or to copy them to a simpler path.
+   Below, they will be referred as {fsmove} and {fsremap}
+   
+
+1) mount read-write the device you want to remap to a different file-system
+
+   mount {device} {device-mount-point} [your-options]
+
+   if the device is already mounted, check that it is mounted read-write
+   and that no process is using it.
+
+2) create a sparse file inside the device to be used as loop-file,
+   with the same length as the device itself
+   
+   dd if=/dev/zero of={device-mount-point}/{loop-file} bs=1 count=1 seek=$(( {device-size-in-bytes} - 1 ))
+   or, if you have truncate(1)
+   truncate -s {device-size-in-bytes} {device-mount-point}/{loop-file}
+
+3) format the loop-file with the new file system you want to use
+
+   mkfs.[ext2,ext3,ext4,reiserfs,xfs,jfs...] {device-mount-point}/{loop-file}
+
+   if you create an ext2/ext3/ext4 file-system, the option "-m 0" will help you
+   to detect more precisely if/when the file-system inside the loop-file becomes full
+
+4) mount the loop-file read-write
+
+   mount {device-mount-point}/{loop-file} {loop-file-mount-point} -o loop {your-options}
+
+   this will find a free /dev/loop{n}, setup it and mount it.
+
+   if you have an old mount which does not understand "-o loop", you will need
+   to manually find and setup a free loop-device:
+
+   losetup /dev/loop{n} {device-mount-point}/{loop-file} [your-options]
+   mount /dev/loop{n} {loop-file-mount-point} [your-options]
+
+5) manually and recursively move all files, directories, links and so on
+   from {device-mount-point} to {loop-file-mount-point},
+   reproducing inside {loop-file-mount-point} the original tree that was in {device-mount-point}.
+
+   Quite obviously, you should not move {loop-file} itself.
+
+   This part is the most delicate, because {loop-file} disk usage will grow while
+   you copy files inside it, and {device} or /dev/loop{n} - or both -
+   can become full: if it happens, you will be in BIG troubles.
+   
+   Let's see how to perform this delicate recursive move.
+   
+   You should have the fsmove program distributed with fstransform.
+   If you have it in {fsmove}, run:
+   
+   {fsmove} {device-mount-point} {loop-file-mount-point} --exclude {device-mount-point}/{loop-file}
+   
+   ################## WARNING ####### WARNING ####### WARNING ################
+   
+   The last command above can take a LONG time to complete, and it CAN fill either filesystem
+   {device-mount-point} and/or {loop-file-mount-point}.
+   
+   Even if {fsmove} periodically checks for free space, you still MUST monitor its progress with something like
+   
+   watch df {device-mount-point} {loop-file-mount-point}
+   
+   because, if {device-mount-point} becomes full and the copy receives an 'I/O error', you are in trouble:
+   the filesystem inside {loop-file-mount-point} will become CORRUPTED!
+   
+   So if you realize {device-mount-point} is going to become full, you MUST interrupt the copy BEFORE it happens
+   (and give up, sorry).
+   
+   ######################## ALTERNATIVE SOLUTION #############################
+   
+   If you don't have fsmove, things get a bit more ugly - and slow - and you need find(1), mv(1) and cpio(1)
+   This is how: first recreate the directory tree inside loop-file with:
+   
+   ( cd {device-mount-point} && find -xdev -type d ) | cpio -o | ( cd {loop-file-mount-point} && cpio -i )
+   
+   then move all the files one by one, except {loop-file} (note: {loop-file-mount-point} must be an absolute path)
+   
+   cd {device-mount-point} && find . -xdev \! -type d \! -path ./{loop-file} | while read i; do mv "$i" {loop-file-mount-point}/"$i" || break; done
+
+   The same WARNING above still applies: you MUST monitor the free space
+   on {device-mount-point} and {loop-file-mount-point} and interrupt
+   the operation if you realize {device-mount-point} is going to become full. 
+
+   Actually, since these alternative commands do a simple file-by-file
+   copy and do not check for free space, in this case it is even more
+   critical to monitor the free space.
+
+   
+6) once all your files are inside the file-system in {loop-file}, things get less delicate.
+   now you need to umount {loop-file}, 'sync' and check that {loop-file} is not corrupted
+   
+   umount {loop-file-mount-point}
+   # if you used losetup before, you will need also:
+   losetup -d /dev/loop{n}
+
+   # then in any case continue with:
+   sync
+   fsck -f {device-mount-point}/{loop-file}
+
+   you need to be ABSOLUTELY sure that there are no errors in the
+   filesystem inside {device-mount-point}/{loop-file} before proceeding!
+
+   Additionally, it is now the time to check that the kernel did not
+   report any error while writing to {loop-file-mount-point}.
+   Please run:
+   
+   dmesg
+   
+   and check that there are no recent I/O errors in the produced
+   messages.
+
+7) the initial setup is almost complete.
+   now create a file full with zeros (not sparse) inside {device-mount-point}
+   to help fsremap to locate any free disk space inside {device}:
+
+   dd if=/dev/zero of={device-mount-point}/{zero-file} bs=512
+
+   the second command will exit with the error "no space left on device",
+   but that's expected and not a problem.
+
+   Note: if you have fallocate(1) and the file-system on {device} supports it,
+   you can use fallocate instead of dd as it's much faster.
+
+8) remount {device} read-only to be sure no process
+   will write into it:
+
+   mount {device} -o remount,ro
+
+9) choose a folder with some free space (NOT inside {device}) where fsremap
+   can write its (hopefully small) backup data and log files, and name it {storage-dir}
+   
+   If you skip this step, fsremap will use your home directory as
+   default {storage-dir}.
+
+10) start fsremap. If you have the executable in {fsremap}, run:
+
+   {fsremap} -t {storage-dir} {device} {device-mount-point}/{loop-file} {device-mount-point}/{zero-file}
+
+   if you did not choose a {storage-dir} folder, omit the arguments -t {storage-dir}
+   and fsremap will use your home directory as default {storage-dir}
+   
+   if {device} has very little free space, fsremap will create a file
+   {storage-dir}/.fsremap/job.{x}/storage.bin and use it to store blocks
+   while moving them around.
+
+11) after an analysis phase, fsremap will ask you to umount {device}. just do as asked:
+
+   umount {device}
+
+12) fsremap will now relocate blocks from {loop-file} to {device}
+   and it will report its progress.
+
+   once finished, check that the remapping actually worked:
+
+   fsck -f {device}
+   mount {device} {device-mount-point} [your-options]
+
+   if everything worked, you can delete the file {storage-dir}/.fsremap/job.{x}/storage.bin
+
+   in case of problems, you can post your problem to the mailing list,
+   attaching the file {storage-dir}/.fsremap/job.{x}/fsremap.log
+   and hopefully somebody will help diagnosing the problem...
+
+
+Good luck!
+
+
