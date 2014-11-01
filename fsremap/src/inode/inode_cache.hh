@@ -57,6 +57,9 @@ public:
     virtual ~ft_inode_cache()
     { }
 
+    /* initialize the inode cache. return 0 on success, else return error */
+    virtual int init() = 0;
+
     /**
      * return true and set payload of cached inode if found, else add inode and payload to cache and return false
      * if false is returned, erase() must be called on the same inode when done with payload!
@@ -66,12 +69,7 @@ public:
     /**
      * return true and set payload of cached inode if found, else return false
      */
-    virtual bool find(ft_inode inode, V & result_payload) const = 0;
-
-    /**
-     * must be called if and only if find(inode) returned false
-     */
-    virtual void erase(ft_inode inode) = 0;
+    virtual bool find_and_delete(ft_inode inode, V & result_payload) = 0;
 
     virtual void clear() = 0;
 };

@@ -47,14 +47,31 @@ void ff_copy(ft_ull src, ft_string & dst)
 	dst.resize(maxlen);
 	char * buf = &dst[0];
 
-	int len = snprintf(buf, maxlen, "%"FT_XLL, src);
-	dst.resize(len > 0 ? len : 0);
+	int delta = snprintf(buf, maxlen, "%"FT_XLL, src);
+	dst.resize(delta > 0 ? delta : 0);
 }
 
 void ff_copy(const ft_string & src, ft_ull & dst)
 {
 	dst = 0;
 	sscanf(src.c_str(), "%"FT_XLL, &dst);
+}
+
+
+void ff_cat(const ft_string & src, ft_string & dst)
+{
+	dst += src;
+}
+
+void ff_cat(ft_ull src, ft_string & dst)
+{
+	enum { maxlen = sizeof(ft_ull) * 3 + 1 };
+	size_t oldlen = dst.length();
+	dst.resize(oldlen + maxlen);
+	char * buf = &dst[oldlen];
+
+	int delta = snprintf(buf, maxlen, "%"FT_XLL, src);
+	dst.resize(oldlen + (delta > 0 ? delta : 0));
 }
 
 FT_NAMESPACE_END

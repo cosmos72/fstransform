@@ -75,11 +75,8 @@ protected:
     FT_INLINE bool inode_cache_find_or_add(ft_inode inode, ft_string & path) {
         return this_inode_cache->find_or_add(inode, path);
     }
-    FT_INLINE bool inode_cache_find(ft_inode inode, ft_string & path) const {
-        return this_inode_cache->find(inode, path);
-    }
-    FT_INLINE void inode_cache_erase(ft_inode inode) {
-        this_inode_cache->erase(inode);
+    FT_INLINE bool inode_cache_find_and_delete(ft_inode inode, ft_string & path) {
+        return this_inode_cache->find_and_delete(inode, path);
     }
 
     FT_INLINE fm_disk_stat & source_stat() { return this_source_stat; }

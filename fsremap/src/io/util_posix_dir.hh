@@ -30,9 +30,29 @@
 
 FT_IO_NAMESPACE_BEGIN
 
-/** create a directory */
+/**
+ * create a directory, return 0 (success) or error.
+ * note: path MUST NOT end with '/'
+ *
+ * depending on the caller expectations whether the directory
+ * can already exist or not, error==EEXIST may also indicate success
+ */
 int ff_posix_mkdir(const char * path, ft_mode mode = 0755);
+
+/**
+ * same as ff_posix_mkdir(), plus calls ff_log(WARN) on errors.
+ * if error==EEXIST, it is returned but not logged.
+ */
+int ff_posix_mkdir_or_warn(const char * path, ft_mode mode = 0755);
+
+/**
+ * create a directory, return 0 (success) or error.
+ *
+ * depending on the caller expectations whether the directory
+ * can already exist or not, error==EEXIST may also indicate success
+ */
 int ff_posix_mkdir_recursive(const ft_string & path);
+
 int ff_posix_remove_recursive(const ft_string & path);
 
 FT_IO_NAMESPACE_END

@@ -26,6 +26,13 @@
 #include "../first.hh"
 
 #include "../types.hh"   // for ft_mode
+#include "../log.hh"     // for ff_log
+
+#if defined(FT_HAVE_STRING_H)
+# include <string.h>        // for memchr()
+#elif defined(FT_HAVE_CSTRING)
+# include <cstring>         // for memchr()
+#endif
 
 #if defined(FT_HAVE_ERRNO_H)
 # include <errno.h>        // for errno
@@ -46,16 +53,45 @@
 FT_IO_NAMESPACE_BEGIN
 
 
-/** create a directory */
+/**
+ * create a directory, return 0 (success) or error.
+ * note: path MUST NOT end with '/'
+ */
 int ff_posix_mkdir(const char * path, ft_mode mode)
 {
     int err = mkdir(path, mode);
-    return err == 0 ? err : errno;
+    return err != 0 ? errno : 0;
+}
+
+int ff_posix_mkdir_or_warn(const char * path, ft_mode mode)
+{
+	int err = ff_posix_mkdir(path, mode);
+	if (err != 0 && err != EEXIST)
+		err = ff_log(FC_WARN, err, "failed to create directory `%s'", path);
+	return err;
 }
 
 int ff_posix_mkdir_recursive(const ft_string & path)
 {
-	return ENOSYS;
+	ft_string partial;
+	size_t len = path.length();
+	const char * start = path.c_str(), * slash, * prev = start, * end = start + len;
+	int err = 0;
+	partial.reserve(len);
+	while ((slash = (const char *)memchr(prev, '/', end - prev)) != NULL)
+	{
+		// if path starts with "/", try to create "/", NOT the unnamed directory ""
+		partial.assign(start, slash == start ? 1 : slash - start);
+		err = ff_posix_mkdir_or_warn(partial.c_str(), 0700);
+		if (err != 0 && err != EEXIST)
+			return err;
+
+		prev = slash + 1;
+	}
+	// if path does not end with "/", create the last segment
+	if (len != 0 && prev != end)
+		err = ff_posix_mkdir_or_warn(path.c_str(), 0700);
+	return err;
 }
 
 int ff_posix_remove_recursive(const ft_string & path)

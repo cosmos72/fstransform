@@ -84,6 +84,7 @@ fm_io::~fm_io()
 int fm_io::open(const fm_args & args)
 {
     const char * arg1 = args.io_args[FC_SOURCE_ROOT], * arg2 = args.io_args[FC_TARGET_ROOT];
+
     int err = 0;
     do {
         if (arg1 == NULL) {
@@ -96,12 +97,22 @@ int fm_io::open(const fm_args & args)
             err = -EINVAL;
             break;
         }
+    	const char * inode_cache_path = args.inode_cache_path;
     	delete this_inode_cache;
     	this_inode_cache = NULL;
-    	if (args.inode_cache_path != NULL)
-    		this_inode_cache = new ft_inode_cache_posix_v<ft_string>(args.inode_cache_path);
+    	if (inode_cache_path != NULL)
+    	{
+    		ft_inode_cache_posix_v<ft_string> * icp = new ft_inode_cache_posix_v<ft_string>(inode_cache_path);
+    		// removes trailing '/' unless it's exactly the path "/"
+    		inode_cache_path = icp->get_path();
+    		this_inode_cache = icp;
+    	}
     	else
     		this_inode_cache = new ft_inode_cache_mem<ft_string>();
+
+    	if ((err = this_inode_cache->init()) != 0)
+    		break;
+
 
         this_source_stat.set_name("source");
         this_target_stat.set_name("target");
@@ -118,6 +129,12 @@ int fm_io::open(const fm_args & args)
             for (; * exclude_list != NULL; ++exclude_list)
                 this_exclude_set.insert(* exclude_list);
         }
+        // do NOT move the inode cache!
+        if (inode_cache_path != NULL)
+        {
+            this_exclude_set.insert(inode_cache_path);
+        }
+
     } while (0);
     return err;
 }

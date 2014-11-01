@@ -563,7 +563,7 @@ int fm_io_posix::move_rename(const char * source, const char * target)
 int fm_io_posix::hard_link(const ft_stat & stat, const ft_string & target_path)
 {
     ft_string cached_link;
-    bool found = false, do_erase = false;
+    bool found = false;
 
     if (stat.st_nlink > 1) {
         /*
@@ -575,14 +575,15 @@ int fm_io_posix::hard_link(const ft_stat & stat, const ft_string & target_path)
     } else {
         /*
          * source path has only 1 link. it can be either:
-         * a) the last link of a file/device which previously had multiple links, but we removed them during fm_io_posix::move()
+         * a) the last link of a file/device which previously had multiple links,
+         *    but we all other links during fm_io_posix::move()
          * b) a file/device which always had one link
          *
          * so we check for its presence in inode_cache, but we do not add it to inode_cache
-         * in any case, if a cached inode is found, we will erase it below with inode_cache_erase()
+         * in any case, if a cached inode is found, we erase it
          * because it is guaranteed that no more links to this inode will ever be found.
          */
-    	do_erase = found = inode_cache_find(stat.st_ino, cached_link);
+    	found = inode_cache_find_and_delete(stat.st_ino, cached_link);
     }
     int err = 0;
     do {
@@ -599,9 +600,6 @@ int fm_io_posix::hard_link(const ft_stat & stat, const ft_string & target_path)
         }
 
     } while (0);
-
-    if (do_erase)
-        inode_cache_erase(stat.st_ino);
 
     return err;
 }

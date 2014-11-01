@@ -65,6 +65,9 @@ public:
     virtual ~ft_inode_cache_mem()
     { }
     
+    /* initialize the inode cache. return 0 on success, else return error */
+    virtual int init() { return 0; }
+
     /**
      * return true and set payload of cached inode if found, else add it to cache and return false
      * if false is returned, erase() must be called on the same inode when done with payload!
@@ -83,24 +86,15 @@ public:
     }
 
     /** return true and set payload of cached inode if found, else return false */
-    virtual bool find(ft_inode inode, V & result_payload) const
+    virtual bool find_and_delete(ft_inode inode, V & result_payload)
     {
-        typename map_type::const_iterator iter = map.find(inode);
+        typename map_type::iterator iter = map.find(inode);
         if (iter == map.end())
             return false;
 
         result_payload = iter->second;
+        map.erase(iter);
         return true;
-    }
-
-    /**
-     * must be called if and only if find_or_add(inode) returned false
-     */
-    virtual void erase(ft_inode inode)
-    {
-        ft_size erased = map.erase(inode);
-
-        ff_assert(erased == 1);
     }
 
     virtual void clear()

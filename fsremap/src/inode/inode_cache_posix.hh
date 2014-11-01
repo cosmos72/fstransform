@@ -38,8 +38,10 @@ class ft_inode_cache_posix
 protected:
 	ft_string path;
 
-	bool readlink(const ft_string & src, ft_string & dst) const;
-	void build_path(const ft_string & rel, ft_string & abs) const;
+	enum FT_ICP_OPTIONS { FT_ICP_READONLY, FT_ICP_READWRITE };
+
+	static bool readlink(const ft_string & src, ft_string & dst);
+	int build_path(const ft_string & rel, ft_string & abs, FT_ICP_OPTIONS options) const;
 
 public:
     /** one-arg constructor */
@@ -52,7 +54,13 @@ public:
     const ft_inode_cache_posix & operator=(const ft_inode_cache_posix & other);
 
     /** destructor */
-    ~ft_inode_cache_posix();
+    virtual ~ft_inode_cache_posix();
+
+    /* guaranteed NOT to end with '/', unless it's exactly the path "/" */
+    const char * get_path() const { return path.c_str(); }
+
+    /* initialize the inode cache. return 0 on success, else return error */
+    virtual int init();
 
     /**
      * return true and set payload of cached inode if found, else add it to cache and return false
@@ -61,12 +69,7 @@ public:
     bool find_or_add(const ft_string & inode, ft_string & payload);
 
     /** return true and set payload of cached inode if found, else return false */
-    bool find(const ft_string & inode, ft_string & result_payload) const;
-
-    /**
-     * must be called if and only if find(inode) returned false
-     */
-    void erase(const ft_string & inode);
+    bool find_and_delete(const ft_string & inode, ft_string & result_payload);
 
     void clear();
 };
@@ -103,6 +106,9 @@ public:
     virtual ~ft_inode_cache_posix_v()
     { }
     
+    /* initialize the inode cache. return 0 on success, else return error */
+    virtual int init() { return mixin_type::init(); }
+
     /**
      * return true and set payload of cached inode if found, else add it to cache and return false
      * if false is returned, erase() must be called on the same inode when done with payload!
@@ -118,25 +124,14 @@ public:
     }
 
     /** return true and set payload of cached inode if found, else return false */
-    virtual bool find(ft_inode inode, V & result_payload) const
+    virtual bool find_and_delete(ft_inode inode, V & result_payload)
     {
     	ft_string s_inode, s_payload;
     	ff_copy(inode, s_inode);
-    	bool ret = mixin_type::find(s_inode, s_payload);
+    	bool ret = mixin_type::find_and_delete(s_inode, s_payload);
     	ff_copy(s_payload, result_payload);
     	return ret;
     }
-
-    /**
-     * must be called if and only if find(inode) returned false
-     */
-    virtual void erase(ft_inode inode)
-    {
-    	ft_string s_inode;
-    	ff_copy(inode, s_inode);
-    	mixin_type::erase(s_inode);
-    }
-
 
     virtual void clear()
     {

@@ -163,6 +163,8 @@ int fm_move::usage(const char * program_name) {
 #ifdef FT_HAVE_FM_IO_IO_PREALLOC
      "      --io=prealloc     use POSIX I/O and preallocate files (do NOT move them)\n"
 #endif
+     "      --inode-cache-mem use in-memory inode cache (default)\n"
+     "      --inode-cache=DIR create and use directory DIR for inode cache\n"
      "  -n, --no-action, --simulate-run\n"
      "                        do not actually move any file or directory\n"
      "  -q, --quiet           be quiet\n"
@@ -287,8 +289,12 @@ int fm_move::init(int argc, char const* const* argv)
                         err = invalid_cmdline(program_name, 0, "option --io=posix can be specified only once");
 #endif
                     }
+                } else if (!strcmp(arg, "--inode-cache-mem")) {
+               		args.inode_cache_path = NULL;
                 } else if (!strncmp(arg, "--inode-cache=", 14)) {
-                	args.inode_cache_path = arg + 14;
+                	if (arg[14] != '\0')
+                		// do not allow empty argument
+                		args.inode_cache_path = arg + 14;
                 } else {
                     err = invalid_cmdline(program_name, 0, "unknown option: '%s'", arg);
                     break;

@@ -36,6 +36,11 @@ void ff_copy(ft_ull src, ft_string & dst);
 
 void ff_copy(const ft_string & src, ft_ull & dst);
 
+
+void ff_cat(const ft_string & src, ft_string & dst);
+
+void ff_cat(ft_ull src, ft_string & dst);
+
 FT_NAMESPACE_END
 
 #endif /* FSTRANSFORM_INODE_CACHE_MEM_HH */
