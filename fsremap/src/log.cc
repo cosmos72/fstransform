@@ -109,7 +109,7 @@ void ft_log_appender::append(ft_log_event & event)
     const ft_log_level level = event.level;
     if (level < min_level || level > max_level)
         return;
-        
+
     switch (format) {
         case FC_FMT_DATETIME_LEVEL_CALLER_MSG:
             fprintf(stream, "%s %s [%.*s%s.%s(%d)] ", event.str_now, this_log_label[level],
@@ -169,8 +169,8 @@ void ft_log_appender::redefine(ft_log_fmt format, ft_log_level min_level, ft_log
 	this->max_level = max_level;
 }
 
-/** set format and min/max levels of all appenders attached to stream */
-void ft_log_appender::redefine(FILE * stream, ft_log_fmt format, ft_log_level min_level, ft_log_level max_level)
+/** set format and min/max levels of first appender attached to stream */
+void ft_log_appender::redefine_first(FILE * stream, ft_log_fmt format, ft_log_level min_level, ft_log_level max_level)
 {
     if (!fc_log_initialized)
     	ft_log::initialize();
@@ -180,8 +180,10 @@ void ft_log_appender::redefine(FILE * stream, ft_log_fmt format, ft_log_level mi
     
     for (; iter != end; ++iter) {
         ft_log_appender * appender = *iter;
-        if (appender->stream == stream)
+        if (appender->stream == stream) {
             appender->redefine(format, min_level, max_level);
+            break;
+        }
     }
 }
 
@@ -238,7 +240,8 @@ void ft_log::initialize()
     (void) setvbuf(stderr, NULL, _IOLBF, 0);
 
     root_logger.add_appender(* new ft_log_appender(stdout, FC_FMT_MSG, FC_INFO, FC_NOTICE));
-    root_logger.add_appender(* new ft_log_appender(stderr, FC_FMT_MSG, FC_WARN));
+    root_logger.add_appender(* new ft_log_appender(stderr, FC_FMT_MSG, FC_WARN, FC_ERROR));
+    root_logger.add_appender(* new ft_log_appender(stderr, FC_FMT_DATETIME_LEVEL_CALLER_MSG, FC_FATAL));
 }
 
 

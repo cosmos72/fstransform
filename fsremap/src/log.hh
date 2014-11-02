@@ -139,8 +139,8 @@ public:
     /** set format and min/max levels of this appender */
     void redefine(ft_log_fmt format = FC_FMT_MSG, ft_log_level min_level = FC_DEBUG, ft_log_level max_level = FC_FATAL);
 
-    /** set format and min/max levels of all appenders attached to stream */
-    static void redefine(FILE * stream, ft_log_fmt format = FC_FMT_MSG, ft_log_level min_level = FC_DEBUG, ft_log_level max_level = FC_FATAL);
+    /** set format and min/max levels of first appender attached to stream */
+    static void redefine_first(FILE * stream, ft_log_fmt format = FC_FMT_MSG, ft_log_level min_level = FC_DEBUG, ft_log_level max_level = FC_FATAL);
 };
 
                     

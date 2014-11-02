@@ -291,11 +291,11 @@ int fm_move::init(int argc, char const* const* argv)
 #endif
                     }
                 } else if (!strcmp(arg, "--inode-cache-mem")) {
-               		args.inode_cache_path = NULL;
+                       args.inode_cache_path = NULL;
                 } else if (!strncmp(arg, "--inode-cache=", 14)) {
-                	if (arg[14] != '\0')
-                		// do not allow empty argument
-                		args.inode_cache_path = arg + 14;
+                    // do not allow empty dir name
+                    if (arg[14] != '\0')
+                        args.inode_cache_path = arg + 14;
                 } else if (!strcmp(arg, "--help")) {
                     return usage(args.program_name);
                 } else if (!strcmp(arg, "--version")) {
@@ -318,14 +318,28 @@ int fm_move::init(int argc, char const* const* argv)
             if (args.io_kind == FC_IO_AUTODETECT)
                 args.io_kind = FC_IO_POSIX;
 
-            if ((args.io_kind == FC_IO_POSIX || args.io_kind == FC_IO_PREALLOC) && io_args_n < FC_ARGS_COUNT) {
-                switch (io_args_n) {
-                    case 0:
-                        err = invalid_cmdline(program_name, 0, "missing arguments: %s %s", LABEL[0], LABEL[1]);
-                        break;
-                    case 1:
-                        err = invalid_cmdline(program_name, 0, "missing argument: %s", LABEL[1]);
-                        break;
+            if (args.io_kind == FC_IO_POSIX || args.io_kind == FC_IO_PREALLOC) {
+
+                if (io_args_n == 0) {
+                    err = invalid_cmdline(program_name, 0, "missing arguments: %s %s", LABEL[0], LABEL[1]);
+                    break;
+                } else if (io_args_n == 1) {
+                    err = invalid_cmdline(program_name, 0, "missing argument: %s", LABEL[1]);
+                    break;
+                }
+
+                const char * source_root = args.io_args[FT_IO_NS fm_io::FC_SOURCE_ROOT];
+                if (args.inode_cache_path != NULL && source_root != NULL
+                        && (args.inode_cache_path[0] == '/') != (source_root[0] == '/'))
+                {
+                    err = invalid_cmdline(program_name, 0,
+                            "relative/absolute path mismatch between source directory `%s'\n"
+                            "\tand inode-cache directory `%s':\n"
+                            "\tthey must be either both absolute, i.e. starting with `/',\n"
+                            "\tor both relative, i.e. NOT starting with `/'",
+                            source_root,
+                            args.inode_cache_path);
+                    break;
                 }
             }
         }
@@ -333,18 +347,14 @@ int fm_move::init(int argc, char const* const* argv)
     } while (0);
 
     if (err == 0) {
+        ft_log::get_root_logger().set_level(level);
+
+        /* note 1.4.1) -v enables FC_FMT_LEVEL_MSG also for stdout/stderr */
+        /* note 1.4.2) -vv enables FC_FMT_DATETIME_LEVEL_MSG also for stdout/stderr */
         ft_log_fmt format = level < FC_DEBUG ? FC_FMT_DATETIME_LEVEL_MSG : level == FC_DEBUG ? FC_FMT_LEVEL_MSG : FC_FMT_MSG;
         
-        if (level <= FC_DEBUG) {
-            /* note 1.4.1) -v enables FC_FMT_LEVEL_MSG also for stdout/stderr */
-            /* note 1.4.2) -vv enables FC_FMT_DATETIME_LEVEL_MSG also for stdout/stderr */
-            ft_log_appender::redefine(stdout, format, level, FC_NOTICE);
-            ft_log_appender::redefine(stderr, format, FC_WARN);
-
-        } else if (level > FC_INFO)
-            ft_log_appender::redefine(stdout, format, level);
-
-        ft_log::get_root_logger().set_level(level);
+		ft_log_appender::redefine_first(stdout, format, level, FC_NOTICE);
+		ft_log_appender::redefine_first(stderr, format, FC_WARN, FC_ERROR);
 
         err = init(args);
     }

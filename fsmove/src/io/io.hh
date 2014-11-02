@@ -63,8 +63,6 @@ private:
 
     bool this_force_run, this_simulate_run;
 
-    enum fm_source_or_target { FC_SOURCE, FC_TARGET };
-
     /**
      * returns error if source or target file-system are almost full (typical threshold is 97%)
      */

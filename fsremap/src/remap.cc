@@ -496,12 +496,10 @@ int fr_remap::init(int argc, char const* const* argv)
         /* note 1.4.1) -v enables FC_FMT_LEVEL_MSG also for stdout/stderr */
         /* note 1.4.2) -vv enables FC_FMT_DATETIME_LEVEL_MSG also for stdout/stderr */
         ft_log_fmt format = level < FC_DEBUG ? FC_FMT_DATETIME_LEVEL_MSG : level == FC_DEBUG ? FC_FMT_LEVEL_MSG : FC_FMT_MSG;
-        if (format != FC_FMT_MSG)
-            ft_log_appender::redefine(stderr, format, FC_WARN);
 
-        ft_log_appender::redefine(stdout, format, level, FC_NOTICE);
-        
-        
+        ft_log_appender::redefine_first(stdout, format, level, FC_NOTICE);
+        ft_log_appender::redefine_first(stderr, format, FC_WARN, FC_ERROR);
+
         err = init(args);
     }
 
