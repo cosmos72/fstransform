@@ -7,4 +7,4 @@ fstransform:  ../fstransform.sh
 ../fstransform.sh:
 
 clean: clean-am
-	rm -f fstransform.sh
+	rm -f fstransform

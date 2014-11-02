@@ -37,6 +37,7 @@ enum fm_ui_kind { FC_UI_NONE };
 class fm_args
 {
 public:
+    const char * program_name;       // detected from command line. default: "fsmove"
     const char * io_args[FT_IO_NS fm_io::FC_ARGS_COUNT];
     char const * const * exclude_list; // NULL-terminated array of files _not_ to move
     const char * inode_cache_path;

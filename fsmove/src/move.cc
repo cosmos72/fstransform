@@ -49,7 +49,7 @@ static char const* const* LABEL = FT_IO_NS fm_io::LABEL;
 
 /** default constructor */
 fm_move::fm_move()
-  : this_io(0)
+  : this_io(0), quit_immediately(false)
 { }
 
 /** destructor. calls quit() */
@@ -76,10 +76,10 @@ int fm_move::init(FT_IO_NS fm_io & io)
 /** performs cleanup. called by destructor, you can also call it explicitly after (or instead of) run()  */
 void fm_move::quit()
 {
-    if (this_io != 0) {
+    if (this_io != NULL) {
         if (this_io->is_open())
             this_io->close();
-        this_io = 0;
+        this_io = NULL;
     }
 }
 
@@ -126,13 +126,9 @@ int fm_move::main(int argc, char ** argv)
 {
     fm_move mover;
 
-    if (argc == 2 && !strcmp("--help", argv[1]))
-        return mover.usage(argv[0]);
-
-
     int err = mover.init(argc, argv);
 
-    if (err == 0)
+    if (err == 0 && !mover.quit_immediately)
         err = mover.run();
 
     /*
@@ -146,7 +142,10 @@ int fm_move::main(int argc, char ** argv)
 }
 
 /** print command-line usage to stdout and return 0 */
-int fm_move::usage(const char * program_name) {
+int fm_move::usage(const char * program_name)
+{
+    quit_immediately = true;
+
     ff_log(FC_NOTICE, 0, "Usage: %s [OPTION]... %s %s [--exclude FILE...]", program_name, LABEL[0], LABEL[1]);
     ff_log(FC_NOTICE, 0, "Recursively move files and folders from %s to %s,", LABEL[0], LABEL[1]);
     ff_log(FC_NOTICE, 0, "even if %s and %s are almost full or share their free space", LABEL[0], LABEL[1]);
@@ -179,6 +178,8 @@ int fm_move::usage(const char * program_name) {
 /** output version information and return 0 */
 int fm_move::version()
 {
+    quit_immediately = true;
+
     return ff_log(FC_NOTICE, 0,
             "fsmove (fstransform utilities) " FT_VERSION "\n"
             "Copyright (C) 2011-2012 Massimiliano Ghilardi\n"
@@ -295,6 +296,10 @@ int fm_move::init(int argc, char const* const* argv)
                 	if (arg[14] != '\0')
                 		// do not allow empty argument
                 		args.inode_cache_path = arg + 14;
+                } else if (!strcmp(arg, "--help")) {
+                    return usage(args.program_name);
+                } else if (!strcmp(arg, "--version")) {
+                    return version();
                 } else {
                     err = invalid_cmdline(program_name, 0, "unknown option: '%s'", arg);
                     break;

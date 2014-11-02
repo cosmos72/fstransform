@@ -32,7 +32,8 @@ FT_NAMESPACE_BEGIN
 
 /** default constructor */
 fm_args::fm_args()
-    : io_args(), exclude_list(NULL), inode_cache_path(NULL),
+	: program_name("fsmove"),
+      io_args(), exclude_list(NULL), inode_cache_path(NULL),
       io_kind(FC_IO_AUTODETECT), ui_kind(FC_UI_NONE),
       force_run(false), simulate_run(false)
 { }

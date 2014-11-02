@@ -130,7 +130,7 @@ show_usage() {
   echo "  --opts-fsck-source=OPTS override 'fsck' options for old file system. default: '-p -f'"
   echo "  --opts-fsck-target=OPTS override 'fsck' options for new file system. default: '-p -f'"
   echo "  --show-time[=yes|=no]   show current time before each message. default: yes"
-  echo "  --prealloc[=yes|no]     use prealloc speedup. default: autodetect"
+#  echo "  --prealloc[=yes|no]     use prealloc speedup. default: autodetect"
   echo "  --reversible[=yes|no]   create zero-file, fsremap will do a reversible transformation"
   echo "                                 default: no"
   echo "  --x-OPTION=VALUE        set internal, undocumented option. For maintainers only."
@@ -218,14 +218,14 @@ parse_args() {
         OPTS_fsck_target="`\"$CMD_expr\" match \"$arg\" '--opts-fsck-target=\(.*\)'`"
         log_info "options '$OPTS_FSCK_TARGET_FS' for fsck(target file-system) specified on command line"
         ;;
-      --prealloc|--prealloc=yes)
-        OPT_PREALLOC=yes
-        log_info "trying to enable preallocation, '$arg' specified on command line"
-        ;;
-      --prealloc=no)
-        OPT_PREALLOC=no
-        log_info "disabling preallocation, '$arg' specified on command line"
-        ;;
+#      --prealloc|--prealloc=yes)
+#        OPT_PREALLOC=yes
+#        log_info "trying to enable preallocation, '$arg' specified on command line"
+#        ;;
+#      --prealloc=no)
+#        OPT_PREALLOC=no
+#        log_info "disabling preallocation, '$arg' specified on command line"
+#        ;;
       --reversible|--reversible=yes)
         OPT_CREATE_ZERO_FILE=yes
         log_info "zero file will be created, '$arg' specified on command line"
