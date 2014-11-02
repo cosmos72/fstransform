@@ -36,7 +36,7 @@
 #endif
 
 #include "log.hh"
-#include "inode_cache_posix.hh"
+#include "cache_symlink.hh"
 #include "../assert.hh"       // for ff_assert()
 #include "../copy.hh"         // for ff_cat()
 #include "../io/util_dir.hh"  // for ff_mkdir_recursive(), ff_remove_recursive()
@@ -46,25 +46,16 @@
 FT_NAMESPACE_BEGIN
 
 /** one-arg constructor */
-ft_inode_cache_posix::ft_inode_cache_posix(const ft_string & init_path)
-	: path(init_path)
-{
-	/*
-	 * comply with get_path() promise:
-	 * remove trailing '/' unless it's exactly the path "/"
-	 */
-	size_t len = path.length();
-	if (len > 1 && path[len-1] == '/')
-		path.resize(len - 1);
-}
+ft_cache_symlink::ft_cache_symlink()
+{ }
 
 /** copy constructor */
-ft_inode_cache_posix::ft_inode_cache_posix(const ft_inode_cache_posix & other) : path(other.path)
+ft_cache_symlink::ft_cache_symlink(const ft_cache_symlink & other) : path(other.path)
 { }
 
 
 /** assignment operator */
-const ft_inode_cache_posix & ft_inode_cache_posix::operator=(const ft_inode_cache_posix & other)
+const ft_cache_symlink & ft_cache_symlink::operator=(const ft_cache_symlink & other)
 {
 	if (this != &other)
 		path = other.path;
@@ -72,28 +63,39 @@ const ft_inode_cache_posix & ft_inode_cache_posix::operator=(const ft_inode_cach
 }
 
 /** destructor */
-ft_inode_cache_posix::~ft_inode_cache_posix()
+ft_cache_symlink::~ft_cache_symlink()
 {
-	ft_inode_cache_posix::clear();
+	ft_cache_symlink::clear();
 }
 
 /* initialize the inode-cache. return 0 on success, else return error */
-int ft_inode_cache_posix::init()
+int ft_cache_symlink::init(const ft_string & init_path)
 {
-	int err = FT_IO_NS ff_mkdir_recursive(path);
+	int err = FT_IO_NS ff_mkdir_recursive(init_path);
 	if (err != 0)
 	{
 		// EEXIST is a warning, everything else is an error
 		bool exists = err == EEXIST;
-		err = ff_log(exists ? FC_WARN : FC_ERROR, err, "failed to create inode-cache directory `%s'", path.c_str());
+		err = ff_log(exists ? FC_WARN : FC_ERROR, err, "failed to create cache directory `%s'", init_path.c_str());
 		if (exists)
 			err = 0;
+	}
+	if (err == 0)
+	{
+		path = init_path;
+		/*
+		 * comply with get_path() promise:
+		 * remove trailing '/' unless it's exactly the path "/"
+		 */
+		size_t len = path.length();
+		if (len > 1 && path[len-1] == '/')
+			path.resize(len - 1);
 	}
 	return err;
 }
 
 
-int ft_inode_cache_posix::build_path(const ft_string & rel, ft_string & abs, FT_ICP_OPTIONS options) const
+int ft_cache_symlink::build_path(const ft_string & rel, ft_string & abs, FT_ICP_OPTIONS options) const
 {
 	size_t len = rel.length();
 	ff_assert(len != 0);
@@ -107,7 +109,7 @@ int ft_inode_cache_posix::build_path(const ft_string & rel, ft_string & abs, FT_
 
 	// add prefix 'L' + depth +'/'
 	abs += 'L';
-	ff_cat(depth, abs);
+	ff_cat(abs, depth);
 	if (options == FT_ICP_READWRITE)
 		err = FT_IO_NS ff_mkdir_or_warn(abs.c_str());
 	abs += '/';
@@ -127,7 +129,7 @@ int ft_inode_cache_posix::build_path(const ft_string & rel, ft_string & abs, FT_
 	return err == EEXIST ? 0 : err;
 }
 
-int ft_inode_cache_posix::readlink(const ft_string & src, ft_string & dst)
+int ft_cache_symlink::readlink(const ft_string & src, ft_string & dst)
 {
 	size_t orig_len = dst.length(), len = orig_len < 256 ? 256 : orig_len;
 	ssize_t got;
@@ -145,7 +147,7 @@ again:
 		dst.resize(orig_len);
 		int err = errno;
 		if (err != ENOENT)
-			err = ff_log(FC_ERROR, err, "failed to read inode-cache symlink `%s'", src.c_str());
+			err = ff_log(FC_ERROR, err, "failed to read cache symlink `%s'", src.c_str());
 		return err;
 	}
 	dst.resize(got);
@@ -158,7 +160,7 @@ again:
  * On error, return < 0.
  * if returns 0, find_and_delete() must be called on the same inode when done with payload!
  */
-int ft_inode_cache_posix::find_or_add(const ft_string & inode, ft_string & payload)
+int ft_cache_symlink::find_or_add(const ft_string & inode, ft_string & payload)
 {
 	ft_string link_from;
 	build_path(inode, link_from, FT_ICP_READWRITE);
@@ -169,7 +171,7 @@ int ft_inode_cache_posix::find_or_add(const ft_string & inode, ft_string & paylo
 		return 1;
 
 	if (::symlink(payload.c_str(), link_from.c_str()) != 0)
-		return ff_log(FC_ERROR, errno, "failed to create inode-cache symlink `%s' -> `%s'", link_from.c_str(), payload.c_str());
+		return ff_log(FC_ERROR, errno, "failed to create cache symlink `%s' -> `%s'", link_from.c_str(), payload.c_str());
 
 	return 0;
 }
@@ -178,7 +180,7 @@ int ft_inode_cache_posix::find_or_add(const ft_string & inode, ft_string & paylo
  * if cached inode found, set payload, remove cached inode and return 1.
  * Otherwise return 0. On error, return < 0.
  */
-int ft_inode_cache_posix::find_and_delete(const ft_string & inode, ft_string & result_payload)
+int ft_cache_symlink::find_and_delete(const ft_string & inode, ft_string & result_payload)
 {
 	ft_string link_from;
 	build_path(inode, link_from, FT_ICP_READONLY);
@@ -193,12 +195,12 @@ int ft_inode_cache_posix::find_and_delete(const ft_string & inode, ft_string & r
 		// found
 		err = 1;
 		if (::unlink(link_from.c_str()) != 0)
-			ff_log(FC_WARN, errno, "failed to remove inode-cache symlink `%s'", link_from.c_str());
+			ff_log(FC_WARN, errno, "failed to remove cache symlink `%s'", link_from.c_str());
 	}
 	return err;
 }
 
-void ft_inode_cache_posix::clear()
+void ft_cache_symlink::clear()
 {
 	FT_IO_NS ff_remove_recursive(path);
 }

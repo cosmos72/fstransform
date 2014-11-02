@@ -36,12 +36,12 @@
 
 FT_NAMESPACE_BEGIN
 
-void ff_copy(const ft_string & src, ft_string & dst)
+void ff_set(ft_string & dst, const ft_string & src)
 {
 	dst = src;
 }
 
-void ff_copy(ft_ull src, ft_string & dst)
+void ff_set(ft_string & dst, ft_ull src)
 {
 	enum { maxlen = sizeof(ft_ull) * 3 + 1 };
 	dst.resize(maxlen);
@@ -51,19 +51,19 @@ void ff_copy(ft_ull src, ft_string & dst)
 	dst.resize(delta > 0 ? delta : 0);
 }
 
-void ff_copy(const ft_string & src, ft_ull & dst)
+void ff_set(ft_ull & dst, const ft_string & src)
 {
 	dst = 0;
 	sscanf(src.c_str(), "%"FT_XLL, &dst);
 }
 
 
-void ff_cat(const ft_string & src, ft_string & dst)
+void ff_cat(ft_string & dst, const ft_string & src)
 {
 	dst += src;
 }
 
-void ff_cat(ft_ull src, ft_string & dst)
+void ff_cat(ft_string & dst, ft_ull src)
 {
 	enum { maxlen = sizeof(ft_ull) * 3 + 1 };
 	size_t oldlen = dst.length();

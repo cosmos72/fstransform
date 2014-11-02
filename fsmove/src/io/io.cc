@@ -26,11 +26,12 @@
 #include "../first.hh"
 
 #include "../args.hh"      // for fm_args
+#include "../assert.hh"    // for ff_assert()
 #include "../misc.hh"      // for ff_show_progress(), ff_now()
 #include "io.hh"           // for fm_io
 
-#include "inode/inode_cache_mem.hh"   // for ft_inode_cache_mem
-#include "inode/inode_cache_posix.hh" // for ft_inode_cache_posix_v
+#include "cache/cache_mem.hh"     // for ft_cache_mem
+#include "cache/cache_symlink.hh" // for ft_cache_symlink_kv
 
 #if defined(FT_HAVE_MATH_H)
 # include <math.h>         // for sqrt()
@@ -102,16 +103,20 @@ int fm_io::open(const fm_args & args)
     	this_inode_cache = NULL;
     	if (inode_cache_path != NULL)
     	{
-    		ft_inode_cache_posix_v<ft_string> * icp = new ft_inode_cache_posix_v<ft_string>(inode_cache_path);
+    		ft_cache_symlink_kv<ft_inode, ft_string> * icp = new ft_cache_symlink_kv<ft_inode, ft_string>(inode_cache_path);
+    		err = icp->init(inode_cache_path);
+    		if (err != 0)
+    		{
+    			delete icp;
+    			break;
+    		}
     		// removes trailing '/' unless it's exactly the path "/"
     		inode_cache_path = icp->get_path();
     		this_inode_cache = icp;
     	}
     	else
-    		this_inode_cache = new ft_inode_cache_mem<ft_string>();
+    		this_inode_cache = new ft_cache_mem<ft_inode,ft_string>();
 
-    	if ((err = this_inode_cache->init()) != 0)
-    		break;
 
 
         this_source_stat.set_name("source");
@@ -136,6 +141,31 @@ int fm_io::open(const fm_args & args)
         }
 
     } while (0);
+    return err;
+}
+
+
+int fm_io::inode_cache_find_or_add(ft_inode inode, ft_string & path)
+{
+	ft_size root_len = this_target_root.length();
+	ff_assert(path.length() >= root_len && path.compare(0, root_len, this_target_root) == 0);
+
+	ft_string short_path = path.substr(root_len);
+    int err = this_inode_cache->find_or_add(inode, short_path);
+    if (err == 1)
+    	path = this_target_root + short_path;
+    return err;
+}
+
+int fm_io::inode_cache_find_and_delete(ft_inode inode, ft_string & path)
+{
+	ft_size root_len = this_target_root.length();
+	ff_assert(path.length() >= root_len && path.compare(0, root_len, this_target_root) == 0);
+
+	ft_string short_path = path.substr(root_len);
+    int err = this_inode_cache->find_and_delete(inode, short_path);
+    if (err == 1)
+    	path = this_target_root + short_path;
     return err;
 }
 

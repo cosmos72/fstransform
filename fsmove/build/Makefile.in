@@ -97,7 +97,7 @@ PROGRAMS = $(sbin_PROGRAMS)
 am__dirstamp = $(am__leading_dot)dirstamp
 am_fsmove_OBJECTS = ../src/args.$(OBJEXT) ../src/assert.$(OBJEXT) \
 	../src/copy.$(OBJEXT) ../src/eta.$(OBJEXT) \
-	../src/inode/inode_cache_posix.$(OBJEXT) \
+	../src/cache/cache_symlink.$(OBJEXT) \
 	../src/io/disk_stat.$(OBJEXT) ../src/io/io.$(OBJEXT) \
 	../src/io/io_posix.$(OBJEXT) ../src/io/io_posix_dir.$(OBJEXT) \
 	../src/io/io_prealloc.$(OBJEXT) ../src/io/util_dir.$(OBJEXT) \
@@ -255,7 +255,7 @@ fsmove_SOURCES = \
   ../src/assert.cc \
   ../src/copy.cc \
   ../src/eta.cc \
-  ../src/inode/inode_cache_posix.cc \
+  ../src/cache/cache_symlink.cc \
   ../src/io/disk_stat.cc \
   ../src/io/io.cc \
   ../src/io/io_posix.cc \
@@ -359,15 +359,14 @@ clean-sbinPROGRAMS:
 	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/eta.$(OBJEXT): ../src/$(am__dirstamp) \
 	../src/$(DEPDIR)/$(am__dirstamp)
-../src/inode/$(am__dirstamp):
-	@$(MKDIR_P) ../src/inode
-	@: > ../src/inode/$(am__dirstamp)
-../src/inode/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) ../src/inode/$(DEPDIR)
-	@: > ../src/inode/$(DEPDIR)/$(am__dirstamp)
-../src/inode/inode_cache_posix.$(OBJEXT):  \
-	../src/inode/$(am__dirstamp) \
-	../src/inode/$(DEPDIR)/$(am__dirstamp)
+../src/cache/$(am__dirstamp):
+	@$(MKDIR_P) ../src/cache
+	@: > ../src/cache/$(am__dirstamp)
+../src/cache/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) ../src/cache/$(DEPDIR)
+	@: > ../src/cache/$(DEPDIR)/$(am__dirstamp)
+../src/cache/cache_symlink.$(OBJEXT): ../src/cache/$(am__dirstamp) \
+	../src/cache/$(DEPDIR)/$(am__dirstamp)
 ../src/io/$(am__dirstamp):
 	@$(MKDIR_P) ../src/io
 	@: > ../src/io/$(am__dirstamp)
@@ -406,7 +405,7 @@ fsmove$(EXEEXT): $(fsmove_OBJECTS) $(fsmove_DEPENDENCIES) $(EXTRA_fsmove_DEPENDE
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 	-rm -f ../src/*.$(OBJEXT)
-	-rm -f ../src/inode/*.$(OBJEXT)
+	-rm -f ../src/cache/*.$(OBJEXT)
 	-rm -f ../src/io/*.$(OBJEXT)
 
 distclean-compile:
@@ -421,7 +420,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/misc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/move.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/mstring.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/inode/$(DEPDIR)/inode_cache_posix.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/cache/$(DEPDIR)/cache_symlink.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/io/$(DEPDIR)/disk_stat.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/io/$(DEPDIR)/io.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/io/$(DEPDIR)/io_posix.Po@am__quote@
@@ -563,8 +562,8 @@ distclean-generic:
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
 	-rm -f ../src/$(DEPDIR)/$(am__dirstamp)
 	-rm -f ../src/$(am__dirstamp)
-	-rm -f ../src/inode/$(DEPDIR)/$(am__dirstamp)
-	-rm -f ../src/inode/$(am__dirstamp)
+	-rm -f ../src/cache/$(DEPDIR)/$(am__dirstamp)
+	-rm -f ../src/cache/$(am__dirstamp)
 	-rm -f ../src/io/$(DEPDIR)/$(am__dirstamp)
 	-rm -f ../src/io/$(am__dirstamp)
 
@@ -576,7 +575,7 @@ clean: clean-am
 clean-am: clean-generic clean-sbinPROGRAMS mostlyclean-am
 
 distclean: distclean-am
-	-rm -rf ../src/$(DEPDIR) ../src/inode/$(DEPDIR) ../src/io/$(DEPDIR)
+	-rm -rf ../src/$(DEPDIR) ../src/cache/$(DEPDIR) ../src/io/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -622,7 +621,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-	-rm -rf ../src/$(DEPDIR) ../src/inode/$(DEPDIR) ../src/io/$(DEPDIR)
+	-rm -rf ../src/$(DEPDIR) ../src/cache/$(DEPDIR) ../src/io/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

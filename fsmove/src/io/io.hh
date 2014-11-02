@@ -32,7 +32,7 @@
 #include "../eta.hh"         // for ft_eta
 #include "../log.hh"         // for ft_log_level, also for ff_log() used by io.cc
 #include "../fwd.hh"         // for fm_args
-#include "../inode/inode_cache.hh" // for ft_inode_cache
+#include "../cache/cache.hh" // for ft_cache<K,V>
 
 #include "disk_stat.hh"      // for fm_disk_stat
 
@@ -48,7 +48,7 @@ FT_IO_NAMESPACE_BEGIN
 class fm_io {
 
 private:
-    ft_inode_cache<ft_string> * this_inode_cache;
+    ft_cache<ft_inode, ft_string> * this_inode_cache;
     std::set<ft_string> this_exclude_set;
 
     fm_disk_stat this_source_stat, this_target_stat;
@@ -72,12 +72,9 @@ private:
 
 protected:
 
-    FT_INLINE int inode_cache_find_or_add(ft_inode inode, ft_string & path) {
-        return this_inode_cache->find_or_add(inode, path);
-    }
-    FT_INLINE int inode_cache_find_and_delete(ft_inode inode, ft_string & path) {
-        return this_inode_cache->find_and_delete(inode, path);
-    }
+    int inode_cache_find_or_add(ft_inode inode, ft_string & path);
+
+    int inode_cache_find_and_delete(ft_inode inode, ft_string & path);
 
     FT_INLINE fm_disk_stat & source_stat() { return this_source_stat; }
     FT_INLINE fm_disk_stat & target_stat() { return this_target_stat; }

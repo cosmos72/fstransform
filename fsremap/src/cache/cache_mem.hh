@@ -23,10 +23,10 @@
  *      Author: max
  */
 
-#ifndef FSTRANSFORM_INODE_CACHE_MEM_HH
-#define FSTRANSFORM_INODE_CACHE_MEM_HH
+#ifndef FSTRANSFORM_CACHE_MEM_HH
+#define FSTRANSFORM_CACHE_MEM_HH
 
-#include "inode_cache.hh"  // for ft_inode_cache
+#include "cache.hh"  // for ft_cache
 
 #include <map>          // for std::map
 
@@ -34,27 +34,27 @@
 
 FT_NAMESPACE_BEGIN
 
-template<class V>
-class ft_inode_cache_mem : public ft_inode_cache<V>
+template<class K, class V>
+class ft_cache_mem : public ft_cache<K, V>
 {
 private:
-	typedef ft_inode_cache<V> super_type;
+	typedef ft_cache<K,V> super_type;
 
-	typedef std::map<ft_inode, V> map_type;
+	typedef std::map<K,V> map_type;
 
 	map_type map;
 
 public:
     /** default constructor */
-	ft_inode_cache_mem(const V & init_zero_payload = V()) : super_type(init_zero_payload), map()
+	ft_cache_mem(const V & init_zero_payload = V()) : super_type(init_zero_payload), map()
     { }
     
     /** copy constructor */
-	ft_inode_cache_mem(const ft_inode_cache_mem & other) : super_type(other), map(other.map)
+	ft_cache_mem(const ft_cache_mem<K,V> & other) : super_type(other), map(other.map)
     { }
     
     /** assignment operator */
-    virtual const super_type & operator=(const ft_inode_cache_mem & other)
+    virtual const super_type & operator=(const ft_cache_mem<K,V> & other)
     {
         if (this != &other)
             map = other.map;
@@ -62,23 +62,20 @@ public:
     }
     
     /** destructor */
-    virtual ~ft_inode_cache_mem()
+    virtual ~ft_cache_mem()
     { }
     
-    /* initialize the inode-cache. return 0 on success, else return error */
-    virtual int init() { return 0; }
-
     /**
      * if cached inode found, set payload and return 1.
      * Otherwise add it to cache and return 0.
      * On error, return < 0.
      * if returns 0, erase() must be called on the same inode when done with payload!
      */
-    virtual int find_or_add(ft_inode inode, V & inout_payload)
+    virtual int find_or_add(const K key, V & inout_payload)
     {
         ff_assert(inout_payload != this->zero_payload);
 
-        V & value = map[inode];
+        V & value = map[key];
         if (value == this->zero_payload) {
             value = inout_payload;
             return 0;
@@ -88,12 +85,12 @@ public:
     }
 
     /**
-     * if cached inode found, set payload, remove cached inode and return 1.
+     * if cached key found, set payload, remove cached key and return 1.
      * Otherwise return 0. On error, return < 0.
      */
-    virtual int find_and_delete(ft_inode inode, V & result_payload)
+    virtual int find_and_delete(const K key, V & result_payload)
     {
-        typename map_type::iterator iter = map.find(inode);
+        typename map_type::iterator iter = map.find(key);
         if (iter == map.end())
             return 0;
 
@@ -110,4 +107,4 @@ public:
 
 FT_NAMESPACE_END
 
-#endif /* FSTRANSFORM_INODE_CACHE_MEM_HH */
+#endif /* FSTRANSFORM_CACHE_MEM_HH */

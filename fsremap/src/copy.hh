@@ -30,16 +30,13 @@
 
 FT_NAMESPACE_BEGIN
 
-void ff_copy(const ft_string & src, ft_string & dst);
+void ff_set(ft_string & dst, const ft_string & src);
+void ff_set(ft_string & dst, ft_ull src);
 
-void ff_copy(ft_ull src, ft_string & dst);
+void ff_set(ft_ull & dst,    const ft_string & src);
 
-void ff_copy(const ft_string & src, ft_ull & dst);
-
-
-void ff_cat(const ft_string & src, ft_string & dst);
-
-void ff_cat(ft_ull src, ft_string & dst);
+void ff_cat(ft_string & dst, const ft_string & src);
+void ff_cat(ft_string & dst, ft_ull src);
 
 FT_NAMESPACE_END
 

@@ -23,30 +23,28 @@
  *      Author: max
  */
 
-#ifndef FSTRANSFORM_INODE_CACHE_HH
-#define FSTRANSFORM_INODE_CACHE_HH
-
-#include "../types.hh"     // for ft_inode
+#ifndef FSTRANSFORM_CACHE_HH
+#define FSTRANSFORM_CACHE_HH
 
 FT_NAMESPACE_BEGIN
 
-template<class V>
-class ft_inode_cache
+template<class K, class V>
+class ft_cache
 {
 protected:
 	V zero_payload;
 
 public:
     /** default constructor */
-    ft_inode_cache(const V & init_zero_payload = V()) : zero_payload(init_zero_payload)
+    ft_cache(const V & init_zero_payload = V()) : zero_payload(init_zero_payload)
     { }
 
     /** copy constructor */
-    ft_inode_cache(const ft_inode_cache<V> & other) : zero_payload(other.zero_payload)
+    ft_cache(const ft_cache<K,V> & other) : zero_payload(other.zero_payload)
     { }
 
     /** assignment operator */
-    virtual const ft_inode_cache<V> & operator=(const ft_inode_cache<V> & other)
+    virtual const ft_cache<K,V> & operator=(const ft_cache<K,V> & other)
     {
     	if (this != &other)
     		zero_payload = other.zero_payload;
@@ -54,11 +52,8 @@ public:
     }
 
     /** destructor */
-    virtual ~ft_inode_cache()
+    virtual ~ft_cache()
     { }
-
-    /* initialize the inode-cache. return 0 on success, else return error */
-    virtual int init() = 0;
 
     /**
      * if cached inode found, set payload and return 1.
@@ -66,17 +61,17 @@ public:
      * On error, return < 0.
      * if returns 0, erase() must be called on the same inode when done with payload!
      */
-    virtual int find_or_add(ft_inode inode, V & inout_payload) = 0;
+    virtual int find_or_add(const K key, V & inout_payload) = 0;
 
     /**
      * if cached inode found, set payload, remove inode from cache and return 1.
      * Otherwise return 0. On error, return < 0.
      */
-    virtual int find_and_delete(ft_inode inode, V & result_payload) = 0;
+    virtual int find_and_delete(const K key, V & result_payload) = 0;
 
     virtual void clear() = 0;
 };
 
 FT_NAMESPACE_END
 
-#endif /* FSTRANSFORM_INODE_CACHE_HH */
+#endif /* FSTRANSFORM_CACHE_HH */

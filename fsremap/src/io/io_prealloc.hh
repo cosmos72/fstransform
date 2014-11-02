@@ -28,7 +28,7 @@
 
 #include "../args.hh"        // for FC_MOUNT_POINT*
 #include "../types.hh"       // for ft_uoff
-#include "../inode/inode_cache_mem.hh" // for ft_inode_cache_mem<V>
+#include "../inode/inode_cache_mem.hh" // for ft_cache_mem<V>
 #include "io_posix.hh"       // for fr_io_posix
 #include "io_posix_dir.hh"   // for ft_io_posix_dir
 
@@ -45,7 +45,7 @@ private:
     static const char * const MP_LABEL[FC_MOUNT_POINTS_N];
 
     // inode-cache. used to examine only once multiple links to the same file
-    ft_inode_cache_mem<ft_nlink> this_inode_cache;
+    ft_cache_mem<ft_nlink> this_inode_cache;
 
     // device and loop mount points
     ft_io_posix_dir mount_point[FC_MOUNT_POINTS_N];

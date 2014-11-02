@@ -7,7 +7,7 @@ fsmove_SOURCES = \
   ../src/assert.cc \
   ../src/copy.cc \
   ../src/eta.cc \
-  ../src/inode/inode_cache_posix.cc \
+  ../src/cache/cache_symlink.cc \
   ../src/io/disk_stat.cc \
   ../src/io/io.cc \
   ../src/io/io_posix.cc \
