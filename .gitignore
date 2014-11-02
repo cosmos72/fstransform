@@ -4,7 +4,6 @@ Debug/
 .deps/
 .dirstamp
 /autom4te.cache/
-/configure
 /config.cache
 /config.log
 /config.status
