@@ -38,9 +38,9 @@
 # include <cstdarg>      /* for va_list. also for va_start(), va_end(), va_copy() used by log.cc */
 #endif
 #if defined(FT_HAVE_STDIO_H)
-# include <stdio.h>      /* for FILE. also for stdout, stderr used by log.cc */
+# include <stdio.h>      /* for FILE. also for stdout, stderr, fprintf(), fileno() used by log.cc */
 #elif defined(FT_HAVE_CSTDIO) && defined(__cplusplus)
-# include <cstdio>       /* for FILE. also for stdout, stderr used by log.cc */
+# include <cstdio>       /* for FILE. also for stdout, stderr, fprintf(), fileno() used by log.cc */
 #endif
 
 #include <list>          /* for std::list<T>  */
@@ -76,6 +76,11 @@ enum ft_log_fmt {
     FC_FMT_DATETIME_LEVEL_CALLER_MSG, /* datetime + level + [file.func(line)] + message */
 };
 
+enum ft_log_color {
+    FC_COL_AUTO = 0,
+    FC_COL_NONE,
+    FC_COL_ANSI,
+};
 
 /**
  * print to log fmt and subsequent printf-style args log stream(s).
@@ -111,6 +116,7 @@ private:
     FILE * stream;
     ft_log_fmt format;
     ft_log_level min_level, max_level;
+    ft_log_color color;
     
     /** destructor. */
     ~ft_log_appender();
@@ -120,7 +126,9 @@ private:
 
 public:
     /** constructor. */
-    ft_log_appender(FILE * stream, ft_log_fmt format = FC_FMT_MSG, ft_log_level min_level = FC_DUMP, ft_log_level max_level = FC_FATAL);
+    ft_log_appender(FILE * stream, ft_log_fmt format = FC_FMT_MSG,
+    		ft_log_level min_level = FC_DUMP, ft_log_level max_level = FC_FATAL,
+    		ft_log_color color = FC_COL_AUTO);
     
     FT_INLINE void set_format(ft_log_fmt format) { this->format = format; }
 
@@ -136,11 +144,11 @@ public:
     /** flush all buffered streams used to log messages for specified level */
     static void flush_all(ft_log_level level);
 
-    /** set format and min/max levels of this appender */
-    void redefine(ft_log_fmt format = FC_FMT_MSG, ft_log_level min_level = FC_DEBUG, ft_log_level max_level = FC_FATAL);
+    /** set format, min level and color of this appender */
+    void reconfigure(ft_log_fmt format_except_fatal = FC_FMT_MSG, ft_log_color color = FC_COL_AUTO);
 
-    /** set format and min/max levels of first appender attached to stream */
-    static void redefine_first(FILE * stream, ft_log_fmt format = FC_FMT_MSG, ft_log_level min_level = FC_DEBUG, ft_log_level max_level = FC_FATAL);
+    /** set format, min level and color of all appenders */
+    static void reconfigure_all(ft_log_fmt format_except_fatal = FC_FMT_MSG, ft_log_color color = FC_COL_AUTO);
 };
 
                     
@@ -154,6 +162,7 @@ private:
     ft_log * parent;
     std::list<ft_log_appender *> appenders;
     ft_log_level level; /* events less severe than level will be suppressed */
+    mutable ft_log_level effective_level, threshold_level;
 
     /** initialize loggers and appenders. */
     static void initialize();
@@ -167,10 +176,13 @@ private:
     /** destructor. */
     ~ft_log();
 
-    /** find or create parent logger given child name. */
+    /** return the effective level: if level is set return it, otherwise return parent effective level. */
+    ft_log_level get_effective_level() const;
+
+    /** find or create a parent logger given child name. */
     static ft_log & get_parent(const ft_mstring & child_logger_name);
 
-    /** log a message (skip level check) */
+    /** log a message (skip threshold_level check) */
     void append(ft_log_event & event);
     
 public:
@@ -197,9 +209,8 @@ public:
     /** set the level, i.e. least serious level that is not suppressed. */
     FT_INLINE void set_level(ft_log_level level) { this->level = level; }
 
-    /** return the effective level: if level is set return it, otherwise return parent effective level. */
-    ft_log_level get_effective_level() const;
-
+    /** return the threshold level: the minimum of this and all ancestor's levels. */
+    ft_log_level get_threshold_level() const;
 
     /** add an appender */
     void add_appender(ft_log_appender & appender);

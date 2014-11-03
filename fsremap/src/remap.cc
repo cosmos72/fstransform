@@ -133,6 +133,8 @@ int fr_remap::usage(const char * program_name)
      "      --clear=none      (DANGEROUS) do not clear any free blocks after remapping\n"
      "      --cmd-umount=CMD  command to unmount %s (default: /bin/umount)\n"
      "      --cmd-losetup=CMD 'losetup' command (default: /sbin/losetup)\n"
+	 "      --color=MODE      set messages color. MODE is one of:"
+	 "                          auto (default), none, ansi\n"
 #ifdef FT_ENABLE_IO_PREALLOC
      "      --device-mount-point=DIR\n"
      "                        set device mount point (needed by --io=prealloc)\n"
@@ -172,9 +174,9 @@ int fr_remap::usage(const char * program_name)
      "  -xs, --exact-secondary-storage=SECONDARY_SIZE[k|M|G|T|P|E|Z|Y]\n"
      "                        set *exact* secondary storage length, or fail\n"
      "                          (default: autodetect)\n"
-     "       --x-OPTION=VALUE set internal, undocumented option. for maintainers only\n"
-     "       --help           display this help and exit\n"
-     "       --version        output version information and exit\n",
+     "      --x-OPTION=VALUE  set internal, undocumented option. for maintainers only\n"
+     "      --help            display this help and exit\n"
+     "      --version         output version information and exit\n",
      LABEL[FC_DEVICE], LABEL[FC_LOOP_FILE]);
 }
 
@@ -186,7 +188,7 @@ int fr_remap::version()
 
     return ff_log(FC_NOTICE, 0,
             "fsremap (fstransform utilities) " FT_VERSION "\n"
-            "Copyright (C) 2011-2012 Massimiliano Ghilardi\n"
+            "Copyright (C) 2011-2014 Massimiliano Ghilardi\n"
             "\n"
             "License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.\n"
             "This is free software: you are free to change and redistribute it.\n"
@@ -254,9 +256,12 @@ int fr_remap::init(int argc, char const* const* argv)
 {
     fr_args args;
     int err;
-    ft_log_level level = FC_INFO, new_level;
     fr_io_kind io_kind;
     fr_clear_free_space new_clear;
+    ft_log_fmt format = FC_FMT_MSG;
+    ft_log_level level = FC_INFO, new_level;
+    ft_log_color color = FC_COL_AUTO;
+    bool format_set = false;
 
     do {
         if ((err = check_is_closed()) != 0)
@@ -386,12 +391,6 @@ int fr_remap::init(int argc, char const* const* argv)
                     args.ui_kind = FC_UI_TTY;
                     args.ui_arg = opt_arg;
                 }
-                /* --x-log-FILE=LEVEL */
-                else if (!strncmp(arg, "--x-log-", 8)) {
-                    ft_mstring logger_name(arg + 8, opt_len - 9); // 9 == 8 for "--x-log-" plus 1 for '='
-                    ft_log_level logger_level = (ft_log_level) atoi(opt_arg);
-                    ft_log::get_logger(logger_name).set_level(logger_level);
-                }
                 /* -xp, --exact-primary-storage=PRIMARY_SIZE[k|M|G|T|P|E|Z|Y] */
                 else if ((argc > 1 && !strcmp(arg, "-xp")) || !strncmp(arg, "--exact-primary-storage=", opt_len)) {
                     
@@ -412,6 +411,12 @@ int fr_remap::init(int argc, char const* const* argv)
                     if (is_short_opt)
                         --argc, ++argv;
                 }
+                /* --x-log-FILE=LEVEL */
+                else if (!strncmp(arg, "--x-log-", 8)) {
+                    ft_mstring logger_name(arg + 8, opt_len - 9); // 9 == 8 for "--x-log-" plus 1 for '='
+                    ft_log_level logger_level = (ft_log_level) atoi(opt_arg);
+                    ft_log::get_logger(logger_name).set_level(logger_level);
+                }
                 /* -q, --quiet decrease verbosity by one */
                 /* -qq decrease verbosity by two */
                 /* -v, --verbose increase verbosity by one */
@@ -430,11 +435,36 @@ int fr_remap::init(int argc, char const* const* argv)
                                 "options -q, -qq, -v, -vv, -vvv, --quiet, --verbose are mutually exclusive");
                         break;
                     }
-                } else if (!strcmp(arg, "--help")) {
+				} else if (!strncmp(arg, "--log-color=", 12)) {
+					/* --color=(auto|none|ansi) */
+					arg += 12;
+					if (!strcmp(arg, "ansi"))
+						color = FC_COL_ANSI;
+					else if (!strcmp(arg, "none"))
+						color = FC_COL_NONE;
+					else
+						color = FC_COL_AUTO;
+                }
+                else if (!strncmp(arg, "--log-format=", 13)) {
+                    /* --color=(auto|none|ansi) */
+                	arg += 13;
+                	if (!strcmp(arg, "level_msg"))
+                		format = FC_FMT_LEVEL_MSG;
+                	else if (!strcmp(arg, "time_level_msg"))
+                		format = FC_FMT_DATETIME_LEVEL_MSG;
+                	else if (!strcmp(arg, "time_level_function_msg"))
+                		format = FC_FMT_DATETIME_LEVEL_CALLER_MSG;
+                	else
+                		format = FC_FMT_MSG;
+                	format_set = true;
+                }
+				else if (!strcmp(arg, "--help")) {
                     return usage(args.program_name);
-                } else if (!strcmp(arg, "--version")) {
+                }
+				else if (!strcmp(arg, "--version")) {
                     return version();
-                } else {
+                }
+				else {
                     err = invalid_cmdline(args, 0, "unknown option: '%s'", arg);
                     break;
                 }
@@ -447,45 +477,46 @@ int fr_remap::init(int argc, char const* const* argv)
                 err = invalid_cmdline(args, 0, "too many arguments");
         }
 
-        if (err == 0) {
-            /* if autodetect, clear all free blocks */
-            if (args.job_clear == FC_CLEAR_AUTODETECT)
-                args.job_clear = FC_CLEAR_ALL;
+        if (err != 0)
+        	break;
 
-            /* if autodetect, use POSIX I/O */
-            if (args.io_kind == FC_IO_AUTODETECT)
-                args.io_kind = FC_IO_POSIX;
+		/* if autodetect, clear all free blocks */
+		if (args.job_clear == FC_CLEAR_AUTODETECT)
+			args.job_clear = FC_CLEAR_ALL;
 
-            if (args.io_kind == FC_IO_POSIX || args.io_kind == FC_IO_PREALLOC) {
-                if (args.job_id == FC_JOB_ID_AUTODETECT) {
-                    if (io_args_n == 0) {
-                        err = invalid_cmdline(args, 0, "missing arguments: %s %s [%s]", LABEL[0], LABEL[1], LABEL[2]);
-                    } else if (io_args_n == 1) {
-                        err = invalid_cmdline(args, 0, "missing arguments: %s [%s]", LABEL[1], LABEL[2]);
-                    } else if (io_args_n == 2 || io_args_n == 3) {
-                         /* ok */
-                    } else
-                        err = invalid_cmdline(args, 0, "too many arguments");
-                } else {
-                    if (io_args_n == 0) {
-                        err = invalid_cmdline(args, 0, "missing argument: %s", LABEL[0]);
-                    } else if (io_args_n == 1) {
-                        /* ok */
-                    } else
-                        err = invalid_cmdline(args, 0, "too many arguments");
-                }
-            } else if (args.io_kind == FC_IO_TEST) {
-                if (io_args_n == 0) {
-                    err = invalid_cmdline(args, 0, "missing arguments: %s %s %s", LABEL[0], LABEL[1], LABEL[2]);
-                } else if (io_args_n == 1) {
-                    err = invalid_cmdline(args, 0, "missing arguments: %s %s", LABEL[1], LABEL[2]);
-                } else if (io_args_n == 2) {
-                    err = invalid_cmdline(args, 0, "missing argument: %s", LABEL[2]);
-                } else if (io_args_n == 3) {
-                    /* ok */
-                } else
-                    err = invalid_cmdline(args, 0, "too many arguments");
-            }
+		/* if autodetect, use POSIX I/O */
+		if (args.io_kind == FC_IO_AUTODETECT)
+			args.io_kind = FC_IO_POSIX;
+
+		if (args.io_kind == FC_IO_POSIX || args.io_kind == FC_IO_PREALLOC) {
+			if (args.job_id == FC_JOB_ID_AUTODETECT) {
+				if (io_args_n == 0) {
+					err = invalid_cmdline(args, 0, "missing arguments: %s %s [%s]", LABEL[0], LABEL[1], LABEL[2]);
+				} else if (io_args_n == 1) {
+					err = invalid_cmdline(args, 0, "missing arguments: %s [%s]", LABEL[1], LABEL[2]);
+				} else if (io_args_n == 2 || io_args_n == 3) {
+					 /* ok */
+				} else
+					err = invalid_cmdline(args, 0, "too many arguments");
+			} else {
+				if (io_args_n == 0) {
+					err = invalid_cmdline(args, 0, "missing argument: %s", LABEL[0]);
+				} else if (io_args_n == 1) {
+					/* ok */
+				} else
+					err = invalid_cmdline(args, 0, "too many arguments");
+			}
+		} else if (args.io_kind == FC_IO_TEST) {
+			if (io_args_n == 0) {
+				err = invalid_cmdline(args, 0, "missing arguments: %s %s %s", LABEL[0], LABEL[1], LABEL[2]);
+			} else if (io_args_n == 1) {
+				err = invalid_cmdline(args, 0, "missing arguments: %s %s", LABEL[1], LABEL[2]);
+			} else if (io_args_n == 2) {
+				err = invalid_cmdline(args, 0, "missing argument: %s", LABEL[2]);
+			} else if (io_args_n == 3) {
+				/* ok */
+			} else
+				err = invalid_cmdline(args, 0, "too many arguments");
         }
     } while (0);
 
@@ -493,12 +524,12 @@ int fr_remap::init(int argc, char const* const* argv)
         /* always enable at least DEBUG level, to let fsremap.log collect all messages from DEBUG to FATAL */
         ft_log::get_root_logger().set_level(level < FC_DEBUG ? level : FC_DEBUG);
 
-        /* note 1.4.1) -v enables FC_FMT_LEVEL_MSG also for stdout/stderr */
-        /* note 1.4.2) -vv enables FC_FMT_DATETIME_LEVEL_MSG also for stdout/stderr */
-        ft_log_fmt format = level < FC_DEBUG ? FC_FMT_DATETIME_LEVEL_MSG : level == FC_DEBUG ? FC_FMT_LEVEL_MSG : FC_FMT_MSG;
+        /* note 1.4.1) -v sets format FC_FMT_LEVEL_MSG */
+        /* note 1.4.2) -vv sets format FC_FMT_DATETIME_LEVEL_MSG */
+        if (!format_set)
+        	format = level < FC_DEBUG ? FC_FMT_DATETIME_LEVEL_MSG : level == FC_DEBUG ? FC_FMT_LEVEL_MSG : FC_FMT_MSG;
 
-        ft_log_appender::redefine_first(stdout, format, level, FC_NOTICE);
-        ft_log_appender::redefine_first(stderr, format, FC_WARN, FC_ERROR);
+        ft_log_appender::reconfigure_all(format, level, color);
 
         err = init(args);
     }

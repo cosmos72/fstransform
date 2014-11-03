@@ -4860,7 +4860,7 @@ fi
 rm -f conftest.mmap conftest.txt
 
 for ac_func in execvp fallocate posix_fallocate fdatasync fileno fsync ftruncate \
-               getpagesize gettimeofday getuid lchown chown localtime_r localtime \
+               getpagesize gettimeofday getuid lchown chown isatty localtime_r localtime \
                memmove memset mkdir mkfifo mlock msync munmap random remove       \
                srandom strerror strftime sync sysconf time tzset utimes utimensat \
                waitpid

@@ -53,7 +53,7 @@ AC_FUNC_LSTAT_FOLLOWS_SLASHED_SYMLINK
 AC_FUNC_MALLOC
 AC_FUNC_MMAP
 AC_CHECK_FUNCS([execvp fallocate posix_fallocate fdatasync fileno fsync ftruncate \
-               getpagesize gettimeofday getuid lchown chown localtime_r localtime \
+               getpagesize gettimeofday getuid lchown chown isatty localtime_r localtime \
                memmove memset mkdir mkfifo mlock msync munmap random remove       \
                srandom strerror strftime sync sysconf time tzset utimes utimensat \
                waitpid])

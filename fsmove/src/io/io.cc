@@ -110,7 +110,7 @@ int fm_io::open(const fm_args & args)
     			delete icp;
     			break;
     		}
-    		// removes trailing '/' unless it's exactly the path "/"
+    		// icp->get_path() removes trailing '/' unless it's exactly the path "/"
     		inode_cache_path = icp->get_path();
     		this_inode_cache = icp;
     	}

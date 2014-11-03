@@ -31,6 +31,12 @@
 #include "io/io_prealloc.hh" // for fm_io_prealloc
 
 #if defined(FT_HAVE_STRING_H)
+# include <stdlib.h>       // for atoi()
+#elif defined(FT_HAVE_CSTRING)
+# include <cstdlib>        // for atoi()
+#endif
+
+#if defined(FT_HAVE_STRING_H)
 # include <string.h>       // for strcmp()
 #elif defined(FT_HAVE_CSTRING)
 # include <cstring>        // for strcmp()
@@ -164,6 +170,11 @@ int fm_move::usage(const char * program_name)
 #endif
      "      --inode-cache-mem use in-memory inode cache (default)\n"
      "      --inode-cache=DIR create and use directory DIR for inode cache\n"
+	 "      --log-color=MODE  set messages color. MODE is one of:"
+	 "                          auto (default), none, ansi\n"
+	 "      --log-format=FMT  set messages format. FMT is one of:\n"
+	 "                          msg (default), level_msg, time_level_msg,\n"
+     "                          time_level_function_msg\n"
      "  -n, --no-action, --simulate-run\n"
      "                        do not actually move any file or directory\n"
      "  -q, --quiet           be quiet\n"
@@ -182,7 +193,7 @@ int fm_move::version()
 
     return ff_log(FC_NOTICE, 0,
             "fsmove (fstransform utilities) " FT_VERSION "\n"
-            "Copyright (C) 2011-2012 Massimiliano Ghilardi\n"
+            "Copyright (C) 2011-2014 Massimiliano Ghilardi\n"
             "\n"
             "License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.\n"
             "This is free software: you are free to change and redistribute it.\n"
@@ -213,8 +224,11 @@ int fm_move::init(int argc, char const* const* argv)
 {
     fm_args args;
     int err;
-    ft_log_level level = FC_INFO, new_level;
     fm_io_kind io_kind;
+    ft_log_fmt format = FC_FMT_MSG;
+    ft_log_level level = FC_INFO, new_level;
+    ft_log_color color = FC_COL_AUTO;
+    bool format_set = false;
 
     do {
         if ((err = check_is_closed()) != 0)
@@ -266,6 +280,38 @@ int fm_move::init(int argc, char const* const* argv)
                         break;
                     }
                 }
+                else if (!strncmp(arg, "--log-color=", 12)) {
+                    /* --color=(auto|none|ansi) */
+                	arg += 12;
+                	if (!strcmp(arg, "ansi"))
+                		color = FC_COL_ANSI;
+                	else if (!strcmp(arg, "none"))
+                		color = FC_COL_NONE;
+                	else
+                		color = FC_COL_AUTO;
+                }
+                else if (!strncmp(arg, "--log-format=", 13)) {
+                    /* --color=(auto|none|ansi) */
+                	arg += 13;
+                	if (!strcmp(arg, "level_msg"))
+                		format = FC_FMT_LEVEL_MSG;
+                	else if (!strcmp(arg, "time_level_msg"))
+                		format = FC_FMT_DATETIME_LEVEL_MSG;
+                	else if (!strcmp(arg, "time_level_function_msg"))
+                		format = FC_FMT_DATETIME_LEVEL_CALLER_MSG;
+                	else
+                		format = FC_FMT_MSG;
+                	format_set = true;
+                }
+                else if (!strncmp(arg, "--x-log-", 8)) {
+                    /* --x-log-FILE=LEVEL */
+                	arg += 8;
+                	const char * equal = strchr(arg, '=');
+
+					ft_mstring logger_name(arg, equal ? equal - arg : strlen(arg));
+					ft_log_level logger_level = equal ? (ft_log_level) atoi(equal+1) : FC_INFO;
+					ft_log::get_logger(logger_name).set_level(logger_level);
+                }
                 /* -f force run: degrade failed sanity checks from ERRORS (which stop execution) to WARNINGS (which let execution continue) */
                 else if (!strcmp(arg, "-f") || !strcmp(arg, "--force-run")) {
                     args.force_run = true;
@@ -290,17 +336,22 @@ int fm_move::init(int argc, char const* const* argv)
                         err = invalid_cmdline(program_name, 0, "option --io=posix can be specified only once");
 #endif
                     }
-                } else if (!strcmp(arg, "--inode-cache-mem")) {
+                }
+                else if (!strcmp(arg, "--inode-cache-mem")) {
                        args.inode_cache_path = NULL;
-                } else if (!strncmp(arg, "--inode-cache=", 14)) {
+                }
+                else if (!strncmp(arg, "--inode-cache=", 14)) {
                     // do not allow empty dir name
                     if (arg[14] != '\0')
                         args.inode_cache_path = arg + 14;
-                } else if (!strcmp(arg, "--help")) {
+                }
+                else if (!strcmp(arg, "--help")) {
                     return usage(args.program_name);
-                } else if (!strcmp(arg, "--version")) {
+                }
+                else if (!strcmp(arg, "--version")) {
                     return version();
-                } else {
+                }
+                else {
                     err = invalid_cmdline(program_name, 0, "unknown option: '%s'", arg);
                     break;
                 }
@@ -313,48 +364,49 @@ int fm_move::init(int argc, char const* const* argv)
                 err = invalid_cmdline(program_name, 0, "too many arguments");
         }
 
-        if (err == 0) {
-            /* if autodetect, use POSIX I/O */
-            if (args.io_kind == FC_IO_AUTODETECT)
-                args.io_kind = FC_IO_POSIX;
+        if (err != 0)
+        	break;
 
-            if (args.io_kind == FC_IO_POSIX || args.io_kind == FC_IO_PREALLOC) {
+		/* if autodetect, use POSIX I/O */
+		if (args.io_kind == FC_IO_AUTODETECT)
+			args.io_kind = FC_IO_POSIX;
 
-                if (io_args_n == 0) {
-                    err = invalid_cmdline(program_name, 0, "missing arguments: %s %s", LABEL[0], LABEL[1]);
-                    break;
-                } else if (io_args_n == 1) {
-                    err = invalid_cmdline(program_name, 0, "missing argument: %s", LABEL[1]);
-                    break;
-                }
+		if (args.io_kind == FC_IO_POSIX || args.io_kind == FC_IO_PREALLOC) {
 
-                const char * source_root = args.io_args[FT_IO_NS fm_io::FC_SOURCE_ROOT];
-                if (args.inode_cache_path != NULL && source_root != NULL
-                        && (args.inode_cache_path[0] == '/') != (source_root[0] == '/'))
-                {
-                    err = invalid_cmdline(program_name, 0,
-                            "relative/absolute path mismatch between source directory `%s'\n"
-                            "\tand inode-cache directory `%s':\n"
-                            "\tthey must be either both absolute, i.e. starting with `/',\n"
-                            "\tor both relative, i.e. NOT starting with `/'",
-                            source_root,
-                            args.inode_cache_path);
-                    break;
-                }
-            }
-        }
+			if (io_args_n == 0) {
+				err = invalid_cmdline(program_name, 0, "missing arguments: %s %s", LABEL[0], LABEL[1]);
+				break;
+			} else if (io_args_n == 1) {
+				err = invalid_cmdline(program_name, 0, "missing argument: %s", LABEL[1]);
+				break;
+			}
+
+			const char * source_root = args.io_args[FT_IO_NS fm_io::FC_SOURCE_ROOT];
+			if (args.inode_cache_path != NULL && source_root != NULL
+					&& (args.inode_cache_path[0] == '/') != (source_root[0] == '/'))
+			{
+				err = invalid_cmdline(program_name, 0,
+						"relative/absolute path mismatch between source directory `%s'\n"
+						"\tand inode-cache directory `%s':\n"
+						"\tthey must be either both absolute, i.e. starting with `/',\n"
+						"\tor both relative, i.e. NOT starting with `/'",
+						source_root,
+						args.inode_cache_path);
+				break;
+			}
+		}
 
     } while (0);
 
     if (err == 0) {
         ft_log::get_root_logger().set_level(level);
 
-        /* note 1.4.1) -v enables FC_FMT_LEVEL_MSG also for stdout/stderr */
-        /* note 1.4.2) -vv enables FC_FMT_DATETIME_LEVEL_MSG also for stdout/stderr */
-        ft_log_fmt format = level < FC_DEBUG ? FC_FMT_DATETIME_LEVEL_MSG : level == FC_DEBUG ? FC_FMT_LEVEL_MSG : FC_FMT_MSG;
+        /* note 1.4.1) -v sets format FC_FMT_LEVEL_MSG */
+        /* note 1.4.2) -vv sets format FC_FMT_DATETIME_LEVEL_MSG */
+        if (!format_set)
+        	format = level < FC_DEBUG ? FC_FMT_DATETIME_LEVEL_MSG : level == FC_DEBUG ? FC_FMT_LEVEL_MSG : FC_FMT_MSG;
         
-		ft_log_appender::redefine_first(stdout, format, level, FC_NOTICE);
-		ft_log_appender::redefine_first(stderr, format, FC_WARN, FC_ERROR);
+        ft_log_appender::reconfigure_all(format, color);
 
         err = init(args);
     }

@@ -285,11 +285,11 @@ int fm_io_posix::move(const ft_string & source_path, const ft_string & target_pa
     const std::set<ft_string> & exclude_set = this->exclude_set();
     int err = 0;
 
-    ff_log(FC_DEBUG, 0, "move()         `%s'\t-> `%s'", source_path.c_str(), target_path.c_str());
+    ff_log(FC_DEBUG, 0, "`%s'\t-> `%s'", source_path.c_str(), target_path.c_str());
 
     do {
         if (exclude_set.count(source_path) != 0) {
-            ff_log(FC_INFO, 0, "move() skipped `%s', matches exclude list", source_path.c_str());
+            ff_log(FC_INFO, 0, "skipped `%s', matches exclude list", source_path.c_str());
             break;
         }
 
