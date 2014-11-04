@@ -30,6 +30,10 @@
 
 FT_NAMESPACE_BEGIN
 
+/**
+ * immutable string. initialized with a const char *,
+ * keeps a reference to the char array instead of copying its contents
+ */
 class ft_mstring
 {
 private:
@@ -61,13 +65,22 @@ public:
 	const ft_mstring & operator=(const ft_mstring & other);
 
 	/** destructor. */
-	~ft_mstring();
+	FT_INLINE ~ft_mstring()
+	{ }
 
 	FT_INLINE const char & operator[](ft_size i) const { return txt[i]; }
 	FT_INLINE ft_size size() const { return len; }
 
-	// comparison operator
+	// comparison operators
+	bool operator==(const ft_mstring & other) const;
+	FT_INLINE bool operator!=(const ft_mstring & other) const { return !(*this == other); }
+
+	// comparison operators
 	bool operator<(const ft_mstring & other) const;
+	FT_INLINE bool operator<=(const ft_mstring & other) const { return !(other < *this); }
+	FT_INLINE bool operator> (const ft_mstring & other) const { return other < *this; }
+	FT_INLINE bool operator>=(const ft_mstring & other) const { return !(*this < other); }
+
 
 	ft_size rfind(char ch) const;
 };

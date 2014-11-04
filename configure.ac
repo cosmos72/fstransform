@@ -2,14 +2,14 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.65])
-AC_INIT([fstransform], [0.9.3.work11], [BUG-REPORT-ADDRESS])
+AC_INIT([fstransform], [0.9.3.work12], [BUG-REPORT-ADDRESS])
 AC_CONFIG_SRCDIR([fsremap/src/remap.cc])
 AC_CONFIG_HEADERS([fsremap/src/config.hh])
 AC_CONFIG_AUX_DIR([tools])
 AM_INIT_AUTOMAKE
 
-			      
-			      
+
+
 # Checks for programs.
 AC_PROG_CXX
 AC_PROG_INSTALL
@@ -23,10 +23,11 @@ FT_CXX_FEATURES
 AC_CHECK_HEADERS([cerrno  climits  cmath  cstdarg  cstdio  cstdlib  cstring  ctime \
                   errno.h limits.h math.h stdarg.h stdio.h stdlib.h string.h time.h \
                   dirent.h fcntl.h features.h stddef.h stdint.h \
-		  ext2fs/ext2fs.h linux/fiemap.h linux/fs.h \
+                  ext2fs/ext2fs.h linux/fiemap.h linux/fs.h \
                   sys/disklabel.h sys/ioctl.h sys/mman.h sys/stat.h \
                   sys/statvfs.h sys/time.h sys/types.h sys/wait.h \
-                  termios.h time.h unistd.h utime.h])
+                  termios.h time.h unistd.h utime.h \
+                  tr1/unordered_map unordered_map])
 
 # Checks for typedefs, and structures
 AC_TYPE_MODE_T
@@ -47,7 +48,12 @@ AC_CHECK_MEMBERS([struct disklabel.d_secsize, struct disklabel.d_secperunit], []
 AC_CHECK_MEMBERS([struct stat.st_rdev, struct stat.st_atim.tv_nsec, struct stat.st_mtim.tv_nsec,
                   struct stat.st_atimensec, struct stat.st_mtimensec])
 
-# Checks for library functions.
+
+
+
+
+
+# Checks for C library functions.
 AC_FUNC_FORK
 AC_FUNC_LSTAT_FOLLOWS_SLASHED_SYMLINK
 AC_FUNC_MALLOC
@@ -57,6 +63,12 @@ AC_CHECK_FUNCS([execvp fallocate posix_fallocate fdatasync fileno fsync ftruncat
                memmove memset mkdir mkfifo mlock msync munmap random remove       \
                srandom strerror strftime sync sysconf time tzset utimes utimensat \
                waitpid])
+
+
+# Checks for C++ library features.
+FT_CXX_STD_UNORDERED_MAP
+FT_CXX_STD_TR1_UNORDERED_MAP
+
 
 # Checks for libraries.
 AC_CHECK_LIB(com_err, error_message,       [AC_DEFINE(HAVE_LIBCOM_ERR, 1, [Define to 1 if you have the com_err library.])])

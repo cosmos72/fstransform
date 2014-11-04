@@ -28,6 +28,13 @@
 
 FT_NAMESPACE_BEGIN
 
+/*
+ * Base class for generic key->value caches.
+ *
+ * Used to implement inode cache, needed to detect multiple files
+ * hard-linked together (i.e. having the same inode) and let fsmove
+ * create an accurate replica of them.
+ */
 template<class K, class V>
 class ft_cache
 {

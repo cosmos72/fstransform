@@ -76,14 +76,14 @@ static char const* const this_log_color_ansi[FC_FATAL+1] =
 static char const* const this_log_color_ansi_off_nl = "\033[0m\n";
 
 
-static all_appenders_type * fc_log_all_appenders = NULL;
+static ft_log_appenders * fc_log_all_appenders = NULL;
 static all_loggers_type * fc_log_all_loggers = NULL;
 static ft_log * fc_log_root_logger = NULL;
 static bool fc_log_initialized = false;
 
 
 /** list of all appenders */
-all_appenders_type & ft_log_appender::get_all_appenders()
+ft_log_appenders & ft_log_appender::get_all_appenders()
 {
     if (!fc_log_initialized)
     	ft_log::initialize();
@@ -100,14 +100,14 @@ ft_log_appender::ft_log_appender(FILE * my_stream, ft_log_fmt my_format,
     	stream(my_stream), format(my_format),
     	min_level(my_min_level), max_level(my_max_level), color(my_color)
 {
-    get_all_appenders().push_back(this);
+    get_all_appenders().insert(this);
 }
 
 /** destructor. */
 ft_log_appender::~ft_log_appender()
 {
 	flush();
-    get_all_appenders().remove(this);
+    get_all_appenders().erase(this);
 }
 
 
@@ -178,8 +178,8 @@ void ft_log_appender::flush()
 /** flush all buffered streams used to log messages for specified level */
 void ft_log_appender::flush_all(ft_log_level level)
 {
-    all_appenders_type & all_appenders = get_all_appenders();
-    all_appenders_citerator iter = all_appenders.begin(), end = all_appenders.end();
+    ft_log_appenders & all_appenders = get_all_appenders();
+    ft_log_appenders_citerator iter = all_appenders.begin(), end = all_appenders.end();
 
     /* iterate on streams configured for 'level' */
     for (; iter != end; ++iter) {
@@ -202,8 +202,8 @@ void ft_log_appender::reconfigure(ft_log_fmt format_except_fatal, ft_log_level s
 /** set format, min level and color of all appenders */
 void ft_log_appender::reconfigure_all(ft_log_fmt format_except_fatal, ft_log_level stdout_min_level, ft_log_color color)
 {
-    all_appenders_type & all_appenders = get_all_appenders();
-    all_appenders_citerator iter = all_appenders.begin(), end = all_appenders.end();
+    ft_log_appenders & all_appenders = get_all_appenders();
+    ft_log_appenders_citerator iter = all_appenders.begin(), end = all_appenders.end();
     
     for (; iter != end; ++iter)
     	(*iter)->reconfigure(format_except_fatal, stdout_min_level, color);
@@ -254,7 +254,7 @@ void ft_log::initialize()
     (void) setvbuf(stderr, NULL, _IOLBF, 0);
 
     if (fc_log_all_appenders == NULL)
-    	fc_log_all_appenders = new all_appenders_type();
+    	fc_log_all_appenders = new ft_log_appenders();
     if (fc_log_all_loggers == NULL)
     	fc_log_all_loggers = new all_loggers_type();
     if (fc_log_root_logger == NULL)
@@ -315,7 +315,7 @@ void ft_log::append(ft_log_event & event)
     do {
     	if (event.level >= logger->get_effective_level())
     	{
-    		all_appenders_citerator iter = logger->appenders.begin(), end = logger->appenders.end();
+    		ft_log_appenders_citerator iter = logger->appenders.begin(), end = logger->appenders.end();
 			for (; iter != end; ++iter)
 				(* iter)->append(event);
     	}
@@ -372,21 +372,14 @@ void ft_log::invalidate_all_cached_levels()
 /** add an appender */
 void ft_log::add_appender(ft_log_appender & appender)
 {
-    appenders.push_back(& appender);
+    appenders.insert(& appender);
 }
     
 /** remove an appender */
 void ft_log::remove_appender(ft_log_appender & appender)
 {
-    // remove last occurrence of appender
-    all_appenders_iterator begin = appenders.begin(), iter = appenders.end();
-    while (iter != begin) {
-        if (*--iter == & appender) {
-            appender.flush();
-            appenders.erase(iter);
-            return;
-        }
-    }
+	appender.flush();
+	appenders.erase(& appender);
 }
 
 

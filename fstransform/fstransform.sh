@@ -117,6 +117,7 @@ show_usage() {
   echo "  --cmd-CMD-NAME=CMD-PATH       set external command CMD-NAME to use."
   echo "                                    default: autodetect"
   echo "  --force-untested-file-systems also transform untested file systems (DANGEROUS)"
+  echo "  --interactive                 ask additional confirmation at dangerous steps"
   echo "  --list-source-file-systems    list file systems supported as source and exit"
   echo "  --list-target-file-systems    list file systems supported as target and exit"
   echo "  --loop-file=LOOP-FILE         override loop-file path"
@@ -190,7 +191,15 @@ parse_args() {
         USER_LOOP_SIZE_IN_BYTES="`\"$CMD_expr\" match \"$arg\" '--new-size=\(.*\)'`"
         log_info "device new (final) file-system length '$USER_LOOP_SIZE_IN_BYTES' bytes specified on command line"
         ;;
-      --no-questions)
+      --interactive|--questions=yes)
+        OPT_ASK_QUESTIONS=yes
+        log_info "assuming interactive execution, '$arg' specified on command line"
+        ;;
+      --questions=on-error)
+        OPT_ASK_QUESTIONS=on-error
+        log_info "assuming interactive execution, '$arg' specified on command line"
+        ;;
+      --no-questions|--questions=no)
         OPT_ASK_QUESTIONS=no
         log_info "assuming non-interactive execution, '$arg' specified on command line"
         ;;
@@ -348,10 +357,10 @@ log_init_file() {
 
 log_def_tty() {
   read_user_answer() {
-    if test "$OPT_ASK_QUESTIONS" = "yes"; then
-      read USER_ANSWER
-    else
+    if test "$OPT_ASK_QUESTIONS" = "no"; then
       USER_ANSWER=
+    else
+      read USER_ANSWER
     fi
   }
 
@@ -658,17 +667,17 @@ exec_cmd_status() {
   if test "$ERR" != 0; then
     log_err "command '$@' failed (exit status $ERR)"
     log_err_add "this is potentially a problem."
-    if test "$OPT_ASK_QUESTIONS" = "yes"; then
+    if test "$OPT_ASK_QUESTIONS" = "no"; then
+      log_err_add
+      log_err_add "you could try fix the problem yourself and continue"
+      log_err_add "but this is a non-interactive run, so $PROG will exit now"
+    else
       log_err_add "you can either quit now by pressing ENTER or CTRL+C,"
       log_err_add
       log_err_add "or, if you know what went wrong, you can fix it yourself,"
       log_err_add "then manually run the command '$@'"
       log_err_add "(or something equivalent)"
       log_err_add_prompt "and finally resume this script by typing CONTINUE and pressing ENTER: "
-    else
-      log_err_add
-      log_err_add "you could try fix the problem yourself and continue"
-      log_err_add "but this is a non-interactive run, so $PROG will exit now"
     fi
     read_user_answer
     if test "$USER_ANSWER" != "CONTINUE"; then
@@ -987,7 +996,7 @@ check_for_prealloc() {
     fi
   fi
 }
-check_for_prealloc
+#check_for_prealloc
 
 
 find_device_size() {
@@ -1120,16 +1129,16 @@ mount_loop_file() {
       log_warn "user-specified loop file mount point '$LOOP_MOUNT_POINT' should start with '/'"
       log_warn_add "i.e. it should be an absolute path."
       log_warn_add "$PROG cannot ensure that '$LOOP_MOUNT_POINT' is outside '$DEVICE_MOUNT_POINT'"
-      if test "$OPT_ASK_QUESTIONS" = "yes"; then
-        log_warn_add "continue at your own risk"
-        log_warn_add
-        log_warn_add_prompt "press ENTER to continue, or CTRL+C to quit: "
-        read_user_answer
-      else
+      if test "$OPT_ASK_QUESTIONS" = "no"; then
         log_err_add "you could examine the previous warning and decide to continue at your own risk"
         log_err_add "but this is a non-interactive run, so $PROG will exit now"
         log_info "exiting."
         exit "$ERR"
+      else
+        log_warn_add "continue at your own risk"
+        log_warn_add
+        log_warn_add_prompt "press ENTER to continue, or CTRL+C to quit: "
+        read_user_answer
       fi
     else
       "$CMD_expr" match "$LOOP_MOUNT_POINT" "$DEVICE_MOUNT_POINT/.*" >/dev/null 2>/dev/null
@@ -1175,7 +1184,7 @@ move_device_contents_into_loop_file() {
     log_warn_add "if one of them is becoming full (or both),"
     log_warn_add "you MUST stop $PROG with CTRL+C or equivalent."
     log_warn_add
-    if test "$OPT_ASK_QUESTIONS" = "yes"; then
+    if test "$OPT_ASK_QUESTIONS" = "extra"; then
       log_warn_add "this is your chance to quit."
       log_warn_add_prompt "press ENTER to continue, or CTRL+C to quit: "
       read_user_answer
@@ -1290,10 +1299,7 @@ fi
 
 
 remap_device_and_sync() {
-  local my_OPTS_fsremap="$OPTS_fsremap"
-  if test "$OPT_ASK_QUESTIONS" != "yes"; then
-    my_OPTS_fsremap="--no-questions $my_OPTS_fsremap"
-  fi
+  local my_OPTS_fsremap="--questions=$OPT_ASK_QUESTIONS $OPTS_fsremap"
   
   log_info "launching '$CMD_fsremap' in simulated mode"
   if test "$OPT_CREATE_ZERO_FILE" = "yes"; then

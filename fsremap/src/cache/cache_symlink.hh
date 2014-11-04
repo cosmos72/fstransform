@@ -32,6 +32,10 @@
 
 FT_NAMESPACE_BEGIN
 
+/**
+ * symlink-based associative array from keys (strings) to values (strings).
+ * Used to implement inode cache - see cache.hh for details.
+ */
 class ft_cache_symlink
 {
 protected:
@@ -84,7 +88,10 @@ public:
 
 
 
-
+/**
+ * symlink-based associative array from keys (type K) to values (type V).
+ * Used to implement inode cache - see cache.hh for details.
+ */
 template<class K, class V>
 class ft_cache_symlink_kv : public ft_cache_adaptor<ft_cache_symlink,K,V>
 {

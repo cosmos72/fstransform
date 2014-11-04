@@ -32,6 +32,16 @@
 #include "ft_config.hh"
 
 
+/**
+ * define if C++ library implements something usable for ft_unsorted_map<K,V>
+ * possibilities include: std::unordered_map<K,V> and std::tr1::unordered_map<K,V>
+ */
+#if !defined(FT_HAVE_FT_UNSORTED_MAP) && (defined(FT_HAVE_STD_UNORDERED_MAP) || defined(FT_HAVE_STD_TR1_UNORDERED_MAP))
+#  define FT_HAVE_FT_UNSORTED_MAP
+#endif
+
+
+
 /** define if compiler supports the types (long long) and (unsigned long long) */
 #if !defined(FT_HAVE_LONG_LONG) || !defined(FT_HAVE_UNSIGNED_LONG_LONG)
 #  if defined(__GNUC__)

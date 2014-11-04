@@ -43,7 +43,7 @@
 # include <cstdio>       /* for FILE. also for stdout, stderr, fprintf(), fileno() used by log.cc */
 #endif
 
-#include <list>          /* for std::list<T>  */
+#include <set>           /* for std::set<T>  */
 #include <map>           /* for std::map<K,V> */
 
 #include "mstring.hh"    /* ft_mstring */
@@ -112,9 +112,9 @@ struct ft_log_event
 };
 
 class ft_log_appender;
-typedef std::list<ft_log_appender *> all_appenders_type;
-typedef all_appenders_type::iterator all_appenders_iterator;
-typedef all_appenders_type::const_iterator all_appenders_citerator;
+typedef std::set<ft_log_appender *> ft_log_appenders;
+typedef ft_log_appenders::iterator ft_log_appenders_iterator;
+typedef ft_log_appenders::const_iterator ft_log_appenders_citerator;
 
 
 class ft_log_appender {
@@ -128,7 +128,7 @@ private:
     ~ft_log_appender();
 
     /** list of all appenders */
-    static all_appenders_type & get_all_appenders();
+    static ft_log_appenders & get_all_appenders();
 
 public:
     /** constructor. */
@@ -170,7 +170,7 @@ private:
 
     const ft_mstring * name;
     ft_log * parent;
-    std::list<ft_log_appender *> appenders;
+    ft_log_appenders appenders;
     ft_log_level level; /* events less severe than level will be suppressed */
     mutable ft_log_level effective_level, threshold_level;
 

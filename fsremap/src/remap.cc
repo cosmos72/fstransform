@@ -157,6 +157,10 @@ int fr_remap::usage(const char * program_name)
      "                        set RAM buffer size (default: autodetect)\n"
      "  -n, --no-action, --simulate-run\n"
      "                        do not actually read or write any disk block\n"
+     "      --questions=MODE  set interactive mode. MODE is one of:\n"
+     "                          no: never ask questions, abort on errors (default)\n"
+     "                          yes: ask questions in case of user-fixable errors\n"
+     "                          extra: also ask confirmation before dangerous steps\n"
      "  -q, --quiet           be quiet, print less output\n"
      "  -qq                   be very quiet, only print warnings or errors\n"
      "      --resume-job=NUM  resume an interrupted job\n"
@@ -292,8 +296,8 @@ int fr_remap::init(int argc, char const* const* argv)
                 if (!strcmp(arg, "--"))
                     allow_opts = false;
 
-                /* -a, --no-questions: run automatically without asking any confirmation  */
-                else if (!strcmp(arg, "-a") || !strcmp(arg, "--no-questions")) {
+                /* -a, --automated run automatically without asking any confirmation  */
+                else if (!strcmp(arg, "-a") || !strcmp(arg, "--automated")) {
                     args.ask_questions = false;
                 }
                 /* --clear=all, --clear=minimal, --clear=none */
@@ -318,6 +322,10 @@ int fr_remap::init(int argc, char const* const* argv)
                 /* -f, --force-run: consider failed sanity checks as WARNINGS (which let execution continue) instead of ERRORS (which stop execution) */
                 else if (!strcmp(arg, "-f") || !strcmp(arg, "--force-run")) {
                     args.force_run = true;
+                }
+                /* -i, --interactive: ask confirmation after analysis, before starting real work */
+                else if (!strcmp(arg, "-i") || !strcmp(arg, "--interactive")) {
+                    args.ask_questions = true;
                 }
                 /* --io=test, --io=self-test, --io=posix, --io=prealloc */
                 else if ((io_kind = FC_IO_TEST,        !strcmp(arg, "--io=test"))
@@ -356,6 +364,11 @@ int fr_remap::init(int argc, char const* const* argv)
                 /* -n, --no-action, --simulate-run: do not read or write device blocks  */
                 else if (!strcmp(arg, "-n") || !strcmp(arg, "--no-action") || !strcmp(arg, "--simulate-run")) {
                     args.simulate_run = true;
+                }
+                /* --questions=[no|yes|extra] */
+                else if (!strncmp(arg, "--questions=", opt_len))
+                {
+                	args.ask_questions = !strcmp("extra", opt_arg);
                 }
                 /* --resume-job=JOB_ID */
                 else if (!strncmp(arg, "--resume-job=", opt_len)) {

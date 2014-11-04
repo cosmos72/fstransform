@@ -37,7 +37,7 @@ fr_args::fr_args()
       ui_arg(NULL), cmd_losetup(NULL), cmd_umount(NULL),
       storage_size(), job_id(FC_JOB_ID_AUTODETECT), job_clear(FC_CLEAR_AUTODETECT),
       io_kind(FC_IO_AUTODETECT), ui_kind(FC_UI_NONE),
-      force_run(false), simulate_run(false), ask_questions(true)
+      force_run(false), simulate_run(false), ask_questions(false)
 {
     ft_size i, n;
     for (i = 0, n = sizeof(io_args)/sizeof(io_args[0]); i < n; i++)

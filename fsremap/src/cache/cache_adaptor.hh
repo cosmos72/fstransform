@@ -31,6 +31,12 @@
 
 FT_NAMESPACE_BEGIN
 
+/**
+ * adaptor from string->string caches to K->V caches.
+ *
+ * Used to wrap ft_cache_symlink and tranform it into ft_cache_symlink_kv<K,V>
+ * - see cache_symlink.hh for details.
+ */
 template<class Cache, class K, class V>
 class ft_cache_adaptor : public ft_cache<K, V>, public Cache
 {

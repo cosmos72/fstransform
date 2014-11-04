@@ -54,7 +54,7 @@ FT_NAMESPACE_BEGIN
 fr_job::fr_job()
     : this_dir(), this_log_file(NULL), this_log_appender(NULL),
     this_id(FC_JOB_ID_AUTODETECT), this_clear(FC_CLEAR_AUTODETECT),
-    this_force_run(false), this_simulate_run(false), this_resume_job(false), this_ask_questions(true)
+    this_force_run(false), this_simulate_run(false), this_resume_job(false), this_ask_questions(false)
 {
     for (ft_size i = 0; i < FC_STORAGE_SIZE_N; i++)
         this_storage_size[i] = 0;

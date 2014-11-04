@@ -26,21 +26,33 @@
 #ifndef FSTRANSFORM_CACHE_MEM_HH
 #define FSTRANSFORM_CACHE_MEM_HH
 
-#include "cache.hh"  // for ft_cache
+#include "../assert.hh"     // for ff_assert()
+#include "cache.hh"         // for ft_cache
 
-#include <map>          // for std::map
+#ifdef FT_HAVE_FT_UNSORTED_MAP
+# include "unsorted_map.hh" // for ft_unsorted_map<K,V>
+#else
+# include <map>             // for std::map<K,V>
+#endif
 
-#include "../assert.hh"    // for ff_assert()
 
 FT_NAMESPACE_BEGIN
 
+/**
+ * in-memory associative array from keys (type K) to values (type V).
+ * Used to implement inode cache - see cache.hh for details.
+ */
 template<class K, class V>
 class ft_cache_mem : public ft_cache<K, V>
 {
 private:
 	typedef ft_cache<K,V> super_type;
 
+#ifdef FT_HAVE_FT_UNSORTED_MAP
+	typedef ft_unsorted_map<K,V> map_type;
+#else
 	typedef std::map<K,V> map_type;
+#endif
 
 	map_type map;
 

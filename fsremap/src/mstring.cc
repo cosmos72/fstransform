@@ -69,32 +69,33 @@ const ft_mstring & ft_mstring::operator=(const ft_mstring & other)
 	return * this;
 }
 
-/** destructor. */
-ft_mstring::~ft_mstring()
-{ }
-
+// comparison operator
+bool ft_mstring::operator==(const ft_mstring & other) const
+{
+	if (len != other.len)
+		return false;
+	if (txt == other.txt)
+		// also catches this == & other
+		return true;
+	return memcmp(txt, other.txt, len) == 0;
+}
 
 // comparison operator
 bool ft_mstring::operator<(const ft_mstring & other) const
 {
-	if (len == 0)
-		// empty strings are smaller than any other
-		return other.len != 0;
-	if (other.len == 0)
-		// empty strings are smaller than any other
-		return false;
-	if (txt == other.txt)
-		// also catches this == & other
-		return len < other.len;
-
-	int cmp = memcmp(txt, other.txt, ff_min2(len, other.len));
-	if (cmp != 0)
-		// different contents
-		return cmp < 0;
-
-	// same contents in the common prefix, compare length
+	if (len != 0 && other.len != 0 && txt != other.txt)
+	{
+		int cmp = memcmp(txt, other.txt, ff_min2(len, other.len));
+		if (cmp != 0)
+			// different contents
+			return cmp < 0;
+	}
+	// at least one empty string, or same contents in the common prefix.
+	// also catches this == & other
 	return len < other.len;
 }
+
+
 
 ft_size ft_mstring::rfind(char ch) const
 {

@@ -170,6 +170,12 @@
 /* Define to 1 if you have the <stdlib.h> header file. */
 #undef HAVE_STDLIB_H
 
+/* define if C++ library implements std::tr1::unordered_map<K,V> */
+#undef HAVE_STD_TR1_UNORDERED_MAP
+
+/* define if C++ library implements std::unordered_map<K,V> */
+#undef HAVE_STD_UNORDERED_MAP
+
 /* Define to 1 if you have the `strerror' function. */
 #undef HAVE_STRERROR
 
@@ -245,11 +251,17 @@
 /* Define to 1 if you have the <time.h> header file. */
 #undef HAVE_TIME_H
 
+/* Define to 1 if you have the <tr1/unordered_map> header file. */
+#undef HAVE_TR1_UNORDERED_MAP
+
 /* Define to 1 if you have the `tzset' function. */
 #undef HAVE_TZSET
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
+
+/* Define to 1 if you have the <unordered_map> header file. */
+#undef HAVE_UNORDERED_MAP
 
 /* Define to 1 if the system has the type `unsigned long long'. */
 #undef HAVE_UNSIGNED_LONG_LONG
