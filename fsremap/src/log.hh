@@ -111,6 +111,12 @@ struct ft_log_event
     va_list vargs;
 };
 
+class ft_log_appender;
+typedef std::list<ft_log_appender *> all_appenders_type;
+typedef all_appenders_type::iterator all_appenders_iterator;
+typedef all_appenders_type::const_iterator all_appenders_citerator;
+
+
 class ft_log_appender {
 private:
     FILE * stream;
@@ -122,7 +128,7 @@ private:
     ~ft_log_appender();
 
     /** list of all appenders */
-    static std::list<ft_log_appender *> & get_all_appenders();
+    static all_appenders_type & get_all_appenders();
 
 public:
     /** constructor. */
@@ -145,18 +151,22 @@ public:
     static void flush_all(ft_log_level level);
 
     /** set format, min level and color of this appender */
-    void reconfigure(ft_log_fmt format_except_fatal = FC_FMT_MSG, ft_log_color color = FC_COL_AUTO);
+    void reconfigure(ft_log_fmt format_except_fatal = FC_FMT_MSG, ft_log_level stdout_min_level = FC_LEVEL_NOT_SET, ft_log_color color = FC_COL_AUTO);
 
     /** set format, min level and color of all appenders */
-    static void reconfigure_all(ft_log_fmt format_except_fatal = FC_FMT_MSG, ft_log_color color = FC_COL_AUTO);
+    static void reconfigure_all(ft_log_fmt format_except_fatal = FC_FMT_MSG, ft_log_level stdout_min_level = FC_LEVEL_NOT_SET, ft_log_color color = FC_COL_AUTO);
 };
 
-                    
+
+class ft_log;
+typedef std::map<ft_mstring, ft_log *> all_loggers_type;
+typedef all_loggers_type::iterator all_loggers_iterator;
+typedef all_loggers_type::const_iterator all_loggers_citerator;
+
+
 class ft_log {
 private:
-    typedef std::map<ft_mstring, ft_log *>::iterator all_loggers_iterator;
-
-	friend class ft_log_appender;
+    friend class ft_log_appender;
 
     const ft_mstring * name;
     ft_log * parent;
@@ -168,7 +178,7 @@ private:
     static void initialize();
 
     /** return map of all existing loggers. */
-    static std::map<ft_mstring, ft_log *> & get_all_loggers();
+    static all_loggers_type & get_all_loggers();
     
     /** constructor. */
     ft_log(const ft_mstring & name, ft_log * parent, ft_log_level level = FC_LEVEL_NOT_SET);
@@ -176,11 +186,14 @@ private:
     /** destructor. */
     ~ft_log();
 
-    /** return the effective level: if level is set return it, otherwise return parent effective level. */
-    ft_log_level get_effective_level() const;
-
     /** find or create a parent logger given child name. */
     static ft_log & get_parent(const ft_mstring & child_logger_name);
+
+    /**
+     * invalidate all cached effective_level and threshold_level.
+     * needed after some logger->level is changed.
+     */
+    static void invalidate_all_cached_levels();
 
     /** log a message (skip threshold_level check) */
     void append(ft_log_event & event);
@@ -197,7 +210,7 @@ public:
     void log(ft_log_event & event);
 
     /** return true if level is enabled (i.e. not suppressed) for this logger. */
-    FT_INLINE bool is_enabled(ft_log_level level) const { return level >= get_effective_level(); }
+    FT_INLINE bool is_enabled(ft_log_level level) const { return level >= get_threshold_level(); }
 
 
     /** get logger name. */
@@ -206,11 +219,14 @@ public:
     /** return the level, i.e. least serious level that is not suppressed. */
     FT_INLINE ft_log_level get_level() const { return level; }
 
-    /** set the level, i.e. least serious level that is not suppressed. */
-    FT_INLINE void set_level(ft_log_level level) { this->level = level; }
+    /** return the effective level: if level is set return it, otherwise return parent effective level. */
+    ft_log_level get_effective_level() const;
 
     /** return the threshold level: the minimum of this and all ancestor's levels. */
     ft_log_level get_threshold_level() const;
+
+    /** set the level, i.e. least serious level that is not suppressed. */
+    FT_INLINE void set_level(ft_log_level level) { this->level = level; invalidate_all_cached_levels(); }
 
     /** add an appender */
     void add_appender(ft_log_appender & appender);

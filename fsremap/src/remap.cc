@@ -521,7 +521,11 @@ int fr_remap::init(int argc, char const* const* argv)
     } while (0);
 
     if (err == 0) {
-        /* always enable at least DEBUG level, to let fsremap.log collect all messages from DEBUG to FATAL */
+        /*
+         * always enable at least DEBUG level, to let let the appender installed by fr_job::init_log()
+         * intercept all messages from DEBUG to FATAL.
+         * we avoid spamming the user by setting stdout appender->min_level = level below
+         */
         ft_log::get_root_logger().set_level(level < FC_DEBUG ? level : FC_DEBUG);
 
         /* note 1.4.1) -v sets format FC_FMT_LEVEL_MSG */
@@ -529,6 +533,7 @@ int fr_remap::init(int argc, char const* const* argv)
         if (!format_set)
         	format = level < FC_DEBUG ? FC_FMT_DATETIME_LEVEL_MSG : level == FC_DEBUG ? FC_FMT_LEVEL_MSG : FC_FMT_MSG;
 
+        // set stdout appender->min_level, since we played tricks with root_logger->level above.
         ft_log_appender::reconfigure_all(format, level, color);
 
         err = init(args);

@@ -406,7 +406,8 @@ int fm_move::init(int argc, char const* const* argv)
         if (!format_set)
         	format = level < FC_DEBUG ? FC_FMT_DATETIME_LEVEL_MSG : level == FC_DEBUG ? FC_FMT_LEVEL_MSG : FC_FMT_MSG;
         
-        ft_log_appender::reconfigure_all(format, color);
+        // no dot alter appenders min_level
+        ft_log_appender::reconfigure_all(format, FC_LEVEL_NOT_SET, color);
 
         err = init(args);
     }

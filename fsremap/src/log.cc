@@ -76,14 +76,14 @@ static char const* const this_log_color_ansi[FC_FATAL+1] =
 static char const* const this_log_color_ansi_off_nl = "\033[0m\n";
 
 
-static std::list<ft_log_appender *> * fc_log_all_appenders = NULL;
-static std::map<ft_mstring, ft_log *> * fc_log_all_loggers = NULL;
+static all_appenders_type * fc_log_all_appenders = NULL;
+static all_loggers_type * fc_log_all_loggers = NULL;
 static ft_log * fc_log_root_logger = NULL;
 static bool fc_log_initialized = false;
 
 
 /** list of all appenders */
-std::list<ft_log_appender *> & ft_log_appender::get_all_appenders()
+all_appenders_type & ft_log_appender::get_all_appenders()
 {
     if (!fc_log_initialized)
     	ft_log::initialize();
@@ -178,8 +178,8 @@ void ft_log_appender::flush()
 /** flush all buffered streams used to log messages for specified level */
 void ft_log_appender::flush_all(ft_log_level level)
 {
-    std::list<ft_log_appender *> & all_appenders = get_all_appenders();
-    std::list<ft_log_appender *>::const_iterator iter = all_appenders.begin(), end = all_appenders.end();
+    all_appenders_type & all_appenders = get_all_appenders();
+    all_appenders_citerator iter = all_appenders.begin(), end = all_appenders.end();
 
     /* iterate on streams configured for 'level' */
     for (; iter != end; ++iter) {
@@ -190,21 +190,23 @@ void ft_log_appender::flush_all(ft_log_level level)
 }
 
 /** set format, min level and color of this appender */
-void ft_log_appender::reconfigure(ft_log_fmt format_except_fatal, ft_log_color color)
+void ft_log_appender::reconfigure(ft_log_fmt format_except_fatal, ft_log_level stdout_min_level, ft_log_color color)
 {
 	if (this->max_level != FC_FATAL)
 		this->format = format_except_fatal;
+	if (stdout_min_level != FC_LEVEL_NOT_SET && this->stream == stdout)
+		this->min_level = stdout_min_level;
 	this->color = color;
 }
 
 /** set format, min level and color of all appenders */
-void ft_log_appender::reconfigure_all(ft_log_fmt format_except_fatal, ft_log_color color)
+void ft_log_appender::reconfigure_all(ft_log_fmt format_except_fatal, ft_log_level stdout_min_level, ft_log_color color)
 {
-    std::list<ft_log_appender *> & all_appenders = get_all_appenders();
-    std::list<ft_log_appender *>::const_iterator iter = all_appenders.begin(), end = all_appenders.end();
+    all_appenders_type & all_appenders = get_all_appenders();
+    all_appenders_citerator iter = all_appenders.begin(), end = all_appenders.end();
     
     for (; iter != end; ++iter)
-    	(*iter)->reconfigure(format_except_fatal, color);
+    	(*iter)->reconfigure(format_except_fatal, stdout_min_level, color);
 }
 
 
@@ -215,7 +217,7 @@ void ft_log_appender::reconfigure_all(ft_log_fmt format_except_fatal, ft_log_col
 
 
 /** return map of all existing loggers. */
-std::map<ft_mstring, ft_log *> & ft_log::get_all_loggers()
+all_loggers_type & ft_log::get_all_loggers()
 {
     if (!fc_log_initialized)
     	ft_log::initialize();
@@ -252,9 +254,9 @@ void ft_log::initialize()
     (void) setvbuf(stderr, NULL, _IOLBF, 0);
 
     if (fc_log_all_appenders == NULL)
-    	fc_log_all_appenders = new std::list<ft_log_appender *>();
+    	fc_log_all_appenders = new all_appenders_type();
     if (fc_log_all_loggers == NULL)
-    	fc_log_all_loggers = new std::map<ft_mstring, ft_log *>();
+    	fc_log_all_loggers = new all_loggers_type();
     if (fc_log_root_logger == NULL)
     	fc_log_root_logger = new ft_log("", NULL, FC_INFO);
 
@@ -296,7 +298,7 @@ ft_log & ft_log::get_parent(const ft_mstring & child_logger_name)
 /** find or create a logger by name */
 ft_log & ft_log::get_logger(const ft_mstring & logger_name)
 {
-    std::map<ft_mstring, ft_log *> & all_loggers = get_all_loggers();
+	all_loggers_type & all_loggers = get_all_loggers();
     all_loggers_iterator iter = all_loggers.find(logger_name);
     if (iter != all_loggers.end())
         return * iter->second;
@@ -313,7 +315,7 @@ void ft_log::append(ft_log_event & event)
     do {
     	if (event.level >= logger->get_effective_level())
     	{
-    		std::list<ft_log_appender *>::const_iterator iter = logger->appenders.begin(), end = logger->appenders.end();
+    		all_appenders_citerator iter = logger->appenders.begin(), end = logger->appenders.end();
 			for (; iter != end; ++iter)
 				(* iter)->append(event);
     	}
@@ -332,12 +334,13 @@ void ft_log::log(ft_log_event & event)
 /** return the effective level: if level is set return it, otherwise return parent effective level. */
 ft_log_level ft_log::get_effective_level() const
 {
-	if (level != FC_LEVEL_NOT_SET)
-		return level;
-
 	if (effective_level == FC_LEVEL_NOT_SET)
-		effective_level = (parent != NULL) ? parent->get_effective_level() : FC_INFO;
-
+	{
+		if (level == FC_LEVEL_NOT_SET)
+			effective_level = (parent != NULL) ? parent->get_effective_level() : FC_INFO;
+		else
+			effective_level = level;
+	}
 	return effective_level;
 }
 
@@ -354,6 +357,17 @@ ft_log_level ft_log::get_threshold_level() const
 	return threshold_level;
 }
 
+void ft_log::invalidate_all_cached_levels()
+{
+    all_loggers_type & all_loggers = get_all_loggers();
+    all_loggers_iterator iter = all_loggers.begin(), end = all_loggers.end();
+    for (; iter != end; ++iter)
+    {
+    	ft_log * logger = iter->second;
+    	logger->effective_level = logger->threshold_level = FC_LEVEL_NOT_SET;
+    }
+}
+
 
 /** add an appender */
 void ft_log::add_appender(ft_log_appender & appender)
@@ -365,7 +379,7 @@ void ft_log::add_appender(ft_log_appender & appender)
 void ft_log::remove_appender(ft_log_appender & appender)
 {
     // remove last occurrence of appender
-    std::list<ft_log_appender *>::iterator begin = appenders.begin(), iter = appenders.end();
+    all_appenders_iterator begin = appenders.begin(), iter = appenders.end();
     while (iter != begin) {
         if (*--iter == & appender) {
             appender.flush();
@@ -374,6 +388,8 @@ void ft_log::remove_appender(ft_log_appender & appender)
         }
     }
 }
+
+
 
 
 static const char * ff_strftime();
