@@ -1,10 +1,29 @@
 TODO
 
-* fstransform, fsmove: add persistence, i.e. the ability to resume a transformation
-       after CTRL-C, power failure or similar interruptions
+* all: test on more file systems
+
+       nilfs: ok as target.
+              as source it gets practically full very quickly, free space fluctuates
+              between zero and 1GB while the GC works to avoid "disk full" errors.
+              But it works :)
+
+       ntfs:  ntfs-3g is VERY slow both as source and target because it's userspace.
+              it supports only UTF-8 filenames, not arbitrary bytes in the range 128-255.
+              fsmove must check beforehand!
+              use mount.ntfs option big_writes... enough or still too slow?
+
+       logfs: as target: "mkfs -t logfs" does NOT accept option -q,
+              fsmove and umount crash with kernel bugs (see tests/)
+       
+       others: btrfs, gfs, gfs2, hfs, jffs2, ocfs2, qnx4, qnx6, ubifs...
+
+       not yet: tux3
+
+* fstransform, fsmove: add fsremap-like persistence, i.e. the ability to resume
+       a transformation after CTRL-C, power failure or similar interruptions
 
 * fsmove: use a larger buffer (1MB) to speed up backward copy.
-          Worth it? beware of low free space...
+       Worth it? beware of low free space...
           
 * fsremap: add a graphical interface ? probably not so worth it...
 
