@@ -9,6 +9,6 @@ m4_define([FT_NEED_ALL_LIBS], [
   done
   if test "x$ft_libs_missing" != "x"
   then
-    as_fn_error "missing required library functions: $ft_libs_missing"
+    as_fn_error $? "missing required library functions: $ft_libs_missing"
   fi
 ])
