@@ -117,23 +117,22 @@ show_usage() {
   echo "  --cmd-CMD-NAME=CMD-PATH       set external command CMD-NAME to use."
   echo "                                    default: autodetect"
   echo "  --force-untested-file-systems also transform untested file systems (DANGEROUS)"
-  echo "  --interactive                 ask additional confirmation at dangerous steps"
   echo "  --list-source-file-systems    list file systems supported as source and exit"
   echo "  --list-target-file-systems    list file systems supported as target and exit"
   echo "  --loop-file=LOOP-FILE         override loop-file path"
   echo "  --loop-mount-point=PATH       override loop-file mount point"
   echo "  --new-size=SIZE               set new file system length. default: device length"
-  echo "  --no-questions                never ask any question or confirmation"
   echo "  --old-file-system=OLD-TYPE    override current (old) file system type autodetection"
-  echo "  --opts-fsmove=OPTS      pass OPTS as additional options to 'fsmove'"
-  echo "  --opts-fsremap=OPTS     pass OPTS as additional options to 'fsremap'"
-  echo "  --opts-mkfs=OPTS        pass OPTS as options to 'mkfs'. default: '-q'"
-  echo "  --opts-fsck-source=OPTS override 'fsck' options for old file system. default: '-p -f'"
-  echo "  --opts-fsck-target=OPTS override 'fsck' options for new file system. default: '-p -f'"
-  echo "  --show-time[=yes|=no]   show current time before each message. default: yes"
-#  echo "  --prealloc[=yes|no]     use prealloc speedup. default: autodetect"
-  echo "  --reversible[=yes|no]   create zero-file, fsremap will do a reversible transformation"
-  echo "                                 default: no"
+  echo "  --opts-fsmove=OPTS            pass OPTS as additional options to 'fsmove'"
+  echo "  --opts-fsremap=OPTS           pass OPTS as additional options to 'fsremap'"
+  echo "  --opts-mkfs=OPTS              pass OPTS as options to 'mkfs'. default: '-q'"
+  echo "  --opts-fsck-source=OPTS       override 'fsck' options for old file system. default: '-p -f'"
+  echo "  --opts-fsck-target=OPTS       override 'fsck' options for new file system. default: '-p -f'"
+  echo "  --show-time[=yes|=no]         show current time before each message. default: yes"
+  echo "  --prealloc[=yes|no]           use EXPERIMENTAL files preallocation. default: no"
+  echo "  --questions=[yes|no|on-error] whether to ask questions interactively. default: on-error"
+  echo "  --reversible[=yes|no]         create zero-file, fsremap will do a reversible transformation"
+  echo "                                  default: no"
   echo "  --x-OPTION=VALUE        set internal, undocumented option. For maintainers only."
   echo "  --zero-file=ZERO-FILE   override zero-file path"
   echo "  --help                  display this help and exit"
@@ -191,18 +190,6 @@ parse_args() {
         USER_LOOP_SIZE_IN_BYTES="`\"$CMD_expr\" match \"$arg\" '--new-size=\(.*\)'`"
         log_info "device new (final) file-system length '$USER_LOOP_SIZE_IN_BYTES' bytes specified on command line"
         ;;
-      --interactive|--questions=yes)
-        OPT_ASK_QUESTIONS=yes
-        log_info "assuming interactive execution, '$arg' specified on command line"
-        ;;
-      --questions=on-error)
-        OPT_ASK_QUESTIONS=on-error
-        log_info "assuming interactive execution, '$arg' specified on command line"
-        ;;
-      --no-questions|--questions=no)
-        OPT_ASK_QUESTIONS=no
-        log_info "assuming non-interactive execution, '$arg' specified on command line"
-        ;;
       --old-file-system=*)
         DEVICE_FSTYPE="`\"$CMD_expr\" match \"$arg\" '--old-fstype=\(.*\)'`"
         log_info "device old (initial) file-system type '$DEVICE_FSTYPE' specified on command line"
@@ -227,14 +214,21 @@ parse_args() {
         OPTS_fsck_target="`\"$CMD_expr\" match \"$arg\" '--opts-fsck-target=\(.*\)'`"
         log_info "options '$OPTS_FSCK_TARGET_FS' for fsck(target file-system) specified on command line"
         ;;
-#      --prealloc|--prealloc=yes)
-#        OPT_PREALLOC=yes
-#        log_info "trying to enable preallocation, '$arg' specified on command line"
-#        ;;
-#      --prealloc=no)
-#        OPT_PREALLOC=no
-#        log_info "disabling preallocation, '$arg' specified on command line"
-#        ;;
+      --prealloc|--prealloc=*)
+        # handled in parse_args_late() below
+        ;;
+      --questions=yes|--interactive)
+        OPT_ASK_QUESTIONS=yes
+        log_info "assuming interactive execution, '$arg' specified on command line"
+        ;;
+      --questions=on-error)
+        OPT_ASK_QUESTIONS=on-error
+        log_info "assuming interactive execution, '$arg' specified on command line"
+        ;;
+      --questions=no|--no-questions)
+        OPT_ASK_QUESTIONS=no
+        log_info "assuming non-interactive execution, '$arg' specified on command line"
+        ;;
       --reversible|--reversible=yes)
         OPT_CREATE_ZERO_FILE=yes
         log_info "zero file will be created, '$arg' specified on command line"
@@ -282,7 +276,37 @@ parse_args() {
   done
 }
 
-
+parse_args_late() {
+  for arg in "$@"; do
+    case "$arg" in
+      --prealloc=yes-i-want-to-lose-my-data)
+        OPT_PREALLOC=yes
+        log_warn "trying to enable EXPERIMENTAL files preallocation,"
+        log_warn_add "option '$arg' specified on command line."
+        log_warn_add "be prepared to LOSE your data!"
+        if test "$CMD_sleep" != ""; then
+          log_warn_add "continuing in 5 seconds..."
+          "$CMD_sleep" 5
+        fi
+        log_warn_add
+        ;;
+      --prealloc|--prealloc=yes)
+        OPT_PREALLOC=no
+        log_warn "preallocation is EXPERIMENTAL and not well tested. if you really want to enable it,"
+        log_warn_add "specify '--prealloc=yes-i-want-to-lose-my-data' on command line and be prepared to LOSE your data."
+        if test "$CMD_sleep" != ""; then
+          log_warn_add "continuing in 5 seconds without preallocation..."
+          "$CMD_sleep" 5
+        fi
+        log_warn_add
+        ;;
+      --prealloc=no)
+        OPT_PREALLOC=no
+        log_info "disabling preallocation, '$arg' specified on command line"
+        ;;
+    esac
+  done
+}
 
 
 log_def_file() {
@@ -614,12 +638,6 @@ check_uid_0
 
 parse_args "$@"
 
-if test "$OPT_PREALLOC" = yes; then
-  CMDS="$CMDS $CMDS_prealloc"
-else
-  CMDS_optional="$CMDS_prealloc $CMDS_optional"
-fi
-
 for cmd in $CMDS; do
   detect_cmd "$cmd" || ERR="$?"
 done
@@ -633,6 +651,17 @@ log_info "looking for optional commands"
 for cmd in $CMDS_optional; do
   detect_cmd "$cmd"
 done
+
+parse_args_late "$@"
+
+if test "$OPT_PREALLOC" = yes; then
+  CMDS="$CMDS $CMDS_prealloc"
+  
+  for cmd in $CMDS_prealloc; do
+    detect_cmd "$cmd" || ERR="$?"
+  done
+fi
+
 
 fix_for_special_cases
 
@@ -980,23 +1009,28 @@ check_for_tested_fstypes
 
 
 check_for_prealloc() {
-  if test "$OPT_PREALLOC" = "yes" -o "$OPT_PREALLOC" = ""; then
+  if test "$OPT_PREALLOC" = "yes"; then
     if test "$FSTYPE" = "ext4"; then
-      # autodetect if we can use preallocation
+      # detect if we can use preallocation
       if test "$CMD_fsattr" != ""; then
-        log_info "enabling preallocation speedup: target FSTYPE is '$FSTYPE' and command 'fsattr' is available"
-        OPT_PREALLOC=yes
+        if "$CMD_fsattr" --help >/dev/null 2>&1; then
+          log_info "enabling EXPERIMENTAL files preallocation: target FSTYPE is '$FSTYPE' and command 'fsattr' is available"
+          OPT_PREALLOC=yes
+        else
+          log_warn "cannot enable EXPERIMENTAL files preallocation: target FSTYPE is '$FSTYPE' but command 'fsattr' is a stub"
+          OPT_PREALLOC=no
+        fi
       else
-        log_info "disabling preallocation speedup: target FSTYPE is '$FSTYPE' but command 'fsattr' is not available"
+        log_warn "cannot enable EXPERIMENTAL files preallocation: target FSTYPE is '$FSTYPE' but command 'fsattr' is not available"
         OPT_PREALLOC=no
       fi
     else
-      log_info "cannot enable preallocation speedup: currently supported only 'ext4' target, not '$FSTYPE'"
+      log_warn "cannot enable EXPERIMENTAL files preallocation: currently supported only 'ext4' target, not '$FSTYPE'"
       OPT_PREALLOC=no
     fi
   fi
 }
-#check_for_prealloc
+check_for_prealloc
 
 
 find_device_size() {

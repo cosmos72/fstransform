@@ -39,11 +39,15 @@
 # include <cstring>        // for memcmp(), strncmp()
 #endif
 
-#include <ext2fs/ext2fs.h>
+#if defined (FT_HAVE_EXT2FS_EXT2FS_H)
+# include <ext2fs/ext2fs.h>
+#endif
 
-#include "log.hh"
+# include "log.hh"
 
 FT_NAMESPACE_BEGIN
+
+#if defined(FT_HAVE_LIBEXT2FS) && defined(FT_HAVE_LIBCOM_ERR)
 
 typedef errcode_t e4_err;
 typedef ext2_filsys e4_fs;
@@ -242,7 +246,6 @@ static int e4attr_usage(const char * program_name) {
     return 1;
 }
 
-
 int e4attr_main(int argc, char ** argv) {
     const char * program_name = argv[0], * dev_path = NULL;
     e4attr_extent_op apply_op = E4_EXTENT_UNKNOWN_OP;
@@ -281,10 +284,21 @@ int e4attr_main(int argc, char ** argv) {
         ff_log(FC_ERROR, 0, "%s: missing operation, please specify one of --files=normal or --files=prealloc", program_name);
         return e4attr_usage(program_name);
     }
+    
     e4_err err = ft::e4attr_run(dev_path, apply_op);
     return err != 0 ? 1 : 0;
 }
 
+#else /* !(defined(FT_HAVE_LIBEXT2FS) && defined(FT_HAVE_LIBCOM_ERR)) */
 
+int e4attr_main(int argc, char ** argv) {
+    const char * program_name = argv[0];
+
+    ff_log(FC_ERROR, 0, "%s: this program is a NOT functional because it was compiled without -lext2fs -lcom_err", program_name);
+    return 1;
+}
+
+#endif /* defined(FT_HAVE_LIBEXT2FS) && defined(FT_HAVE_LIBCOM_ERR) */
+        
 FT_NAMESPACE_END
 

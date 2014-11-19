@@ -52,6 +52,7 @@
 #include "../log.hh"       // for ff_log()
 #include "../misc.hh"      // for ff_max2(), ff_min2()
 #include "../vector.hh"    // for fr_vector<T>
+#include "../cache/cache_mem.hh" // for ft_cache_mem<K,V>
 
 #include "util_posix.hh"   // for ff_posix_stat()
 #include "extent_posix.hh" // for ff_read_extents_posix()
@@ -65,14 +66,19 @@ const char * const fr_io_prealloc::MP_LABEL[] = { LABEL[FC_DEVICE], LABEL[FC_LOO
 
 /** constructor. */
 fr_io_prealloc::fr_io_prealloc(fr_persist & persist)
-: super_type(persist), this_inode_cache((ft_nlink)0), mount_point(),
+: super_type(persist), this_inode_cache(NULL), mount_point(),
   loop_file_path(), loop_dev_path(NULL), cmd_losetup(NULL)
-{ }
+{
+    // TODO: command-line option to use ft_cache_symlink_kv<K,V>
+    this_inode_cache = new ft_cache_mem<ft_nlink,ft_nlink>();
+}
 
 /** destructor. calls close() */
 fr_io_prealloc::~fr_io_prealloc()
 {
     close();
+    delete this_inode_cache;
+    this_inode_cache = NULL;
 }
 
 /** return true if device and loop file mount points are currently (and correctly) open */
@@ -105,7 +111,7 @@ int fr_io_prealloc::open(const fr_args & args)
         return -EINVAL;
     }
 
-    this_inode_cache.clear();
+    this_inode_cache->clear();
     loop_file_path = loop_file_path_cstr;
     loop_dev_path = args.loop_dev;
     cmd_losetup = args.cmd_losetup;
@@ -141,7 +147,7 @@ int fr_io_prealloc::open(const fr_args & args)
  */
 void fr_io_prealloc::close()
 {
-    this_inode_cache.clear();
+    this_inode_cache->clear();
     ft_size i, n = FC_MOUNT_POINTS_N;
     for (i = 0; i < n; i++) {
         mount_point[i].close();
@@ -209,12 +215,12 @@ int fr_io_prealloc::umount_dev()
 {
     int err = 0;
     for (ft_size i = 0; i < FC_MOUNT_POINTS_N; i++)
-    	// we must close mount_point[] to allow unmounting device and loop_device
+        // we must close mount_point[] to allow unmounting device and loop_device
         if ((err = mount_point[i].close()) != 0)
-        	break;
+            break;
 
     if (err == 0
-    	&& (err = cmd_umount_loop_dev()) == 0
+        && (err = cmd_umount_loop_dev()) == 0
         && (err = cmd_losetup_loop_dev()) == 0
         && (err = super_type::umount_dev()) == 0)
     { }
@@ -242,7 +248,7 @@ int fr_io_prealloc::read_extents(fr_vector<ft_uoff> & loop_file_extents,
                                     ft_uoff & ret_block_size_bitmask)
 {
     ft_uoff block_size_bitmask = ret_block_size_bitmask;
-	int err = 0;
+    int err = 0;
     do {
         if (!is_open_dirs()) {
             ff_log(FC_ERROR, 0, "unexpected call to fr_io_prealloc::read_extents(), I/O is not open");
@@ -261,41 +267,41 @@ int fr_io_prealloc::read_extents(fr_vector<ft_uoff> & loop_file_extents,
         fr_vector<ft_uoff> super_loop_file_extents;
         err = super_type::read_extents_loop_file(super_loop_file_extents, to_zero_extents, block_size_bitmask);
         if (err != 0)
-        	break;
+            break;
 
         // fr_io_posix::read_extents_loop_file() may add to its loop_file_extents
         // some extents that overlap with the ones computed above.
         // remove any such overlap!
         if (!loop_file_extents.empty() && !super_loop_file_extents.empty()) {
 
-        	ff_log(FC_DEBUG, 0, "merging %"FT_ULL" prealloc extents with %"FT_ULL" %s extents",
-        			(ft_ull) loop_file_extents.size(), (ft_ull) super_loop_file_extents.size(), LABEL[FC_LOOP_FILE]);
+            ff_log(FC_DEBUG, 0, "merging %"FT_ULL" prealloc extents with %"FT_ULL" %s extents",
+                    (ft_ull) loop_file_extents.size(), (ft_ull) super_loop_file_extents.size(), LABEL[FC_LOOP_FILE]);
 
-        	const ft_uoff eff_block_size_log2 = effective_block_size_log2(block_size_bitmask);
-        	const ft_uoff eff_block_size = (ft_uoff)1 << eff_block_size_log2;
-        	loop_file_extents.show("prealloc", " before merge", eff_block_size);
-        	super_loop_file_extents.show(LABEL[FC_LOOP_FILE], " before merge", eff_block_size);
+            const ft_uoff eff_block_size_log2 = effective_block_size_log2(block_size_bitmask);
+            const ft_uoff eff_block_size = (ft_uoff)1 << eff_block_size_log2;
+            loop_file_extents.show("prealloc", " before merge", eff_block_size);
+            super_loop_file_extents.show(LABEL[FC_LOOP_FILE], " before merge", eff_block_size);
 
-        	// use fr_map<T>::merge_shift() to merge.
-        	// unluckily it merges based on ->physical, so we must transpose the vectors
-        	loop_file_extents.transpose();
-        	super_loop_file_extents.transpose();
+            // use fr_map<T>::merge_shift() to merge.
+            // unluckily it merges based on ->physical, so we must transpose the vectors
+            loop_file_extents.transpose();
+            super_loop_file_extents.transpose();
 
-        	fr_map<ft_uoff> map;
-        	enum { NO_SHIFT = 0 };
-        	map.append0_shift(loop_file_extents, NO_SHIFT);
+            fr_map<ft_uoff> map;
+            enum { NO_SHIFT = 0 };
+            map.append0_shift(loop_file_extents, NO_SHIFT);
 
-        	map.merge_shift(super_loop_file_extents, NO_SHIFT, FC_PHYSICAL1);
+            map.merge_shift(super_loop_file_extents, NO_SHIFT, FC_PHYSICAL1);
 
-			loop_file_extents.assign(map.begin(), map.end());
-			loop_file_extents.transpose();
-			// loop_file_extents is now sorted by logical,
-			// because fr_map<T> is intrinsically sorted by physical
+            loop_file_extents.assign(map.begin(), map.end());
+            loop_file_extents.transpose();
+            // loop_file_extents is now sorted by logical,
+            // because fr_map<T> is intrinsically sorted by physical
 
-        	ff_log(FC_DEBUG, 0, "merge completed, result is %"FT_ULL" extents",
-        			(ft_ull) loop_file_extents.size());
+            ff_log(FC_DEBUG, 0, "merge completed, result is %"FT_ULL" extents",
+                    (ft_ull) loop_file_extents.size());
 
-        	loop_file_extents.show(LABEL[FC_LOOP_FILE], " after merge", eff_block_size);
+            loop_file_extents.show(LABEL[FC_LOOP_FILE], " after merge", eff_block_size);
         }
 
         // we must call super_type::read_extents_free_space() after preparing loop_file_extents because,
@@ -303,7 +309,7 @@ int fr_io_prealloc::read_extents(fr_vector<ft_uoff> & loop_file_extents,
         // (assuming it is sorted by ->logical) and compute free_space_extents as its complement
         err = super_type::read_extents_free_space(loop_file_extents, free_space_extents, to_zero_extents, block_size_bitmask);
         if (err != 0)
-        	break;
+            break;
 
         // no guarantee to_zero_extents is already sorted, so we have to sort it before returning
         to_zero_extents.sort_by_logical();
@@ -373,7 +379,7 @@ int fr_io_prealloc::hard_link(const char * src_path, const ft_stat & src_stat,
 
     if (src_nlink != dst_nlink) {
         ff_log(FC_ERROR, 0, "%s: '%s' has %"FT_ULL" link%s, while '%s' has %"FT_ULL" link%s",
-        		FC_INVALID_FS_STR,
+                FC_INVALID_FS_STR,
                 src_path, (ft_ull) src_nlink, src_nlink == 1 ? "" : "s",
                 dst_path, (ft_ull) dst_nlink, dst_nlink == 1 ? "" : "s");
         return -EINVAL;
@@ -390,20 +396,22 @@ int fr_io_prealloc::hard_link(const char * src_path, const ft_stat & src_stat,
 
     // (dst_nlink - 1) because we just found one link to this inode:
     // we expect to find (dst_nlink - 1) other links
-    ft_nlink * const cached_nlink = this_inode_cache.find_or_add(dst_inode, dst_nlink - 1);
-
-    if (cached_nlink == NULL) {
+    ft_nlink cached_nlink = dst_nlink - 1;
+    
+    int err = this_inode_cache->find_or_add(dst_inode, cached_nlink);
+    if (err < 0)
+        return err;
+    
+    if (err == 0) {
         // fake error to tell caller that inode was not in inode_cache
         return EAGAIN;
     }
-
-    if (--cached_nlink[0] <= 0) {
+    if (cached_nlink == 1) {
         // we do not expect further links to this inode
-        this_inode_cache.erase(dst_inode);
+        return this_inode_cache->find_and_delete(dst_inode, cached_nlink);
     }
-
-    // inode was already in inode_cache
-    return 0;
+    // we expect further links to this inode
+    return this_inode_cache->find_and_update(dst_inode, cached_nlink - 1);
 }
 
 
@@ -555,14 +563,14 @@ int fr_io_prealloc::read_extents_file(const char * src_path, const ft_stat & src
             break;
         fr_vector<ft_uoff> unmapped;
 
-        // PROBLEM: dst file-system may have a smaller blocksize than src file-system
-	// Consequence: extent[SRC] may have an 'unnecessary' tail fragment that cannot be mapped to dst
-	// SOLUTION: explicitly check for this case and manually remove such tail
-	if (!extent[SRC].empty() && !extent[DST].empty()) {
-	    fr_extent<ft_uoff> & e1 = extent[SRC].back(), & e2 = extent[DST].back();
-	    ft_uoff end1 = e1.logical() + e1.length();
-	    ft_uoff end2 = e2.logical() + e2.length();
-	    if (end1 > end2 && end2 >= len[SRC])
+    // PROBLEM: dst file-system may have a smaller blocksize than src file-system
+    // Consequence: extent[SRC] may have an 'unnecessary' tail fragment that cannot be mapped to dst
+    // SOLUTION: explicitly check for this case and manually remove such tail
+    if (!extent[SRC].empty() && !extent[DST].empty()) {
+        fr_extent<ft_uoff> & e1 = extent[SRC].back(), & e2 = extent[DST].back();
+        ft_uoff end1 = e1.logical() + e1.length();
+        ft_uoff end2 = e2.logical() + e2.length();
+        if (end1 > end2 && end2 >= len[SRC])
                 extent[SRC].truncate_at_logical(end2);
         }
        

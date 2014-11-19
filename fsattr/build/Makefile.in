@@ -183,6 +183,8 @@ INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LDFLAGS = @LDFLAGS@
+LD_LIBCOM_ERR = @LD_LIBCOM_ERR@
+LD_LIBEXT2FS = @LD_LIBEXT2FS@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LTLIBOBJS = @LTLIBOBJS@
@@ -244,7 +246,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = subdir-objects
-fsattr_LDADD = -lext2fs -lcom_err
+fsattr_LDADD = @LD_LIBEXT2FS@ @LD_LIBCOM_ERR@
 fsattr_SOURCES = \
   ../src/e4attr.cc \
   ../src/log.cc \

@@ -104,6 +104,7 @@ am_fsremap_OBJECTS = ../src/arch/mem.$(OBJEXT) \
 	../src/io/extent_posix.$(OBJEXT) ../src/io/io.$(OBJEXT) \
 	../src/io/io_null.$(OBJEXT) ../src/io/io_posix.$(OBJEXT) \
 	../src/io/io_posix_dir.$(OBJEXT) \
+	../src/io/io_prealloc.$(OBJEXT) \
 	../src/io/io_self_test.$(OBJEXT) ../src/io/io_test.$(OBJEXT) \
 	../src/io/persist.$(OBJEXT) ../src/io/util_dir.$(OBJEXT) \
 	../src/io/util_posix.$(OBJEXT) ../src/job.$(OBJEXT) \
@@ -199,6 +200,8 @@ INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LDFLAGS = @LDFLAGS@
+LD_LIBCOM_ERR = @LD_LIBCOM_ERR@
+LD_LIBEXT2FS = @LD_LIBEXT2FS@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LTLIBOBJS = @LTLIBOBJS@
@@ -274,6 +277,7 @@ fsremap_SOURCES = \
   ../src/io/io_null.cc \
   ../src/io/io_posix.cc \
   ../src/io/io_posix_dir.cc \
+  ../src/io/io_prealloc.cc \
   ../src/io/io_self_test.cc \
   ../src/io/io_test.cc \
   ../src/io/persist.cc \
@@ -414,6 +418,8 @@ clean-sbinPROGRAMS:
 	../src/io/$(DEPDIR)/$(am__dirstamp)
 ../src/io/io_posix_dir.$(OBJEXT): ../src/io/$(am__dirstamp) \
 	../src/io/$(DEPDIR)/$(am__dirstamp)
+../src/io/io_prealloc.$(OBJEXT): ../src/io/$(am__dirstamp) \
+	../src/io/$(DEPDIR)/$(am__dirstamp)
 ../src/io/io_self_test.$(OBJEXT): ../src/io/$(am__dirstamp) \
 	../src/io/$(DEPDIR)/$(am__dirstamp)
 ../src/io/io_test.$(OBJEXT): ../src/io/$(am__dirstamp) \
@@ -498,6 +504,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/io/$(DEPDIR)/io_null.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/io/$(DEPDIR)/io_posix.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/io/$(DEPDIR)/io_posix_dir.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/io/$(DEPDIR)/io_prealloc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/io/$(DEPDIR)/io_self_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/io/$(DEPDIR)/io_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/io/$(DEPDIR)/persist.Po@am__quote@
@@ -733,8 +740,6 @@ uninstall-am: uninstall-sbinPROGRAMS
 	mostlyclean-compile mostlyclean-generic pdf pdf-am ps ps-am \
 	tags tags-am uninstall uninstall-am uninstall-sbinPROGRAMS
 
-
-#  ../src/io/io_prealloc.cc
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

@@ -16,6 +16,7 @@ fsremap_SOURCES = \
   ../src/io/io_null.cc \
   ../src/io/io_posix.cc \
   ../src/io/io_posix_dir.cc \
+  ../src/io/io_prealloc.cc \
   ../src/io/io_self_test.cc \
   ../src/io/io_test.cc \
   ../src/io/persist.cc \
@@ -35,5 +36,3 @@ fsremap_SOURCES = \
   ../src/ui/ui_tty.cc \
   ../src/vector.cc \
   ../src/work.cc
-
-#  ../src/io/io_prealloc.cc

@@ -66,15 +66,21 @@ public:
      * if cached inode found, set payload and return 1.
      * Otherwise add it to cache and return 0.
      * On error, return < 0.
-     * if returns 0, erase() must be called on the same inode when done with payload!
+     * if returns 0, find_and_delete() must be called on the same inode when done with payload!
      */
     virtual int find_or_add(const K key, V & inout_payload) = 0;
 
     /**
-     * if cached inode found, set payload, remove inode from cache and return 1.
+     * if cached inode found, set result_payload, remove inode from cache and return 1.
      * Otherwise return 0. On error, return < 0.
      */
     virtual int find_and_delete(const K key, V & result_payload) = 0;
+
+    /**
+     * if cached inode found, change its payload and return 1.
+     * Otherwise return 0. On error, return < 0.
+     */
+    virtual int find_and_update(const K key, const V & new_payload) = 0;
 
     virtual void clear() = 0;
 };

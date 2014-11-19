@@ -46,23 +46,23 @@ template<class K, class V>
 class ft_cache_mem : public ft_cache<K, V>
 {
 private:
-	typedef ft_cache<K,V> super_type;
+    typedef ft_cache<K,V> super_type;
 
 #ifdef FT_HAVE_FT_UNSORTED_MAP
-	typedef ft_unsorted_map<K,V> map_type;
+    typedef ft_unsorted_map<K,V> map_type;
 #else
-	typedef std::map<K,V> map_type;
+    typedef std::map<K,V> map_type;
 #endif
 
-	map_type map;
+    map_type map;
 
 public:
     /** default constructor */
-	ft_cache_mem(const V & init_zero_payload = V()) : super_type(init_zero_payload), map()
+    ft_cache_mem(const V & init_zero_payload = V()) : super_type(init_zero_payload), map()
     { }
     
     /** copy constructor */
-	ft_cache_mem(const ft_cache_mem<K,V> & other) : super_type(other), map(other.map)
+    ft_cache_mem(const ft_cache_mem<K,V> & other) : super_type(other), map(other.map)
     { }
     
     /** assignment operator */
@@ -97,7 +97,7 @@ public:
     }
 
     /**
-     * if cached key found, set payload, remove cached key and return 1.
+     * if cached key found, set result_payload, remove cached key and return 1.
      * Otherwise return 0. On error, return < 0.
      */
     virtual int find_and_delete(const K key, V & result_payload)
@@ -111,6 +111,20 @@ public:
         return 1;
     }
 
+    /**
+     * if cached inode found, change its payload and return 1.
+     * Otherwise return 0. On error, return < 0.
+     */
+    virtual int find_and_update(const K key, const V & new_payload)
+    {
+        typename map_type::iterator iter = map.find(key);
+        if (iter == map.end())
+            return 0;
+        
+        iter->second = new_payload;
+        return 1;
+    }
+    
     virtual void clear()
     {
         map.clear();

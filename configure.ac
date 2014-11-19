@@ -71,20 +71,35 @@ FT_CXX_STD_TR1_UNORDERED_MAP
 
 
 # Checks for libraries.
-AC_CHECK_LIB(com_err, error_message,       [AC_DEFINE(HAVE_LIBCOM_ERR, 1, [Define to 1 if you have the com_err library.])])
-AC_CHECK_LIB(ext2fs, ext2fs_extent_replace, [AC_DEFINE(HAVE_LIBEXT2FS, 1, [Define to 1 if you have the ext2fs library.])])
+AC_CHECK_LIB(com_err, error_message,        [AC_DEFINE(HAVE_LIBCOM_ERR, 1, [Define to 1 if you have the com_err library.])
+                                             AC_SUBST(LD_LIBCOM_ERR, [-lcom_err])])
+AC_CHECK_LIB(ext2fs, ext2fs_extent_replace, [AC_DEFINE(HAVE_LIBEXT2FS, 1, [Define to 1 if you have the ext2fs library.])
+                                             AC_SUBST(LD_LIBEXT2FS, [-lext2fs])])
 
 FT_NEED_ALL_FUNCS([execvp fileno ftruncate memmove memset mkdir mkfifo msync munmap \
                    remove strerror strftime sync time waitpid])
 FT_NEED_ANY_FUNC([localtime_r localtime])
 FT_NEED_ANY_FUNC([lchown chown])
 
-FT_NEED_ALL_LIBS([com_err_error_message ext2fs_ext2fs_extent_replace])
+dnl FT_NEED_ALL_LIBS([com_err_error_message ext2fs_ext2fs_extent_replace])
 
 if test "$ac_cv_func_fallocate" != "yes"
 then
-  AC_MSG_WARN([missing function fallocate(), preallocation speedup will NOT be compiled])
+  AC_MSG_WARN([missing function fallocate(), experimental files preallocation will NOT be compiled])
+  
+elif test "$ac_cv_lib_com_err_error_message" != "yes"
+then
+  AC_MSG_WARN([missing function error_message() in -lcom_err, experimental files preallocation will NOT be compiled])
+  
+elif test "$ac_cv_lib_ext2fs_ext2fs_extent_replace" != "yes"
+then
+  AC_MSG_WARN([missing function ext2fs_extent_replace() in -lext2fs, experimental files preallocation will NOT be compiled])
+
+else
+  AC_DEFINE(HAVE_IO_PREALLOC, 1, [Define to 1 if "prealloc" I/O is supported"])
+  AC_MSG_NOTICE([support for experimental files preallocation will be compiled])
 fi
+
 
 AC_CONFIG_FILES([Makefile fsattr/build/Makefile fsremap/build/Makefile fsmove/build/Makefile fstransform/build/Makefile])
 AC_OUTPUT

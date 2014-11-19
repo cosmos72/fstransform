@@ -64,7 +64,7 @@ FT_NAMESPACE_BEGIN
 
 template<typename T>
 static void test_show(const char * label1, const char * label2, const fr_vector<T> v) {
-	v.show(label1, label2, 1, FC_INFO);
+    v.show(label1, label2, 1, FC_INFO);
 }
 
 #define FR_MAIN(argc, argv) FT_NS test_map_merge<ft_uoff>()
@@ -75,24 +75,24 @@ static int test_map_merge() {
 
     v1.append(39174144, 4589568,  31744, FC_DEFAULT_USER_DATA);
     v2.append(70565888, 4476928, 114688, FC_DEFAULT_USER_DATA);
-	test_show("v1", "", v1);
-	test_show("v2", "", v2);
+    test_show("v1", "", v1);
+    test_show("v2", "", v2);
 
-	// use fr_map<T>::merge_shift() to merge.
-	// unluckily it merges based on ->physical, so we must transpose the vectors
-	v1.transpose();
-	v2.transpose();
+    // use fr_map<T>::merge_shift() to merge.
+    // unluckily it merges based on ->physical, so we must transpose the vectors
+    v1.transpose();
+    v2.transpose();
 
-	fr_map<ft_uoff> map;
-	enum { NO_SHIFT = 0 };
-	map.append0_shift(v1, NO_SHIFT);
+    fr_map<ft_uoff> map;
+    enum { NO_SHIFT = 0 };
+    map.append0_shift(v1, NO_SHIFT);
 
-	map.merge_shift(v2, NO_SHIFT, FC_PHYSICAL1);
+    map.merge_shift(v2, NO_SHIFT, FC_PHYSICAL1);
 
-	v1.assign(map.begin(), map.end());
-	v1.transpose();
+    v1.assign(map.begin(), map.end());
+    v1.transpose();
 
-	test_show("v1", " after merge", v1);
+    test_show("v1", " after merge", v1);
 
     return 0;
 }
@@ -106,7 +106,7 @@ FT_NAMESPACE_BEGIN
 
 template<typename T>
 static void test_show(const char * label, const fr_vector<T> v) {
-	v.show(label, "", 1, FC_INFO);
+    v.show(label, "", 1, FC_INFO);
 }
 
 #define FR_MAIN(argc, argv) FT_NS test_vector_compose<ft_uoff>()
@@ -123,9 +123,9 @@ static int test_vector_compose() {
 
     int err = result.compose(v1, v2, bitmask, unmapped);
     if (err == 0) {
-    	ff_log(FC_INFO, 0, "block_size_bitmask = 0x%"FT_XLL, (ft_ull) bitmask);
-    	test_show("result", result);
-    	test_show("unmapped", unmapped);
+        ff_log(FC_INFO, 0, "block_size_bitmask = 0x%"FT_XLL, (ft_ull) bitmask);
+        test_show("result", result);
+        test_show("unmapped", unmapped);
     }
     return err ? 1 : 0;
 }
@@ -190,39 +190,39 @@ using FT_IO_NS ff_read_extents_posix;
 #define FR_MAIN(argc, argv) FT_NS test_ioctl_fiemap(argc, argv)
 static int test_ioctl_fiemap(int argc, char ** argv)
 {
-	ft_log::get_root_logger().set_level(FC_DEBUG);
+    ft_log::get_root_logger().set_level(FC_DEBUG);
     ft_log_appender::redefine(stdout, FC_FMT_DATETIME_LEVEL_CALLER_MSG, FC_DEBUG, FC_NOTICE);
     ft_log_appender::redefine(stderr, FC_FMT_DATETIME_LEVEL_CALLER_MSG, FC_WARN);
 
-	fr_vector<ft_uoff> extents;
-	ft_uoff dev_size = 0x7FFFFFFFul, block_size_bitmask;
-	const char * path;
-	int fd, err = 0;
+    fr_vector<ft_uoff> extents;
+    ft_uoff dev_size = 0x7FFFFFFFul, block_size_bitmask;
+    const char * path;
+    int fd, err = 0;
 
-	while ((path = * ++argv) != NULL) {
-		if ((fd = ::open(path, O_RDONLY)) < 0) {
-			err = ff_log(FC_ERROR, errno, "error opening file '%s'", path);
-			break;
-		}
-		extents.clear();
-		block_size_bitmask = 0;
+    while ((path = * ++argv) != NULL) {
+        if ((fd = ::open(path, O_RDONLY)) < 0) {
+            err = ff_log(FC_ERROR, errno, "error opening file '%s'", path);
+            break;
+        }
+        extents.clear();
+        block_size_bitmask = 0;
 
-		if ((err = ff_read_extents_posix(fd, dev_size, extents, block_size_bitmask)) != 0)
-			break;
+        if ((err = ff_read_extents_posix(fd, dev_size, extents, block_size_bitmask)) != 0)
+            break;
 
-		ft_size n = extents.size();
+        ft_size n = extents.size();
 
         ff_log(FC_INFO, 0, "# %4"FT_ULL" extent%s in %s", (ft_ull) n, (n == 1 ? " " : "s"), path);
         ff_log(FC_INFO, 0, "#  extent           physical         logical      length  user_data");
 
-		for (ft_size i = 0; i < n; i++) {
-			fr_extent<ft_uoff> & e = extents[i];
+        for (ft_size i = 0; i < n; i++) {
+            fr_extent<ft_uoff> & e = extents[i];
 
-			ff_log(FC_INFO, 0, "#%8"FT_ULL"\t%12"FT_ULL"\t%12"FT_ULL"\t%8"FT_ULL"\t(%"FT_ULL")", (ft_ull)i,
-		           (ft_ull) e.physical(), (ft_ull) e.logical(), (ft_ull) e.length(), (ft_ull) e.user_data());
-		}
-	}
-	return err;
+            ff_log(FC_INFO, 0, "#%8"FT_ULL"\t%12"FT_ULL"\t%12"FT_ULL"\t%8"FT_ULL"\t(%"FT_ULL")", (ft_ull)i,
+                   (ft_ull) e.physical(), (ft_ull) e.logical(), (ft_ull) e.length(), (ft_ull) e.user_data());
+        }
+    }
+    return err;
 }
 FT_NAMESPACE_END
 
@@ -243,29 +243,29 @@ FT_IO_NAMESPACE_END
 
 FT_NAMESPACE_BEGIN
 int ff_test_pretty_time(int argc, char ** argv) {
-	ft_log_level log_level = FT_NS FC_INFO;
-	double time, percentage = 0.0, pretty_len = 0;
-	const char * simul_msg = "", * pretty_label = "";
+    ft_log_level log_level = FT_NS FC_INFO;
+    double time, percentage = 0.0, pretty_len = 0;
+    const char * simul_msg = "", * pretty_label = "";
 
-	for (time = 0.4; time < 800000000.0; time *= 1.1) {
-    	ft_ull time_left1 = 0, time_left2 = 0;
-    	const char * time_left_label1 = NULL, * time_left_label2 = NULL;
+    for (time = 0.4; time < 800000000.0; time *= 1.1) {
+        ft_ull time_left1 = 0, time_left2 = 0;
+        const char * time_left_label1 = NULL, * time_left_label2 = NULL;
 
-    	ff_pretty_time2(time, & time_left1, & time_left_label1, & time_left2, & time_left_label2);
+        ff_pretty_time2(time, & time_left1, & time_left_label1, & time_left2, & time_left_label2);
 
-    	/* we write something like "1 hour and 20 minutes" instead of just "1 hour" or "1.3 hours" */
-    	if (time_left_label2 != NULL) {
-    		ff_log(log_level, 0, "%sprogress: %4.1f%% done, %.2f %sbytes still to relocate, estimated %"FT_ULL" %s%s and %"FT_ULL" %s%s left",
-        			simul_msg, percentage, pretty_len, pretty_label,
-        			time_left1, time_left_label1, (time_left1 != 1 ? "s": ""),
-        			time_left2, time_left_label2, (time_left2 != 1 ? "s": ""));
-    	} else {
-    		ff_log(log_level, 0, "%sprogress: %4.1f%% done, %.2f %sbytes still to relocate, estimated %"FT_ULL" %s%s left",
-        			simul_msg, percentage, pretty_len, pretty_label,
-        			time_left1, time_left_label1, (time_left1 != 1 ? "s": ""));
-    	}
-	}
-	return 0;
+        /* we write something like "1 hour and 20 minutes" instead of just "1 hour" or "1.3 hours" */
+        if (time_left_label2 != NULL) {
+            ff_log(log_level, 0, "%sprogress: %4.1f%% done, %.2f %sbytes still to relocate, estimated %"FT_ULL" %s%s and %"FT_ULL" %s%s left",
+                    simul_msg, percentage, pretty_len, pretty_label,
+                    time_left1, time_left_label1, (time_left1 != 1 ? "s": ""),
+                    time_left2, time_left_label2, (time_left2 != 1 ? "s": ""));
+        } else {
+            ff_log(log_level, 0, "%sprogress: %4.1f%% done, %.2f %sbytes still to relocate, estimated %"FT_ULL" %s%s left",
+                    simul_msg, percentage, pretty_len, pretty_label,
+                    time_left1, time_left_label1, (time_left1 != 1 ? "s": ""));
+        }
+    }
+    return 0;
 }
 FT_NAMESPACE_END
 # define FR_MAIN(argc, argv) FT_NS ff_test_pretty_time(argc, argv)
@@ -281,5 +281,5 @@ FT_NAMESPACE_END
 
 
 int main(int argc, char ** argv) {
-	return FR_MAIN(argc, argv);
+    return FR_MAIN(argc, argv);
 }

@@ -46,7 +46,7 @@
 
 #include "io/io.hh"           // for fr_io
 #include "io/io_posix.hh"     // for fr_io_posix
-#ifdef FT_ENABLE_IO_PREALLOC
+#ifdef FT_HAVE_IO_PREALLOC
 # include "io/io_prealloc.hh"  // for fr_io_prealloc
 #endif
 #include "io/io_self_test.hh" // for fr_io_self_test
@@ -133,21 +133,21 @@ int fr_remap::usage(const char * program_name)
      "      --clear=none      (DANGEROUS) do not clear any free blocks after remapping\n"
      "      --cmd-umount=CMD  command to unmount %s (default: /bin/umount)\n"
      "      --cmd-losetup=CMD 'losetup' command (default: /sbin/losetup)\n"
-	 "      --color=MODE      set messages color. MODE is one of:"
-	 "                          auto (default), none, ansi\n"
-#ifdef FT_ENABLE_IO_PREALLOC
+     "      --color=MODE      set messages color. MODE is one of:"
+     "                          auto (default), none, ansi\n"
+#ifdef FT_HAVE_IO_PREALLOC
      "      --device-mount-point=DIR\n"
      "                        set device mount point (needed by --io=prealloc)\n"
 #endif
      "  -f, --force-run       continue even if some sanity checks fail\n"
      "      --io=posix        use posix I/O (default)\n"
-#ifdef FT_ENABLE_IO_PREALLOC
-     "      --io=prealloc     use posix I/O with preallocated files inside %s\n"
+#ifdef FT_HAVE_IO_PREALLOC
+     "      --io=prealloc     use posix I/O with EXPERIMENTAL preallocated files\n"
 #endif
      "      --io=self-test    perform in-memory self-test with random data\n"
      "      --io=test         use test I/O. Arguments are:\n"
      "                          DEVICE-LENGTH LOOP-FILE-EXTENTS FREE-SPACE-EXTENTS\n"
-#ifdef FT_ENABLE_IO_PREALLOC
+#ifdef FT_HAVE_IO_PREALLOC
      "      --loop-device=LOOP-DEVICE\n"
      "                        loop device to disconnect (needed by --io=prealloc)\n"
      "      --loop-mount-point=DIR\n"
@@ -181,7 +181,7 @@ int fr_remap::usage(const char * program_name)
      "      --x-OPTION=VALUE  set internal, undocumented option. for maintainers only\n"
      "      --help            display this help and exit\n"
      "      --version         output version information and exit\n",
-     LABEL[FC_DEVICE], LABEL[FC_LOOP_FILE]);
+     LABEL[FC_DEVICE]);
 }
 
 
@@ -331,7 +331,7 @@ int fr_remap::init(int argc, char const* const* argv)
                 else if ((io_kind = FC_IO_TEST,        !strcmp(arg, "--io=test"))
                         || (io_kind = FC_IO_SELF_TEST, !strcmp(arg, "--io=self-test"))
                         || (io_kind = FC_IO_POSIX,     !strcmp(arg, "--io=posix"))
-#ifdef FT_ENABLE_IO_PREALLOC
+#ifdef FT_HAVE_IO_PREALLOC
                         || (io_kind = FC_IO_PREALLOC,  !strcmp(arg, "--io=prealloc"))
 #endif
                         )
@@ -684,7 +684,7 @@ int fr_remap::init_io(const fr_args & args)
         case FC_IO_POSIX:
             err = init_io_class<FT_IO_NS fr_io_posix>(args);
             break;
-#ifdef FT_ENABLE_IO_PREALLOC
+#ifdef FT_HAVE_IO_PREALLOC
         case FC_IO_PREALLOC:
             err = init_io_class<FT_IO_NS fr_io_prealloc>(args);
             break;

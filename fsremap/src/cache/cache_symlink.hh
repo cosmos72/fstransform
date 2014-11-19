@@ -78,10 +78,16 @@ public:
     int find_or_add(const ft_string & key, ft_string & payload);
 
     /**
-     * if cached key found, set payload, remove cached key and return 1.
+     * if cached key found, set result_payload, remove cached key and return 1.
      * Otherwise return 0. On error, return < 0.
      */
     int find_and_delete(const ft_string & key, ft_string & result_payload);
+
+    /**
+     * if cached inode found, change its payload and return 1.
+     * Otherwise return 0. On error, return < 0.
+     */
+    int find_and_update(const ft_string key, const ft_string & new_payload);
 
     void clear();
 };

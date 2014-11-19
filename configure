@@ -626,6 +626,8 @@ ac_header_list=
 ac_subst_vars='am__EXEEXT_FALSE
 am__EXEEXT_TRUE
 LTLIBOBJS
+LD_LIBEXT2FS
+LD_LIBCOM_ERR
 LIBOBJS
 EGREP
 GREP
@@ -2514,8 +2516,8 @@ test "$program_suffix" != NONE &&
 ac_script='s/[\\$]/&&/g;s/;s,x,x,$//'
 program_transform_name=`$as_echo "$program_transform_name" | sed "$ac_script"`
 
-# expand $ac_aux_dir to an absolute path
-am_aux_dir=`cd $ac_aux_dir && pwd`
+# Expand $ac_aux_dir to an absolute path.
+am_aux_dir=`cd "$ac_aux_dir" && pwd`
 
 if test x"${MISSING+set}" != xset; then
   case $am_aux_dir in
@@ -5003,6 +5005,8 @@ if test "x$ac_cv_lib_com_err_error_message" = xyes; then :
 
 $as_echo "#define HAVE_LIBCOM_ERR 1" >>confdefs.h
 
+                                             LD_LIBCOM_ERR=-lcom_err
+
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for ext2fs_extent_replace in -lext2fs" >&5
@@ -5044,6 +5048,8 @@ $as_echo "$ac_cv_lib_ext2fs_ext2fs_extent_replace" >&6; }
 if test "x$ac_cv_lib_ext2fs_ext2fs_extent_replace" = xyes; then :
 
 $as_echo "#define HAVE_LIBEXT2FS 1" >>confdefs.h
+
+                                             LD_LIBEXT2FS=-lext2fs
 
 fi
 
@@ -5099,25 +5105,29 @@ fi
 
 
 
-  ft_libs_missing=
-  for ft_lib in com_err_error_message ext2fs_ext2fs_extent_replace
-  do :
-    if test "`eval echo '$ac_cv_lib_'$ft_lib`" != "yes"
-    then
-      ft_libs_missing="${ft_libs_missing}lib$(echo $ft_lib | sed 's/_/:/')() "
-    fi
-  done
-  if test "x$ft_libs_missing" != "x"
-  then
-    as_fn_error $? "missing required library functions: $ft_libs_missing"
-  fi
-
-
 if test "$ac_cv_func_fallocate" != "yes"
 then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: missing function fallocate(), preallocation speedup will NOT be compiled" >&5
-$as_echo "$as_me: WARNING: missing function fallocate(), preallocation speedup will NOT be compiled" >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: missing function fallocate(), experimental files preallocation will NOT be compiled" >&5
+$as_echo "$as_me: WARNING: missing function fallocate(), experimental files preallocation will NOT be compiled" >&2;}
+
+elif test "$ac_cv_lib_com_err_error_message" != "yes"
+then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: missing function error_message() in -lcom_err, experimental files preallocation will NOT be compiled" >&5
+$as_echo "$as_me: WARNING: missing function error_message() in -lcom_err, experimental files preallocation will NOT be compiled" >&2;}
+
+elif test "$ac_cv_lib_ext2fs_ext2fs_extent_replace" != "yes"
+then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: missing function ext2fs_extent_replace() in -lext2fs, experimental files preallocation will NOT be compiled" >&5
+$as_echo "$as_me: WARNING: missing function ext2fs_extent_replace() in -lext2fs, experimental files preallocation will NOT be compiled" >&2;}
+
+else
+
+$as_echo "#define HAVE_IO_PREALLOC 1" >>confdefs.h
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: support for experimental files preallocation will be compiled" >&5
+$as_echo "$as_me: support for experimental files preallocation will be compiled" >&6;}
 fi
+
 
 ac_config_files="$ac_config_files Makefile fsattr/build/Makefile fsremap/build/Makefile fsmove/build/Makefile fstransform/build/Makefile"
 

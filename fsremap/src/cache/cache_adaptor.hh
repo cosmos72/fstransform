@@ -104,6 +104,21 @@ public:
         return err;
     }
 
+    /**
+     * if cached inode found, change its payload and return 1.
+     * Otherwise return 0. On error, return < 0.
+     */
+    virtual int find_and_update(const K key, const V & new_payload)
+    {
+    	mixin_key_type m_key;
+    	ff_set(m_key, key);
+
+    	mixin_payload_type m_payload;
+    	ff_set(m_payload, new_payload);
+
+        return mixin_type::find_and_update(m_key, m_payload);
+    }
+
     virtual void clear()
     {
         mixin_type::clear();
