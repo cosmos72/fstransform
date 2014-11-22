@@ -123,7 +123,7 @@ static int ff_posix_fibmap(int fd, ft_uoff dev_length, fr_vector<ft_uoff> & ret_
         {
             /* overflow! give up. */
             err = ff_log(FC_ERROR, EFBIG, "ff_posix_fibmap(): error, dev_block_count = %"FT_ULL", file_block_count = %"FT_ULL" overflow type (int)",
-                         fd, (ft_ull) dev_block_count, (ft_ull) file_block_count);
+                         (ft_ull) dev_block_count, (ft_ull) file_block_count);
             break;
         }
 

@@ -1115,6 +1115,30 @@ create_loop_file() {
 create_loop_file
 
 
+remount_device_ro() {
+  log_info "remounting device '$DEVICE' read-only"
+  exec_cmd "$CMD_mount" "$DEVICE" -o remount,ro
+}
+
+remount_device_rw() {
+  log_info "remounting device '$DEVICE' read-write"
+  exec_cmd "$CMD_mount" "$DEVICE" -o remount,rw
+}
+
+# detect unsupported corner cases, for example:
+# 1) source file systems without FIEMAP support and too large for FIBMAP
+# 2) other inconsistencies (which?)
+early_remap_validate() {
+  log_info "launching '$CMD_fsremap' in simulated mode for pre-validation"
+
+  exec_cmd "$CMD_fsremap" -q $my_OPTS_fsremap -n -- "$DEVICE" "$LOOP_FILE"
+}
+
+remount_device_ro
+early_remap_validate
+remount_device_rw
+
+
 connect_loop_device() {
   capture_cmd LOOP_DEVICE "$CMD_losetup" -f
   exec_cmd "$CMD_losetup" "$@" "$LOOP_DEVICE" "$LOOP_FILE"
