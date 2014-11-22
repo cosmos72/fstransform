@@ -84,6 +84,9 @@ There are four requirements for fstransform to have a chance to succeed:
    and at least one of the two system calls "ioctl(FS_IOC_FIEMAP)" or "ioctl(FIBMAP)"
    (see the file Documentation/filesystems/fiemap.txt in any recent Linux kernel
    for an explanation, or search for the same file on Internet)
+   
+   ioctl(FIBMAP) is limited by design to 2G-1 blocks, which typically translates to 8TB - 4kB.
+   To transform file systems equal or larger than 8TB, ioctl(FIEMAP) is required.
 
 3) the initial and final filesystems must be supported by the Linux kernel
    (i.e. it must be able to mount them)
@@ -96,6 +99,26 @@ There are four requirements for fstransform to have a chance to succeed:
       which, expr, id, blockdev, losetup, mount, umount,
       mkdir, rmdir, rm, mkfifo, dd, sync, fsck, mkfs 
 
+
+KNOWN LIMITS:
+
+1) if the device contains a HUGE number of files with multiple hard links,
+   fstransform will be very slow and consume a LOT of memory.
+   Devices with more than one million files with multiple hard links
+   can cause fstransform to crash with "out of memory" errors.
+
+2) JFS file systems equal or larger than 8TB cannot be converted due to
+   missing support for ioctl(FIEMAP) in the kernel:
+   the fallback ioctl(FIBMAP) is limited by design to < 8TB (assuming 4k blocks)
+
+3) REISERFS file systems using format "3.5" (the default) and equal or larger than 2TB
+   cannot be converted due to their maximum file size = 2TB - 4k:
+   fstransform needs to create a sparse file as large as the device itself.
+
+   REISERFS file systems using format "3.6" are immune to this problem.
+
+4) for the same reason, a device cannot be converted _to_ REISERFS format "3.5"
+   if it contains files larger than 2TB - 4k.
 
 FOREWORD:
 
