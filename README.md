@@ -1,25 +1,25 @@
-###############################################################################
-###############################################################################
-###############################################################################
-#########                                                             #########
-#########             THIS DOCUMENT EXPLAINS HOW TO USE               #########
-#########               RISKY PROGRAMS AND PROCEDURES                 #########
-#########        THAT MAY COMPLETELY AND IRREVERSIBLY DELETE          #########
-#########                ALL THE DATA ON YOUR DISKS                   #########
-#########                                                             #########
-#########         THE AUTHOR DECLINES ALL RESPONSIBILITIES            #########
-#########               FOR ANY DAMAGE THAT MAY DERIVE                #########
-#########           FROM USING THE PROGRAMS AND PROCEDURES            #########
-#########               DESCRIBED IN THIS DOCUMENT                    #########
-#########                                                             #########
-###############################################################################
-###############################################################################
-###############################################################################
+###############################################################
+###############################################################
+###
+###                        DISCLAIMER
+###
+###             THIS DOCUMENT EXPLAINS HOW TO USE
+###               RISKY PROGRAMS AND PROCEDURES
+###        THAT MAY COMPLETELY AND IRREVERSIBLY DELETE
+###                ALL THE DATA ON YOUR DISKS
+###
+###         THE AUTHOR DECLINES ALL RESPONSIBILITIES
+###               FOR ANY DAMAGE THAT MAY DERIVE
+###           FROM USING THE PROGRAMS AND PROCEDURES
+###               DESCRIBED IN THIS DOCUMENT
+###
+###############################################################
+###############################################################
 
-This document explains how use the programs 'fstransform', 'fsmove'
-and 'fsremap' to transform the contents of a Linux device
-- usually a disk partition - from a filesystem type to another
-while preserving its contents.
+
+This document explains how use the programs 'fstransform', 'fsmove' and
+'fsremap' to transform the contents of a Linux device - usually a disk
+partition - from a filesystem type to another while preserving its contents.
 
 For example, a disk partition can be transformed from 'jfs' to 'ext4',
 or from 'ext2' to 'xfs', or many other combinations. 
@@ -48,9 +48,10 @@ All this foreword means only one thing:
 The author declines ALL responsibilities for ANY damage that may derive
 from using the programs and procedures described in this document.
 
-###############################################################################
-###############################################################################
-###############################################################################
+###############################################################
+###############################################################
+
+### Introduction
 
 Enough legalese... now let's get to the interesting part.
 
@@ -66,9 +67,11 @@ It works even if the filesystem is almost full
 and even if it contains very large files, for example if some files
 are larger than half the device or larger than the available space.
 
+### REQUIREMENTS
+
 There are four requirements for fstransform to have a chance to succeed:
 
-1) the device must have a little free space, typically at least 5%
+1. the device must have a little free space, typically at least 5%
 
    WARNING: transforming an almost full device to 'xfs' file-system
    can be tricky:
@@ -79,7 +82,7 @@ There are four requirements for fstransform to have a chance to succeed:
      before resuming fstransform.
      A future fstransform version may automate this operation.
 
-2) the filesystem on the device must support SPARSE FILES, i.e. files with holes
+2. the filesystem on the device must support SPARSE FILES, i.e. files with holes
    (see for example http://en.wikipedia.org/wiki/Sparse_file for an explanation of what they are)
    and at least one of the two system calls "ioctl(FS_IOC_FIEMAP)" or "ioctl(FIBMAP)"
    (see the file Documentation/filesystems/fiemap.txt in any recent Linux kernel
@@ -88,24 +91,25 @@ There are four requirements for fstransform to have a chance to succeed:
    ioctl(FIBMAP) is limited by design to 2G-1 blocks, which typically translates to 8TB - 4kB.
    To transform file systems equal or larger than 8TB, ioctl(FIEMAP) is required.
 
-3) the initial and final filesystems must be supported by the Linux kernel
+3. the initial and final filesystems must be supported by the Linux kernel
    (i.e. it must be able to mount them)
    and by the tools 'mkfs' and 'fsck'
    (i.e. it must be possible to create them and check them for errors)
 
-4) the following programs must be available:
+4. the following programs must be available:
    the two custom-made programs 'fsmove' and 'fsremap' (distributed with the script)
    and several common Linux tools:
       which, expr, id, blockdev, losetup, mount, umount,
       mkdir, rmdir, rm, mkfifo, dd, sync, fsck, mkfs 
 
 
-KNOWN LIMITS:
+### KNOWN LIMITS
 
-1) if the device contains a HUGE number of files with multiple hard links,
-   fstransform will be very slow and consume a LOT of memory.
-   Devices with more than one million files with multiple hard links
-   can cause fstransform to crash with "out of memory" errors.
+* If the device contains a HUGE number of files with multiple hard links,
+  fstransform will be very slow and consume a LOT of memory.
+  Devices with more than one million files with multiple hard links
+  can cause fstransform to crash with "out of memory" errors.
+
 
 2) JFS file systems equal or larger than 8TB cannot be converted due to
    missing support for ioctl(FIEMAP) in the kernel:
@@ -120,7 +124,8 @@ KNOWN LIMITS:
 4) for the same reason, a device cannot be converted _to_ REISERFS format "3.5"
    if it contains files larger than 2TB - 4k.
 
-FOREWORD:
+
+### DETAILS TO KNOW
 
 If the original device is almost full, the program 'fsremap'
 will create a relatively small backup file ("secondary storage")
@@ -136,9 +141,9 @@ To pass the same option to 'fstransform', you must execute something like
   fstransform --opts-fsremap='-s <size>' <other-options-and-arguments> 
 
 
-PROCEDURE:
+### PROCEDURE
 
-0) compile fsmove and fsremap.
+0. compile fsmove and fsremap.
    Running "./configure" then "make" should suffice on any recent Linux machine,
    as long as g++ is installed.
    
@@ -152,7 +157,7 @@ PROCEDURE:
    Below, they will be referred as {fsmove} and {fsremap}
 
 
-1) OPTIONAL - CAN BE SKIPPED
+1. OPTIONAL - CAN BE SKIPPED
    mount read-write the device you want to remap to a new file-system type
 
    mount {device} {device-mount-point} [your-options]
@@ -160,7 +165,7 @@ PROCEDURE:
    if the device is already mounted, check that it is mounted read-write
    and that no process is using it.
 
-2) decide the target file-system type.
+2. decide the target file-system type.
 
    For some combinations of the initial and final filesystems
    it is not necessary to use 'fstransform',
@@ -175,14 +180,14 @@ PROCEDURE:
    "convert Linux File System ext2 to ext3" 
    "convert Linux File System ext3 to ext4" 
    
-   But for most combinations, the only way is either to do a full backup + format +
-   restore the data, or use 'fstransform'
+   But for most combinations, the only way is either to do a full backup +
+   format + restore the data, or use 'fstransform'
 
-3) execute the program
+3. execute the program
 
    fstransform {device} {target-file-system-type}
 
-4) follow the instructions - the program will tell you what it is doing,
+4. follow the instructions - the program will tell you what it is doing,
    and will also call 'fsmove' and 'fsremap' which show progress percentage
    and estimated time left.
    
@@ -193,10 +198,11 @@ PROCEDURE:
    In case there are errors, you can even try to fix them instead of
    aborting the execution (if you know what you are doing).
    
-5) be PATIENT. Transforming a large device takes a LONG time...
-   On a fairly fast disk, it takes about 1 minute per 1 gigabyte.
-   It means transforming 250GB of takes about 4 hours.
-   Solid state disks (SSD) can be much faster.
+5. be PATIENT. Transforming a large device takes a LONG time...
+   On a fairly fast disk, it takes about one minute per gigabyte.
+   It means transforming 1000GB takes about 16 hours.
+   Raid disks can be somewhat faster, and solid state disks (SSD)
+   can be _much_ faster.
    
 6) if something goes really wrong, check in /var/tmp/fstransform
    for the log files

@@ -64,9 +64,9 @@ FT_NAMESPACE_BEGIN
 
 /* FC_FATAL is reserved for things that should not happen, i.e. bugs in the program or in the operating system. */
 enum ft_log_level {
-	FC_LEVEL_NOT_SET = 0,
-	FC_DUMP, FC_TRACE, FC_DEBUG, FC_INFO, FC_NOTICE, FC_WARN, FC_ERROR, FC_FATAL,
-	FC_SHOW_DEFAULT_LEVEL = FC_TRACE
+    FC_LEVEL_NOT_SET = 0,
+    FC_DUMP, FC_TRACE, FC_DEBUG, FC_INFO, FC_NOTICE, FC_WARN, FC_ERROR, FC_FATAL,
+    FC_SHOW_DEFAULT_LEVEL = FC_TRACE
 };
 
 enum ft_log_fmt {
@@ -95,6 +95,8 @@ enum ft_log_color {
 bool ff_logl_is_enabled(const char * caller_file, int caller_file_len, ft_log_level level);
 int  ff_logl(const char * caller_file, int caller_file_len, const char * caller_func, int caller_line, ft_log_level level, int err, const char * fmt, ...);
 int  ff_logv(const char * caller_file, int caller_file_len, const char * caller_func, int caller_line, ft_log_level level, int err, const char * fmt, va_list args);
+
+const char * ff_log_level_to_string(ft_log_level level);
 
 
 #if defined(EINVAL) && EINVAL < 0
@@ -133,8 +135,8 @@ private:
 public:
     /** constructor. */
     ft_log_appender(FILE * stream, ft_log_fmt format = FC_FMT_MSG,
-    		ft_log_level min_level = FC_DUMP, ft_log_level max_level = FC_FATAL,
-    		ft_log_color color = FC_COL_AUTO);
+                    ft_log_level min_level = FC_DUMP, ft_log_level max_level = FC_FATAL,
+                    ft_log_color color = FC_COL_AUTO);
     
     FT_INLINE void set_format(ft_log_fmt format) { this->format = format; }
 

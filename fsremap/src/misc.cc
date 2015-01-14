@@ -139,9 +139,11 @@ int ff_now(double & ret_time) {
 #if defined(FT_HAVE_SRANDOM) && defined(FT_HAVE_RANDOM)
 # define ff_misc_random_init(seed) srandom(seed)
 # define ff_misc_random()          random()
+# define FF_RAND_MAX               RAND_MAX
 #else
 # define ff_misc_random_init(seed) srand(seed)
 # define ff_misc_random()          rand()
+# define FF_RAND_MAX               RAND_MAX
 #endif
 
 /** return a random number in the range [0,n] */
@@ -156,17 +158,17 @@ ft_ull ff_random(ft_ull n)
     ft_ull r;
     if (n == 0)
         return 0;
-    if (n < RAND_MAX) {
-        ft_ull max = RAND_MAX - (RAND_MAX % (n + 1));
+    if (n < FF_RAND_MAX) {
+        ft_ull max = FF_RAND_MAX - (FF_RAND_MAX % (n + 1));
         do {
             r = ff_misc_random();
         } while (r > max);
         return r / (max / (n + 1));
     }
-    if (n == RAND_MAX)
+    if (n == FF_RAND_MAX)
         return ff_misc_random();
-    const ft_ull max_p_1 = (ft_ull)RAND_MAX + 1;
-    const ft_ull n_hi = (n + RAND_MAX) / max_p_1;
+    const ft_ull max_p_1 = (ft_ull)FF_RAND_MAX + 1;
+    const ft_ull n_hi = (n + FF_RAND_MAX) / max_p_1;
     do {
         r = ff_random(n_hi) * max_p_1 + ff_misc_random();
     } while (r > n);

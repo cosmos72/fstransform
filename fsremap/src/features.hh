@@ -35,6 +35,12 @@
 #endif /* FT_HAVE_EXTERN_C */
 
 
+/* suppress warning about unused function argument */
+#ifndef FT_ARG_UNUSED
+# define FT_ARG_UNUSED(arg)
+#endif
+
+
 #ifdef FT_HAVE_NAMESPACE
    /** in C++, define to namespace ft { ... }. in C, define as empty  */
 #  define FT_NAMESPACE_BEGIN namespace ft {
@@ -77,7 +83,6 @@
 #  define FT_UI_NS
 
 #endif /* FT_HAVE_NAMESPACE */
-
 
 // list of types we want to instantiate fr_work<T> with
 #define FT_TYPE_LIST(ft_prefix, ft_macro) \

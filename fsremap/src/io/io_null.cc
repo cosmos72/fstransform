@@ -61,10 +61,10 @@ ft_io_null::~ft_io_null()
  *
  * implementation: does nothing.
  */
-int ft_io_null::read_extents(fr_vector<ft_uoff> & loop_file_extents,
-                             fr_vector<ft_uoff> & free_space_extents,
-                             fr_vector<ft_uoff> & to_zero_extents,
-                             ft_uoff & ret_block_size_bitmask)
+int ft_io_null::read_extents(fr_vector<ft_uoff> & FT_ARG_UNUSED(loop_file_extents),
+                             fr_vector<ft_uoff> & FT_ARG_UNUSED(free_space_extents),
+                             fr_vector<ft_uoff> & FT_ARG_UNUSED(to_zero_extents),
+                             ft_uoff & FT_ARG_UNUSED(ret_block_size_bitmask))
 {
     return 0;
 }
@@ -114,7 +114,8 @@ int ft_io_null::umount_dev()
  *
  * implementation: do nothing and return success
  */
-int ft_io_null::flush_copy_bytes(fr_dir dir, fr_vector<ft_uoff> & request_vec)
+int ft_io_null::flush_copy_bytes(fr_dir FT_ARG_UNUSED(dir),
+                                 fr_vector<ft_uoff> & FT_ARG_UNUSED(request_vec))
 {
     return 0;
 }
@@ -136,7 +137,7 @@ int ft_io_null::flush_bytes()
  *
  * implementation: do nothing and return success
  */
-int ft_io_null::zero_bytes(fr_to to, ft_uoff offset, ft_uoff length)
+int ft_io_null::zero_bytes(fr_to FT_ARG_UNUSED(to), ft_uoff FT_ARG_UNUSED(offset), ft_uoff FT_ARG_UNUSED(length))
 {
     return 0;
 }

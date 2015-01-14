@@ -1077,10 +1077,11 @@ void fr_work<T>::show_progress(ft_log_level log_level)
     if (work_total != 0) {
         percentage = 1.0 - ((double)dev_used + 0.5 * (double)storage_used) / (double)work_total;
 
-        if (simul_msg[0] == '\0')
-            time_left = eta.add(percentage);
-        else
-            eta.clear();
+        /* underestimate the progress percentage: algorithm slows down near the end */
+        /* time_left = eta.add(percentage); */
+        double x = percentage;
+        time_left = eta.add(0.5*x + 0.5*x*x);
+
         percentage *= 100.0;
     }
 
@@ -1314,8 +1315,8 @@ int fr_work<T>::move_to_target(fr_from from)
     if (movable.empty()) {
         ff_log(FC_INFO, 0, "%smoved 0 bytes from %s to target (not so useful)", simul_msg, label_from);
         ft_uoff eff_block_size = (ft_uoff)1 << io->effective_block_size_log2();
-        from_transpose.show(label_from, " transposed", eff_block_size, FC_DEBUG);
-        dev_free.show(label[FC_DEVICE], " free space", eff_block_size, FC_DEBUG);
+        from_transpose.show(label_from, " transposed", eff_block_size);
+        dev_free.show(label[FC_DEVICE], " free space", eff_block_size);
         return err;
     }
 

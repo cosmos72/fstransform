@@ -83,7 +83,7 @@ void fm_io_prealloc::sync()
  * Since we are preallocating, we can (and will) avoid any modification
  * to the source file system. Thus this method does nothing.
  */
-int fm_io_prealloc::remove_file(const char * source_path)
+int fm_io_prealloc::remove_file(const char * FT_ARG_UNUSED(source_path))
 {
     return 0;
 }
@@ -93,7 +93,7 @@ int fm_io_prealloc::remove_file(const char * source_path)
  * Since we are preallocating, we can (and will) avoid any modification
  * to the source file system. Thus this method does nothing.
  */
-int fm_io_prealloc::remove_special(const char * source_path)
+int fm_io_prealloc::remove_special(const char * FT_ARG_UNUSED(source_path))
 {
     return 0;
 }
@@ -114,7 +114,7 @@ int fm_io_prealloc::remove_dir(const ft_string & path)
  * copy the contents of regular file 'source_path' to 'target_path'.
  * Since we are preallocating, we just preallocate enough blocks inside 'target_path'
  */
-int fm_io_prealloc::copy_file_contents(const ft_string & source_path, const ft_stat & source_stat, const ft_string & target_path)
+int fm_io_prealloc::copy_file_contents(const ft_string & FT_ARG_UNUSED(source_path), const ft_stat & source_stat, const ft_string & target_path)
 {
     const char * target = target_path.c_str();
     int err = 0;

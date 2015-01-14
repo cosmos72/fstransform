@@ -56,7 +56,7 @@ char const* const fr_io::extents_filename[FC_IO_EXTENTS_COUNT] = {
 
 /** constructor */
 fr_io::fr_io(fr_persist & persist)
-    : this_primary_storage(), request_vec(), this_dev_length(0), this_eff_block_size_log2(0),
+    : this_primary_storage(), request_vec(), this_dev_length(0), this_loop_file_length(0), this_eff_block_size_log2(0),
       this_dev_path(NULL), this_cmd_umount(NULL), this_job(persist.job()), this_persist(persist), this_ui(NULL),
       request_dir(FC_INVALID2INVALID), this_delegate_ui(false)
 {

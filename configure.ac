@@ -17,6 +17,7 @@ AC_PROG_INSTALL
 AC_LANG(C++)
 
 # Checks for compiler characteristics
+FT_CXX_FLAGS
 FT_CXX_FEATURES
 
 # Checks for header files.

@@ -68,15 +68,18 @@ int fr_io_self_test::open(const fr_args & args)
         return err;
 
     /*
-     * block_size_log_2 is a random number in the range [4,16]
-     * thus block_size is one of 2^4, 2^5 ... 2^15, 2^16
+     * block_size_log_2 is a random number in the range [8,16]
+     * thus block_size is one of 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536
      */
-    this_block_size_log2 = (ft_uoff) ff_random(12) + 4;
+    this_block_size_log2 = (ft_uoff) ff_random(8) + 8;
 
-    /* dev_len is a random number in the range [block_size, 8GB * block_size] */
-    ft_uoff dev_len = (1 + ff_random(1 + 2 * (ft_ull)0xfffffffful)) << this_block_size_log2;
+    /* dev_len is a random number in the range [block_size, 1TB * block_size] */
+    ft_uoff dev_len_shift = (ft_uoff) ff_random(20);
+    
+    ft_uoff dev_len = (1 + ff_random((ft_ull)1047576)) << (this_block_size_log2 + dev_len_shift);
 
     dev_length(dev_len);
+    loop_file_length(dev_len);
     dev_path("<self-test-device>");
 
     double pretty_len;
@@ -111,7 +114,7 @@ void fr_io_self_test::close_extents()
  */
 int fr_io_self_test::read_extents(fr_vector<ft_uoff> & loop_file_extents,
                                   fr_vector<ft_uoff> & free_space_extents,
-                                  fr_vector<ft_uoff> & to_zero_extents,
+                                  fr_vector<ft_uoff> & FT_ARG_UNUSED(to_zero_extents),
                                   ft_uoff & ret_block_size_bitmask)
 {
     if (!is_open())

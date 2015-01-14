@@ -3637,8 +3637,111 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 # Checks for compiler characteristics
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $ac_cv_prog_ac_ct_CXX supports explicit template instantiation" >&5
-$as_echo_n "checking whether $ac_cv_prog_ac_ct_CXX supports explicit template instantiation... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -Wall" >&5
+$as_echo_n "checking whether $CXX accepts -Wall... " >&6; }
+if ${ac_cv_cxx_flag_Wall+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  save_CXXFLAGS="$CXXFLAGS"
+     CXXFLAGS="$CXXFLAGS -Wall"
+     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+int
+main ()
+{
+
+      return 0;
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+  ac_cv_cxx_flag_Wall=yes
+else
+  ac_cv_cxx_flag_Wall=no
+     CXXFLAGS="$save_CXXFLAGS"
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_cxx_flag_Wall" >&5
+$as_echo "$ac_cv_cxx_flag_Wall" >&6; }
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -Wextra" >&5
+$as_echo_n "checking whether $CXX accepts -Wextra... " >&6; }
+if ${ac_cv_cxx_flag_Wextra+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  save_CXXFLAGS="$CXXFLAGS"
+     CXXFLAGS="$CXXFLAGS -Wextra"
+     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+int
+main ()
+{
+
+      return 0;
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+  ac_cv_cxx_flag_Wextra=yes
+else
+  ac_cv_cxx_flag_Wextra=no
+     CXXFLAGS="$save_CXXFLAGS"
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_cxx_flag_Wextra" >&5
+$as_echo "$ac_cv_cxx_flag_Wextra" >&6; }
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -W" >&5
+$as_echo_n "checking whether $CXX accepts -W... " >&6; }
+if ${ac_cv_cxx_flag_W+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  save_CXXFLAGS="$CXXFLAGS"
+     CXXFLAGS="$CXXFLAGS -W"
+     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+int
+main ()
+{
+
+      return 0;
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+  ac_cv_cxx_flag_W=yes
+else
+  ac_cv_cxx_flag_W=no
+     CXXFLAGS="$save_CXXFLAGS"
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_cxx_flag_W" >&5
+$as_echo "$ac_cv_cxx_flag_W" >&6; }
+
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX supports explicit template instantiation" >&5
+$as_echo_n "checking whether $CXX supports explicit template instantiation... " >&6; }
 if ${ac_cv_cxx_have_template_instantiation+:} false; then :
   $as_echo_n "(cached) " >&6
 else
@@ -3679,8 +3782,8 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_cxx_have_template_instantiation" >&5
 $as_echo "$ac_cv_cxx_have_template_instantiation" >&6; }
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $ac_cv_prog_ac_ct_CXX supports inhibiting template instantiation" >&5
-$as_echo_n "checking whether $ac_cv_prog_ac_ct_CXX supports inhibiting template instantiation... " >&6; }
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX supports inhibiting template instantiation" >&5
+$as_echo_n "checking whether $CXX supports inhibiting template instantiation... " >&6; }
 if ${ac_cv_cxx_have_template_inhibition+:} false; then :
   $as_echo_n "(cached) " >&6
 else

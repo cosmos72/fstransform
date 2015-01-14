@@ -1,6 +1,6 @@
 m4_define([FT_CXX_FEATURES],
   [
-  AC_CACHE_CHECK([whether $ac_cv_prog_ac_ct_CXX supports explicit template instantiation],
+  AC_CACHE_CHECK([whether $CXX supports explicit template instantiation],
     [ac_cv_cxx_have_template_instantiation],
     [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
       template<typename T>
@@ -22,7 +22,7 @@ m4_define([FT_CXX_FEATURES],
     )
   ])
   
-  AC_CACHE_CHECK([whether $ac_cv_prog_ac_ct_CXX supports inhibiting template instantiation],
+  AC_CACHE_CHECK([whether $CXX supports inhibiting template instantiation],
     [ac_cv_cxx_have_template_inhibition],
     [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
       template<typename T>

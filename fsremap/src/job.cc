@@ -112,7 +112,7 @@ int fr_job::init(const fr_args & args)
         if (err == 0 && (err = init_log()) == 0) {
             ff_log(FC_NOTICE, 0, "fsremap: %s job %"FT_ULL", persistence data and logs are in '%s'",
                    this_resume_job ? "resuming" : "starting", (ft_ull)i, path);
-            if (!this_resume_job) {
+            if (!this_resume_job && !this_simulate_run && args.io_kind != FC_IO_SELF_TEST) {
                 ff_log(FC_NOTICE, 0, "if this job is interrupted, for example by a power failure,");
                 ff_log(FC_NOTICE, 0, "you CAN RESUME it with: %s%s -q --resume-job=%"FT_ULL" -- %s",
                        args.program_name, this_simulate_run ? " -n" : "", (ft_ull)i, args.io_args[0]);

@@ -368,7 +368,7 @@ int fr_remap::init(int argc, char const* const* argv)
                 /* --questions=[no|yes|extra] */
                 else if (!strncmp(arg, "--questions=", opt_len))
                 {
-                	args.ask_questions = !strcmp("extra", opt_arg);
+                    args.ask_questions = !strcmp("extra", opt_arg);
                 }
                 /* --resume-job=JOB_ID */
                 else if (!strncmp(arg, "--resume-job=", opt_len)) {
@@ -448,36 +448,36 @@ int fr_remap::init(int argc, char const* const* argv)
                                 "options -q, -qq, -v, -vv, -vvv, --quiet, --verbose are mutually exclusive");
                         break;
                     }
-				} else if (!strncmp(arg, "--log-color=", 12)) {
-					/* --color=(auto|none|ansi) */
-					arg += 12;
-					if (!strcmp(arg, "ansi"))
-						color = FC_COL_ANSI;
-					else if (!strcmp(arg, "none"))
-						color = FC_COL_NONE;
-					else
-						color = FC_COL_AUTO;
+                } else if (!strncmp(arg, "--log-color=", 12)) {
+                    /* --color=(auto|none|ansi) */
+                    arg += 12;
+                    if (!strcmp(arg, "ansi"))
+                        color = FC_COL_ANSI;
+                    else if (!strcmp(arg, "none"))
+                        color = FC_COL_NONE;
+                    else
+                        color = FC_COL_AUTO;
                 }
                 else if (!strncmp(arg, "--log-format=", 13)) {
                     /* --color=(auto|none|ansi) */
-                	arg += 13;
-                	if (!strcmp(arg, "level_msg"))
-                		format = FC_FMT_LEVEL_MSG;
-                	else if (!strcmp(arg, "time_level_msg"))
-                		format = FC_FMT_DATETIME_LEVEL_MSG;
-                	else if (!strcmp(arg, "time_level_function_msg"))
-                		format = FC_FMT_DATETIME_LEVEL_CALLER_MSG;
-                	else
-                		format = FC_FMT_MSG;
-                	format_set = true;
+                    arg += 13;
+                    if (!strcmp(arg, "level_msg"))
+                        format = FC_FMT_LEVEL_MSG;
+                    else if (!strcmp(arg, "time_level_msg"))
+                        format = FC_FMT_DATETIME_LEVEL_MSG;
+                    else if (!strcmp(arg, "time_level_function_msg"))
+                        format = FC_FMT_DATETIME_LEVEL_CALLER_MSG;
+                    else
+                        format = FC_FMT_MSG;
+                    format_set = true;
                 }
-				else if (!strcmp(arg, "--help")) {
+                else if (!strcmp(arg, "--help")) {
                     return usage(args.program_name);
                 }
-				else if (!strcmp(arg, "--version")) {
+                else if (!strcmp(arg, "--version")) {
                     return version();
                 }
-				else {
+                else {
                     err = invalid_cmdline(args, 0, "unknown option: '%s'", arg);
                     break;
                 }
@@ -491,49 +491,51 @@ int fr_remap::init(int argc, char const* const* argv)
         }
 
         if (err != 0)
-        	break;
+            break;
 
-		/* if autodetect, clear all free blocks */
-		if (args.job_clear == FC_CLEAR_AUTODETECT)
-			args.job_clear = FC_CLEAR_ALL;
+        /* if autodetect, clear all free blocks */
+        if (args.job_clear == FC_CLEAR_AUTODETECT)
+            args.job_clear = FC_CLEAR_ALL;
 
-		/* if autodetect, use POSIX I/O */
-		if (args.io_kind == FC_IO_AUTODETECT)
-			args.io_kind = FC_IO_POSIX;
+        /* if autodetect, use POSIX I/O */
+        if (args.io_kind == FC_IO_AUTODETECT)
+            args.io_kind = FC_IO_POSIX;
 
-		if (args.io_kind == FC_IO_POSIX || args.io_kind == FC_IO_PREALLOC) {
-			if (args.job_id == FC_JOB_ID_AUTODETECT) {
-				if (io_args_n == 0) {
-					err = invalid_cmdline(args, 0, "missing arguments: %s %s [%s]", LABEL[0], LABEL[1], LABEL[2]);
-				} else if (io_args_n == 1) {
-					err = invalid_cmdline(args, 0, "missing arguments: %s [%s]", LABEL[1], LABEL[2]);
-				} else if (io_args_n == 2 || io_args_n == 3) {
-					 /* ok */
-				} else
-					err = invalid_cmdline(args, 0, "too many arguments");
-			} else {
-				if (io_args_n == 0) {
-					err = invalid_cmdline(args, 0, "missing argument: %s", LABEL[0]);
-				} else if (io_args_n == 1) {
-					/* ok */
-				} else
-					err = invalid_cmdline(args, 0, "too many arguments");
-			}
-		} else if (args.io_kind == FC_IO_TEST) {
-			if (io_args_n == 0) {
-				err = invalid_cmdline(args, 0, "missing arguments: %s %s %s", LABEL[0], LABEL[1], LABEL[2]);
-			} else if (io_args_n == 1) {
-				err = invalid_cmdline(args, 0, "missing arguments: %s %s", LABEL[1], LABEL[2]);
-			} else if (io_args_n == 2) {
-				err = invalid_cmdline(args, 0, "missing argument: %s", LABEL[2]);
-			} else if (io_args_n == 3) {
-				/* ok */
-			} else
-				err = invalid_cmdline(args, 0, "too many arguments");
+        if (args.io_kind == FC_IO_POSIX || args.io_kind == FC_IO_PREALLOC) {
+            if (args.job_id == FC_JOB_ID_AUTODETECT) {
+                if (io_args_n == 0) {
+                    err = invalid_cmdline(args, 0, "missing arguments: %s %s [%s]", LABEL[0], LABEL[1], LABEL[2]);
+                } else if (io_args_n == 1) {
+                    err = invalid_cmdline(args, 0, "missing arguments: %s [%s]", LABEL[1], LABEL[2]);
+                } else if (io_args_n == 2 || io_args_n == 3) {
+                     /* ok */
+                } else
+                    err = invalid_cmdline(args, 0, "too many arguments");
+            } else {
+                if (io_args_n == 0) {
+                    err = invalid_cmdline(args, 0, "missing argument: %s", LABEL[0]);
+                } else if (io_args_n == 1) {
+                    /* ok */
+                } else
+                    err = invalid_cmdline(args, 0, "too many arguments");
+            }
+        } else if (args.io_kind == FC_IO_TEST) {
+            if (io_args_n == 0) {
+                err = invalid_cmdline(args, 0, "missing arguments: %s %s %s", LABEL[0], LABEL[1], LABEL[2]);
+            } else if (io_args_n == 1) {
+                err = invalid_cmdline(args, 0, "missing arguments: %s %s", LABEL[1], LABEL[2]);
+            } else if (io_args_n == 2) {
+                err = invalid_cmdline(args, 0, "missing argument: %s", LABEL[2]);
+            } else if (io_args_n == 3) {
+                /* ok */
+            } else
+                err = invalid_cmdline(args, 0, "too many arguments");
         }
     } while (0);
 
     if (err == 0) {
+        ff_log(FC_INFO, 0, "setting log level to %s", ff_log_level_to_string(level));
+
         /*
          * always enable at least DEBUG level, to let let the appender installed by fr_job::init_log()
          * intercept all messages from DEBUG to FATAL.
@@ -544,7 +546,7 @@ int fr_remap::init(int argc, char const* const* argv)
         /* note 1.4.1) -v sets format FC_FMT_LEVEL_MSG */
         /* note 1.4.2) -vv sets format FC_FMT_DATETIME_LEVEL_MSG */
         if (!format_set)
-        	format = level < FC_DEBUG ? FC_FMT_DATETIME_LEVEL_MSG : level == FC_DEBUG ? FC_FMT_LEVEL_MSG : FC_FMT_MSG;
+            format = level < FC_DEBUG ? FC_FMT_DATETIME_LEVEL_MSG : level == FC_DEBUG ? FC_FMT_LEVEL_MSG : FC_FMT_MSG;
 
         // set stdout appender->min_level, since we played tricks with root_logger->level above.
         ft_log_appender::reconfigure_all(format, level, color);

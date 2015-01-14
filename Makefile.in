@@ -84,6 +84,7 @@ DIST_COMMON = INSTALL NEWS README AUTHORS ChangeLog \
 	$(top_srcdir)/tools/install-sh $(top_srcdir)/tools/missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/acinclude.m4 \
+	$(top_srcdir)/tools/ft_cxx_flags.m4 \
 	$(top_srcdir)/tools/ft_cxx_features.m4 \
 	$(top_srcdir)/tools/ft_cxx_unordered_map.m4 \
 	$(top_srcdir)/tools/ft_need_funcs.m4 \

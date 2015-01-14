@@ -94,9 +94,9 @@ static int ff_posix_fibmap(int fd, ft_uoff dev_length, fr_vector<ft_uoff> & ret_
         }
 
         block_size = (ft_uoff) block_size_int;
-        // ft_uoff is expected to be unsigned and wider than int,
+        // ft_uoff is expected to be wider than int,
         // but explicitly checking for overflow is always safer than "expecting"
-        if (block_size < 0 || block_size_int != (int) block_size) {
+        if ((int) block_size != block_size_int) {
             /* overflow! give up. */
             err = ff_log(FC_ERROR, EFBIG, "ff_posix_fibmap(): error, block_size = %"FT_ULL" overflows type (ft_uoff)", (ft_ull) block_size_int);
             break;
@@ -212,7 +212,10 @@ static int ff_linux_fiemap(int fd, fr_vector<ft_uoff> & ret_list, ft_uoff & ret_
 
     fr_vector<ft_uoff> tmp_list;
 
-    enum { K_EXTENT_N = 1024, K_SIZEOF_FIEMAP = sizeof(struct fiemap) + K_EXTENT_N * sizeof(struct fiemap_extent) };
+    enum {
+        K_EXTENT_N = 1024,
+        K_SIZEOF_FIEMAP = sizeof(struct fiemap) + K_EXTENT_N * sizeof(struct fiemap_extent)
+    };
     char buf[K_SIZEOF_FIEMAP];
     struct fiemap * k_map = (struct fiemap *) buf;
     ft_uoff ioctl_n = 0, block_size_bitmask = ret_block_size_bitmask;
@@ -221,6 +224,8 @@ static int ff_linux_fiemap(int fd, fr_vector<ft_uoff> & ret_list, ft_uoff & ret_
     while (ioctl_n++, (err = ff_linux_fiemap(fd, file_start, file_size, K_EXTENT_N, k_map)) == 0) {
 
         ft_u32 i, extent_n = k_map->fm_mapped_extents;
+        const struct fiemap_extent * extents = k_map->fm_extents;
+        
         if (extent_n == 0) {
             /* we did not get any extent... bail out */
             ff_log(FC_WARN, 0, "ioctl(%d, FS_IOC_FIEMAP) is refusing to return any extent after file offset = %"FT_ULL
@@ -230,7 +235,7 @@ static int ff_linux_fiemap(int fd, fr_vector<ft_uoff> & ret_list, ft_uoff & ret_
             break;
         }
 
-        const struct fiemap_extent & last_e = k_map->fm_extents[extent_n - 1];
+        const struct fiemap_extent & last_e = extents[extent_n - 1];
         const ft_uoff new_file_start = (ft_uoff) last_e.fe_logical + (ft_uoff) last_e.fe_length;
         if (new_file_start <= file_start) {
             ff_log(FC_WARN, 0, "ioctl(%d, FS_IOC_FIEMAP) returned extents ending at %"FT_ULL", i.e. _before_ start of requested range [%"FT_ULL", %"FT_ULL"]"
@@ -243,7 +248,7 @@ static int ff_linux_fiemap(int fd, fr_vector<ft_uoff> & ret_list, ft_uoff & ret_
         tmp_list.reserve(tmp_list.size() + extent_n);
 
         for (i = 0; i < extent_n; i++) {
-            const struct fiemap_extent & e = k_map->fm_extents[i];
+            const struct fiemap_extent & e = extents[i];
 
             ft_u32 flag = e.fe_flags & (FIEMAP_EXTENT_UNKNOWN | FIEMAP_EXTENT_ENCODED);
 

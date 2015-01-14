@@ -214,7 +214,7 @@ int fm_io_posix::disk_stat(const char * path, fm_disk_stat & disk_stat)
 /**
  * use some file-system specific trickery and try to free some space.
  */
-void fm_io_posix::try_to_make_free_space(const char * path)
+void fm_io_posix::try_to_make_free_space(const char * FT_ARG_UNUSED(path))
 {
 #if 0
     /* 
@@ -222,7 +222,7 @@ void fm_io_posix::try_to_make_free_space(const char * path)
      * but at least on linux with an almost-full source device
      * xfs_fsr can WORSEN the problem by triggering 'loop write error' kernel errors,
      * which mean the source device has not enough space to accommodate the loop file contents.
-     * typically this CORRUPTS the file system inside target (loop) device!
+     * this typically CORRUPTS the file system inside target (loop) device!
      */
     const char * cmd = "xfs_fsr";
     const char * const args[] = { cmd, path, NULL };

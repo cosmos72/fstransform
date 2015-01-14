@@ -346,9 +346,9 @@ int fr_io_posix::open(const fr_args & args)
             break;
         
         if (!is_replaying())
-			for (i = FC_DEVICE + 1; i < FC_FILE_COUNT; i++)
-				if ((err = open_file(i, path[i])) != 0)
-					break;
+            for (i = FC_DEVICE + 1; i < FC_FILE_COUNT; i++)
+                if ((err = open_file(i, path[i])) != 0)
+                    break;
 
     } while (0);
 
@@ -376,7 +376,7 @@ void fr_io_posix::close()
 /** return true if this I/O has open descriptors/streams to LOOP-FILE and FREE-SPACE */
 bool fr_io_posix::is_open_extents() const
 {
-	/* FREE-SPACE is optional, do not check if it's open */
+    /* FREE-SPACE is optional, do not check if it's open */
     return dev_length() != 0 && is_open0(FC_LOOP_FILE);
 }
 
@@ -440,8 +440,8 @@ int fr_io_posix::read_extents(fr_vector<ft_uoff> & loop_file_extents,
  * of device effective block size (see read_extents() for detailed meaning of this parameter)
  */
 int fr_io_posix::read_extents_loop_file(fr_vector<ft_uoff> & loop_file_extents,
-                           	   	   	    fr_vector<ft_uoff> & to_zero_extents,
-                           	   	   	    ft_uoff & ret_block_size_bitmask)
+                                        fr_vector<ft_uoff> & FT_ARG_UNUSED(to_zero_extents),
+                                        ft_uoff & ret_block_size_bitmask)
 {
     ft_uoff block_size_bitmask = ret_block_size_bitmask;
     int err = 0;
@@ -477,9 +477,9 @@ int fr_io_posix::read_extents_loop_file(fr_vector<ft_uoff> & loop_file_extents,
  * of device effective block size (see read_extents() for detailed meaning of this parameter)
  */
 int fr_io_posix::read_extents_free_space(const fr_vector<ft_uoff> & loop_file_extents,
-										 fr_vector<ft_uoff> & free_space_extents,
-										 fr_vector<ft_uoff> & to_zero_extents,
-										 ft_uoff & ret_block_size_bitmask)
+                                         fr_vector<ft_uoff> & free_space_extents,
+                                         fr_vector<ft_uoff> & FT_ARG_UNUSED(to_zero_extents),
+                                         ft_uoff & ret_block_size_bitmask)
 {
     ft_uoff block_size_bitmask = ret_block_size_bitmask;
     int err = 0;
@@ -529,8 +529,8 @@ int fr_io_posix::read_extents_free_space(const fr_vector<ft_uoff> & loop_file_ex
  */
 void fr_io_posix::close_extents()
 {
-	close0(FC_ZERO_FILE);
-	close0(FC_LOOP_FILE);
+    close0(FC_ZERO_FILE);
+    close0(FC_LOOP_FILE);
 }
 
 /**
@@ -814,46 +814,46 @@ int fr_io_posix::create_secondary_storage(ft_size len)
         if ((fd[j] = ::open(path, replaying ? O_RDWR : O_RDWR|O_CREAT|O_TRUNC, 0600)) < 0) {
             err = ff_log(FC_ERROR, errno, "error in %s open('%s')", label[j], path);
             if (replaying && err == -ENOENT)
-            	ff_log(FC_ERROR, 0, "you probably tried to resume a COMPLETED job");
+                ff_log(FC_ERROR, 0, "you probably tried to resume a COMPLETED job");
             break;
         }
 
         if (replaying) {
-        	ft_uoff actual_len = 0;
-        	err = ff_posix_size(fd[j], & actual_len);
-        	if (err != 0) {
-            	err = ff_log(FC_ERROR, err, "%s: fstat('%s') failed", label[j], path);
+            ft_uoff actual_len = 0;
+            err = ff_posix_size(fd[j], & actual_len);
+            if (err != 0) {
+                err = ff_log(FC_ERROR, err, "%s: fstat('%s') failed", label[j], path);
 
-        	} else if (actual_len != (ft_uoff) len) {
-            	ff_log(FC_ERROR, 0, "%s: file '%s' is %"FT_ULL" bytes long, expecting %"FT_ULL" bytes instead",
-            			label[j], path, (ft_ull) actual_len, (ft_ull) len);
-            	err = -EINVAL;
-        	} else
-        		ff_log(FC_INFO, 0, "%s: opened existing file '%s', is %.2f %sbytes long", label[j],
-        				path, pretty_len, pretty_label);
+            } else if (actual_len != (ft_uoff) len) {
+                ff_log(FC_ERROR, 0, "%s: file '%s' is %"FT_ULL" bytes long, expecting %"FT_ULL" bytes instead",
+                        label[j], path, (ft_ull) actual_len, (ft_ull) len);
+                err = -EINVAL;
+            } else
+                ff_log(FC_INFO, 0, "%s: opened existing file '%s', is %.2f %sbytes long", label[j],
+                        path, pretty_len, pretty_label);
         } else {
-        	ff_log(FC_INFO, 0, "%s:%s writing %.2f %sbytes to '%s' ...", label[j], simulated_msg,
-        			pretty_len, pretty_label, path);
-        	if (simulated) {
-				if ((err = ff_posix_lseek(fd[j], len - 1)) != 0) {
-					err = ff_log(FC_ERROR, errno, "error in %s lseek('%s', offset = %"FT_ULL" - 1)", label[j], path, (ft_ull)len);
-					break;
-				}
-				char zero = '\0';
-				if ((err = ff_posix_write(fd[j], & zero, 1)) != 0) {
-					err = ff_log(FC_ERROR, errno, "error in %s write('%s', '\\0', length = 1)", label[j], path);
-					break;
-				}
-			} else {
-				ft_string err_msg = ft_string("error in ") + label[j] + "write('" + path + "')";
+            ff_log(FC_INFO, 0, "%s:%s writing %.2f %sbytes to '%s' ...", label[j], simulated_msg,
+                    pretty_len, pretty_label, path);
+            if (simulated) {
+                if ((err = ff_posix_lseek(fd[j], len - 1)) != 0) {
+                    err = ff_log(FC_ERROR, errno, "error in %s lseek('%s', offset = %"FT_ULL" - 1)", label[j], path, (ft_ull)len);
+                    break;
+                }
+                char zero = '\0';
+                if ((err = ff_posix_write(fd[j], & zero, 1)) != 0) {
+                    err = ff_log(FC_ERROR, errno, "error in %s write('%s', '\\0', length = 1)", label[j], path);
+                    break;
+                }
+            } else {
+                ft_string err_msg = ft_string("error in ") + label[j] + "write('" + path + "')";
 
-				err = ff_posix_fallocate(fd[j], s_len, err_msg);
-			}
-        	if (err == 0)
-        		ff_log(FC_INFO, 0, "%s:%s file created", label[j], simulated_msg);
+                err = ff_posix_fallocate(fd[j], s_len, err_msg);
+            }
+            if (err == 0)
+                ff_log(FC_INFO, 0, "%s:%s file created", label[j], simulated_msg);
         }
         if (err != 0)
-        	break;
+            break;
         
         /* remember secondary_storage details */
         fr_extent<ft_uoff> & extent = secondary_storage();
@@ -931,7 +931,7 @@ int fr_io_posix::check_last_block()
     ft_uoff loop_file_len = loop_file_length();
     int err = 0;
     if (loop_file_len-- == 0)
-    	return err;
+        return err;
 
     const char * label_dev   = label[FC_DEVICE];
     int fd_dev = fd[FC_DEVICE];
@@ -939,22 +939,22 @@ int fr_io_posix::check_last_block()
     bool simulated = simulate_run();
 
     for (int i = 0; err == 0 && i < 2; i++) {
-    	if ((err = ff_posix_lseek(fd_dev, loop_file_len)) != 0) {
+        if ((err = ff_posix_lseek(fd_dev, loop_file_len)) != 0) {
             err = ff_log(FC_ERROR, err, "I/O error in %s lseek(fd = %d, offset = %"FT_ULL", SEEK_SET)",
-            			 label_dev, fd_dev, (ft_ull)loop_file_len);
+                         label_dev, fd_dev, (ft_ull)loop_file_len);
             break;
-    	}
+        }
 
-    	if (i == 0) {
-    		if ((err = ff_posix_read(fd_dev, &ch, 1)) != 0)
-    			err = ff_log(FC_ERROR, err, "I/O error in %s read(fd = %d, offset = %"FT_ULL", len = 1)",
-    					label_dev, fd_dev, (ft_ull)loop_file_len);
+        if (i == 0) {
+            if ((err = ff_posix_read(fd_dev, &ch, 1)) != 0)
+                err = ff_log(FC_ERROR, err, "I/O error in %s read(fd = %d, offset = %"FT_ULL", len = 1)",
+                        label_dev, fd_dev, (ft_ull)loop_file_len);
 
-    	} else if (!simulated) {
-    		if ((err = ff_posix_write(fd_dev, &ch, 1)) != 0)
-    			err = ff_log(FC_ERROR, err, "last position to be written into %s (offset = %"FT_ULL") is NOT writable",
-    					label_dev, (ft_ull)loop_file_len);
-    	}
+        } else if (!simulated) {
+            if ((err = ff_posix_write(fd_dev, &ch, 1)) != 0)
+                err = ff_log(FC_ERROR, err, "last position to be written into %s (offset = %"FT_ULL") is NOT writable",
+                        label_dev, (ft_ull)loop_file_len);
+        }
     }
     return err;
 }

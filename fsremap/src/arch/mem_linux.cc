@@ -99,7 +99,7 @@ ft_uoff ff_arch_linux_mem_system_free() {
 
         n = (ft_uoff) n_ull;
         /* overflow? then approximate.. */
-        if (n < 0 || n_ull != (ft_ull) n || n > (ft_uoff)-1 - total) {
+        if ((ft_ull) n != n_ull || n > (ft_uoff)-1 - total) {
             total = (ft_uoff)-1;
             break;
         }

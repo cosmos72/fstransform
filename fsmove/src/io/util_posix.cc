@@ -94,7 +94,7 @@ int ff_posix_exec_silent(const char * path, const char * const argv[])
         }
         ::exit(err);
     } else if (pid == (pid_t)-1) {
-        ff_log(FC_WARN, errno, "fork() failed");
+        err = ff_log(FC_WARN, errno, "fork() failed");
     } else {
         /* parent */
         err = -ECHILD; // assume failure unless proved successful...
