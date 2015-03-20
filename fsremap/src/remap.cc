@@ -117,7 +117,7 @@ int fr_remap::usage(const char * program_name)
     quit_immediately = true;
 
     ff_log(FC_NOTICE, 0, "Usage: %s [OPTION]... %s %s [%s]", program_name, LABEL[0], LABEL[1], LABEL[2]);
-    ff_log(FC_NOTICE, 0, "  or:  %s [OPTION]... --resume-job=JOB_ID %s", program_name, LABEL[0]);
+    ff_log(FC_NOTICE, 0, "  or:  %s [OPTION]... --resume-job=JOB_ID %s", program_name, LABEL[FC_DEVICE]);
     ff_log(FC_NOTICE, 0, "Replace the contents of %s with the contents of %s, i.e. write %s onto %s",
             LABEL[FC_DEVICE], LABEL[FC_LOOP_FILE], LABEL[FC_LOOP_FILE], LABEL[FC_DEVICE]);
     ff_log(FC_NOTICE, 0, "even if %s is inside a file system _inside_ %s\n", LABEL[FC_LOOP_FILE], LABEL[FC_DEVICE]);
@@ -133,13 +133,14 @@ int fr_remap::usage(const char * program_name)
      "      --clear=none      (DANGEROUS) do not clear any free blocks after remapping\n"
      "      --cmd-umount=CMD  command to unmount %s (default: /bin/umount)\n"
      "      --cmd-losetup=CMD 'losetup' command (default: /sbin/losetup)\n"
-     "      --color=MODE      set messages color. MODE is one of:"
+     "      --color=MODE      set messages color. MODE is one of:\n"
      "                          auto (default), none, ansi\n"
 #ifdef FT_HAVE_IO_PREALLOC
      "      --device-mount-point=DIR\n"
      "                        set device mount point (needed by --io=prealloc)\n"
 #endif
      "  -f, --force-run       continue even if some sanity checks fail\n"
+     "  -i, --interactive     ask confirmation after analysis, before actual work\n"
      "      --io=posix        use posix I/O (default)\n"
 #ifdef FT_HAVE_IO_PREALLOC
      "      --io=prealloc     use posix I/O with EXPERIMENTAL preallocated files\n"
@@ -163,7 +164,9 @@ int fr_remap::usage(const char * program_name)
      "                          extra: also ask confirmation before dangerous steps\n"
      "  -q, --quiet           be quiet, print less output\n"
      "  -qq                   be very quiet, only print warnings or errors\n"
-     "      --resume-job=NUM  resume an interrupted job\n"
+     "      --resume-job=NUM  resume the interrupted job NUM. The only non-option\n"
+     "                         argument must be %s. Do _not_ pass %s\n"
+     "                         as argument, or you will LOSE YOUR DATA!\n"
      "  -s, --secondary-storage=SECONDARY_SIZE[k|M|G|T|P|E|Z|Y]\n"
      "                        set secondary storage file length (default: autodetect)\n"
      "  -t, --temp-dir=DIR    write storage and log files inside DIR\n"
@@ -173,15 +176,15 @@ int fr_remap::usage(const char * program_name)
      "  -vv                   be very verbose\n"
      "  -vvv                  be incredibly verbose (warning: prints lots of output)\n"
      "  -xp, --exact-primary-storage=PRIMARY_SIZE[k|M|G|T|P|E|Z|Y]\n"
-     "                        set *exact* primary storage length, or fail\n"
+     "                        set _exact_ primary storage length, or fail\n"
      "                          (default: autodetect)\n"
      "  -xs, --exact-secondary-storage=SECONDARY_SIZE[k|M|G|T|P|E|Z|Y]\n"
-     "                        set *exact* secondary storage length, or fail\n"
+     "                        set _exact_ secondary storage length, or fail\n"
      "                          (default: autodetect)\n"
      "      --x-OPTION=VALUE  set internal, undocumented option. for maintainers only\n"
      "      --help            display this help and exit\n"
      "      --version         output version information and exit\n",
-     LABEL[FC_DEVICE]);
+     LABEL[FC_DEVICE], LABEL[FC_DEVICE], LABEL[FC_LOOP_FILE]);
 }
 
 
@@ -296,8 +299,8 @@ int fr_remap::init(int argc, char const* const* argv)
                 if (!strcmp(arg, "--"))
                     allow_opts = false;
 
-                /* -a, --automated run automatically without asking any confirmation  */
-                else if (!strcmp(arg, "-a") || !strcmp(arg, "--automated")) {
+                /* -a, --no-questions run automatically without asking any confirmation  */
+                else if (!strcmp(arg, "-a") || !strcmp(arg, "--no-questions")) {
                     args.ask_questions = false;
                 }
                 /* --clear=all, --clear=minimal, --clear=none */

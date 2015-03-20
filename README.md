@@ -69,9 +69,16 @@ are larger than half the device or larger than the available space.
 
 ### REQUIREMENTS
 
-There are four requirements for fstransform to have a chance to succeed:
+There are five requirements for fstransform to have a chance to succeed:
 
-1. the device must have a little free space, typically at least 5%
+1. the device must be unmountable, i.e. `umount DEVICE` must work.
+   In particular, if some running programs are using the device,
+   you must first close or kill them.
+   
+   Transforming the current root directory does not work. For that, you should
+   boot from a different installation (for example a live CD, DVD or USB).
+
+2. the device must have a little free space, typically at least 5%
 
    WARNING: transforming an almost full device to 'xfs' file-system
    can be tricky:
@@ -82,7 +89,7 @@ There are four requirements for fstransform to have a chance to succeed:
      before resuming fstransform.
      A future fstransform version may automate this operation.
 
-2. the filesystem on the device must support SPARSE FILES, i.e. files with holes
+3. the filesystem on the device must support SPARSE FILES, i.e. files with holes
    (see for example http://en.wikipedia.org/wiki/Sparse_file for an explanation of what they are)
    and at least one of the two system calls "ioctl(FS_IOC_FIEMAP)" or "ioctl(FIBMAP)"
    (see the file Documentation/filesystems/fiemap.txt in any recent Linux kernel
@@ -91,37 +98,45 @@ There are four requirements for fstransform to have a chance to succeed:
    ioctl(FIBMAP) is limited by design to 2G-1 blocks, which typically translates to 8TB - 4kB.
    To transform file systems equal or larger than 8TB, ioctl(FIEMAP) is required.
 
-3. the initial and final filesystems must be supported by the Linux kernel
+4. the initial and final filesystems must be supported by the Linux kernel
    (i.e. it must be able to mount them)
    and by the tools 'mkfs' and 'fsck'
    (i.e. it must be possible to create them and check them for errors)
 
-4. the following programs must be available:
+5. the following programs must be available:
    the two custom-made programs 'fsmove' and 'fsremap' (distributed with the script)
    and several common Linux tools:
       which, expr, id, blockdev, losetup, mount, umount,
       mkdir, rmdir, rm, mkfifo, dd, sync, fsck, mkfs 
 
 
-### KNOWN LIMITS
+### KNOWN LIMITATIONS
 
-* If the device contains a HUGE number of files with multiple hard links,
-  fstransform will be very slow and consume a LOT of memory.
-  Devices with more than one million files with multiple hard links
-  can cause fstransform to crash with "out of memory" errors.
+1) As stated above, at a certain step during the conversion, fstransform needs
+   to unmount the device being transformed.
+   For this reason, running fstransform on the device currently mounted as /
+   (i.e. the root directory) fails.
+   For the same reason, running fstransform on the device currently mounted
+   as /usr, /home or /var or similar heavily-used directories is difficult,
+   because quite often there are programs using those, which prevents
+   them from being unmounted.
+   
+2) If the device contains a HUGE number of files with multiple hard links,
+   fstransform will be very slow and consume a LOT of memory.
+   Devices with more than one million files with multiple hard links
+   can cause fstransform to crash with "out of memory" errors.
 
-
-2) JFS file systems equal or larger than 8TB cannot be converted due to
+3) JFS file systems equal or larger than 8TB cannot be converted due to
    missing support for ioctl(FIEMAP) in the kernel:
    the fallback ioctl(FIBMAP) is limited by design to < 8TB (assuming 4k blocks)
 
-3) REISERFS file systems using format "3.5" (the default) and equal or larger than 2TB
+4) REISERFS file systems using format "3.5" (the default) and equal or larger than 2TB
    cannot be converted due to their maximum file size = 2TB - 4k:
    fstransform needs to create a sparse file as large as the device itself.
 
    REISERFS file systems using format "3.6" are immune to this problem.
 
-4) for the same reason, a device cannot be converted _to_ REISERFS format "3.5"
+5) for the same reason, a device cannot be converted _to_ REISERFS format "3.5"
    if it contains files larger than 2TB - 4k.
 
 
@@ -215,6 +230,9 @@ To pass the same option to 'fstransform', you must execute something like
    by running 'fsremap --resume-job=<MMM> {device}'.
    Also, 'fsremap' will show at its startup the exact command line
    needed to resume its execution.
+   
+   The loop file created by fstransform must NEVER be  as argument to
+   'fsremap --resume-job=<MMM> {...}'. You would IRREVERSIBLY LOSE YOUR DATA!
 
 REAL-WORLD TESTS
 
