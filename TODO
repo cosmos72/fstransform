@@ -1,5 +1,9 @@
 TODO
 
+* fstransform: preserve filesystem LABEL and UUID. To collect them,
+       run "lsblk -r -o maj:min,label,uuid" warning: special
+       characters in label and uuid will be escaped as \xAB
+
 * all: test on more file systems
 
        nilfs: ok as target.
