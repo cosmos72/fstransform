@@ -407,7 +407,7 @@ bool ff_logl_is_enabled(const char * file, int file_len, ft_log_level level)
         "", file, "", "", "",
         file_len, 0, 0,
         level,
-        /* va_list vargs */
+        /* va_list vargs field follows - but no portable way to value-initialize it */
     };
     ff_pretty_file(event);
     
@@ -435,7 +435,7 @@ int ff_logl(const char * file, int file_len, const char * func, int line, ft_log
         ff_strftime(), file, "", func, fmt,
         file_len, line, err,
         level,
-        /* va_list vargs */
+        /* va_list vargs field follows - but no portable way to value-initialize it */
     };
     ff_pretty_file(event);
 
@@ -470,7 +470,7 @@ int ff_logv(const char * file, int file_len, const char * func, int line, ft_log
         ff_strftime(), file, "", func, fmt,
         file_len, line, err,
         level,
-        /* va_list vargs */
+        /* va_list vargs field follows - but no portable way to value-initialize it */
     };
     ff_pretty_file(event);
 

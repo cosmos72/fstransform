@@ -131,6 +131,9 @@ static int e4attr_dir_iterate(e4_inum dir, int entry, e4_dir_iter_ * iter_, int 
     const char * descr;
     bool is_dir = false, is_file = false;
 
+    // suppress "unused parameter" warnings
+    (void)entry, (void)offset, (void)blocksize, (void)buf;
+
     switch (iter->file_type) {
     default:
     case EXT2_FT_UNKNOWN:

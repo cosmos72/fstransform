@@ -41,4 +41,18 @@ m4_define([FT_CXX_FLAGS],
      CXXFLAGS="$save_CXXFLAGS"]
    )
  ])
+
+  AC_CACHE_CHECK([whether $CXX accepts -Wno-missing-field-initializers],
+    [ac_cv_cxx_flag_Wno_missing_field_initializers],
+    [save_CXXFLAGS="$CXXFLAGS"
+     CXXFLAGS="$CXXFLAGS -Wno-missing-field-initializers"
+     AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+    ]], [[
+      return 0;
+    ]])],
+    [ac_cv_cxx_flag_Wno_missing_field_initializers=yes],
+    [ac_cv_cxx_flag_Wno_missing_field_initializers=no
+     CXXFLAGS="$save_CXXFLAGS"]
+   )
+ ])
 ])
