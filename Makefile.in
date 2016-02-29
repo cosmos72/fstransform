@@ -770,7 +770,7 @@ uninstall-am:
 
 
 mrproper-distclean: distclean
-	rm -fr autom4te.cache configure fsremap/src/ft_config.hh fstransform/build/fstransform
+	rm -fr autom4te.cache configure fsremap/src/ft_config.hh
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

@@ -1,10 +1,7 @@
-sbin_SCRIPTS = fstransform
+AUTOMAKE_OPTIONS = subdir-objects
 
-fstransform:  ../fstransform-sh
-	sed 's/%PACKAGE_VERSION%/$(PACKAGE_VERSION)/g' <$< >$@
-	chmod +x $@
+sbin_PROGRAMS = fstransform
 
-../fstransform-sh:
-
-clean: clean-am
-	rm -f fstransform
+fstransform_SOURCES = \
+  ../src/log.cc \
+  ../src/mstring.cc
