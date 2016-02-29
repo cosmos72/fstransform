@@ -106,7 +106,8 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(sbindir)"
 PROGRAMS = $(sbin_PROGRAMS)
 am__dirstamp = $(am__leading_dot)dirstamp
-am_fstransform_OBJECTS = ../src/log.$(OBJEXT) ../src/mstring.$(OBJEXT)
+am_fstransform_OBJECTS = ../src/log.$(OBJEXT) ../src/main.$(OBJEXT) \
+	../src/mstring.$(OBJEXT) ../src/transform.$(OBJEXT)
 fstransform_OBJECTS = $(am_fstransform_OBJECTS)
 fstransform_LDADD = $(LDADD)
 AM_V_P = $(am__v_P_@AM_V@)
@@ -259,7 +260,9 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = subdir-objects
 fstransform_SOURCES = \
   ../src/log.cc \
-  ../src/mstring.cc
+  ../src/main.cc \
+  ../src/mstring.cc \
+  ../src/transform.cc
 
 all: all-am
 
@@ -344,7 +347,11 @@ clean-sbinPROGRAMS:
 	@: > ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/log.$(OBJEXT): ../src/$(am__dirstamp) \
 	../src/$(DEPDIR)/$(am__dirstamp)
+../src/main.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/mstring.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
+../src/transform.$(OBJEXT): ../src/$(am__dirstamp) \
 	../src/$(DEPDIR)/$(am__dirstamp)
 
 fstransform$(EXEEXT): $(fstransform_OBJECTS) $(fstransform_DEPENDENCIES) $(EXTRA_fstransform_DEPENDENCIES) 
@@ -359,7 +366,9 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/log.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/main.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/mstring.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/transform.Po@am__quote@
 
 .cc.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
