@@ -1,4 +1,4 @@
-#!/bin/dash
+#!/bin/bash
 #
 # fstransform - transform a file-system to another file-system type,
 #               preserving its contents and without the need for a backup
