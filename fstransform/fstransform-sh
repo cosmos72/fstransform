@@ -1,4 +1,4 @@
-#!/bin/dash
+#!/bin/bash
 #
 # fstransform - transform a file-system to another file-system type,
 #               preserving its contents and without the need for a backup
@@ -54,7 +54,7 @@ FSTYPE=
 # nilfs2 is under test, works as target but as fails as source: gets full with usage = 100%
 # ocfs2 and reiserfs4 are under test, got kernel crash testing them
 FSTYPES_TESTED="ext2 ext3 ext4 reiserfs jfs xfs"
- 
+
 DEVICE_BLOCK_SIZE=
 DEVICE_SIZE_IN_BYTES=
 DEVICE_SIZE_IN_BLOCKS=
