@@ -30,6 +30,11 @@
 #include "io/io_posix.hh"    // for fm_io_posix
 #include "io/io_prealloc.hh" // for fm_io_prealloc
 
+#define ZPAGE_TEST
+#ifdef ZPAGE_TEST
+# include "zpage.hh"
+#endif
+
 #if defined(FT_HAVE_STRING_H)
 # include <stdlib.h>       // for atoi()
 #elif defined(FT_HAVE_CSTRING)
@@ -130,6 +135,30 @@ int fm_move::check_is_open()
  */
 int fm_move::main(int argc, char ** argv)
 {
+#ifdef ZPAGE_TEST
+    {
+        zpage_pool pool;
+        page_handle h = pool.alloc_page();
+        ft_size * address = reinterpret_cast<ft_size *>(pool.uncompress_page(h));
+        if (address)
+        {
+            for (ft_size i = 0; i < Z_UNCOMPRESSED_PAGE_SIZE / sizeof(ft_size); i++)
+            {
+                address[i] = (ft_size)address + i;
+            }
+            pool.compress_page(h);
+            ft_size * new_address = reinterpret_cast<ft_size *>(pool.uncompress_page(h));
+            if (new_address) {
+                for (ft_size i = 0; i < Z_UNCOMPRESSED_PAGE_SIZE / sizeof(ft_size); i++)
+                {
+                    if (new_address[i] != (ft_size)address + i)
+                        ff_log(FC_ERROR, 0, "zpage_pool test failed! wrote 0x%"FT_XLL", read 0x%"FT_XLL, (ft_ull)address + i, (ft_ull)new_address[i]);
+                }
+            }
+        }
+    }
+#endif
+    
     fm_move mover;
 
     int err = mover.init(argc, argv);

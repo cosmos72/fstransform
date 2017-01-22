@@ -19,7 +19,10 @@ fsmove_SOURCES = \
   ../src/main.cc \
   ../src/misc.cc \
   ../src/move.cc \
-  ../src/mstring.cc
+  ../src/mstring.cc \
+  ../src/zmem.cc \
+  ../src/zpage.cc
 
 # ../src/io/util.cc
-  
+
+fsmove_LDADD = $(LD_LIBZ)

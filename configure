@@ -626,6 +626,7 @@ ac_header_list=
 ac_subst_vars='am__EXEEXT_FALSE
 am__EXEEXT_TRUE
 LTLIBOBJS
+LD_LIBZ
 LD_LIBEXT2FS
 LD_LIBCOM_ERR
 LIBOBJS
@@ -4273,7 +4274,7 @@ for ac_header in cerrno  climits  cmath  cstdarg  cstdio  cstdlib  cstring  ctim
                   sys/disklabel.h sys/ioctl.h sys/mman.h sys/stat.h \
                   sys/statvfs.h sys/time.h sys/types.h sys/wait.h \
                   termios.h time.h unistd.h utime.h \
-                  tr1/unordered_map unordered_map
+                  tr1/unordered_map unordered_map zlib.h
 do :
   as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
 ac_fn_cxx_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
@@ -5202,6 +5203,50 @@ $as_echo "#define HAVE_LIBEXT2FS 1" >>confdefs.h
 
 fi
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for deflate in -lz" >&5
+$as_echo_n "checking for deflate in -lz... " >&6; }
+if ${ac_cv_lib_z_deflate+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lz  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char deflate ();
+int
+main ()
+{
+return deflate ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_lib_z_deflate=yes
+else
+  ac_cv_lib_z_deflate=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_z_deflate" >&5
+$as_echo "$ac_cv_lib_z_deflate" >&6; }
+if test "x$ac_cv_lib_z_deflate" = xyes; then :
+
+$as_echo "#define HAVE_Z_DEFLATE 1" >>confdefs.h
+
+                                             LD_LIBZ=-lz
+
+fi
+
 
 
   ft_funcs_missing=
@@ -5252,6 +5297,21 @@ fi
     as_fn_error $? "least one of the following functions is required: $ft_funcs_missing"
   fi
 
+
+
+
+  ft_libs_missing=
+  for ft_lib in z_deflate
+  do :
+    if test "`eval echo '$ac_cv_lib_'$ft_lib`" != "yes"
+    then
+      ft_libs_missing="${ft_libs_missing}lib$(echo $ft_lib | sed 's/_/:/')() "
+    fi
+  done
+  if test "x$ft_libs_missing" != "x"
+  then
+    as_fn_error $? "missing required library functions: $ft_libs_missing"
+  fi
 
 
 if test "$ac_cv_func_fallocate" != "yes"
