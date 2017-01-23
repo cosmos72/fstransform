@@ -28,45 +28,57 @@
 
 #include "types.hh"     // for ft_size
 
+#if defined(FT_HAVE_LIMITS_H)
+# include <limits.h>       // for CHAR_BIT
+#elif defined(FT_HAVE_CLIMITS)
+# include <climits>        // for CHAR_BIT
+#endif
+
 FT_NAMESPACE_BEGIN
 
-typedef ft_size zhandle;
-
-zhandle zmem_alloc(ft_size size);
-void zmem_free(zhandle handle, ft_size size);
-
-void zmem_compress(zhandle handle);
-void * zmem_decompress(zhandle handle);
-
-template<class T>
-    class zmem
+class zmem
 {
 private:
-    zhandle handle;
+    friend class zpool;
+    enum { compressed_shift = (sizeof(ft_size) * CHAR_BIT) - 1 };
+
+    void * address;
+    ft_size size; /* if mem is compressed, contains ~actual_size */
     
+    
+    bool do_compress();
+    void * do_uncompress();
+
 public:
-    explicit inline zmem(zhandle new_handle = 0)
-        : handle(new_handle)
-    { }
-    
-    inline T * operator->()
+    inline zmem() : address(NULL), size(0)
     {
-        return reinterpret_cast<T *>(zmem_decompress(handle));
-    }
-
-    inline const T * operator->() const
-    {
-        return reinterpret_cast<const T *>(zmem_decompress(handle));
     }
     
-    static inline zmem<T> alloc(ft_size size)
+    inline bool compressed() const
     {
-        return zmem<T>(zmem_alloc(size));
+        return size >> compressed_shift;
     }
-
-    inline void free(ft_size size)
+    
+    inline bool current_size() const
     {
-        return zmem_free(handle, size);
+        return compressed() ? size : ~size;
+    }
+    
+    bool alloc(ft_size new_size);
+    bool free();
+        
+    inline bool compress()
+    {
+        if (address != NULL && !compressed())
+            return do_compress();
+        return address != NULL; /* already uncompressed, or does not exist */
+    }
+    
+    inline void * uncompress()
+    {
+        if (address != NULL && compressed())
+            return do_uncompress();
+        return address; /* already compressed, or does not exist */
     }
 };
 

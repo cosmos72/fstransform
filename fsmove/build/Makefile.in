@@ -115,7 +115,8 @@ am_fsmove_OBJECTS = ../src/args.$(OBJEXT) ../src/assert.$(OBJEXT) \
 	../src/io/util_posix.$(OBJEXT) ../src/log.$(OBJEXT) \
 	../src/main.$(OBJEXT) ../src/misc.$(OBJEXT) \
 	../src/move.$(OBJEXT) ../src/mstring.$(OBJEXT) \
-	../src/zmem.$(OBJEXT) ../src/zpage.$(OBJEXT)
+	../src/zmem.$(OBJEXT) ../src/zpool.$(OBJEXT) \
+	../src/zptr.$(OBJEXT)
 fsmove_OBJECTS = $(am_fsmove_OBJECTS)
 am__DEPENDENCIES_1 =
 fsmove_DEPENDENCIES = $(am__DEPENDENCIES_1)
@@ -287,7 +288,8 @@ fsmove_SOURCES = \
   ../src/move.cc \
   ../src/mstring.cc \
   ../src/zmem.cc \
-  ../src/zpage.cc
+  ../src/zpool.cc \
+  ../src/zptr.cc
 
 
 # ../src/io/util.cc
@@ -421,7 +423,9 @@ clean-sbinPROGRAMS:
 	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/zmem.$(OBJEXT): ../src/$(am__dirstamp) \
 	../src/$(DEPDIR)/$(am__dirstamp)
-../src/zpage.$(OBJEXT): ../src/$(am__dirstamp) \
+../src/zpool.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
+../src/zptr.$(OBJEXT): ../src/$(am__dirstamp) \
 	../src/$(DEPDIR)/$(am__dirstamp)
 
 fsmove$(EXEEXT): $(fsmove_OBJECTS) $(fsmove_DEPENDENCIES) $(EXTRA_fsmove_DEPENDENCIES) 
@@ -447,7 +451,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/move.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/mstring.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/zmem.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/zpage.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/zpool.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/zptr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/cache/$(DEPDIR)/cache_symlink.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/io/$(DEPDIR)/disk_stat.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/io/$(DEPDIR)/io.Po@am__quote@

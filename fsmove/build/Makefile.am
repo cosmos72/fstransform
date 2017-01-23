@@ -21,7 +21,8 @@ fsmove_SOURCES = \
   ../src/move.cc \
   ../src/mstring.cc \
   ../src/zmem.cc \
-  ../src/zpage.cc
+  ../src/zpool.cc \
+  ../src/zptr.cc
 
 # ../src/io/util.cc
 
