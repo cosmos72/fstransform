@@ -17,7 +17,7 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * zmem.hh
+ * zptr.cc
  *
  *  Created on: Jan 22, 2017
  *      Author: max
@@ -36,20 +36,25 @@
 
 FT_NAMESPACE_BEGIN
 
-zptr_handle zptr_alloc(ft_size size) {
-    return (zptr_handle)malloc(size);
-}
-void zptr_free(zptr_handle handle, ft_size size) {
-    free((void *)handle);
-}
-
-void zptr_deflate(zptr_handle handle) {
+void * zptr_base::get()
+{
+    /* decompress... */
+    return reinterpret_cast<void *>(handle);
 }
 
-void * zptr_inflate(zptr_handle handle) {
-    return (void *)handle;
+bool zptr_base::alloc(ft_size size)
+{
+    void * address = ::malloc(size);
+    handle = reinterpret_cast<zptr_handle>(address);
+    return address != NULL;
+}
+
+bool zptr_base::free()
+{
+    void * address = reinterpret_cast<void *>(handle);
+    ::free(address);
+    return address != NULL;
 }
 
 FT_NAMESPACE_END
-
 

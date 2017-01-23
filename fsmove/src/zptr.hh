@@ -32,31 +32,45 @@ FT_NAMESPACE_BEGIN
 
 typedef ft_size zptr_handle;
 
-zptr_handle zptr_alloc(ft_size size);
-void zptr_free(zptr_handle handle, ft_size size);
-
-void zptr_compress(zptr_handle handle);
-void * zptr_decompress(zptr_handle handle);
-
-template<class T>
-    class zptr
+class zptr_base
 {
 private:
     zptr_handle handle;
     
 public:
-    explicit inline zptr(zptr_handle new_handle = 0)
+    explicit inline zptr_base(zptr_handle new_handle = 0)
         : handle(new_handle)
+    { }
+    
+    void * get();
+    
+    inline const void * get() const
+    {
+        return const_cast<zptr_base *>(this)->get();
+    }
+    
+    bool alloc(ft_size size);
+    bool free();
+};
+
+
+
+template<class T>
+    class zptr : private zptr_base
+{
+public:
+    explicit inline zptr(zptr_handle new_handle = 0)
+        : zptr_base(new_handle)
     { }
     
     inline T * get()
     {
-        return reinterpret_cast<T *>(zptr_decompress(handle));
+        return reinterpret_cast<T *>(zptr_base::get());
     }
     
     inline const T * get() const
     {
-        return reinterpret_cast<const T *>(zptr_decompress(handle));
+        return reinterpret_cast<const T *>(zptr_base::get());
     }
     
     inline T * operator->()
@@ -69,15 +83,8 @@ public:
         return get();
     }
     
-    static inline zptr<T> alloc(ft_size size)
-    {
-        return zptr<T>(zptr_alloc(size));
-    }
-
-    inline void free(ft_size size)
-    {
-        return zptr_free(handle, size);
-    }
+    using zptr_base::alloc;
+    using zptr_base::free;
 };
 
 FT_NAMESPACE_END

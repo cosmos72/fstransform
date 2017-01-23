@@ -17,7 +17,7 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * move.cc
+ * zmem.cc
  *
  *  Created on: Jan 22, 2017
  *      Author: max
