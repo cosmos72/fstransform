@@ -44,7 +44,7 @@ zpool::~zpool()
     }
 }
 
-/* deallocate one page - can be both compressed or uncompressed. updates pool[] and next_handle */
+/* deallocate one page - can be both compressed or decompressed. updates pool[] and next_handle */
 void zpool::free(zpool_handle handle)
 {
     if (handle >= pool.size())

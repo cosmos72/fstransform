@@ -140,7 +140,7 @@ int fm_move::main(int argc, char ** argv)
         zpool pool;
         ft_size size = 65536;
         zpool_handle h = pool.alloc(size);
-        ft_size * address = reinterpret_cast<ft_size *>(pool.uncompress(h));
+        ft_size * address = reinterpret_cast<ft_size *>(pool.decompress(h));
         if (address)
         {
             for (ft_size i = 0; i < size / sizeof(ft_size); i++)
@@ -148,7 +148,7 @@ int fm_move::main(int argc, char ** argv)
                 address[i] = (ft_size)address + i;
             }
             pool.compress(h);
-            ft_size * new_address = reinterpret_cast<ft_size *>(pool.uncompress(h));
+            ft_size * new_address = reinterpret_cast<ft_size *>(pool.decompress(h));
             if (new_address) {
                 for (ft_size i = 0; i < size / sizeof(ft_size); i++)
                 {

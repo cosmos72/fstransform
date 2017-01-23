@@ -121,7 +121,7 @@ cleanup:
     return err == Z_STREAM_END;
 }
 
-void * zmem::do_uncompress()
+void * zmem::do_decompress()
 {
     z_stream z = { }; /* zero-initialize */
     z.zalloc = Z_NULL;

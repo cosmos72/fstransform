@@ -47,7 +47,7 @@ private:
     
     
     bool do_compress();
-    void * do_uncompress();
+    void * do_decompress();
 
 public:
     inline zmem() : address(NULL), size(0)
@@ -71,13 +71,13 @@ public:
     {
         if (address != NULL && !compressed())
             return do_compress();
-        return address != NULL; /* already uncompressed, or does not exist */
+        return address != NULL; /* already decompressed, or does not exist */
     }
     
-    inline void * uncompress()
+    inline void * decompress()
     {
         if (address != NULL && compressed())
-            return do_uncompress();
+            return do_decompress();
         return address; /* already compressed, or does not exist */
     }
 };

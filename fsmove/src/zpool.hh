@@ -49,12 +49,12 @@ public:
     zpool_handle alloc(ft_size size);
     void free(zpool_handle handle);
 
-    /* return address of uncompressed page */
-    inline void * uncompress(zpool_handle handle)
+    /* return address of decompressed page */
+    inline void * decompress(zpool_handle handle)
     {
         if (handle >= pool.size())
             return NULL;
-        return pool[handle].uncompress();
+        return pool[handle].decompress();
     }
     
     inline bool compress(zpool_handle handle)
