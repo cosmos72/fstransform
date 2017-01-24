@@ -40,7 +40,7 @@ FT_NAMESPACE_BEGIN
 bool zpage::alloc_init_page(ft_size chunk_size)
 {
     ft_size n;
-    if (chunk_size >= 32768)
+    if (chunk_size >= 8192)
         n = 1;
     else if (chunk_size > 256)
         n = MAX_N * 256 / chunk_size;
