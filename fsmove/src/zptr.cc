@@ -27,34 +27,9 @@
 
 #include "zptr.hh"
 
-#if defined(FT_HAVE_STDLIB_H)
-# include <stdlib.h>       // for malloc(), realloc(), free()
-#elif defined(FT_HAVE_CSTDLIB)
-# include <cstdlib>        // for malloc(), realloc(), free()
-#endif
-
-
 FT_NAMESPACE_BEGIN
 
-void * zptr_base::get()
-{
-    /* decompress... */
-    return reinterpret_cast<void *>(handle);
-}
-
-bool zptr_base::alloc(ft_size size)
-{
-    void * address = ::malloc(size);
-    handle = reinterpret_cast<zptr_handle>(address);
-    return address != NULL;
-}
-
-bool zptr_base::free()
-{
-    void * address = reinterpret_cast<void *>(handle);
-    ::free(address);
-    return address != NULL;
-}
+zpool zptr_base::pool;
 
 FT_NAMESPACE_END
 

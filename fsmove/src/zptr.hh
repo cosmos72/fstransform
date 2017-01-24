@@ -27,6 +27,7 @@
 #define FSTRANSFORM_ZPTR_HH
 
 #include "zfwd.hh"
+#include "zpool.hh"
 
 FT_NAMESPACE_BEGIN
 
@@ -34,21 +35,34 @@ class zptr_base
 {
 private:
     zptr_handle handle;
+
+    static zpool pool;
     
 public:
     explicit inline zptr_base(zptr_handle new_handle = 0)
         : handle(new_handle)
     { }
     
-    void * get();
+    inline void * get()
+    {
+        return pool.decompress_ptr(handle);
+    }
     
     inline const void * get() const
     {
-        return const_cast<zptr_base *>(this)->get();
+        return pool.decompress_ptr(handle);
     }
     
-    bool alloc(ft_size size);
-    bool free();
+    inline bool alloc(ft_size size)
+    {
+        handle = pool.alloc_ptr(size);
+        return handle != 0;
+    }
+    
+    inline bool free()
+    {
+        return pool.free_ptr(handle);
+    }
 };
 
 
