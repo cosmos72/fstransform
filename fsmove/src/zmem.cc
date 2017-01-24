@@ -36,16 +36,10 @@
 # include <cstdlib>        // for calloc(), realloc(), free()
 #endif
 
-#if defined(FT_HAVE_STRING_H)
-# include <string.h>       // for memset()
-#elif defined(FT_HAVE_CSTRING)
-# include <cstring>        // for memset()
-#endif
-
 FT_NAMESPACE_BEGIN
 
 
-bool zmem::alloc(ft_size new_size)
+bool zmem::alloc_page(ft_size new_size)
 {
     if (new_size == 0)
         new_size = 1;
@@ -59,7 +53,7 @@ bool zmem::alloc(ft_size new_size)
     return new_address != NULL;
 }
 
-bool zmem::free()
+bool zmem::free_page()
 {
     void * old_address = address;
     if (old_address != NULL)

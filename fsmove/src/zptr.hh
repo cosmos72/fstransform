@@ -26,11 +26,9 @@
 #ifndef FSTRANSFORM_ZPTR_HH
 #define FSTRANSFORM_ZPTR_HH
 
-#include "types.hh"     // for ft_size
+#include "zfwd.hh"
 
 FT_NAMESPACE_BEGIN
-
-typedef ft_size zptr_handle;
 
 class zptr_base
 {

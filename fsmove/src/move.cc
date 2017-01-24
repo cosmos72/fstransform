@@ -30,9 +30,9 @@
 #include "io/io_posix.hh"    // for fm_io_posix
 #include "io/io_prealloc.hh" // for fm_io_prealloc
 
-#define ZPOOL_TEST
-#ifdef ZPOOL_TEST
-# include "zpool.hh"
+#define ZTEST
+#ifdef ZTEST
+# include "ztest.hh"
 #endif
 
 #if defined(FT_HAVE_STRING_H)
@@ -135,29 +135,8 @@ int fm_move::check_is_open()
  */
 int fm_move::main(int argc, char ** argv)
 {
-#ifdef ZPOOL_TEST
-    {
-        zpool pool;
-        ft_size size = 65536;
-        zpool_handle h = pool.alloc(size);
-        ft_size * address = reinterpret_cast<ft_size *>(pool.decompress(h));
-        if (address)
-        {
-            for (ft_size i = 0; i < size / sizeof(ft_size); i++)
-            {
-                address[i] = (ft_size)address + i;
-            }
-            pool.compress(h);
-            ft_size * new_address = reinterpret_cast<ft_size *>(pool.decompress(h));
-            if (new_address) {
-                for (ft_size i = 0; i < size / sizeof(ft_size); i++)
-                {
-                    if (new_address[i] != (ft_size)address + i)
-                        ff_log(FC_ERROR, 0, "zpool test failed! wrote 0x%"FT_XLL", read 0x%"FT_XLL, (ft_ull)address + i, (ft_ull)new_address[i]);
-                }
-            }
-        }
-    }
+#ifdef ZTEST
+    ztest();
 #endif
     
     fm_move mover;

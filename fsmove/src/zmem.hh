@@ -26,7 +26,7 @@
 #ifndef FSTRANSFORM_ZMEM_HH
 #define FSTRANSFORM_ZMEM_HH
 
-#include "types.hh"     // for ft_size
+#include "zfwd.hh"
 
 #if defined(FT_HAVE_LIMITS_H)
 # include <limits.h>       // for CHAR_BIT
@@ -39,16 +39,16 @@ FT_NAMESPACE_BEGIN
 class zmem
 {
 private:
-    friend class zpool;
+    bool do_compress();
+    void * do_decompress();
+
+protected:
+    friend class zpool_base;
     enum { compressed_shift = (sizeof(ft_size) * CHAR_BIT) - 1 };
 
     void * address;
     ft_size size; /* if mem is compressed, contains ~actual_size */
     
-    
-    bool do_compress();
-    void * do_decompress();
-
 public:
     inline zmem() : address(NULL), size(0)
     {
@@ -64,17 +64,17 @@ public:
         return compressed() ? size : ~size;
     }
     
-    bool alloc(ft_size new_size);
-    bool free();
+    bool alloc_page(ft_size new_size);
+    bool free_page();
         
-    inline bool compress()
+    inline bool compress_page()
     {
         if (address != NULL && !compressed())
             return do_compress();
         return address != NULL; /* already decompressed, or does not exist */
     }
     
-    inline void * decompress()
+    inline void * decompress_page()
     {
         if (address != NULL && compressed())
             return do_decompress();

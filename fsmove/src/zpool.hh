@@ -26,42 +26,83 @@
 #ifndef FSTRANSFORM_ZPOOL_HH
 #define FSTRANSFORM_ZPOOL_HH
 
-#include "zmem.hh"
+#include "zpage.hh"
 
 #include <vector>
+#include <map>
 
 FT_NAMESPACE_BEGIN
 
-typedef ft_size zpool_handle;
-
-
-class zpool {
-private:
-    std::vector<zmem> pool;
-    zpool_handle next_handle;
+class zpool_base {
+protected:
+    std::vector<zpage> pool;
+    zpage_handle next_handle;
     
     void update_next_handle();
 
 public:
-    zpool();
-    ~zpool();
-    
-    zpool_handle alloc(ft_size size);
-    void free(zpool_handle handle);
+    zpool_base();
+    ~zpool_base();
+
+    zpage_handle alloc_page(ft_size size);
+    bool free_page(zpage_handle handle);
 
     /* return address of decompressed page */
-    inline void * decompress(zpool_handle handle)
+    inline void * decompress_page(zpage_handle page_handle)
     {
-        if (handle >= pool.size())
+        if (page_handle >= pool.size())
             return NULL;
-        return pool[handle].decompress();
+        return pool[page_handle].decompress_page();
     }
     
-    inline bool compress(zpool_handle handle)
+    inline bool compress_page(zpage_handle page_handle)
     {
-        if (handle >= pool.size())
+        if (page_handle >= pool.size())
             return false;
-        return pool[handle].compress();
+        return pool[page_handle].compress_page();
+    }
+};
+
+class zpool : public zpool_base {
+private:
+    std::map<ft_size, zpage_handle> avail_pool;
+
+    inline zpage_handle find_page4(ft_size chunk_size)
+    {
+        std::map<ft_size, zpage_handle>::iterator iter = avail_pool.find(chunk_size);
+        return iter != avail_pool.end() ? iter->second : 0;
+    }
+    
+public:
+    zpool();
+    ~zpool();
+
+    zpage_handle alloc_init_page(ft_size chunk_size);
+    
+    inline void * decompress_ptr(zptr_handle ptr_handle)
+    {
+        zpage_handle page_handle = ptr_handle >> zpage::PTR_BITS;
+        if (page_handle >= pool.size())
+            return NULL;
+        return pool[page_handle].decompress_ptr(ptr_handle);
+    }
+    
+    inline bool compress_ptr(zptr_handle ptr_handle)
+    {
+        zpage_handle page_handle = ptr_handle >> zpage::PTR_BITS;
+        if (page_handle >= pool.size())
+            return false;
+        return pool[page_handle].compress_ptr(ptr_handle);
+    }
+
+    zptr_handle alloc_ptr(ft_size size);
+    
+    inline bool free_ptr(zptr_handle ptr_handle)
+    {
+        zpage_handle page_handle = ptr_handle >> zpage::PTR_BITS;
+        if (page_handle >= pool.size())
+            return false;
+        return pool[page_handle].free_ptr(ptr_handle);
     }
 };
 
