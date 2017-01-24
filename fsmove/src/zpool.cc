@@ -93,26 +93,23 @@ zpool::zpool()
 zpool::~zpool()
 { }
 
-zpage_handle zpool::alloc_init_page(ft_size chunk_size)
-{
-    zpage_handle handle = find_page4(chunk_size);
-    if (handle != 0)
-        return handle;
-    
-    handle = next_handle;
+zpool::iter_type zpool::do_alloc_init_page(ft_size chunk_size)
+{    
+    zpage_handle handle = next_handle;
     if (pool.size() <= handle)
         pool.resize(handle + 1);
 
+    iter_type iter;
     if (pool[handle].alloc_init_page(chunk_size)) {
         update_next_handle();
-        avail_pool[chunk_size] = handle;
+        iter = avail_pool.insert(std::make_pair(chunk_size, handle));
     } else
-        handle = 0;
+        iter = avail_pool.end();
     
-    return handle;
+    return iter;
 }
 
-static inline ft_size round_up_chunk_size(ft_size size) {
+ft_size zpool::round_up_chunk_size(ft_size size) {
     if (size <= 16) {
         if (size <= 1)
             size = 1;
@@ -154,18 +151,54 @@ zptr_handle zpool::alloc_ptr(ft_size size)
     
     zptr_handle ptr_handle = 0;
     zpage_handle page_handle;
-    for (ft_size i = 0; i < 2; i++)
+    
+    iter_type iter = avail_pool.lower_bound(chunk_size), end = avail_pool.end(), next;
+    while (iter != end && iter->first == chunk_size)
     {
-        page_handle = alloc_init_page(chunk_size); 
-        if (page_handle == 0)
-            break;
-        ptr_handle = pool[page_handle].alloc_ptr(page_handle);
+        page_handle = iter->second;
+        zpage & page = pool[page_handle];
+        ptr_handle = page.alloc_ptr(page_handle);
+        
+        if (ptr_handle == 0 || page.is_full_page()) {
+            /* page is full... try another one. */
+            next = iter;
+            ++next;
+            avail_pool.erase(iter); /* C++11 allows the simpler "iter = avail_pool.erase(iter)" */
+            iter = next;
+        }
+
         if (ptr_handle != 0)
-            break;
-        /* page is full */
-        avail_pool.erase(chunk_size);
+            return ptr_handle;
+    }
+        
+    iter = do_alloc_init_page(chunk_size); 
+    if (iter != end) {
+        page_handle = iter->second;
+        zpage & page = pool[page_handle];
+        ptr_handle = page.alloc_ptr(page_handle);
+        if (ptr_handle == 0 || page.is_full_page()) {
+            avail_pool.erase(iter);
+        }
     }
     return ptr_handle;
+}
+
+bool zpool::free_ptr(zptr_handle ptr_handle)
+{
+    zpage_handle page_handle = ptr_handle >> zpage::PTR_BITS;
+    if (page_handle >= pool.size())
+        return false;
+
+    zpage & page = pool[page_handle];
+    bool full = page.is_full_page();
+    bool success = page.free_ptr(ptr_handle);
+    if (full && success) {
+        /* reinsert page among available ones */
+        ft_size chunk_size = page.get_page_chunk_size();
+        
+        avail_pool.insert(std::make_pair(chunk_size, page_handle));
+    }
+    return success;
 }
 
 FT_NAMESPACE_END

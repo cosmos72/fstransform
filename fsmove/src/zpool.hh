@@ -65,20 +65,25 @@ public:
 
 class zpool : public zpool_base {
 private:
-    std::map<ft_size, zpage_handle> avail_pool;
+    typedef std::multimap<ft_size, zpage_handle> map_type;
+    typedef map_type::iterator iter_type;
+    
+    map_type avail_pool;
 
-    inline zpage_handle find_page4(ft_size chunk_size)
-    {
-        std::map<ft_size, zpage_handle>::iterator iter = avail_pool.find(chunk_size);
-        return iter != avail_pool.end() ? iter->second : 0;
-    }
+    iter_type do_alloc_init_page(ft_size chunk_size);
     
 public:
     zpool();
     ~zpool();
 
-    zpage_handle alloc_init_page(ft_size chunk_size);
-    
+    static ft_size round_up_chunk_size(ft_size size);
+
+    inline zpage_handle alloc_init_page(ft_size chunk_size)
+    {
+        iter_type iter = do_alloc_init_page(round_up_chunk_size(chunk_size));
+        return iter != avail_pool.end() ? iter->second : 0;
+    }
+
     inline void * decompress_ptr(zptr_handle ptr_handle)
     {
         zpage_handle page_handle = ptr_handle >> zpage::PTR_BITS;
@@ -96,14 +101,7 @@ public:
     }
 
     zptr_handle alloc_ptr(ft_size size);
-    
-    inline bool free_ptr(zptr_handle ptr_handle)
-    {
-        zpage_handle page_handle = ptr_handle >> zpage::PTR_BITS;
-        if (page_handle >= pool.size())
-            return false;
-        return pool[page_handle].free_ptr(ptr_handle);
-    }
+    bool free_ptr(zptr_handle ptr_handle);
 };
 
 FT_NAMESPACE_END

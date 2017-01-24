@@ -29,6 +29,7 @@
 FT_NAMESPACE_BEGIN
 
 void ztest();
+void ztest_ptr();
 
 FT_NAMESPACE_END
 

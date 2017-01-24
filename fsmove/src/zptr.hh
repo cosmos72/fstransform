@@ -26,7 +26,6 @@
 #ifndef FSTRANSFORM_ZPTR_HH
 #define FSTRANSFORM_ZPTR_HH
 
-#include "zfwd.hh"
 #include "zpool.hh"
 
 FT_NAMESPACE_BEGIN
@@ -51,6 +50,11 @@ public:
     inline const void * get() const
     {
         return pool.decompress_ptr(handle);
+    }
+    
+    inline bool compress()
+    {
+        return pool.compress_ptr(handle);
     }
     
     inline bool alloc(ft_size size)
@@ -95,8 +99,13 @@ public:
         return get();
     }
     
-    using zptr_base::alloc;
+    inline bool alloc(ft_size element_count)
+    {
+        return zptr_base::alloc(element_count * sizeof(T));
+    }
+    
     using zptr_base::free;
+    using zptr_base::compress;
 };
 
 FT_NAMESPACE_END

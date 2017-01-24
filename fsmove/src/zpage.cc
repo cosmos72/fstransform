@@ -59,11 +59,32 @@ bool zpage::alloc_init_page(ft_size chunk_size)
     return true;
 }
 
+bool zpage::is_full_page()
+{
+    if (!decompress_page())
+        return false;
+    
+    zpage_content * content = reinterpret_cast<zpage_content *>(address);
+    return content->next >= content->count;
+}
+
+ft_size zpage::get_page_chunk_size()
+{
+    if (!decompress_page())
+        return 0;
+    
+    zpage_content * content = reinterpret_cast<zpage_content *>(address);
+    ft_size chunk_size;
+    if (content->count > 1)
+        chunk_size = content->chunk_size;
+    else
+        chunk_size = size - MAX_ALIGN;
+    return chunk_size;
+}
+
 zptr_handle zpage::alloc_ptr(zpage_handle page_handle)
 {
-    if (address == NULL)
-        return 0;
-    if (compressed() && !decompress_page())
+    if (!decompress_page())
         return 0;
     
     zpage_content * content = reinterpret_cast<zpage_content *>(address);
