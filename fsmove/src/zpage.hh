@@ -52,6 +52,7 @@ public:
     /* allocate and initialize internal data required for alloc_ptr() and free_ptr() */
     bool alloc_init_page(ft_size chunk_size);
 
+    bool is_empty_page();
     bool is_full_page();
     ft_size get_page_chunk_size();
     

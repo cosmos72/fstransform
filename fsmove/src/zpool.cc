@@ -30,7 +30,6 @@
 
 FT_NAMESPACE_BEGIN
 
-
 zpool_base::zpool_base() : next_handle(1)
         /* reserve page 0 as "invalid" - we want zpage_handle = 0 to be the invalid pointer to compressed memory */
 { }
@@ -86,6 +85,8 @@ void zpool_base::update_next_handle()
 
 
 /************* zpool ************/
+
+zpool default_zpool;
 
 zpool::zpool() 
 { }
@@ -152,7 +153,7 @@ zptr_handle zpool::alloc_ptr(ft_size size)
     zptr_handle ptr_handle = 0;
     zpage_handle page_handle;
     
-    iter_type iter = avail_pool.lower_bound(chunk_size), end = avail_pool.end(), next;
+    iter_type iter = avail_pool.lower_bound(chunk_size), end = avail_pool.end();
     while (iter != end && iter->first == chunk_size)
     {
         page_handle = iter->second;
@@ -161,10 +162,8 @@ zptr_handle zpool::alloc_ptr(ft_size size)
         
         if (ptr_handle == 0 || page.is_full_page()) {
             /* page is full... try another one. */
-            next = iter;
-            ++next;
-            avail_pool.erase(iter); /* C++11 allows the simpler "iter = avail_pool.erase(iter)" */
-            iter = next;
+            /* C++11 allows the elegant "iter = avail_pool.erase(iter)" */
+            avail_pool.erase(iter++);
         }
 
         if (ptr_handle != 0)
@@ -190,13 +189,26 @@ bool zpool::free_ptr(zptr_handle ptr_handle)
         return false;
 
     zpage & page = pool[page_handle];
-    bool full = page.is_full_page();
+    bool was_full = page.is_full_page();
     bool success = page.free_ptr(ptr_handle);
-    if (full && success) {
-        /* reinsert page among available ones */
-        ft_size chunk_size = page.get_page_chunk_size();
-        
-        avail_pool.insert(std::make_pair(chunk_size, page_handle));
+    if (success) {
+        if (page.is_empty_page()) {
+            /* free this page, i.e. return it to the OS */
+            ft_size chunk_size = page.get_page_chunk_size();
+            if (free_page(page_handle)) {
+                iter_type iter = avail_pool.lower_bound(chunk_size), end = avail_pool.end();
+                for (; iter != end && iter->first == chunk_size; ++iter) {
+                    if (iter->second == page_handle) {
+                        avail_pool.erase(iter);
+                        break;
+                    }
+                }
+            }
+        } else if (was_full) {
+            /* reinsert page among available ones */
+            ft_size chunk_size = page.get_page_chunk_size();
+            avail_pool.insert(std::make_pair(chunk_size, page_handle));
+        }
     }
     return success;
 }

@@ -68,6 +68,19 @@ bool zpage::is_full_page()
     return content->next >= content->count;
 }
 
+bool zpage::is_empty_page()
+{
+    if (!decompress_page())
+        return false;
+    
+    zpage_content * content = reinterpret_cast<zpage_content *>(address);
+    if (content->next != 0)
+        return false;
+    
+    static const uint8_t zero[sizeof(content->bitmap)] = { }; /* zero-initialize */
+    return !memcmp(content->bitmap, zero, sizeof(content->bitmap));
+}
+
 ft_size zpage::get_page_chunk_size()
 {
     if (!decompress_page())
@@ -88,10 +101,13 @@ zptr_handle zpage::alloc_ptr(zpage_handle page_handle)
         return 0;
     
     zpage_content * content = reinterpret_cast<zpage_content *>(address);
+    
     ft_size n = content->count;
-
-    uint8_t * bitmap = content->bitmap;
-    for (ft_size i = content->next, mask = (ft_size)1 << (i % PTR_BITS); i < n; i++, mask <<= 1)
+    ft_size i = content->next;
+    ft_size mask = (ft_size)1 << (i % PTR_BITS);
+    uint8_t * bitmap = content->bitmap + (i / PTR_BITS);
+    
+    for (; i < n; i++, mask <<= 1)
     {
         if (mask > PTR_MASK) {
             mask = 1;
@@ -99,7 +115,7 @@ zptr_handle zpage::alloc_ptr(zpage_handle page_handle)
         }
         if ((bitmap[0] & mask) == 0) {
             bitmap[0] |= mask;
-            content->next = i + (i < UINT8_MAX);
+            content->next = i + 1;
             return (page_handle << PTR_BITS) | i;
         }
     }
@@ -108,9 +124,7 @@ zptr_handle zpage::alloc_ptr(zpage_handle page_handle)
 
 bool zpage::free_ptr(zptr_handle handle)
 {
-    if (address == NULL)
-        return false;
-    if (compressed() && !decompress_page())
+    if (!decompress_page())
         return false;
     
     zpage_content * content = reinterpret_cast<zpage_content *>(address);

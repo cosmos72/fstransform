@@ -104,6 +104,8 @@ public:
     bool free_ptr(zptr_handle ptr_handle);
 };
 
+extern zpool default_zpool;
+
 FT_NAMESPACE_END
 
 #endif /* FSTRANSFORM_ZPOOL_HH */

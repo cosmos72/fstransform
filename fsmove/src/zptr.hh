@@ -35,8 +35,6 @@ class zptr_base
 private:
     zptr_handle handle;
 
-    static zpool pool;
-    
 public:
     explicit inline zptr_base(zptr_handle new_handle = 0)
         : handle(new_handle)
@@ -44,28 +42,28 @@ public:
     
     inline void * get()
     {
-        return pool.decompress_ptr(handle);
+        return default_zpool.decompress_ptr(handle);
     }
     
     inline const void * get() const
     {
-        return pool.decompress_ptr(handle);
+        return default_zpool.decompress_ptr(handle);
     }
     
     inline bool compress()
     {
-        return pool.compress_ptr(handle);
+        return default_zpool.compress_ptr(handle);
     }
     
     inline bool alloc(ft_size size)
     {
-        handle = pool.alloc_ptr(size);
+        handle = default_zpool.alloc_ptr(size);
         return handle != 0;
     }
     
     inline bool free()
     {
-        return pool.free_ptr(handle);
+        return default_zpool.free_ptr(handle);
     }
 };
 

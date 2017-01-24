@@ -23,13 +23,3 @@
  *      Author: max
  */
 
-#include "first.hh"
-
-#include "zptr.hh"
-
-FT_NAMESPACE_BEGIN
-
-zpool zptr_base::pool;
-
-FT_NAMESPACE_END
-

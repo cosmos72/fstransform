@@ -26,10 +26,12 @@
 #ifndef FSTRANSFORM_ZTEST_HH
 #define FSTRANSFORM_ZTEST_HH
 
+#include "types.hh" /* for ft_size */
+
 FT_NAMESPACE_BEGIN
 
 void ztest();
-void ztest_ptr();
+void ztest_ptr(ft_size allocation_count = 961);
 
 FT_NAMESPACE_END
 
