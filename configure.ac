@@ -25,7 +25,7 @@ AC_CHECK_HEADERS([cerrno  climits  cmath  cstdarg  cstdio  cstdlib  cstring  cti
                   errno.h limits.h math.h stdarg.h stdio.h stdlib.h string.h time.h \
                   dirent.h fcntl.h features.h stddef.h stdint.h \
                   ext2fs/ext2fs.h linux/fiemap.h linux/fs.h \
-                  sys/disklabel.h sys/ioctl.h sys/mman.h sys/stat.h \
+                  sys/disklabel.h sys/ioctl.h sys/mman.h sys/mount.h sys/stat.h \
                   sys/statvfs.h sys/time.h sys/types.h sys/wait.h \
                   termios.h time.h unistd.h utime.h \
                   tr1/unordered_map unordered_map zlib.h])
@@ -61,7 +61,7 @@ AC_FUNC_MALLOC
 AC_FUNC_MMAP
 AC_CHECK_FUNCS([execvp fallocate posix_fallocate fdatasync fileno fsync ftruncate \
                getpagesize gettimeofday getuid lchown chown isatty localtime_r localtime \
-               memmove memset mkdir mkfifo mlock msync munmap random remove       \
+               memmove memset mkdir mkfifo mlock mount msync munmap random remove \
                srandom strerror strftime sync sysconf time tzset utimes utimensat \
                waitpid])
 
@@ -79,7 +79,7 @@ AC_CHECK_LIB(ext2fs, ext2fs_extent_replace, [AC_DEFINE(HAVE_LIBEXT2FS, 1, [Defin
 AC_CHECK_LIB(z,      deflate,               [AC_DEFINE(HAVE_Z_DEFLATE, 1, [Define to 1 if you have the z library.])
                                              AC_SUBST(LD_LIBZ, [-lz])])
 
-FT_NEED_ALL_FUNCS([execvp fileno ftruncate memmove memset mkdir mkfifo msync munmap \
+FT_NEED_ALL_FUNCS([execvp fileno ftruncate memmove memset mkdir mkfifo mount msync munmap \
                    remove strerror strftime sync time waitpid])
 FT_NEED_ANY_FUNC([localtime_r localtime])
 FT_NEED_ANY_FUNC([lchown chown])
@@ -106,7 +106,7 @@ else
 fi
 
 
-AC_CONFIG_FILES([Makefile fsattr/build/Makefile fsremap/build/Makefile fsmove/build/Makefile fstransform/build/Makefile])
+AC_CONFIG_FILES([Makefile fsattr/build/Makefile fsremap/build/Makefile fsmove/build/Makefile fsmount_kernel/build/Makefile fstransform/build/Makefile])
 AC_OUTPUT
 
 FT_OUTPUT

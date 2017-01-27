@@ -31,7 +31,7 @@ PROG_VERSION=%PACKAGE_VERSION%
 BOOT_CMD_which=which
 
 CMDS_bootstrap="which expr id"
-CMDS="stat mkfifo blockdev losetup fsck mkfs mount umount mkdir rmdir rm dd sync fsmove fsremap"
+CMDS="stat mkfifo blockdev losetup fsck mkfs mount umount mkdir rmdir rm dd sync fsmove fsmount_kernel fsremap"
 
 # optional commands
 CMDS_optional="sleep date"
@@ -53,18 +53,20 @@ FSTYPE=
 
 # nilfs2 is under test, works as target but as fails as source: gets full with usage = 100%
 # ocfs2 and reiserfs4 are under test, got kernel crash testing them
-FSTYPES_TESTED="ext2 ext3 ext4 reiserfs jfs xfs"
+FSTYPES_TESTED="ext2 ext3 ext4 ntfs reiserfs jfs xfs"
 
 DEVICE_BLOCK_SIZE=
 DEVICE_SIZE_IN_BYTES=
 DEVICE_SIZE_IN_BLOCKS=
 DEVICE_IS_INITIALLY_MOUNTED=
 DEVICE_MOUNT_POINT=
+DEVICE_MOUNT_OPTS_RW=rw
 DEVICE_FSTYPE=
 LOOP_FILE=
 LOOP_DEVICE=
 LOOP_SIZE_IN_BYTES=
 LOOP_MOUNT_POINT=
+LOOP_MOUNT_OPTS_RW=rw
 ZERO_FILE=
 
 OPT_CREATE_ZERO_FILE=no
@@ -75,6 +77,7 @@ OPT_PREALLOC=
 OPTS_fsattr=
 OPTS_fsmove=
 OPTS_fsremap=
+OPTS_fsmount_kernel=
 OPTS_mkfs="-q"
 OPTS_fsck_source="-p -f"
 OPTS_fsck_target="-p -f"
@@ -122,7 +125,8 @@ show_usage() {
   echo "  --loop-file=LOOP-FILE         override loop-file path"
   echo "  --loop-mount-point=PATH       override loop-file mount point"
   echo "  --new-size=SIZE               set new file system length. default: device length"
-  echo "  --old-file-system=OLD-TYPE    override current (old) file system type autodetection"
+  echo "  --current-fstype=OLD-TYPE     override current (old) file system type autodetection"
+  echo "                                    required for 'ntfs' file system"
   echo "  --opts-fsmove=OPTS            pass OPTS as additional options to 'fsmove'"
   echo "  --opts-fsremap=OPTS           pass OPTS as additional options to 'fsremap'"
   echo "  --opts-mkfs=OPTS              pass OPTS as options to 'mkfs'. default: '-q'"
@@ -132,7 +136,7 @@ show_usage() {
   echo "  --prealloc[=yes|no]           use EXPERIMENTAL files preallocation. default: no"
   echo "  --questions=[yes|no|on-error] whether to ask questions interactively. default: on-error"
   echo "  --reversible[=yes|no]         create zero-file, fsremap will do a reversible transformation"
-  echo "                                  default: no"
+  echo "                                    default: no"
   echo "  --x-OPTION=VALUE        set internal, undocumented option. For maintainers only."
   echo "  --zero-file=ZERO-FILE   override zero-file path"
   echo "  --help                  display this help and exit"
@@ -141,7 +145,7 @@ show_usage() {
 
 show_version() {
   echo "fstransform (fstransform utilities) $PROG_VERSION"
-  echo "Copyright (C) 2011-2012 Massimiliano Ghilardi"
+  echo "Copyright (C) 2011-2017 Massimiliano Ghilardi"
   echo ""
   echo "License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>."
   echo "This is free software: you are free to change and redistribute it."
@@ -190,9 +194,9 @@ parse_args() {
         USER_LOOP_SIZE_IN_BYTES="`\"$CMD_expr\" match \"$arg\" '--new-size=\(.*\)'`"
         log_info "device new (final) file-system length '$USER_LOOP_SIZE_IN_BYTES' bytes specified on command line"
         ;;
-      --old-file-system=*)
-        DEVICE_FSTYPE="`\"$CMD_expr\" match \"$arg\" '--old-fstype=\(.*\)'`"
-        log_info "device old (initial) file-system type '$DEVICE_FSTYPE' specified on command line"
+      --current-fstype=*)
+        DEVICE_FSTYPE="`\"$CMD_expr\" match \"$arg\" '--current-fstype=\(.*\)'`"
+        log_info "device initial (current) file-system type '$DEVICE_FSTYPE' specified on command line"
         ;;
       --opts-fsmove=*)
         OPTS_fsmove="`\"$CMD_expr\" match \"$arg\" '--opts-fsmove=\(.*\)'`"
@@ -569,6 +573,7 @@ fix_for_fstype_ntfs() {
   fi
   
   if test "$DEVICE_FSTYPE" = "ntfs"; then
+    DEVICE_MOUNT_OPTS_RW="rw,big_writes"
     if test "$my_cmd_ntfsresize" != "" -a "$USER_CMD_fsck_source" = ""; then
       USER_CMD_fsck_source="ntfsresize"
       OPTS_fsck_source="-n"
@@ -576,12 +581,13 @@ fix_for_fstype_ntfs() {
     fi
   fi
   if test "$FSTYPE" = "ntfs"; then
+    LOOP_MOUNT_OPTS_RW="rw,big_writes"
     if test "$my_cmd_ntfsresize" != "" -a "$USER_CMD_fsck_target" = ""; then
       USER_CMD_fsck_target="ntfsresize"
       OPTS_fsck_target="-n"
       detect_cmd_dual "fsck" "target"
     fi
-    # 'mkfs -t nfs' needs option '-f' (quick format) to maintain sparse files
+    # 'mkfs -t ntfs' needs option '-f' (quick format) to maintain sparse files
     OPTS_mkfs="$OPTS_mkfs -f"
   fi
 }
@@ -893,7 +899,7 @@ initial_mount_device() {
   CLEANUP_0="'$CMD_rmdir' '$DEVICE_MOUNT_POINT'"
   
   if test "$DEVICE_FSTYPE" != ""; then
-    exec_cmd "$CMD_mount" -t "$DEVICE_FSTYPE" "$DEVICE" "$DEVICE_MOUNT_POINT"
+    exec_cmd "$CMD_mount" "$DEVICE" "$DEVICE_MOUNT_POINT" -t "$DEVICE_FSTYPE"
   else
     exec_cmd "$CMD_mount" "$DEVICE" "$DEVICE_MOUNT_POINT"
   fi
@@ -941,7 +947,11 @@ find_device_mount_point_and_fstype() {
     if test "$DEVICE_FSTYPE" != ""; then
       log_info "file-system type '$my_fstype' is a placeholder name for FUSE... ignoring it (user specified type '$DEVICE_FSTYPE')"
     else
-      log_info "file-system type '$my_fstype' is a placeholder name for FUSE... ignoring it"
+      log_err "file-system type '$my_fstype' is a placeholder name for FUSE... unable to detect actual file-system type!"
+      log_err_add "please re-run $PROG adding the option --current-fstype={CURRENT_FILE_SYSTEM_TYPE}"
+      log_err_add "as for example --current-fstype=ntfs"
+      log_err_add "exiting now."
+      exit 1
     fi
   elif test "$DEVICE_FSTYPE" != ""; then
     # let's compare user-specified file-system type with what we found...
@@ -1116,13 +1126,15 @@ create_loop_file
 
 
 remount_device_ro() {
-  log_info "remounting device '$DEVICE' read-only"
-  exec_cmd "$CMD_mount" "$DEVICE" -o remount,ro
+  log_info "unmounting device '$DEVICE' and remounting it read-only using kernel driver"
+  exec_cmd "$CMD_umount" "$DEVICE"
+  exec_cmd "$CMD_fsmount_kernel" "$DEVICE" "$DEVICE_MOUNT_POINT" -o ro -t "$DEVICE_FSTYPE"
 }
 
 remount_device_rw() {
-  log_info "remounting device '$DEVICE' read-write"
-  exec_cmd "$CMD_mount" "$DEVICE" -o remount,rw
+  log_info "unmounting device '$DEVICE' and remounting it read-write"
+  exec_cmd "$CMD_umount" "$DEVICE"
+  exec_cmd "$CMD_mount" "$DEVICE" "$DEVICE_MOUNT_POINT" -o "$DEVICE_MOUNT_OPTS_RW" -t "$DEVICE_FSTYPE"
 }
 
 # detect unsupported corner cases, for example:
@@ -1208,8 +1220,13 @@ mount_loop_file() {
       fi
     fi
   fi
-  log_info "mounting loop device '$LOOP_DEVICE' on '$LOOP_MOUNT_POINT' ..."
-  exec_cmd "$CMD_mount" "$@" -t "$FSTYPE" "$LOOP_DEVICE" "$LOOP_MOUNT_POINT"
+  log_info "mounting loop device '$LOOP_DEVICE' on '$LOOP_MOUNT_POINT' $1..."
+  
+  local my_mount_opts="$LOOP_MOUNT_OPTS_RW"
+  if test "$1" = readonly; then
+    my_mount_opts="ro"
+  fi
+  exec_cmd "$CMD_mount" "$LOOP_DEVICE" "$LOOP_MOUNT_POINT" -t "$FSTYPE" -o "$my_mount_opts"
   log_info "loop device '$LOOP_DEVICE' mounted successfully."
   
   CLEANUP_3="'$CMD_rmdir' $LOOP_MOUNT_POINT"
@@ -1329,12 +1346,8 @@ remount_device_ro_and_fsck() {
     exec_cmd "$CMD_dd" bs=64k if="$DEVICE" of="$X_COPY_DEVICE"
   fi
   
-  log_info "mounting again device '$DEVICE' read-only"
-  if test "$DEVICE_FSTYPE" != ""; then
-    exec_cmd "$CMD_mount" -t "$DEVICE_FSTYPE" "$DEVICE" "$DEVICE_MOUNT_POINT" -o ro
-  else
-    exec_cmd "$CMD_mount" "$DEVICE" "$DEVICE_MOUNT_POINT" -o ro
-  fi
+  log_info "mounting again device '$DEVICE' read-only with kernel driver"
+  exec_cmd "$CMD_fsmount_kernel" "$DEVICE" "$DEVICE_MOUNT_POINT" -o ro -t "$DEVICE_FSTYPE"
 }
 remount_device_ro_and_fsck
 
@@ -1344,8 +1357,7 @@ reconnect_and_remount_ro_loop_device_for_prealloc() {
   # losetup option "-r" means read-only
   connect_loop_device "-r"
   
-  # mount option "-o ro" means read-only
-  mount_loop_file "-o" "ro"
+  mount_loop_file readonly
 
   # update 'fsremap' options  
   OPTS_fsremap="$OPTS_fsremap --io=prealloc --device-mount-point=$DEVICE_MOUNT_POINT --loop-mount-point=$LOOP_MOUNT_POINT --loop-device=$LOOP_DEVICE --cmd-losetup=$CMD_losetup"
@@ -1399,7 +1411,7 @@ fsck_device
 
 final_mount_device() {
   log_info "mounting transformed device '$DEVICE'"
-  exec_cmd "$CMD_mount" -t "$FSTYPE" "$DEVICE" "$DEVICE_MOUNT_POINT"
+  exec_cmd "$CMD_mount" "$DEVICE" "$DEVICE_MOUNT_POINT" -t "$FSTYPE"
   log_info "completed successfully. your new '$FSTYPE' file-system is mounted at '$DEVICE_MOUNT_POINT'"
 }
 

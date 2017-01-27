@@ -236,7 +236,7 @@ static int e4attr_help(const char * program_name) {
 static int e4attr_version() {
     return ff_log(FC_NOTICE, 0,
         "fsattr (fstransform utilities) " FT_VERSION "\n"
-        "Copyright (C) 2012 Massimiliano Ghilardi\n"
+        "Copyright (C) 2012-2017 Massimiliano Ghilardi\n"
         "\n"
         "License GPLv2: GNU GPL version 2\n"
         "<http://www.gnu.org/licenses/old-licenses/gpl-2.0.html>.\n"
