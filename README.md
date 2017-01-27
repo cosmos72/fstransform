@@ -17,21 +17,22 @@
 ###############################################################
 
 
-This document explains how use the programs 'fstransform', 'fsmove' and
-'fsremap' to transform the contents of a Linux device - usually a disk
-partition - from a filesystem type to another while preserving its contents.
+This document explains how use the programs 'fstransform', 'fsmove',
+'fsmount_kernel' and 'fsremap' to transform the contents of a Linux
+device - usually a disk partition - from a filesystem type to another
+while preserving its contents.
 
 For example, a disk partition can be transformed from 'jfs' to 'ext4',
 or from 'ext2' to 'xfs', or many other combinations. 
 
 Currently, the programs mentioned above have been tested on Linux
 with the following filesystems, both as source and as target:
-ext2, ext3, ext4, reiserfs, jfs, xfs.
+ext2, ext3, ext4, jfs, ntfs, reiserfs, xfs.
 
 Do NOT use these programs with other filesystems
 unless you are willing to LOSE your data.
 
-In particular, they do NOT (yet) support ntfs, msdos and vfat file systems.
+In particular, they do NOT (yet) support msdos, vfat and exfat file systems.
 
 Common sense and experience tell that you should ALWAYS have a backup
 of your valuable data: while the programs do NOT need to backup your data
@@ -101,11 +102,15 @@ There are five requirements for fstransform to have a chance to succeed:
 4. the initial and final filesystems must be supported by the Linux kernel
    (i.e. it must be able to mount them)
    and by the tools 'mkfs' and 'fsck'
-   (i.e. it must be possible to create them and check them for errors)
+   (i.e. it must be possible to create them and check them for errors).
+   
+   Support through FUSE (userspace) drivers is acceptable, as long as
+   there is also a kernel driver that can mount the same file system
+   at least read-only. For example, this is the case for ntfs.
 
 5. the following programs must be available:
-   the two custom-made programs 'fsmove' and 'fsremap' (distributed with the script)
-   and several common Linux tools:
+   the three custom-made programs 'fsmove', 'fsmount_kernel' 'fsremap'
+   (distributed with the script) and several common Linux tools:
       which, expr, id, blockdev, losetup, mount, umount,
       mkdir, rmdir, rm, mkfifo, dd, sync, fsck, mkfs 
 
@@ -126,9 +131,12 @@ There are five requirements for fstransform to have a chance to succeed:
    Devices with more than one million files with multiple hard links
    can cause fstransform to crash with "out of memory" errors.
 
-3) JFS file systems equal or larger than 8TB cannot be converted due to
-   missing support for ioctl(FIEMAP) in the kernel:
+3) JFS and NTFS file systems equal or larger than 8TB cannot be converted
+   due to missing support for ioctl(FIEMAP) in the kernel:
    the fallback ioctl(FIBMAP) is limited by design to < 8TB (assuming 4k blocks)
+   
+   Also, ioctl(FIBMAP) must be called for _each_ block so the conversion
+   will be a bit slower.
 
 4) REISERFS file systems using format "3.5" (the default) and equal or larger than 2TB
    cannot be converted due to their maximum file size = 2TB - 4k:
@@ -137,7 +145,7 @@ There are five requirements for fstransform to have a chance to succeed:
    REISERFS file systems using format "3.6" are immune to this problem.
 
 5) for the same reason, a device cannot be converted _to_ REISERFS format "3.5"
-   if it contains files larger than 2TB - 4k.
+   if it contains some files larger than 2TB - 4k.
 
 
 ### DETAILS TO KNOW
@@ -158,18 +166,18 @@ To pass the same option to 'fstransform', you must execute something like
 
 ### PROCEDURE
 
-0. compile fsmove and fsremap.
+0. compile fsmove, fsmount_kernel and fsremap.
    Running "./configure" then "make" should suffice on any recent Linux machine,
    as long as g++ is installed.
    
-   You will get two executables, fsmove and fsremap.
+   You will get three executables, fsmove and fsremap.
    They will be located at
-     fstransform-{version}-src/fsmove/Release/fsmove
-   and
-     fstransform-{version}-src/fsremap/Release/fsmap
+     ./fsmove/build/fsmove
+     ./fsmount_kernel/build/fsmount_kernel
+     ./fsremap/build/fsremap
    
    You are suggested to either run "make install" or to copy them to a simpler path.
-   Below, they will be referred as {fsmove} and {fsremap}
+   Below, they will be referred as {fsmove}, {fsmount_kernel} and {fsremap}
 
 
 1. OPTIONAL - CAN BE SKIPPED
@@ -200,7 +208,13 @@ To pass the same option to 'fstransform', you must execute something like
 
 3. execute the program
 
-   fstransform {device} {target-file-system-type}
+     fstransform {device} {target-file-system-type}
+   
+   when converting _from_ NTFS, you must execute a slightly more verbose command:
+
+     fstransform {device} {target-file-system-type} --current-fstype=ntfs
+   
+   because fstransform currently cannot autodetect FUSE-based file systems.
 
 4. follow the instructions - the program will tell you what it is doing,
    and will also call 'fsmove' and 'fsremap' which show progress percentage
@@ -234,7 +248,7 @@ To pass the same option to 'fstransform', you must execute something like
    The loop file created by fstransform must NEVER be  as argument to
    'fsremap --resume-job=<MMM> {...}'. You would IRREVERSIBLY LOSE YOUR DATA!
 
-REAL-WORLD TESTS
+SOME REAL-WORLD TESTS
 
 1) 1000GB encrypted disk, 52% full, ext2->ext4: SUCCESS, took 12 hours
    despite one system crash and two manual interruptions (CTRL+C)
@@ -243,9 +257,10 @@ REAL-WORLD TESTS
 
 2) 1540GB encrypted raid0 (3 disks), 56% full, ext2->ext4: SUCCESS, took 8 hours
 
+3) 213GB disk, 85% full, ntfs->xfs: SUCCESS, took 12 hours
+   (Yes, that's slow. But it works)
 
 
 Good luck!
 
 Massimiliano Ghilardi
-<paperinik@users.sf.net>
