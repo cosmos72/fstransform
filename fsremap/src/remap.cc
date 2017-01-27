@@ -2,7 +2,7 @@
  * fstransform - transform a file-system to another file-system type,
  *               preserving its contents and without the need for a backup
  *
- * Copyright (C) 2011-2012 Massimiliano Ghilardi
+ * Copyright (C) 2011-2017 Massimiliano Ghilardi
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -195,7 +195,7 @@ int fr_remap::version()
 
     return ff_log(FC_NOTICE, 0,
             "fsremap (fstransform utilities) " FT_VERSION "\n"
-            "Copyright (C) 2011-2014 Massimiliano Ghilardi\n"
+            "Copyright (C) 2011-2017 Massimiliano Ghilardi\n"
             "\n"
             "License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.\n"
             "This is free software: you are free to change and redistribute it.\n"

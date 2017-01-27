@@ -140,6 +140,9 @@
 /* Define to 1 if you have a working `mmap' system call. */
 #undef HAVE_MMAP
 
+/* Define to 1 if you have the `mount' function. */
+#undef HAVE_MOUNT
+
 /* Define to 1 if you have the `msync' function. */
 #undef HAVE_MSYNC
 
@@ -226,6 +229,9 @@
 
 /* Define to 1 if you have the <sys/mman.h> header file. */
 #undef HAVE_SYS_MMAN_H
+
+/* Define to 1 if you have the <sys/mount.h> header file. */
+#undef HAVE_SYS_MOUNT_H
 
 /* Define to 1 if you have the <sys/param.h> header file. */
 #undef HAVE_SYS_PARAM_H

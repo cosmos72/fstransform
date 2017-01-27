@@ -4271,7 +4271,7 @@ for ac_header in cerrno  climits  cmath  cstdarg  cstdio  cstdlib  cstring  ctim
                   errno.h limits.h math.h stdarg.h stdio.h stdlib.h string.h time.h \
                   dirent.h fcntl.h features.h stddef.h stdint.h \
                   ext2fs/ext2fs.h linux/fiemap.h linux/fs.h \
-                  sys/disklabel.h sys/ioctl.h sys/mman.h sys/stat.h \
+                  sys/disklabel.h sys/ioctl.h sys/mman.h sys/mount.h sys/stat.h \
                   sys/statvfs.h sys/time.h sys/types.h sys/wait.h \
                   termios.h time.h unistd.h utime.h \
                   tr1/unordered_map unordered_map zlib.h
@@ -5019,7 +5019,7 @@ rm -f conftest.mmap conftest.txt
 
 for ac_func in execvp fallocate posix_fallocate fdatasync fileno fsync ftruncate \
                getpagesize gettimeofday getuid lchown chown isatty localtime_r localtime \
-               memmove memset mkdir mkfifo mlock msync munmap random remove       \
+               memmove memset mkdir mkfifo mlock mount msync munmap random remove \
                srandom strerror strftime sync sysconf time tzset utimes utimensat \
                waitpid
 do :
@@ -5250,7 +5250,7 @@ fi
 
 
   ft_funcs_missing=
-  for ft_func in execvp fileno ftruncate memmove memset mkdir mkfifo msync munmap \
+  for ft_func in execvp fileno ftruncate memmove memset mkdir mkfifo mount msync munmap \
                    remove strerror strftime sync time waitpid
   do :
     if test "`eval echo '$ac_cv_func_'$ft_func`" != "yes"
@@ -5338,7 +5338,7 @@ $as_echo "$as_me: support for experimental files preallocation will be compiled"
 fi
 
 
-ac_config_files="$ac_config_files Makefile fsattr/build/Makefile fsremap/build/Makefile fsmove/build/Makefile fstransform/build/Makefile"
+ac_config_files="$ac_config_files Makefile fsattr/build/Makefile fsremap/build/Makefile fsmove/build/Makefile fsmount_kernel/build/Makefile fstransform/build/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -6071,6 +6071,7 @@ do
     "fsattr/build/Makefile") CONFIG_FILES="$CONFIG_FILES fsattr/build/Makefile" ;;
     "fsremap/build/Makefile") CONFIG_FILES="$CONFIG_FILES fsremap/build/Makefile" ;;
     "fsmove/build/Makefile") CONFIG_FILES="$CONFIG_FILES fsmove/build/Makefile" ;;
+    "fsmount_kernel/build/Makefile") CONFIG_FILES="$CONFIG_FILES fsmount_kernel/build/Makefile" ;;
     "fstransform/build/Makefile") CONFIG_FILES="$CONFIG_FILES fstransform/build/Makefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;

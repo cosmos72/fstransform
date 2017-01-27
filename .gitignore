@@ -10,6 +10,8 @@ Debug/
 /Makefile
 /fsattr/build/Makefile
 /fsattr/build/fsattr
+/fsmount_kernel/build/Makefile
+/fsmount_kernel/build/fsmount_kernel
 /fsmove/build/Makefile
 /fsmove/build/fsmove
 /fsremap/build/Makefile

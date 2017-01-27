@@ -298,7 +298,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = fsattr/build fsmove/build fsremap/build fstransform/build
+SUBDIRS = fsattr/build fsmove/build fsmount_kernel/build fsremap/build fstransform/build
 all: all-recursive
 
 .SUFFIXES:
