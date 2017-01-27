@@ -605,10 +605,22 @@ fix_for_fstype_nilfs2() {
   fi
 }
 
+fix_for_fstype_xfs() {
+  if test "$DEVICE_FSTYPE" = "xfs" -a "$USER_CMD_fsck_target" = ""; then
+    # fsck.xfs does nothing, use xfs_repair instead.
+    USER_CMD_fsck_source="xfs_repair"
+  fi
+  if test "$FSTYPE" = "xfs" -a "$USER_CMD_fsck_target" = ""; then
+    # fsck.xfs does nothing, use xfs_repair instead.
+    USER_CMD_fsck_target="xfs_repair"
+  fi
+}
+
 # apply fixes for special cases...
 fix_for_special_cases() {
   fix_for_fstype_nilfs2
   fix_for_fstype_ntfs
+  fix_for_fstype_xfs
 }
 
 fail_missing_cmds() {
