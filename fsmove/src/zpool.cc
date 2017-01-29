@@ -143,6 +143,8 @@ ft_size zpool::round_up_chunk_size(ft_size size) {
       } else
 	size = (size + 2047) & ~2047;
    }
+   else if (size == 0)
+     size = 1;
    return size;
 }
 
