@@ -111,41 +111,42 @@ zpool::iter_type zpool::do_alloc_init_page(ft_size chunk_size)
 }
 
 ft_size zpool::round_up_chunk_size(ft_size size) {
-   if ((size & (size - 1)) != 0) {
-      if (size <= 16) {
-	 if (size <= 1)
-	   size = 1;
-	 else if (size <= 8)
-	   size = (size + 1) & ~1;
-	 else
-	   size = (size + 3) & ~3;
-      } else if (size <= 256) {
-	 if (size <= 64) {
-	    if (size <= 32)
-	      size = (size + 7) & ~7;
-	    else
-	      size = (size + 15) & ~15;
-	 }
-	 else if (size <= 128)
-	   size = (size + 31) & ~31;
-	 else
-	   size = (size + 63) & ~63;
-      } else if (size <= 1024) {
-	 if (size <= 512)
-	   size = (size + 127) & ~127;
-	 else
-	   size = (size + 255) & ~255;
-      } else if (size <= 4096) {
-	 if (size <= 2048)
-	   size = (size + 511) & ~511;
-	 else
-	   size = (size + 1023) & ~1023;
-      } else
-	size = (size + 2047) & ~2047;
-   }
-   else if (size == 0)
-     size = 1;
-   return size;
+    if ((size & (size - 1)) != 0) {
+        if (size <= 16) {
+            if (size <= 4)
+                ;
+            else if (size <= 8)
+                size = (size + 1) & ~1;
+            else
+                size = (size + 3) & ~3;
+        } else if (size <= 256) {
+            if (size <= 64) {
+                if (size <= 32)
+                    size = (size + 7) & ~7;
+                else
+                    size = (size + 15) & ~15;
+            } else {
+                if (size <= 128)
+                    size = (size + 31) & ~31;
+                else
+                    size = (size + 63) & ~63;
+            }
+        } else if (size <= 1024) {
+            if (size <= 512)
+                size = (size + 127) & ~127;
+            else
+                size = (size + 255) & ~255;
+        } else if (size <= 4096) {
+            if (size <= 2048)
+                size = (size + 511) & ~511;
+            else
+                size = (size + 1023) & ~1023;
+        } else
+            size = (size + 2047) & ~2047;
+    }
+    else if (size == 0)
+        size = 1;
+    return size;
 }
 
 zptr_handle zpool::alloc_ptr(ft_size size)

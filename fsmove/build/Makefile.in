@@ -115,9 +115,9 @@ am_fsmove_OBJECTS = ../src/args.$(OBJEXT) ../src/assert.$(OBJEXT) \
 	../src/io/util_posix.$(OBJEXT) ../src/log.$(OBJEXT) \
 	../src/main.$(OBJEXT) ../src/misc.$(OBJEXT) \
 	../src/move.$(OBJEXT) ../src/mstring.$(OBJEXT) \
-	../src/zmem.$(OBJEXT) ../src/zpage.$(OBJEXT) \
-	../src/zpool.$(OBJEXT) ../src/zptr.$(OBJEXT) \
-	../src/ztest.$(OBJEXT)
+	../src/zmem/zmem.$(OBJEXT) ../src/zmem/zpage.$(OBJEXT) \
+	../src/zmem/zpool.$(OBJEXT) ../src/zmem/zptr.$(OBJEXT) \
+	../src/zmem/zpaged_map.$(OBJEXT) ../src/zmem/ztest.$(OBJEXT)
 fsmove_OBJECTS = $(am_fsmove_OBJECTS)
 am__DEPENDENCIES_1 =
 fsmove_DEPENDENCIES = $(am__DEPENDENCIES_1)
@@ -270,33 +270,32 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = subdir-objects
-fsmove_SOURCES = \
-  ../src/args.cc \
-  ../src/assert.cc \
-  ../src/copy.cc \
-  ../src/eta.cc \
-  ../src/cache/cache_symlink.cc \
-  ../src/io/disk_stat.cc \
-  ../src/io/io.cc \
-  ../src/io/io_posix.cc \
-  ../src/io/io_posix_dir.cc \
-  ../src/io/io_prealloc.cc \
-  ../src/io/util_dir.cc \
-  ../src/io/util_posix.cc \
-  ../src/log.cc \
-  ../src/main.cc \
-  ../src/misc.cc \
-  ../src/move.cc \
-  ../src/mstring.cc \
-  ../src/zmem.cc \
-  ../src/zpage.cc \
-  ../src/zpool.cc \
-  ../src/zptr.cc \
-  ../src/ztest.cc
-
-
-# ../src/io/util.cc
 fsmove_LDADD = $(LD_LIBZ)
+fsmove_SOURCES = \
+  ../src/args.cc                \
+  ../src/assert.cc              \
+  ../src/copy.cc                \
+  ../src/eta.cc                 \
+  ../src/cache/cache_symlink.cc \
+  ../src/io/disk_stat.cc        \
+  ../src/io/io.cc               \
+  ../src/io/io_posix.cc         \
+  ../src/io/io_posix_dir.cc     \
+  ../src/io/io_prealloc.cc      \
+  ../src/io/util_dir.cc         \
+  ../src/io/util_posix.cc       \
+  ../src/log.cc                 \
+  ../src/main.cc                \
+  ../src/misc.cc                \
+  ../src/move.cc                \
+  ../src/mstring.cc             \
+  ../src/zmem/zmem.cc           \
+  ../src/zmem/zpage.cc          \
+  ../src/zmem/zpool.cc          \
+  ../src/zmem/zptr.cc           \
+  ../src/zmem/zpaged_map.cc     \
+  ../src/zmem/ztest.cc
+
 all: all-am
 
 .SUFFIXES:
@@ -424,16 +423,24 @@ clean-sbinPROGRAMS:
 	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/mstring.$(OBJEXT): ../src/$(am__dirstamp) \
 	../src/$(DEPDIR)/$(am__dirstamp)
-../src/zmem.$(OBJEXT): ../src/$(am__dirstamp) \
-	../src/$(DEPDIR)/$(am__dirstamp)
-../src/zpage.$(OBJEXT): ../src/$(am__dirstamp) \
-	../src/$(DEPDIR)/$(am__dirstamp)
-../src/zpool.$(OBJEXT): ../src/$(am__dirstamp) \
-	../src/$(DEPDIR)/$(am__dirstamp)
-../src/zptr.$(OBJEXT): ../src/$(am__dirstamp) \
-	../src/$(DEPDIR)/$(am__dirstamp)
-../src/ztest.$(OBJEXT): ../src/$(am__dirstamp) \
-	../src/$(DEPDIR)/$(am__dirstamp)
+../src/zmem/$(am__dirstamp):
+	@$(MKDIR_P) ../src/zmem
+	@: > ../src/zmem/$(am__dirstamp)
+../src/zmem/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) ../src/zmem/$(DEPDIR)
+	@: > ../src/zmem/$(DEPDIR)/$(am__dirstamp)
+../src/zmem/zmem.$(OBJEXT): ../src/zmem/$(am__dirstamp) \
+	../src/zmem/$(DEPDIR)/$(am__dirstamp)
+../src/zmem/zpage.$(OBJEXT): ../src/zmem/$(am__dirstamp) \
+	../src/zmem/$(DEPDIR)/$(am__dirstamp)
+../src/zmem/zpool.$(OBJEXT): ../src/zmem/$(am__dirstamp) \
+	../src/zmem/$(DEPDIR)/$(am__dirstamp)
+../src/zmem/zptr.$(OBJEXT): ../src/zmem/$(am__dirstamp) \
+	../src/zmem/$(DEPDIR)/$(am__dirstamp)
+../src/zmem/zpaged_map.$(OBJEXT): ../src/zmem/$(am__dirstamp) \
+	../src/zmem/$(DEPDIR)/$(am__dirstamp)
+../src/zmem/ztest.$(OBJEXT): ../src/zmem/$(am__dirstamp) \
+	../src/zmem/$(DEPDIR)/$(am__dirstamp)
 
 fsmove$(EXEEXT): $(fsmove_OBJECTS) $(fsmove_DEPENDENCIES) $(EXTRA_fsmove_DEPENDENCIES) 
 	@rm -f fsmove$(EXEEXT)
@@ -444,6 +451,7 @@ mostlyclean-compile:
 	-rm -f ../src/*.$(OBJEXT)
 	-rm -f ../src/cache/*.$(OBJEXT)
 	-rm -f ../src/io/*.$(OBJEXT)
+	-rm -f ../src/zmem/*.$(OBJEXT)
 
 distclean-compile:
 	-rm -f *.tab.c
@@ -457,11 +465,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/misc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/move.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/mstring.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/zmem.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/zpage.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/zpool.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/zptr.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/ztest.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/cache/$(DEPDIR)/cache_symlink.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/io/$(DEPDIR)/disk_stat.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/io/$(DEPDIR)/io.Po@am__quote@
@@ -470,6 +473,12 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/io/$(DEPDIR)/io_prealloc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/io/$(DEPDIR)/util_dir.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/io/$(DEPDIR)/util_posix.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/zmem/$(DEPDIR)/zmem.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/zmem/$(DEPDIR)/zpage.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/zmem/$(DEPDIR)/zpaged_map.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/zmem/$(DEPDIR)/zpool.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/zmem/$(DEPDIR)/zptr.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/zmem/$(DEPDIR)/ztest.Po@am__quote@
 
 .cc.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
@@ -608,6 +617,8 @@ distclean-generic:
 	-rm -f ../src/cache/$(am__dirstamp)
 	-rm -f ../src/io/$(DEPDIR)/$(am__dirstamp)
 	-rm -f ../src/io/$(am__dirstamp)
+	-rm -f ../src/zmem/$(DEPDIR)/$(am__dirstamp)
+	-rm -f ../src/zmem/$(am__dirstamp)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
@@ -617,7 +628,7 @@ clean: clean-am
 clean-am: clean-generic clean-sbinPROGRAMS mostlyclean-am
 
 distclean: distclean-am
-	-rm -rf ../src/$(DEPDIR) ../src/cache/$(DEPDIR) ../src/io/$(DEPDIR)
+	-rm -rf ../src/$(DEPDIR) ../src/cache/$(DEPDIR) ../src/io/$(DEPDIR) ../src/zmem/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -663,7 +674,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-	-rm -rf ../src/$(DEPDIR) ../src/cache/$(DEPDIR) ../src/io/$(DEPDIR)
+	-rm -rf ../src/$(DEPDIR) ../src/cache/$(DEPDIR) ../src/io/$(DEPDIR) ../src/zmem/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
@@ -698,6 +709,8 @@ uninstall-am: uninstall-sbinPROGRAMS
 
 .PRECIOUS: Makefile
 
+
+# ../src/io/util.cc
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

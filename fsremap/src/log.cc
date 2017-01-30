@@ -57,6 +57,9 @@
 
 FT_NAMESPACE_BEGIN
 
+static const char * ff_strftime();
+static void ff_pretty_file(ft_log_event & event);
+
 static char const* const this_log_label[FC_FATAL+1] =
 {
      "", "DUMP  ", "TRACE ", "DEBUG ", "INFO  ", "NOTICE", "WARN  ", "ERROR ", "FATAL ",
@@ -336,12 +339,13 @@ void ft_log::append(ft_log_event & event)
     } while (logger != NULL);
 }
 
-
 /** log a message (unless it's suppressed) */
 void ft_log::log(ft_log_event & event)
 {
-    if (event.level >= get_threshold_level())
+    if (event.level >= get_threshold_level()) {
+        event.str_now = ff_strftime(); /* set event time only if needed */
         append(event);
+    }
 }
 
 /** return the effective level: if level is set return it, otherwise return parent effective level. */
@@ -366,7 +370,6 @@ ft_log_level ft_log::get_threshold_level() const
         ft_log_level parent_threshold_level = (parent != NULL) ? parent->get_threshold_level() : effective_level;
         threshold_level = effective_level < parent_threshold_level ? effective_level : parent_threshold_level;
     }
-
     return threshold_level;
 }
 
@@ -397,9 +400,6 @@ void ft_log::remove_appender(ft_log_appender & appender)
 
 
 
-
-static const char * ff_strftime();
-static void ff_pretty_file(ft_log_event & event);
 
 bool ff_logl_is_enabled(const char * file, int file_len, ft_log_level level)
 {
@@ -432,7 +432,7 @@ int ff_logl(const char * file, int file_len, const char * func, int line, ft_log
      * ff_log(), ff_vlog(), ff_log_register() or ff_log_set_threshold().
      */
     ft_log_event event = {
-        ff_strftime(), file, "", func, fmt,
+        "", file, "", func, fmt,
         file_len, line, err,
         level,
         /* va_list vargs field follows - but no portable way to value-initialize it */
@@ -467,7 +467,7 @@ int ff_logv(const char * file, int file_len, const char * func, int line, ft_log
      * ff_log(), ff_vlog(), ff_log_register() or ff_log_set_threshold().
      */
     ft_log_event event = {
-        ff_strftime(), file, "", func, fmt,
+        "", file, "", func, fmt,
         file_len, line, err,
         level,
         /* va_list vargs field follows - but no portable way to value-initialize it */

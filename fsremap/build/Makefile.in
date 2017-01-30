@@ -124,9 +124,13 @@ am_fsremap_OBJECTS = ../src/arch/mem.$(OBJEXT) \
 	../src/pool.$(OBJEXT) ../src/remap.$(OBJEXT) \
 	../src/tmp_zero.$(OBJEXT) ../src/ui/ui.$(OBJEXT) \
 	../src/ui/ui_tty.$(OBJEXT) ../src/vector.$(OBJEXT) \
-	../src/work.$(OBJEXT)
+	../src/work.$(OBJEXT) ../src/zmem/zmem.$(OBJEXT) \
+	../src/zmem/zpage.$(OBJEXT) ../src/zmem/zpool.$(OBJEXT) \
+	../src/zmem/zptr.$(OBJEXT) ../src/zmem/zpaged_map.$(OBJEXT) \
+	../src/zmem/ztest.$(OBJEXT)
 fsremap_OBJECTS = $(am_fsremap_OBJECTS)
-fsremap_LDADD = $(LDADD)
+am__DEPENDENCIES_1 =
+fsremap_DEPENDENCIES = $(am__DEPENDENCIES_1)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -276,40 +280,47 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = subdir-objects
+fsremap_LDADD = $(LD_LIBZ)
 fsremap_SOURCES = \
-  ../src/arch/mem.cc \
-  ../src/arch/mem_linux.cc \
-  ../src/arch/mem_posix.cc \
-  ../src/args.cc \
-  ../src/assert.cc \
-  ../src/dispatch.cc \
-  ../src/eta.cc \
-  ../src/io/extent_file.cc \
+  ../src/arch/mem.cc        \
+  ../src/arch/mem_linux.cc  \
+  ../src/arch/mem_posix.cc  \
+  ../src/args.cc            \
+  ../src/assert.cc          \
+  ../src/dispatch.cc        \
+  ../src/eta.cc             \
+  ../src/io/extent_file.cc  \
   ../src/io/extent_posix.cc \
-  ../src/io/io.cc \
-  ../src/io/io_null.cc \
-  ../src/io/io_posix.cc \
+  ../src/io/io.cc           \
+  ../src/io/io_null.cc      \
+  ../src/io/io_posix.cc     \
   ../src/io/io_posix_dir.cc \
-  ../src/io/io_prealloc.cc \
+  ../src/io/io_prealloc.cc  \
   ../src/io/io_self_test.cc \
-  ../src/io/io_test.cc \
-  ../src/io/persist.cc \
-  ../src/io/util_dir.cc \
-  ../src/io/util_posix.cc \
-  ../src/job.cc \
-  ../src/log.cc \
-  ../src/main.cc \
-  ../src/map.cc \
-  ../src/map_stat.cc \
-  ../src/misc.cc \
-  ../src/mstring.cc \
-  ../src/pool.cc \
-  ../src/remap.cc \
-  ../src/tmp_zero.cc \
-  ../src/ui/ui.cc \
-  ../src/ui/ui_tty.cc \
-  ../src/vector.cc \
-  ../src/work.cc
+  ../src/io/io_test.cc      \
+  ../src/io/persist.cc      \
+  ../src/io/util_dir.cc     \
+  ../src/io/util_posix.cc   \
+  ../src/job.cc             \
+  ../src/log.cc             \
+  ../src/main.cc            \
+  ../src/map.cc             \
+  ../src/map_stat.cc        \
+  ../src/misc.cc            \
+  ../src/mstring.cc         \
+  ../src/pool.cc            \
+  ../src/remap.cc           \
+  ../src/tmp_zero.cc        \
+  ../src/ui/ui.cc           \
+  ../src/ui/ui_tty.cc       \
+  ../src/vector.cc          \
+  ../src/work.cc            \
+  ../src/zmem/zmem.cc       \
+  ../src/zmem/zpage.cc      \
+  ../src/zmem/zpool.cc      \
+  ../src/zmem/zptr.cc       \
+  ../src/zmem/zpaged_map.cc \
+  ../src/zmem/ztest.cc
 
 all: all-am
 
@@ -476,6 +487,24 @@ clean-sbinPROGRAMS:
 	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/work.$(OBJEXT): ../src/$(am__dirstamp) \
 	../src/$(DEPDIR)/$(am__dirstamp)
+../src/zmem/$(am__dirstamp):
+	@$(MKDIR_P) ../src/zmem
+	@: > ../src/zmem/$(am__dirstamp)
+../src/zmem/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) ../src/zmem/$(DEPDIR)
+	@: > ../src/zmem/$(DEPDIR)/$(am__dirstamp)
+../src/zmem/zmem.$(OBJEXT): ../src/zmem/$(am__dirstamp) \
+	../src/zmem/$(DEPDIR)/$(am__dirstamp)
+../src/zmem/zpage.$(OBJEXT): ../src/zmem/$(am__dirstamp) \
+	../src/zmem/$(DEPDIR)/$(am__dirstamp)
+../src/zmem/zpool.$(OBJEXT): ../src/zmem/$(am__dirstamp) \
+	../src/zmem/$(DEPDIR)/$(am__dirstamp)
+../src/zmem/zptr.$(OBJEXT): ../src/zmem/$(am__dirstamp) \
+	../src/zmem/$(DEPDIR)/$(am__dirstamp)
+../src/zmem/zpaged_map.$(OBJEXT): ../src/zmem/$(am__dirstamp) \
+	../src/zmem/$(DEPDIR)/$(am__dirstamp)
+../src/zmem/ztest.$(OBJEXT): ../src/zmem/$(am__dirstamp) \
+	../src/zmem/$(DEPDIR)/$(am__dirstamp)
 
 fsremap$(EXEEXT): $(fsremap_OBJECTS) $(fsremap_DEPENDENCIES) $(EXTRA_fsremap_DEPENDENCIES) 
 	@rm -f fsremap$(EXEEXT)
@@ -487,6 +516,7 @@ mostlyclean-compile:
 	-rm -f ../src/arch/*.$(OBJEXT)
 	-rm -f ../src/io/*.$(OBJEXT)
 	-rm -f ../src/ui/*.$(OBJEXT)
+	-rm -f ../src/zmem/*.$(OBJEXT)
 
 distclean-compile:
 	-rm -f *.tab.c
@@ -524,6 +554,12 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/io/$(DEPDIR)/util_posix.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/ui/$(DEPDIR)/ui.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/ui/$(DEPDIR)/ui_tty.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/zmem/$(DEPDIR)/zmem.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/zmem/$(DEPDIR)/zpage.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/zmem/$(DEPDIR)/zpaged_map.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/zmem/$(DEPDIR)/zpool.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/zmem/$(DEPDIR)/zptr.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/zmem/$(DEPDIR)/ztest.Po@am__quote@
 
 .cc.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
@@ -664,6 +700,8 @@ distclean-generic:
 	-rm -f ../src/io/$(am__dirstamp)
 	-rm -f ../src/ui/$(DEPDIR)/$(am__dirstamp)
 	-rm -f ../src/ui/$(am__dirstamp)
+	-rm -f ../src/zmem/$(DEPDIR)/$(am__dirstamp)
+	-rm -f ../src/zmem/$(am__dirstamp)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
@@ -673,7 +711,7 @@ clean: clean-am
 clean-am: clean-generic clean-sbinPROGRAMS mostlyclean-am
 
 distclean: distclean-am
-	-rm -rf ../src/$(DEPDIR) ../src/arch/$(DEPDIR) ../src/io/$(DEPDIR) ../src/ui/$(DEPDIR)
+	-rm -rf ../src/$(DEPDIR) ../src/arch/$(DEPDIR) ../src/io/$(DEPDIR) ../src/ui/$(DEPDIR) ../src/zmem/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -719,7 +757,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-	-rm -rf ../src/$(DEPDIR) ../src/arch/$(DEPDIR) ../src/io/$(DEPDIR) ../src/ui/$(DEPDIR)
+	-rm -rf ../src/$(DEPDIR) ../src/arch/$(DEPDIR) ../src/io/$(DEPDIR) ../src/ui/$(DEPDIR) ../src/zmem/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

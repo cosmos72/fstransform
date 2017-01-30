@@ -68,6 +68,8 @@ private:
      */
     int is_almost_full(const fm_disk_stat & stat) const;
 
+    void delete_inode_cache();
+
 protected:
 
     int inode_cache_find_or_add(ft_inode inode, ft_string & path);

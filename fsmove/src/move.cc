@@ -32,7 +32,7 @@
 
 #define ZTEST
 #ifdef ZTEST
-# include "ztest.hh"
+# include "zmem/ztest.hh"
 #endif
 
 #if defined(FT_HAVE_STRING_H)

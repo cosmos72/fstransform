@@ -101,12 +101,12 @@ int ft_cache_symlink::build_path(const ft_string & rel, ft_string & abs, FT_ICP_
     ff_assert(len != 0);
     size_t len_1 = len - 1, depth = len_1 / 3, mod_3p1 = (len_1 % 3) + 1;
     int err = 0;
-
+    
     abs = path;
     // add trailing '/' if needed
     if (!abs.empty() && *abs.rbegin() != '/')
         abs += '/';
-
+    
     // add prefix 'L' + depth +'/'
     abs += 'L';
     ff_cat(abs, depth);
@@ -115,7 +115,7 @@ int ft_cache_symlink::build_path(const ft_string & rel, ft_string & abs, FT_ICP_
     abs += '/';
     // add 1-3 chars prefix taken from beginning of rel
     abs += rel.substr(0, mod_3p1);
-
+    
     // add rest of rel in 3-chars steps
     for (size_t i = 0; i < depth; i++)
     {
@@ -164,15 +164,15 @@ int ft_cache_symlink::find_or_add(const ft_string & inode, ft_string & payload)
 {
     ft_string link_from;
     build_path(inode, link_from, FT_ICP_READWRITE);
-
+    
     int err = readlink(link_from, payload);
     if (err == 0)
         // found
         return 1;
-
+    
     if (::symlink(payload.c_str(), link_from.c_str()) != 0)
         return ff_log(FC_ERROR, errno, "failed to create cache symlink `%s' -> `%s'", link_from.c_str(), payload.c_str());
-
+    
     return 0;
 }
 
@@ -184,20 +184,20 @@ int ft_cache_symlink::find_and_delete(const ft_string & inode, ft_string & resul
 {
     ft_string link_from;
     build_path(inode, link_from, FT_ICP_READONLY);
-
+    
     int err = readlink(link_from, result_payload);
     if (err == ENOENT)
         // not found
         return 0;
-
-        if (err != 0)
-            ff_log(FC_WARN, errno, "failed to read cache symlink `%s'", link_from.c_str());
     
-        // either found, or error
+    if (err != 0)
+        ff_log(FC_WARN, errno, "failed to read cache symlink `%s'", link_from.c_str());
+    
+    // either found, or error
     if (::unlink(link_from.c_str()) != 0)
         ff_log(FC_WARN, errno, "failed to remove cache symlink `%s'", link_from.c_str());
-
-        return err == 0 ? 1 : err;
+    
+    return err == 0 ? 1 : err;
 }
 
 
@@ -212,24 +212,22 @@ int ft_cache_symlink::find_and_update(const ft_string inode, const ft_string & n
     
     int err = ::unlink(link_from.c_str());
     if (err == ENOENT)
-            // not found
-            return 0;
-
+        // not found
+        return 0;
+    
     if (err != 0)
         ff_log(FC_WARN, errno, "failed to remove cache symlink `%s'", link_from.c_str());
     
-        // either found, or warning
+    // either found, or warning
     if (::symlink(new_payload.c_str(), link_from.c_str()) != 0)
         return ff_log(FC_ERROR, errno, "failed to create cache symlink `%s' -> `%s'", link_from.c_str(), new_payload.c_str());
-
-        return 1;
+    
+    return 1;
 }
 
 void ft_cache_symlink::clear()
 {
     FT_IO_NS ff_remove_recursive(path);
 }
-
-
 
 FT_NAMESPACE_END

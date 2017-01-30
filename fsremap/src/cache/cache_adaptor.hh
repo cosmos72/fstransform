@@ -17,7 +17,7 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * inode_cache.hh
+ * cache_adaptor.hh
  *
  *  Created on: Aug 18, 2011
  *      Author: max
@@ -38,23 +38,23 @@ FT_NAMESPACE_BEGIN
  * - see cache_symlink.hh for details.
  */
 template<class Cache, class K, class V>
-class ft_cache_adaptor : public ft_cache<K, V>, public Cache
+class ft_cache_adaptor_kv : public ft_cache<K, V>, public Cache
 {
 private:
-	typedef ft_cache<K,V> super_type;
-	typedef ft_cache_adaptor<Cache,K,V> this_type;
-
-	typedef Cache                        mixin_type;
-	typedef typename Cache::key_type     mixin_key_type;
-	typedef typename Cache::payload_type mixin_payload_type;
-
+    typedef ft_cache<K,V>                  super_type;
+    typedef ft_cache_adaptor_kv<Cache,K,V> this_type;
+    
+    typedef Cache                        mixin_type;
+    typedef typename Cache::key_type     mixin_key_type;
+    typedef typename Cache::payload_type mixin_payload_type;
+    
 public:
     /** default constructor */
-	ft_cache_adaptor(const V & init_zero_payload = V()) : super_type(init_zero_payload), mixin_type()
+    ft_cache_adaptor_kv(const V & init_zero_payload = V()) : super_type(init_zero_payload), mixin_type()
     { }
     
     /** copy constructor */
-	ft_cache_adaptor(const this_type & other) : super_type(other), mixin_type(other)
+    ft_cache_adaptor_kv(const this_type & other) : super_type(other), mixin_type(other)
     { }
     
     /** assignment operator */
@@ -65,7 +65,7 @@ public:
     }
     
     /** destructor */
-    virtual ~ft_cache_adaptor()
+    virtual ~ft_cache_adaptor_kv()
     { }
     
     /**
@@ -76,49 +76,49 @@ public:
      */
     virtual int find_or_add(const K key, V & inout_payload)
     {
-    	mixin_key_type m_key;
-    	ff_set(m_key, key);
-
-    	mixin_payload_type m_payload;
-    	ff_set(m_payload, inout_payload);
-
+        mixin_key_type m_key;
+        ff_set(m_key, key);
+        
+        mixin_payload_type m_payload;
+        ff_set(m_payload, inout_payload);
+        
         int err = mixin_type::find_or_add(m_key, m_payload);
         ff_set(inout_payload, m_payload);
-
+        
         return err;
     }
-
+    
     /**
      * if cached key found, set payload, remove cached key and return 1.
      * Otherwise return 0. On error, return < 0.
      */
     virtual int find_and_delete(const K key, V & result_payload)
     {
-    	mixin_key_type m_key;
-    	ff_set(m_key, key);
-
-    	mixin_payload_type m_payload;
+        mixin_key_type m_key;
+        ff_set(m_key, key);
+        
+        mixin_payload_type m_payload;
         int err = mixin_type::find_and_delete(m_key, m_payload);
         ff_set(result_payload, m_payload);
-
+        
         return err;
     }
-
+    
     /**
      * if cached inode found, change its payload and return 1.
      * Otherwise return 0. On error, return < 0.
      */
     virtual int find_and_update(const K key, const V & new_payload)
     {
-    	mixin_key_type m_key;
-    	ff_set(m_key, key);
-
-    	mixin_payload_type m_payload;
-    	ff_set(m_payload, new_payload);
-
+        mixin_key_type m_key;
+        ff_set(m_key, key);
+        
+        mixin_payload_type m_payload;
+        ff_set(m_payload, new_payload);
+        
         return mixin_type::find_and_update(m_key, m_payload);
     }
-
+    
     virtual void clear()
     {
         mixin_type::clear();

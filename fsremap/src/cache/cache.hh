@@ -39,7 +39,7 @@ template<class K, class V>
 class ft_cache
 {
 protected:
-	V zero_payload;
+    V zero_payload;
 
 public:
     /** default constructor */
@@ -53,8 +53,8 @@ public:
     /** assignment operator */
     virtual const ft_cache<K,V> & operator=(const ft_cache<K,V> & other)
     {
-    	if (this != &other)
-    		zero_payload = other.zero_payload;
+        if (this != &other)
+            zero_payload = other.zero_payload;
     	return *this;
     }
 

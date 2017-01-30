@@ -30,13 +30,13 @@
 
 FT_NAMESPACE_BEGIN
 
-class zptr_base
+class zptr_void
 {
 private:
     zptr_handle handle;
 
 public:
-    explicit inline zptr_base(zptr_handle new_handle = 0)
+    explicit inline zptr_void(zptr_handle new_handle = 0)
         : handle(new_handle)
     { }
     
@@ -70,21 +70,21 @@ public:
 
 
 template<class T>
-    class zptr : private zptr_base
+    class zptr : private zptr_void
 {
 public:
     explicit inline zptr(zptr_handle new_handle = 0)
-        : zptr_base(new_handle)
+        : zptr_void(new_handle)
     { }
     
     inline T * get()
     {
-        return reinterpret_cast<T *>(zptr_base::get());
+        return reinterpret_cast<T *>(zptr_void::get());
     }
     
     inline const T * get() const
     {
-        return reinterpret_cast<const T *>(zptr_base::get());
+        return reinterpret_cast<const T *>(zptr_void::get());
     }
     
     inline T * operator->()
@@ -99,11 +99,11 @@ public:
     
     inline bool alloc(ft_size element_count)
     {
-        return zptr_base::alloc(element_count * sizeof(T));
+        return zptr_void::alloc(element_count * sizeof(T));
     }
     
-    using zptr_base::free;
-    using zptr_base::compress;
+    using zptr_void::free;
+    using zptr_void::compress;
 };
 
 FT_NAMESPACE_END

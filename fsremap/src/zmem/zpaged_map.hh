@@ -17,24 +17,29 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * zfwd.hh
+ * zpaged_map.hh
  *
- *  Created on: Jan 23, 2017
+ *  Created on: Jan 30, 2017
  *      Author: max
  */
 
-#ifndef FSTRANSFORM_ZFWD_HH
-#define FSTRANSFORM_ZFWD_HH
+#ifndef FSTRANSFORM_ZPAGED_MAP_HH
+#define FSTRANSFORM_ZPAGED_MAP_HH
 
-#include "types.hh"     // for ft_size
+#include "zptr.hh"
 
-typedef ft_size zpage_handle;
-typedef ft_size zptr_handle;
+FT_NAMESPACE_BEGIN
 
-class zmem;
-class zpool_base;
-class zpool;
-class zptr_base;
-template<class T> class zptr;
+class zpaged_map_void
+{
+};
 
-#endif /* FSTRANSFORM_ZFWD_HH */
+
+template<class T>
+    class zpaged_map : private zpaged_map_void
+{
+};
+
+FT_NAMESPACE_END
+
+#endif /* FSTRANSFORM_ZPAGED_MAP_HH */

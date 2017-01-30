@@ -17,7 +17,7 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * inode_cache.hh
+ * copy.hh
  *
  *  Created on: Aug 18, 2011
  *      Author: max
