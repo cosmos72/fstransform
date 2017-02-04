@@ -43,7 +43,7 @@ ztree_void::ztree_void(ft_size values_inline_size) : this_values_inline_size(val
 
 ztree_void::~ztree_void()
 {
-    free();
+    clear();
 }
 
 
@@ -58,6 +58,8 @@ ft_size ztree_void::key_to_depth(ft_ull key)
         depth++;
     return depth;
 }
+
+/****************************************************************/
 
 const void * ztree_void::get(ft_ull key) const
 {
@@ -93,6 +95,7 @@ const void * ztree_void::get_leaf(const zptr_void & ref, ft_u8 offset) const
     return mem;
 }
 
+/****************************************************************/
 
 bool ztree_void::put(ft_ull key, const void * value, ft_size size)
 {
@@ -151,7 +154,91 @@ bool ztree_void::put_leaf(zptr_void & ref, ft_u8 offset, const void * value, ft_
     }
     return false;
 }
-                     
+
+/****************************************************************/
+
+bool ztree_void::del(ft_ull key)
+{
+    ft_size depth = key_to_depth(key);
+    ff_assert(depth < ZTREE_TOP_N);
+    
+    zptr_void * ptr = &this_tree[depth];
+    zptr_void * stack[ZTREE_TOP_N] = { };
+
+    while (depth)
+    {
+        stack[depth] = ptr;
+        zptr_void & ref = *ptr;
+        zptr_void * vec = reinterpret_cast<zptr_void *>(ref.get());
+        if (!vec)
+            return false;
+        ptr = vec + (key & 0xFF);
+        key >>= 8;
+        depth--;
+    }
+    stack[depth] = ptr;
+    if (del_leaf(*ptr, key & 0xFF)) {
+        trim_leaf(*ptr);
+        trim_inner(stack);
+        return true;
+    }
+    return true;
+}
+
+bool ztree_void::del_leaf(zptr_void & ref, ft_u8 offset)
+{
+    char * mem = reinterpret_cast<char *>(ref.get());
+    if (!mem)
+        return false;
+    
+    ft_size element_size = (this_values_inline_size ? this_values_inline_size : sizeof(zptr_void));
+    mem += offset * element_size;
+    if (this_values_inline_size != 0) {
+        memset(mem, 0, this_values_inline_size);
+    } else {
+        zptr_void & value_ref = * reinterpret_cast<zptr_void *>(mem);
+        if (!value_ref.free())
+            return false;
+    }
+    return true;
+}
+
+/****************************************************************/
+
+void ztree_void::trim_inner(zptr_void * stack[ZTREE_TOP_N])
+{
+    for (ft_size i = 0; i < ZTREE_TOP_N; i++)
+    {
+        zptr_void * ptr = stack[i];
+        if (!ptr || !*ptr)
+            continue;
+        zptr_void * vec = reinterpret_cast<zptr_void *>(ptr->get());
+        if (!vec)
+            break; // failed to decompress (argh)
+        for (ft_size j = 0; j < ZTREE_INNER_N; j++) {
+            if (vec[j])
+                return;
+        }
+        if (!ptr->free())
+            break;
+    }
+}
+
+void ztree_void::trim_leaf(zptr_void & ref)
+{
+    ft_size * mem = reinterpret_cast<ft_size *>(ref.get());
+    if (!mem)
+        return;
+    ft_size count = ZTREE_INNER_N  / sizeof(ft_size) * (this_values_inline_size ? this_values_inline_size : sizeof(zptr_void));
+    for (ft_size i = 0; i < count; i++) {
+        if (mem[i])
+            return;
+    }
+    ref.free();
+}
+
+/****************************************************************/
+
 bool ztree_void::alloc_inner(zptr_void & ref)
 {
     if (ref.alloc(ZTREE_INNER_N * sizeof(zptr_void)))
@@ -191,7 +278,7 @@ bool ztree_void::alloc_leaf(zptr_void & ref)
 
 /****************************************************************/
 
-void ztree_void::free()
+void ztree_void::clear()
 {
     for (ft_size i = 0; i < ZTREE_TOP_N; i++)
     {

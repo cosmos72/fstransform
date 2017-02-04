@@ -27,6 +27,12 @@
 
 #include <vector>
 
+#if defined(FT_HAVE_STRING_H)
+# include <string.h>       // for strcmp()
+#elif defined(FT_HAVE_CSTRING)
+# include <cstring>        // for strcmp()
+#endif
+
 #include "log.hh"
 #include "zpool.hh"
 #include "zptr.hh"
@@ -180,8 +186,25 @@ void ztest_ptr(ft_size allocation_count)
 
 void ztest_tree()
 {
-    ztree_void tree(sizeof(ft_size));
+    ztree<char *> tree;
+
+    ft_ull key = (ft_ull)-1;
+    const char * value_in = "foo";
     
+    if (!tree.put(key, value_in, 1+strlen(value_in))) {
+        ff_log(FC_ERROR, 0, "ztree test failed: ztree.put() returned false");
+        return;
+    }
+    const char * value_out = tree.get(key);
+    if (!value_out || strcmp(value_in, value_out)) {
+        ff_log(FC_ERROR, 0, "ztree test failed: ztree.get() returned %c%s%c instead of \"%s\"",
+               (value_out ? '"' : '<'), (value_out ? value_out : "NULL"), (value_out ? '"' : '<'), value_in);
+        return;
+    }
+    if (!tree.del(key)) {
+        ff_log(FC_ERROR, 0, "ztree test failed: ztree.del() returned false");
+        return;
+    }
 }
 
 FT_NAMESPACE_END

@@ -42,6 +42,7 @@ private:
     
     const void * get_leaf(const zptr_void & ref, ft_u8 offset) const;
     bool put_leaf(zptr_void & ref, ft_u8 offset, const void * value, ft_size size);
+    bool del_leaf(zptr_void & ref, ft_u8 offset);
     
     bool alloc_inner(zptr_void & ref);
     bool alloc_leaf(zptr_void & ref);
@@ -49,21 +50,68 @@ private:
     void free_tree_recursive(zptr_void & ptr, ft_size depth);
     void free_leaf(zptr_void & ref);
 
-
+    static void trim_inner(zptr_void * stack[ZTREE_TOP_N]);
+    void trim_leaf(zptr_void & ref);
+    
 public:
     explicit ztree_void(ft_size values_inline_size); /* 0 if values are not inline, i.e. they must be allocated one by one */
     ~ztree_void();
     
     const void * get(ft_ull key) const;
     bool put(ft_ull key, const void * value, ft_size size);
+    bool del(ft_ull key);
     
-    void free();
+    void clear();
 };
 
 
 template<class T>
     class ztree : private ztree_void
 {
+public:
+    ztree() : ztree_void(sizeof(T))
+    { }
+    
+    ~ztree()
+    { }
+    
+    const T * get(ft_ull key) const
+    {
+        return reinterpret_cast<const T *>(ztree_void::get(key));
+    }
+    
+    bool put(ft_ull key, const T & value)
+    {
+        return ztree_void::put(key, &value, sizeof(T));
+    }
+    
+    using ztree_void::del;
+    using ztree_void::clear;
+};
+
+
+template<class T>
+    class ztree<T *> : private ztree_void
+{
+public:
+    ztree() : ztree_void(0)
+    { }
+    
+    ~ztree()
+    { }
+    
+    const T * get(ft_ull key) const
+    {
+        return reinterpret_cast<const T *>(ztree_void::get(key));
+    }
+    
+    bool put(ft_ull key, const T * value, ft_size element_count)
+    {
+        return ztree_void::put(key, value, element_count * sizeof(T));
+    }
+
+    using ztree_void::del;
+    using ztree_void::clear;
 };
 
 FT_NAMESPACE_END
