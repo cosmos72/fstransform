@@ -34,7 +34,7 @@ FT_NAMESPACE_BEGIN
  * symlink-based associative array from keys (strings) to values (strings).
  * Used to implement inode cache - see cache.hh for details.
  */
-class ft_cache_symlink
+class ft_cache_symlink_ss
 {
 protected:
     ft_string path;
@@ -50,16 +50,16 @@ public:
     
     
     /** one-arg constructor */
-    explicit ft_cache_symlink();
+    explicit ft_cache_symlink_ss();
     
     /** copy constructor */
-    ft_cache_symlink(const ft_cache_symlink & other);
+    ft_cache_symlink_ss(const ft_cache_symlink_ss & other);
     
     /** assignment operator */
-    const ft_cache_symlink & operator=(const ft_cache_symlink & other);
+    const ft_cache_symlink_ss & operator=(const ft_cache_symlink_ss & other);
     
     /** destructor */
-    virtual ~ft_cache_symlink();
+    virtual ~ft_cache_symlink_ss();
     
     /* guaranteed NOT to end with '/', unless it's exactly the path "/" */
     const char * get_path() const { return path.c_str(); }
@@ -85,7 +85,7 @@ public:
      * if cached inode found, change its payload and return 1.
      * Otherwise return 0. On error, return < 0.
      */
-    int find_and_update(const ft_string key, const ft_string & new_payload);
+    int find_and_update(const ft_string & key, const ft_string & new_payload);
     
     void clear();
 };
@@ -97,21 +97,21 @@ public:
  * Used to implement inode cache - see cache.hh for details.
  */
 template<class K, class V>
-    class ft_cache_symlink_kv : public ft_cache_adaptor_kv<ft_cache_symlink,K,V>
+    class ft_cache_symlink : public ft_cache_adaptor<ft_cache_symlink_ss,K,V>
 {
 private:
-    typedef ft_cache_symlink                    mixin_type;
-    typedef ft_cache_adaptor_kv<mixin_type,K,V> super_type;
+    typedef ft_cache_symlink_ss              mixin_type;
+    typedef ft_cache_adaptor<mixin_type,K,V> super_type;
     
     
 public:
     /** default constructor */
-    ft_cache_symlink_kv(const V & init_zero_payload = V())
+    ft_cache_symlink(const V & init_zero_payload = V())
         : super_type(init_zero_payload)
 	{ }
     
     /** destructor */
-    virtual ~ft_cache_symlink_kv()
+    virtual ~ft_cache_symlink()
     { }
     
     /* initialize the cache. return 0 on success, else return error */
@@ -125,4 +125,3 @@ public:
 FT_NAMESPACE_END
 
 #endif /* FSTRANSFORM_CACHE_SYMLINK_HH */
-    

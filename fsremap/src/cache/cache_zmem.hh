@@ -26,44 +26,53 @@
 #ifndef FSTRANSFORM_CACHE_ZMEM_HH
 #define FSTRANSFORM_CACHE_ZMEM_HH
 
-#include "cache.hh"      // for ft_cache
-#include "zpaged_map.hh" // for zpaged_map
+#include "cache.hh"      // for ft_cache<K,V>
+#include "copy.hh"       // for ff_set()
 
 
 FT_NAMESPACE_BEGIN
 
 /**
- * compressed in-memory associative array from keys (type K) to values (type V).
+ * compressed in-memory associative array from keys *ft_ull to values (type V).
  * Used to implement inode cache - see cache.hh for details.
  */
-template<class K, class V>
-class ft_cache_zmem : public ft_cache<K, V>
+template<class K>
+class ft_cache_zmem_ks
 {
 private:
-    typedef ft_cache<K,V> super_type;
+    typedef ft_string V;
 
-    zpaged_map<K,V> map;
+    V zero_payload;
+    
+    zptr_void page[sizeof(K)];
     
 public:
     /** default constructor */
-    ft_cache_zmem(const V & init_zero_payload = V()) : super_type(init_zero_payload), map()
-    { }
+    ft_cache_zmem_ks()
+    {
+        init_pages();
+    }
     
     /** copy constructor */
-    ft_cache_zmem(const ft_cache_zmem<K,V> & other) : super_type(other), map(other.map)
-    { }
+    ft_cache_zmem(const ft_cache_zmem_ks<K> & other)
+    {
+        init_pages();
+        deep_copy_pages(page, other.page);
+    }
     
     /** assignment operator */
-    virtual const super_type & operator=(const ft_cache_zmem<K,V> & other)
+    const ft_cache_zmem & operator=(const ft_cache_zmem<K,V> & other)
     {
         if (this != &other)
-            map = other.map;
-        return super_type::operator=(other);
+            deep_copy_pages(page, other.page);
+        return *this;
     }
     
     /** destructor */
-    virtual ~ft_cache_zmem()
-    { }
+    ~ft_cache_zmem()
+    {
+        free_pages();
+    }
     
     /**
      * if cached inode found, set payload and return 1.
@@ -71,7 +80,7 @@ public:
      * On error, return < 0.
      * if returns 0, erase() must be called on the same inode when done with payload!
      */
-    virtual int find_or_add(const K key, V & inout_payload)
+    int find_or_add(const K key, V & inout_payload)
     {
         ff_assert(inout_payload != this->zero_payload);
 

@@ -42,5 +42,5 @@ fsremap_SOURCES =           \
   ../src/zmem/zpage.cc      \
   ../src/zmem/zpool.cc      \
   ../src/zmem/zptr.cc       \
-  ../src/zmem/zpaged_map.cc \
+  ../src/zmem/ztree.cc      \
   ../src/zmem/ztest.cc

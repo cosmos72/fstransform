@@ -38,6 +38,10 @@ void ff_set(ft_ull & dst,    const ft_string & src);
 void ff_cat(ft_string & dst, const ft_string & src);
 void ff_cat(ft_string & dst, ft_ull src);
 
+inline void ff_set(ft_ull & dst, ft_ull src) {
+    dst = src;
+}
+
 FT_NAMESPACE_END
 
 #endif /* FSTRANSFORM_COPY_HH */

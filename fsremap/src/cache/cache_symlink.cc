@@ -46,16 +46,16 @@
 FT_NAMESPACE_BEGIN
 
 /** one-arg constructor */
-ft_cache_symlink::ft_cache_symlink()
+ft_cache_symlink_ss::ft_cache_symlink_ss()
 { }
 
 /** copy constructor */
-ft_cache_symlink::ft_cache_symlink(const ft_cache_symlink & other) : path(other.path)
+ft_cache_symlink_ss::ft_cache_symlink_ss(const ft_cache_symlink_ss & other) : path(other.path)
 { }
 
 
 /** assignment operator */
-const ft_cache_symlink & ft_cache_symlink::operator=(const ft_cache_symlink & other)
+const ft_cache_symlink_ss & ft_cache_symlink_ss::operator=(const ft_cache_symlink_ss & other)
 {
     if (this != &other)
         path = other.path;
@@ -63,13 +63,13 @@ const ft_cache_symlink & ft_cache_symlink::operator=(const ft_cache_symlink & ot
 }
 
 /** destructor */
-ft_cache_symlink::~ft_cache_symlink()
+ft_cache_symlink_ss::~ft_cache_symlink_ss()
 {
-    ft_cache_symlink::clear();
+    ft_cache_symlink_ss::clear();
 }
 
 /* initialize the inode-cache. return 0 on success, else return error */
-int ft_cache_symlink::init(const ft_string & init_path)
+int ft_cache_symlink_ss::init(const ft_string & init_path)
 {
     int err = FT_IO_NS ff_mkdir_recursive(init_path);
     if (err != 0)
@@ -95,7 +95,7 @@ int ft_cache_symlink::init(const ft_string & init_path)
 }
 
 
-int ft_cache_symlink::build_path(const ft_string & rel, ft_string & abs, FT_ICP_OPTIONS options) const
+int ft_cache_symlink_ss::build_path(const ft_string & rel, ft_string & abs, FT_ICP_OPTIONS options) const
 {
     size_t len = rel.length();
     ff_assert(len != 0);
@@ -129,7 +129,7 @@ int ft_cache_symlink::build_path(const ft_string & rel, ft_string & abs, FT_ICP_
     return err == EEXIST ? 0 : err;
 }
 
-int ft_cache_symlink::readlink(const ft_string & src, ft_string & dst)
+int ft_cache_symlink_ss::readlink(const ft_string & src, ft_string & dst)
 {
     size_t orig_len = dst.length(), len = orig_len < 256 ? 256 : orig_len;
     ssize_t got;
@@ -160,7 +160,7 @@ again:
  * On error, return < 0.
  * if returns 0, find_and_delete() must be called on the same inode when done with payload!
  */
-int ft_cache_symlink::find_or_add(const ft_string & inode, ft_string & payload)
+int ft_cache_symlink_ss::find_or_add(const ft_string & inode, ft_string & payload)
 {
     ft_string link_from;
     build_path(inode, link_from, FT_ICP_READWRITE);
@@ -180,7 +180,7 @@ int ft_cache_symlink::find_or_add(const ft_string & inode, ft_string & payload)
  * if cached inode found, set payload, remove cached inode and return 1.
  * Otherwise return 0. On error, return < 0.
  */
-int ft_cache_symlink::find_and_delete(const ft_string & inode, ft_string & result_payload)
+int ft_cache_symlink_ss::find_and_delete(const ft_string & inode, ft_string & result_payload)
 {
     ft_string link_from;
     build_path(inode, link_from, FT_ICP_READONLY);
@@ -205,7 +205,7 @@ int ft_cache_symlink::find_and_delete(const ft_string & inode, ft_string & resul
  * if cached inode found, change its payload and return 1.
  * Otherwise return 0. On error, return < 0.
  */
-int ft_cache_symlink::find_and_update(const ft_string inode, const ft_string & new_payload)
+int ft_cache_symlink_ss::find_and_update(const ft_string & inode, const ft_string & new_payload)
 {
     ft_string link_from;
     build_path(inode, link_from, FT_ICP_READONLY);
@@ -225,7 +225,7 @@ int ft_cache_symlink::find_and_update(const ft_string inode, const ft_string & n
     return 1;
 }
 
-void ft_cache_symlink::clear()
+void ft_cache_symlink_ss::clear()
 {
     FT_IO_NS ff_remove_recursive(path);
 }

@@ -31,7 +31,7 @@
 #include "io.hh"           // for fm_io
 
 #include "cache/cache_mem.hh"     // for ft_cache_mem
-#include "cache/cache_symlink.hh" // for ft_cache_symlink_kv
+#include "cache/cache_symlink.hh" // for ft_cache_symlink
 
 #if defined(FT_HAVE_MATH_H)
 # include <math.h>         // for sqrt()
@@ -106,7 +106,7 @@ int fm_io::open(const fm_args & args)
         delete_inode_cache();
         if (inode_cache_path != NULL)
         {
-            ft_cache_symlink_kv<ft_inode, ft_string> * icp = new ft_cache_symlink_kv<ft_inode, ft_string>(inode_cache_path);
+            ft_cache_symlink<ft_inode, ft_string> * icp = new ft_cache_symlink<ft_inode, ft_string>(inode_cache_path);
             err = icp->init(inode_cache_path);
             if (err != 0)
             {

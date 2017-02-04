@@ -126,7 +126,7 @@ am_fsremap_OBJECTS = ../src/arch/mem.$(OBJEXT) \
 	../src/ui/ui_tty.$(OBJEXT) ../src/vector.$(OBJEXT) \
 	../src/work.$(OBJEXT) ../src/zmem/zmem.$(OBJEXT) \
 	../src/zmem/zpage.$(OBJEXT) ../src/zmem/zpool.$(OBJEXT) \
-	../src/zmem/zptr.$(OBJEXT) ../src/zmem/zpaged_map.$(OBJEXT) \
+	../src/zmem/zptr.$(OBJEXT) ../src/zmem/ztree.$(OBJEXT) \
 	../src/zmem/ztest.$(OBJEXT)
 fsremap_OBJECTS = $(am_fsremap_OBJECTS)
 am__DEPENDENCIES_1 =
@@ -319,7 +319,7 @@ fsremap_SOURCES = \
   ../src/zmem/zpage.cc      \
   ../src/zmem/zpool.cc      \
   ../src/zmem/zptr.cc       \
-  ../src/zmem/zpaged_map.cc \
+  ../src/zmem/ztree.cc      \
   ../src/zmem/ztest.cc
 
 all: all-am
@@ -501,7 +501,7 @@ clean-sbinPROGRAMS:
 	../src/zmem/$(DEPDIR)/$(am__dirstamp)
 ../src/zmem/zptr.$(OBJEXT): ../src/zmem/$(am__dirstamp) \
 	../src/zmem/$(DEPDIR)/$(am__dirstamp)
-../src/zmem/zpaged_map.$(OBJEXT): ../src/zmem/$(am__dirstamp) \
+../src/zmem/ztree.$(OBJEXT): ../src/zmem/$(am__dirstamp) \
 	../src/zmem/$(DEPDIR)/$(am__dirstamp)
 ../src/zmem/ztest.$(OBJEXT): ../src/zmem/$(am__dirstamp) \
 	../src/zmem/$(DEPDIR)/$(am__dirstamp)
@@ -556,10 +556,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/ui/$(DEPDIR)/ui_tty.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/zmem/$(DEPDIR)/zmem.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/zmem/$(DEPDIR)/zpage.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/zmem/$(DEPDIR)/zpaged_map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/zmem/$(DEPDIR)/zpool.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/zmem/$(DEPDIR)/zptr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/zmem/$(DEPDIR)/ztest.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/zmem/$(DEPDIR)/ztree.Po@am__quote@
 
 .cc.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\

@@ -17,29 +17,55 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * zpaged_map.hh
+ * ztree.hh
  *
  *  Created on: Jan 30, 2017
  *      Author: max
  */
 
-#ifndef FSTRANSFORM_ZPAGED_MAP_HH
-#define FSTRANSFORM_ZPAGED_MAP_HH
+#ifndef FSTRANSFORM_ZTREE_HH
+#define FSTRANSFORM_ZTREE_HH
 
 #include "zptr.hh"
 
 FT_NAMESPACE_BEGIN
 
-class zpaged_map_void
+class ztree_void
 {
+private:
+    enum { ZTREE_TOP_N = sizeof(ft_ull) };
+    
+    zptr_void this_tree[ZTREE_TOP_N];
+    ft_size this_values_inline_size;
+
+    static ft_size key_to_depth(ft_ull key);
+    
+    const void * get_leaf(const zptr_void & ref, ft_u8 offset) const;
+    bool put_leaf(zptr_void & ref, ft_u8 offset, const void * value, ft_size size);
+    
+    bool alloc_inner(zptr_void & ref);
+    bool alloc_leaf(zptr_void & ref);
+
+    void free_tree_recursive(zptr_void & ptr, ft_size depth);
+    void free_leaf(zptr_void & ref);
+
+
+public:
+    explicit ztree_void(ft_size values_inline_size); /* 0 if values are not inline, i.e. they must be allocated one by one */
+    ~ztree_void();
+    
+    const void * get(ft_ull key) const;
+    bool put(ft_ull key, const void * value, ft_size size);
+    
+    void free();
 };
 
 
 template<class T>
-    class zpaged_map : private zpaged_map_void
+    class ztree : private ztree_void
 {
 };
 
 FT_NAMESPACE_END
 
-#endif /* FSTRANSFORM_ZPAGED_MAP_HH */
+#endif /* FSTRANSFORM_ZTREE_HH */

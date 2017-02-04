@@ -38,42 +38,41 @@ FT_NAMESPACE_BEGIN
 
 void ff_set(ft_string & dst, const ft_string & src)
 {
-	dst = src;
+    dst = src;
 }
 
 void ff_set(ft_string & dst, ft_ull src)
 {
-	enum { maxlen = sizeof(ft_ull) * 3 + 1 };
-	dst.resize(maxlen);
-	char * buf = &dst[0];
-
-	int delta = snprintf(buf, maxlen, "%"FT_XLL, src);
-	dst.resize(delta > 0 ? delta : 0);
+    enum { maxlen = sizeof(ft_ull) * 3 + 1 };
+    dst.resize(maxlen);
+    char * buf = &dst[0];
+    
+    int delta = snprintf(buf, maxlen, "%"FT_XLL, src);
+    dst.resize(delta > 0 ? delta : 0);
 }
 
 void ff_set(ft_ull & dst, const ft_string & src)
 {
-	dst = 0;
-	sscanf(src.c_str(), "%"FT_XLL, &dst);
+    dst = 0;
+    sscanf(src.c_str(), "%"FT_XLL, &dst);
 }
 
 
 void ff_cat(ft_string & dst, const ft_string & src)
 {
-	dst += src;
+    dst += src;
 }
 
 void ff_cat(ft_string & dst, ft_ull src)
 {
-	enum { maxlen = sizeof(ft_ull) * 3 + 1 };
-	size_t oldlen = dst.length();
-	dst.resize(oldlen + maxlen);
-	char * buf = &dst[oldlen];
-
-	int delta = snprintf(buf, maxlen, "%"FT_XLL, src);
-	dst.resize(oldlen + (delta > 0 ? delta : 0));
+    enum { maxlen = sizeof(ft_ull) * 3 + 1 };
+    size_t oldlen = dst.length();
+    dst.resize(oldlen + maxlen);
+    char * buf = &dst[oldlen];
+    
+    int delta = snprintf(buf, maxlen, "%"FT_XLL, src);
+    dst.resize(oldlen + (delta > 0 ? delta : 0));
 }
 
 FT_NAMESPACE_END
-
 

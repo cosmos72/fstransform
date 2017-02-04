@@ -39,31 +39,43 @@ public:
     explicit inline zptr_void(zptr_handle new_handle = 0)
         : handle(new_handle)
     { }
-    
+
+    inline operator bool() const
+    {
+        return handle != 0;
+    }
+
     inline void * get()
     {
-        return default_zpool.decompress_ptr(handle);
+        return handle != 0 ? default_zpool.decompress_ptr(handle) : NULL;
     }
     
     inline const void * get() const
     {
-        return default_zpool.decompress_ptr(handle);
+        return handle != 0 ? default_zpool.decompress_ptr(handle) : NULL;
     }
     
     inline bool compress()
     {
-        return default_zpool.compress_ptr(handle);
+        return handle != 0 ? default_zpool.compress_ptr(handle) : false;
     }
     
+    inline bool free()
+    {
+        if (handle != 0 && default_zpool.free_ptr(handle))
+            handle = 0;
+        return handle == 0;
+    }
+
     inline bool alloc(ft_size size)
     {
         handle = default_zpool.alloc_ptr(size);
         return handle != 0;
     }
     
-    inline bool free()
+    inline bool realloc(ft_size size)
     {
-        return default_zpool.free_ptr(handle);
+        return free() && alloc(size);
     }
 };
 
@@ -76,7 +88,7 @@ public:
     explicit inline zptr(zptr_handle new_handle = 0)
         : zptr_void(new_handle)
     { }
-    
+
     inline T * get()
     {
         return reinterpret_cast<T *>(zptr_void::get());
@@ -102,6 +114,7 @@ public:
         return zptr_void::alloc(element_count * sizeof(T));
     }
     
+    using zptr_void::operator bool;
     using zptr_void::free;
     using zptr_void::compress;
 };

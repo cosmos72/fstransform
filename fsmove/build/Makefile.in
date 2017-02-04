@@ -117,7 +117,7 @@ am_fsmove_OBJECTS = ../src/args.$(OBJEXT) ../src/assert.$(OBJEXT) \
 	../src/move.$(OBJEXT) ../src/mstring.$(OBJEXT) \
 	../src/zmem/zmem.$(OBJEXT) ../src/zmem/zpage.$(OBJEXT) \
 	../src/zmem/zpool.$(OBJEXT) ../src/zmem/zptr.$(OBJEXT) \
-	../src/zmem/zpaged_map.$(OBJEXT) ../src/zmem/ztest.$(OBJEXT)
+	../src/zmem/ztree.$(OBJEXT) ../src/zmem/ztest.$(OBJEXT)
 fsmove_OBJECTS = $(am_fsmove_OBJECTS)
 am__DEPENDENCIES_1 =
 fsmove_DEPENDENCIES = $(am__DEPENDENCIES_1)
@@ -293,7 +293,7 @@ fsmove_SOURCES = \
   ../src/zmem/zpage.cc          \
   ../src/zmem/zpool.cc          \
   ../src/zmem/zptr.cc           \
-  ../src/zmem/zpaged_map.cc     \
+  ../src/zmem/ztree.cc          \
   ../src/zmem/ztest.cc
 
 all: all-am
@@ -437,7 +437,7 @@ clean-sbinPROGRAMS:
 	../src/zmem/$(DEPDIR)/$(am__dirstamp)
 ../src/zmem/zptr.$(OBJEXT): ../src/zmem/$(am__dirstamp) \
 	../src/zmem/$(DEPDIR)/$(am__dirstamp)
-../src/zmem/zpaged_map.$(OBJEXT): ../src/zmem/$(am__dirstamp) \
+../src/zmem/ztree.$(OBJEXT): ../src/zmem/$(am__dirstamp) \
 	../src/zmem/$(DEPDIR)/$(am__dirstamp)
 ../src/zmem/ztest.$(OBJEXT): ../src/zmem/$(am__dirstamp) \
 	../src/zmem/$(DEPDIR)/$(am__dirstamp)
@@ -475,10 +475,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/io/$(DEPDIR)/util_posix.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/zmem/$(DEPDIR)/zmem.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/zmem/$(DEPDIR)/zpage.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/zmem/$(DEPDIR)/zpaged_map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/zmem/$(DEPDIR)/zpool.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/zmem/$(DEPDIR)/zptr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/zmem/$(DEPDIR)/ztest.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/zmem/$(DEPDIR)/ztree.Po@am__quote@
 
 .cc.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\

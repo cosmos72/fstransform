@@ -138,6 +138,7 @@ int fm_move::main(int argc, char ** argv)
 #ifdef ZTEST
     ztest();
     ztest_ptr();
+    ztest_tree();
 #endif
     
     fm_move mover;

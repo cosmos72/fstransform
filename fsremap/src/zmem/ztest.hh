@@ -32,6 +32,7 @@ FT_NAMESPACE_BEGIN
 
 void ztest();
 void ztest_ptr(ft_size allocation_count = 961);
+void ztest_tree();
 
 FT_NAMESPACE_END
 

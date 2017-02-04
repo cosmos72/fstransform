@@ -30,6 +30,7 @@
 #include "log.hh"
 #include "zpool.hh"
 #include "zptr.hh"
+#include "ztree.hh"
 #include "ztest.hh"
 
 FT_NAMESPACE_BEGIN
@@ -175,6 +176,12 @@ void ztest_ptr(ft_size allocation_count)
             return;
         }
     }
+}
+
+void ztest_tree()
+{
+    ztree_void tree(sizeof(ft_size));
+    
 }
 
 FT_NAMESPACE_END

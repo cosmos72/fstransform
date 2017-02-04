@@ -32,17 +32,17 @@
 FT_NAMESPACE_BEGIN
 
 /**
- * adaptor from string->string caches to K->V caches.
+ * adaptor from non-template caches to K->V caches.
  *
- * Used to wrap ft_cache_symlink and tranform it into ft_cache_symlink_kv<K,V>
+ * Used to wrap ft_cache_symlink_ss and tranform it into ft_cache_symlink<K,V>
  * - see cache_symlink.hh for details.
  */
 template<class Cache, class K, class V>
-class ft_cache_adaptor_kv : public ft_cache<K, V>, public Cache
+class ft_cache_adaptor : public ft_cache<K, V>, public Cache
 {
 private:
-    typedef ft_cache<K,V>                  super_type;
-    typedef ft_cache_adaptor_kv<Cache,K,V> this_type;
+    typedef ft_cache<K,V>                super_type;
+    typedef ft_cache_adaptor<Cache,K,V>  this_type;
     
     typedef Cache                        mixin_type;
     typedef typename Cache::key_type     mixin_key_type;
@@ -50,11 +50,11 @@ private:
     
 public:
     /** default constructor */
-    ft_cache_adaptor_kv(const V & init_zero_payload = V()) : super_type(init_zero_payload), mixin_type()
+    ft_cache_adaptor(const V & init_zero_payload = V()) : super_type(init_zero_payload), mixin_type()
     { }
     
     /** copy constructor */
-    ft_cache_adaptor_kv(const this_type & other) : super_type(other), mixin_type(other)
+    ft_cache_adaptor(const this_type & other) : super_type(other), mixin_type(other)
     { }
     
     /** assignment operator */
@@ -65,7 +65,7 @@ public:
     }
     
     /** destructor */
-    virtual ~ft_cache_adaptor_kv()
+    virtual ~ft_cache_adaptor()
     { }
     
     /**
