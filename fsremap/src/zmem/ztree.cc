@@ -134,6 +134,7 @@ const void * ztree_void::get(ft_ull key) const
     
     const zptr_void * ptr = &this_tree[depth];
     const void * mem = NULL;
+    depth *= 8;
     while (depth)
     {
         const zptr_void & ref = *ptr;
@@ -141,9 +142,8 @@ const void * ztree_void::get(ft_ull key) const
         if (!vec)
 	    goto out;
 
-        ptr = vec + (key & 0xFF);
-        key >>= 8;
-        depth--;
+        ptr = vec + ((key >> depth) & 0xFF);
+        depth -= 8;
     }
     mem = get_leaf(*ptr, key & 0xFF);
 out:
@@ -177,6 +177,7 @@ bool ztree_void::put(ft_ull key, const void * value, ft_size size)
     ff_assert(depth < ZTREE_TOP_N);
     
     zptr_void * ptr = &this_tree[depth];
+    depth *= 8;
     while (depth)
     {
         zptr_void & ref = *ptr;
@@ -185,9 +186,8 @@ bool ztree_void::put(ft_ull key, const void * value, ft_size size)
             zptr_void * vec = reinterpret_cast<zptr_void *>(ref.get());
             if (vec)
             {
-                ptr = vec + (key & 0xFF);
-                key >>= 8;
-                depth--;
+                ptr = vec + ((key >> depth) & 0xFF);
+                depth -= 8;
                 continue;
             }
         }
@@ -238,19 +238,18 @@ bool ztree_void::del(ft_ull key)
     
     zptr_void * ptr = &this_tree[depth];
     zptr_void * stack[ZTREE_TOP_N] = { };
-
+    depth *= 8;
     while (depth)
     {
-        stack[depth] = ptr;
+        stack[depth / 8] = ptr;
         zptr_void & ref = *ptr;
         zptr_void * vec = reinterpret_cast<zptr_void *>(ref.get());
         if (!vec)
             return false;
-        ptr = vec + (key & 0xFF);
-        key >>= 8;
-        depth--;
+        ptr = vec + ((key >> depth) & 0xFF);
+        depth -= 8;
     }
-    stack[depth] = ptr;
+    stack[depth / 8] = ptr;
     if (del_leaf(*ptr, key & 0xFF)) {
         if (trim_leaf(*ptr))
 	    trim_inner(stack);
