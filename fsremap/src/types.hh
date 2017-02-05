@@ -52,23 +52,20 @@
 
 #include "traits.hh"     // for FT_TYPE_TO_UNSIGNED
 
-// ft_size is the type used to represent number of items in memory. when size_t exists, they must be the same type
-typedef size_t ft_size;
-
-// ft_off is the type used to represent files length and block devices length. when off_t exists, they must be the same type
-typedef off_t  ft_off;
-
-// ft_u64 must be exactly 64-bit unsigned integer. used for ioctl(FS_IOC_FIEMAP), ioctl(BLKGETSIZE64), e4_cpu2fs() and e4_fs2cpu()
-typedef uint64_t ft_u64;
-
-// ft_u32 must be exactly 32-bit unsigned integer. used for ioctl(FS_IOC_FIEMAP), e4_cpu2fs() and e4_fs2cpu()
-typedef uint32_t ft_u32;
+// ft_u8 must be exactly 8-bit unsigned integer. only used for e4_cpu2fs() and e4_fs2cpu()
+typedef uint8_t  ft_u8;
 
 // ft_u16 must be exactly 16-bit unsigned integer. only used for e4_cpu2fs() and e4_fs2cpu()
 typedef uint16_t ft_u16;
 
-// ft_u8 must be exactly 8-bit unsigned integer. only used for e4_cpu2fs() and e4_fs2cpu()
-typedef uint8_t  ft_u8;
+// ft_u32 must be exactly 32-bit unsigned integer. used for ioctl(FS_IOC_FIEMAP), e4_cpu2fs() and e4_fs2cpu()
+typedef uint32_t ft_u32;
+
+// ft_u64 must be exactly 64-bit unsigned integer. used for ioctl(FS_IOC_FIEMAP), ioctl(BLKGETSIZE64), e4_cpu2fs() and e4_fs2cpu()
+typedef uint64_t ft_u64;
+
+// ft_size is the type used to represent number of items in memory. when size_t exists, they must be the same type
+typedef size_t ft_size;
 
 // ft_dev is the type used for ID of block devices. when dev_t exists, they must be the same type
 typedef dev_t  ft_dev;
@@ -81,6 +78,9 @@ typedef ino_t ft_inode;
 
 // ft_nlink is the type used for inode link count. when nlink_t exists, they must be the same type
 typedef nlink_t ft_nlink;
+
+// ft_off is the type used to represent files length and block devices length. when off_t exists, they must be the same type
+typedef off_t  ft_off;
 
 // ft_uoff is the unsigned variant of ft_off (in case ft_off is unsigned, they will be the same type)
 typedef FT_TYPE_TO_UNSIGNED(ft_off) ft_uoff;

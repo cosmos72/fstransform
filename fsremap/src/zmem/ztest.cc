@@ -186,24 +186,34 @@ void ztest_ptr(ft_size allocation_count)
 
 void ztest_tree()
 {
-    ztree<char *> tree;
-
-    ft_ull key = (ft_ull)-1;
-    const char * value_in = "foo";
-    
-    if (!tree.put(key, value_in, 1+strlen(value_in))) {
-        ff_log(FC_ERROR, 0, "ztree test failed: ztree.put() returned false");
-        return;
-    }
-    const char * value_out = tree.get(key);
-    if (!value_out || strcmp(value_in, value_out)) {
-        ff_log(FC_ERROR, 0, "ztree test failed: ztree.get() returned %c%s%c instead of \"%s\"",
-               (value_out ? '"' : '<'), (value_out ? value_out : "NULL"), (value_out ? '"' : '<'), value_in);
-        return;
-    }
-    if (!tree.del(key)) {
-        ff_log(FC_ERROR, 0, "ztree test failed: ztree.del() returned false");
-        return;
+    {
+        ztree<char *> tree;
+        
+        for (ft_ull key = (ft_ull)-1; key; key >>= 1)
+	{
+	   const char value_in[] = {
+#define CH(key,shift) ((char)('!' + (char)(((key) >> (shift)) & 0x3F)))
+	      CH(key, 0),  CH(key, 6),  CH(key, 12),
+	      CH(key, 18), CH(key, 24), CH(key, 30),
+	      CH(key, 36), CH(key, 42), CH(key, 48),
+	      CH(key, 54), CH(key, 60), '\0'
+	   };
+		
+	   if (!tree.put(key, value_in, 1+strlen(value_in))) {
+	      ff_log(FC_ERROR, 0, "ztree test failed: ztree.put() returned false");
+	      return;
+	   }
+	   const char * value_out = tree.get(key);
+	   if (!value_out || strcmp(value_in, value_out)) {
+	      ff_log(FC_ERROR, 0, "ztree test failed: ztree.get() returned %c%s%c instead of \"%s\"",
+		     (value_out ? '"' : '<'), (value_out ? value_out : "NULL"), (value_out ? '"' : '<'), value_in);
+	      return;
+	   }
+	   if (!tree.del(key)) {
+	      ff_log(FC_ERROR, 0, "ztree test failed: ztree.del() returned false");
+	      return;
+	   }
+	}
     }
 }
 

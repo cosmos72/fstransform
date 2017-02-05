@@ -30,25 +30,81 @@
 
 FT_NAMESPACE_BEGIN
 
-template<typename T> struct ft_type_traits;
+template<typename T> struct ft_type_traits {
+};
+
+template<typename T> struct ft_type_traits<const T> : public ft_type_traits<T> {
+};
+
 /**
  * whether char is signed or unsigned is implementation dependent.
  * in any case, the compiler treats (char), (unsigned char) and (signed char) as different types
  */
-template<> struct ft_type_traits<char>               { typedef unsigned char      unsigned_type; typedef signed char signed_type; };
-template<> struct ft_type_traits<signed char>        { typedef unsigned char      unsigned_type; typedef signed char signed_type; };
-template<> struct ft_type_traits<unsigned char>      { typedef unsigned char      unsigned_type; typedef signed char signed_type; };
-template<> struct ft_type_traits<short>              { typedef unsigned short     unsigned_type; typedef short       signed_type; };
-template<> struct ft_type_traits<unsigned short>     { typedef unsigned short     unsigned_type; typedef short       signed_type; };
-template<> struct ft_type_traits<int>                { typedef unsigned int       unsigned_type; typedef int         signed_type; };
-template<> struct ft_type_traits<unsigned int>       { typedef unsigned int       unsigned_type; typedef int         signed_type; };
-template<> struct ft_type_traits<long>               { typedef unsigned long      unsigned_type; typedef long        signed_type; };
-template<> struct ft_type_traits<unsigned long>      { typedef unsigned long      unsigned_type; typedef long        signed_type; };
+template<> struct ft_type_traits<char> {
+   typedef unsigned char      unsigned_type;
+   typedef   signed char        signed_type;
+   enum  { is_primitive = true };
+};
+template<> struct ft_type_traits<signed char> {
+   typedef unsigned char      unsigned_type;
+   typedef   signed char        signed_type;
+   enum  { is_primitive = true };
+};
+template<> struct ft_type_traits<unsigned char> {
+   typedef unsigned char      unsigned_type;
+   typedef   signed char        signed_type;
+   enum  { is_primitive = true };
+};
+template<> struct ft_type_traits<short> {
+   typedef unsigned short     unsigned_type;
+   typedef          short       signed_type;
+   enum  { is_primitive = true };
+};
+template<> struct ft_type_traits<unsigned short> {
+   typedef unsigned short     unsigned_type;
+   typedef          short       signed_type;
+   enum  { is_primitive = true };
+};
+template<> struct ft_type_traits<int> {
+   typedef unsigned int       unsigned_type;
+   typedef          int         signed_type;
+   enum  { is_primitive = true };
+};
+template<> struct ft_type_traits<unsigned int> {
+   typedef unsigned int       unsigned_type;
+   typedef          int         signed_type;
+   enum  { is_primitive = true };
+};
+template<> struct ft_type_traits<long> {
+   typedef unsigned long      unsigned_type;
+   typedef          long        signed_type;
+   enum  { is_primitive = true };
+};
+template<> struct ft_type_traits<unsigned long> {
+   typedef unsigned long      unsigned_type;
+   typedef          long        signed_type;
+   enum  { is_primitive = true };
+};
 
 #ifdef FT_HAVE_LONG_LONG
-template<> struct ft_type_traits<long long>          { typedef unsigned long long unsigned_type; typedef long long   signed_type; };
-template<> struct ft_type_traits<unsigned long long> { typedef unsigned long long unsigned_type; typedef long long   signed_type; };
+template<> struct ft_type_traits<long long> {
+   typedef unsigned long long unsigned_type;
+   typedef          long long   signed_type;
+   enum  { is_primitive = true };
+};
+template<> struct ft_type_traits<unsigned long long> {
+   typedef unsigned long long unsigned_type;
+   typedef          long long   signed_type;
+   enum  { is_primitive = true };
+};
 #endif /* FT_HAVE_LONG_LONG */
+
+template<> struct ft_type_traits<float> {
+   enum  { is_primitive = true };
+};
+template<> struct ft_type_traits<double> {
+   enum  { is_primitive = true };
+};
 
 #define FT_TYPE_TO_UNSIGNED(T) FT_NS ft_type_traits< T >::unsigned_type
 #define FT_TYPE_TO_SIGNED(T)   FT_NS ft_type_traits< T >::signed_type

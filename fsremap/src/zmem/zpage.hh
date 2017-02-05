@@ -61,6 +61,7 @@ public:
 
     inline bool compress_ptr(zptr_handle handle)
     {
+        (void)handle;
         return compress_page();
     }
 

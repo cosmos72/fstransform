@@ -35,7 +35,71 @@
 
 FT_NAMESPACE_BEGIN
 
-enum { ZTREE_INNER_N = 256 };
+enum {
+   ZTREE_INNER_N      = 256,
+   ZTREE_BITMAP_BYTES = ZTREE_INNER_N/8,
+   ZTREE_BITMAP_N     = ZTREE_BITMAP_BYTES/sizeof(ft_size),
+};
+
+struct ztree_leaf
+{
+   enum { BITS_PER_ELEMENT = 8 * sizeof(ft_size) };
+
+   ft_size bitmap[ZTREE_BITMAP_N];
+
+   inline char * data(ft_size values_inline_size, ft_u8 offset) {
+      if (values_inline_size)
+	return offset * values_inline_size + reinterpret_cast<char *>(bitmap + ZTREE_BITMAP_N);
+      else
+	return offset * sizeof(zptr_void) + reinterpret_cast<char *>(bitmap);
+   }
+   
+   inline const char * data(ft_size values_inline_size, ft_u8 offset) const {
+      if (values_inline_size)
+	return offset * values_inline_size + reinterpret_cast<const char *>(bitmap + ZTREE_BITMAP_N);
+      else
+	return offset * sizeof(zptr_void) + reinterpret_cast<const char *>(bitmap);
+   }
+   
+   inline bool is_set(ft_size values_inline_size, ft_u8 offset) const {
+      return !values_inline_size || (1 & (bitmap[offset / BITS_PER_ELEMENT] >> (offset % BITS_PER_ELEMENT)));
+   }
+   
+   inline void set(ft_size values_inline_size, ft_u8 offset) {
+       if (values_inline_size)
+	   bitmap[offset / BITS_PER_ELEMENT] |= (ft_size)1 << (offset % BITS_PER_ELEMENT);
+   }
+
+   inline void clr(ft_size values_inline_size, ft_u8 offset) {
+       if (values_inline_size)
+	   bitmap[offset / BITS_PER_ELEMENT] &= ~((ft_size)1 << (offset % BITS_PER_ELEMENT));
+   }
+   
+   bool is_empty(ft_size values_inline_size) const;
+};
+
+
+bool ztree_leaf::is_empty(ft_size values_inline_size) const
+{
+    if (values_inline_size) {
+       // we have a bitmap, check it
+       for (ft_size i = 0; i < ZTREE_BITMAP_N; i++) {
+	  if (bitmap[i])
+	    return false;
+       }
+    } else {
+       // no bitmap, we only contain an array zptr_void[ZTREE_INNER_N]
+       const zptr_void * vec = reinterpret_cast<const zptr_void *>(bitmap);
+       for (ft_size i = 0; i < ZTREE_INNER_N; i++) {
+	  if (vec[i])
+	    return false;
+       }
+    }
+    return true;
+}
+
+
+/****************************************************************/
 
 ztree_void::ztree_void(ft_size values_inline_size) : this_values_inline_size(values_inline_size)
 {
@@ -82,12 +146,11 @@ const void * ztree_void::get(ft_ull key) const
 
 const void * ztree_void::get_leaf(const zptr_void & ref, ft_u8 offset) const
 {
-    const char * mem = reinterpret_cast<const char *>(ref.get());
-    if (!mem)
+    const ztree_leaf * leaf = reinterpret_cast<const ztree_leaf *>(ref.get());
+    if (!leaf || !leaf->is_set(this_values_inline_size, offset))
         return NULL;
-    
-    ft_size element_size = (this_values_inline_size ? this_values_inline_size : sizeof(zptr_void));
-    mem += offset * element_size;
+
+    const char * mem = leaf->data(this_values_inline_size, offset);
     if (this_values_inline_size == 0) {
         const zptr_void & value_ref = * reinterpret_cast<const zptr_void *>(mem);
         mem = reinterpret_cast<const char *>(value_ref.get());
@@ -128,16 +191,15 @@ bool ztree_void::put_leaf(zptr_void & ref, ft_u8 offset, const void * value, ft_
 {
     if (ref || alloc_leaf(ref))
     {
-        char * mem = reinterpret_cast<char *>(ref.get());
-        if (mem)
+        ztree_leaf * leaf = reinterpret_cast<ztree_leaf *>(ref.get());
+        if (leaf)
         {
-            ft_size element_size = (this_values_inline_size ? this_values_inline_size : sizeof(zptr_void));
-            mem += offset * element_size;
-            if (this_values_inline_size != 0)
-            {
+	    char * mem = leaf->data(this_values_inline_size, offset);
+            if (this_values_inline_size != 0) {
                 memcpy(mem, value, size);
                 if (size < this_values_inline_size)
                     memset(mem + size, 0, this_values_inline_size - size);
+	        leaf->set(this_values_inline_size, offset);
                 return true;
             } else {
                 zptr_void & value_ref = * reinterpret_cast<zptr_void *>(mem);
@@ -146,6 +208,7 @@ bool ztree_void::put_leaf(zptr_void & ref, ft_u8 offset, const void * value, ft_
                     void * new_value = value_ref.get();
                     if (new_value) {
                         memcpy(new_value, value, size);
+		        // leaf->set(this_values_inline_size, offset); // no-op: this_values_inline_size == 0 means no bitmap
                         return true;
                     }
                 }
@@ -178,8 +241,8 @@ bool ztree_void::del(ft_ull key)
     }
     stack[depth] = ptr;
     if (del_leaf(*ptr, key & 0xFF)) {
-        trim_leaf(*ptr);
-        trim_inner(stack);
+        if (trim_leaf(*ptr))
+	    trim_inner(stack);
         return true;
     }
     return true;
@@ -187,20 +250,19 @@ bool ztree_void::del(ft_ull key)
 
 bool ztree_void::del_leaf(zptr_void & ref, ft_u8 offset)
 {
-    char * mem = reinterpret_cast<char *>(ref.get());
-    if (!mem)
+    ztree_leaf * leaf = reinterpret_cast<ztree_leaf *>(ref.get());
+    if (!leaf || !leaf->is_set(this_values_inline_size, offset))
         return false;
     
-    ft_size element_size = (this_values_inline_size ? this_values_inline_size : sizeof(zptr_void));
-    mem += offset * element_size;
+    char * mem = leaf->data(this_values_inline_size, offset);
     if (this_values_inline_size != 0) {
-        memset(mem, 0, this_values_inline_size);
+        leaf->clr(this_values_inline_size, offset);
+        return true;
     } else {
+        // leaf->clr(this_values_inline_size, offset); // no-op: this_values_inline_size == 0 means no bitmap
         zptr_void & value_ref = * reinterpret_cast<zptr_void *>(mem);
-        if (!value_ref.free())
-            return false;
+        return value_ref.free();
     }
-    return true;
 }
 
 /****************************************************************/
@@ -224,17 +286,10 @@ void ztree_void::trim_inner(zptr_void * stack[ZTREE_TOP_N])
     }
 }
 
-void ztree_void::trim_leaf(zptr_void & ref)
+bool ztree_void::trim_leaf(zptr_void & ref)
 {
-    ft_size * mem = reinterpret_cast<ft_size *>(ref.get());
-    if (!mem)
-        return;
-    ft_size count = ZTREE_INNER_N  / sizeof(ft_size) * (this_values_inline_size ? this_values_inline_size : sizeof(zptr_void));
-    for (ft_size i = 0; i < count; i++) {
-        if (mem[i])
-            return;
-    }
-    ref.free();
+    ztree_leaf * leaf = reinterpret_cast<ztree_leaf *>(ref.get());
+    return leaf && leaf->is_empty(this_values_inline_size) && ref.free();
 }
 
 /****************************************************************/
@@ -258,14 +313,15 @@ bool ztree_void::alloc_inner(zptr_void & ref)
 
 bool ztree_void::alloc_leaf(zptr_void & ref)
 {
-    ft_size size = ZTREE_INNER_N * (this_values_inline_size ? this_values_inline_size : sizeof(zptr_void));
-    void * mem;
-    if (ref.alloc(size) && (mem = ref.get()))
+    ft_size size = sizeof(ztree_leaf) + ZTREE_INNER_N * (this_values_inline_size ? this_values_inline_size : sizeof(zptr_void));
+    ztree_leaf * leaf;
+    if (ref.alloc(size) && (leaf = reinterpret_cast<ztree_leaf *>(ref.get())))
     {
         if (this_values_inline_size)
-            memset(mem, 0, size);
+            memset(leaf, 0, size);
         else {
-            zptr_void * vec = reinterpret_cast<zptr_void *>(mem);
+            memset(leaf, 0, sizeof(ztree_leaf));
+            zptr_void * vec = reinterpret_cast<zptr_void *>(leaf->data(0, 0));
             for (ft_size i = 0; i < ZTREE_INNER_N; i++)
             {
                 new (vec + i) zptr_void(); // placement new
@@ -308,9 +364,10 @@ void ztree_void::free_leaf(zptr_void & ref)
 {
     if (this_values_inline_size == 0)
     {
-        zptr_void * vec = reinterpret_cast<zptr_void *>(ref.get());
-        if (vec)
+        ztree_leaf * leaf = reinterpret_cast<ztree_leaf *>(ref.get());
+        if (leaf)
         {
+	    zptr_void * vec = reinterpret_cast<zptr_void *>(leaf->data(0, 0));
             for (ft_size i = 0; i < ZTREE_INNER_N; i++)
                 vec[i].free();
         }

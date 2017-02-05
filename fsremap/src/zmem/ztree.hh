@@ -51,7 +51,7 @@ private:
     void free_leaf(zptr_void & ref);
 
     static void trim_inner(zptr_void * stack[ZTREE_TOP_N]);
-    void trim_leaf(zptr_void & ref);
+    bool trim_leaf(zptr_void & ref);
     
 public:
     explicit ztree_void(ft_size values_inline_size); /* 0 if values are not inline, i.e. they must be allocated one by one */
@@ -68,6 +68,11 @@ public:
 template<class T>
     class ztree : private ztree_void
 {
+private:
+    // only primitive types (char,int,long,long long,float,double) are supported,
+    // because ztree_void copies them around with memcpy() and never calls the destructor T::~T()
+    enum { T_is_primitive = ft_type_traits<T>::is_primitive };
+
 public:
     ztree() : ztree_void(sizeof(T))
     { }
@@ -93,6 +98,11 @@ public:
 template<class T>
     class ztree<T *> : private ztree_void
 {
+private:
+    // only primitive types (char,int,long,long long,float,double) are supported,
+    // because ztree_void copies them around with memcpy() and never calls the destructor T::~T()
+    enum { T_is_primitive = ft_type_traits<T>::is_primitive };
+
 public:
     ztree() : ztree_void(0)
     { }
