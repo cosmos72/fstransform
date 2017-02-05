@@ -10,6 +10,9 @@ fsremap_SOURCES =           \
   ../src/arch/mem_posix.cc  \
   ../src/args.cc            \
   ../src/assert.cc          \
+  ../src/cache/cache_symlink.cc \
+  ../src/cache/cache_zmem.cc    \
+  ../src/copy.cc            \
   ../src/dispatch.cc        \
   ../src/eta.cc             \
   ../src/io/extent_file.cc  \

@@ -33,16 +33,18 @@ FT_NAMESPACE_BEGIN
 
 enum fm_io_kind { FC_IO_AUTODETECT, FC_IO_POSIX, FC_IO_PREALLOC };
 enum fm_ui_kind { FC_UI_NONE };
+enum fm_inode_cache_kind { FC_INODE_CACHE_MEM, FC_INODE_CACHE_ZMEM, FC_INODE_CACHE_SYMLINK };
 
 class fm_args
 {
 public:
-    const char * program_name;       // detected from command line. default: "fsmove"
-    const char * io_args[FT_IO_NS fm_io::FC_ARGS_COUNT];
+    const char *         program_name;       // detected from command line. default: "fsmove"
+    const char *         io_args[FT_IO_NS fm_io::FC_ARGS_COUNT];
     char const * const * exclude_list; // NULL-terminated array of files _not_ to move
-    const char * inode_cache_path;
-    fm_io_kind io_kind;      // if FC_IO_AUTODETECT, will autodetect
-    fm_ui_kind ui_kind;      // default is FC_UI_NONE
+    const char *         inode_cache_path;
+    fm_io_kind           io_kind;          // if FC_IO_AUTODETECT, will autodetect
+    fm_ui_kind           ui_kind;          // default is FC_UI_NONE
+    fm_inode_cache_kind  inode_cache_kind; // default is FC_INODE_CACHE_MEM
     bool force_run;          // if true, some sanity checks will be WARNINGS instead of ERRORS
     bool simulate_run;       // if true, move algorithm runs WITHOUT actually moving/preallocating any file/directory/special-device
 

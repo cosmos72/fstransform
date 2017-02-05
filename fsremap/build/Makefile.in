@@ -109,8 +109,10 @@ am__dirstamp = $(am__leading_dot)dirstamp
 am_fsremap_OBJECTS = ../src/arch/mem.$(OBJEXT) \
 	../src/arch/mem_linux.$(OBJEXT) \
 	../src/arch/mem_posix.$(OBJEXT) ../src/args.$(OBJEXT) \
-	../src/assert.$(OBJEXT) ../src/dispatch.$(OBJEXT) \
-	../src/eta.$(OBJEXT) ../src/io/extent_file.$(OBJEXT) \
+	../src/assert.$(OBJEXT) ../src/cache/cache_symlink.$(OBJEXT) \
+	../src/cache/cache_zmem.$(OBJEXT) ../src/copy.$(OBJEXT) \
+	../src/dispatch.$(OBJEXT) ../src/eta.$(OBJEXT) \
+	../src/io/extent_file.$(OBJEXT) \
 	../src/io/extent_posix.$(OBJEXT) ../src/io/io.$(OBJEXT) \
 	../src/io/io_null.$(OBJEXT) ../src/io/io_posix.$(OBJEXT) \
 	../src/io/io_posix_dir.$(OBJEXT) \
@@ -287,6 +289,9 @@ fsremap_SOURCES = \
   ../src/arch/mem_posix.cc  \
   ../src/args.cc            \
   ../src/assert.cc          \
+  ../src/cache/cache_symlink.cc \
+  ../src/cache/cache_zmem.cc    \
+  ../src/copy.cc            \
   ../src/dispatch.cc        \
   ../src/eta.cc             \
   ../src/io/extent_file.cc  \
@@ -419,6 +424,18 @@ clean-sbinPROGRAMS:
 	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/assert.$(OBJEXT): ../src/$(am__dirstamp) \
 	../src/$(DEPDIR)/$(am__dirstamp)
+../src/cache/$(am__dirstamp):
+	@$(MKDIR_P) ../src/cache
+	@: > ../src/cache/$(am__dirstamp)
+../src/cache/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) ../src/cache/$(DEPDIR)
+	@: > ../src/cache/$(DEPDIR)/$(am__dirstamp)
+../src/cache/cache_symlink.$(OBJEXT): ../src/cache/$(am__dirstamp) \
+	../src/cache/$(DEPDIR)/$(am__dirstamp)
+../src/cache/cache_zmem.$(OBJEXT): ../src/cache/$(am__dirstamp) \
+	../src/cache/$(DEPDIR)/$(am__dirstamp)
+../src/copy.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/dispatch.$(OBJEXT): ../src/$(am__dirstamp) \
 	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/eta.$(OBJEXT): ../src/$(am__dirstamp) \
@@ -514,6 +531,7 @@ mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 	-rm -f ../src/*.$(OBJEXT)
 	-rm -f ../src/arch/*.$(OBJEXT)
+	-rm -f ../src/cache/*.$(OBJEXT)
 	-rm -f ../src/io/*.$(OBJEXT)
 	-rm -f ../src/ui/*.$(OBJEXT)
 	-rm -f ../src/zmem/*.$(OBJEXT)
@@ -523,6 +541,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/args.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/assert.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/copy.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/dispatch.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/eta.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/job.Po@am__quote@
@@ -540,6 +559,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/arch/$(DEPDIR)/mem.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/arch/$(DEPDIR)/mem_linux.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/arch/$(DEPDIR)/mem_posix.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/cache/$(DEPDIR)/cache_symlink.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/cache/$(DEPDIR)/cache_zmem.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/io/$(DEPDIR)/extent_file.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/io/$(DEPDIR)/extent_posix.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/io/$(DEPDIR)/io.Po@am__quote@
@@ -696,6 +717,8 @@ distclean-generic:
 	-rm -f ../src/$(am__dirstamp)
 	-rm -f ../src/arch/$(DEPDIR)/$(am__dirstamp)
 	-rm -f ../src/arch/$(am__dirstamp)
+	-rm -f ../src/cache/$(DEPDIR)/$(am__dirstamp)
+	-rm -f ../src/cache/$(am__dirstamp)
 	-rm -f ../src/io/$(DEPDIR)/$(am__dirstamp)
 	-rm -f ../src/io/$(am__dirstamp)
 	-rm -f ../src/ui/$(DEPDIR)/$(am__dirstamp)
@@ -711,7 +734,7 @@ clean: clean-am
 clean-am: clean-generic clean-sbinPROGRAMS mostlyclean-am
 
 distclean: distclean-am
-	-rm -rf ../src/$(DEPDIR) ../src/arch/$(DEPDIR) ../src/io/$(DEPDIR) ../src/ui/$(DEPDIR) ../src/zmem/$(DEPDIR)
+	-rm -rf ../src/$(DEPDIR) ../src/arch/$(DEPDIR) ../src/cache/$(DEPDIR) ../src/io/$(DEPDIR) ../src/ui/$(DEPDIR) ../src/zmem/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -757,7 +780,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-	-rm -rf ../src/$(DEPDIR) ../src/arch/$(DEPDIR) ../src/io/$(DEPDIR) ../src/ui/$(DEPDIR) ../src/zmem/$(DEPDIR)
+	-rm -rf ../src/$(DEPDIR) ../src/arch/$(DEPDIR) ../src/cache/$(DEPDIR) ../src/io/$(DEPDIR) ../src/ui/$(DEPDIR) ../src/zmem/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

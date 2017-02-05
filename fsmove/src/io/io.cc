@@ -31,6 +31,7 @@
 #include "io.hh"           // for fm_io
 
 #include "cache/cache_mem.hh"     // for ft_cache_mem
+#include "cache/cache_zmem.hh"    // for ft_cache_zmem
 #include "cache/cache_symlink.hh" // for ft_cache_symlink
 
 #if defined(FT_HAVE_MATH_H)
@@ -104,24 +105,30 @@ int fm_io::open(const fm_args & args)
         }
         const char * inode_cache_path = args.inode_cache_path;
         delete_inode_cache();
-        if (inode_cache_path != NULL)
-        {
-            ft_cache_symlink<ft_inode, ft_string> * icp = new ft_cache_symlink<ft_inode, ft_string>(inode_cache_path);
-            err = icp->init(inode_cache_path);
-            if (err != 0)
-            {
-                delete icp;
-                break;
-            }
-            // icp->get_path() removes trailing '/' unless it's exactly the path "/"
-            inode_cache_path = icp->get_path();
-            this_inode_cache = icp;
+        switch (args.inode_cache_kind)
+	{
+	    default:
+	    case FC_INODE_CACHE_MEM:
+	        this_inode_cache = new ft_cache_mem<ft_inode, ft_string>();
+	        break;
+	    case FC_INODE_CACHE_ZMEM:
+	        this_inode_cache = new ft_cache_zmem<ft_inode, ft_string>();
+	        break;
+	    case FC_INODE_CACHE_SYMLINK:
+	        ft_cache_symlink<ft_inode, ft_string> * icp = new ft_cache_symlink<ft_inode, ft_string>();
+	        err = icp->init(inode_cache_path);
+	        if (err != 0) {
+		    delete icp;
+		    break;
+		}
+                // icp->get_path() removes trailing '/' unless it's exactly the path "/"
+	        inode_cache_path = icp->get_path();
+	        this_inode_cache = icp;
+	        break;
         }
-        else
-            this_inode_cache = new ft_cache_mem<ft_inode, ft_string>();
-        
-        
-        
+        if (err != 0)
+	    break;
+
         this_source_stat.set_name("source");
         this_target_stat.set_name("target");
         this_source_root = arg1;

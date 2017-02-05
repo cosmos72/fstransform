@@ -38,23 +38,18 @@ FT_NAMESPACE_BEGIN
 template<class K, class V>
 class ft_cache
 {
-protected:
-    V zero_payload;
-
 public:
     /** default constructor */
-    ft_cache(const V & init_zero_payload = V()) : zero_payload(init_zero_payload)
+    ft_cache()
     { }
 
     /** copy constructor */
-    ft_cache(const ft_cache<K,V> & other) : zero_payload(other.zero_payload)
+    ft_cache(const ft_cache<K,V> & other)
     { }
 
     /** assignment operator */
     virtual const ft_cache<K,V> & operator=(const ft_cache<K,V> & other)
     {
-        if (this != &other)
-            zero_payload = other.zero_payload;
     	return *this;
     }
 

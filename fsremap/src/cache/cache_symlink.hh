@@ -97,18 +97,17 @@ public:
  * Used to implement inode cache - see cache.hh for details.
  */
 template<class K, class V>
-    class ft_cache_symlink : public ft_cache_adaptor<ft_cache_symlink_ss,K,V>
+    class ft_cache_symlink : public ft_cache_adaptor<ft_cache_symlink_ss, K, V>
 {
 private:
-    typedef ft_cache_symlink_ss              mixin_type;
-    typedef ft_cache_adaptor<mixin_type,K,V> super_type;
+    typedef ft_cache_symlink_ss                mixin_type;
+    typedef ft_cache_adaptor<mixin_type, K, V> super_type;
     
     
 public:
     /** default constructor */
-    ft_cache_symlink(const V & init_zero_payload = V())
-        : super_type(init_zero_payload)
-	{ }
+    ft_cache_symlink() : super_type()
+    { }
     
     /** destructor */
     virtual ~ft_cache_symlink()

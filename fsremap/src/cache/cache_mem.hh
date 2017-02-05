@@ -58,7 +58,7 @@ private:
 
 public:
     /** default constructor */
-    ft_cache_mem(const V & init_zero_payload = V()) : super_type(init_zero_payload), map()
+    ft_cache_mem() : super_type(), map()
     { }
     
     /** copy constructor */
@@ -85,15 +85,13 @@ public:
      */
     virtual int find_or_add(const K key, V & inout_payload)
     {
-        ff_assert(inout_payload != this->zero_payload);
-
-        V & value = map[key];
-        if (value == this->zero_payload) {
-            value = inout_payload;
-            return 0;
-        }
-        inout_payload = value;
-        return 1;
+        typename map_type::iterator iter = map.find(key);
+        if (iter != map.end()) {
+	    inout_payload = iter->second;
+	    return 1;
+	}
+        map[key] = inout_payload;
+        return 0;
     }
 
     /**

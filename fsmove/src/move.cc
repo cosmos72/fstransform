@@ -180,8 +180,10 @@ int fm_move::usage(const char * program_name)
      "      --io=prealloc     use POSIX I/O and preallocate files (do NOT move them)\n"
 #endif
      "      --inode-cache-mem use in-memory inode cache (default)\n"
+     "      --inode-cache-zmem\n"
+     "                        use in-memory compressed inode cache\n"
      "      --inode-cache=DIR create and use directory DIR for inode cache\n"
-     "      --log-color=MODE  set messages color. MODE is one of:"
+     "      --log-color=MODE  set messages color. MODE is one of:\n"
      "                          auto (default), none, ansi\n"
      "      --log-format=FMT  set messages format. FMT is one of:\n"
      "                          msg (default), level_msg, time_level_msg,\n"
@@ -349,12 +351,19 @@ int fm_move::init(int argc, char const* const* argv)
                     }
                 }
                 else if (!strcmp(arg, "--inode-cache-mem")) {
-                       args.inode_cache_path = NULL;
+		     args.inode_cache_kind = FC_INODE_CACHE_MEM;
+		     args.inode_cache_path = NULL;
+                }
+                else if (!strcmp(arg, "--inode-cache-zmem")) {
+		     args.inode_cache_kind = FC_INODE_CACHE_ZMEM;
+		     args.inode_cache_path = NULL;
                 }
                 else if (!strncmp(arg, "--inode-cache=", 14)) {
                     // do not allow empty dir name
-                    if (arg[14] != '\0')
+                    if (arg[14] != '\0') {
+			args.inode_cache_kind = FC_INODE_CACHE_SYMLINK;
                         args.inode_cache_path = arg + 14;
+		    }
                 }
                 else if (!strcmp(arg, "--help")) {
                     return usage(args.program_name);

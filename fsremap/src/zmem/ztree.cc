@@ -25,6 +25,7 @@
 
 #include "first.hh"
 #include "../assert.hh"
+#include "../log.hh"
 #include "ztree.hh"
 
 #if defined(FT_HAVE_STRING_H)
@@ -127,27 +128,33 @@ ft_size ztree_void::key_to_depth(ft_ull key)
 
 const void * ztree_void::get(ft_ull key) const
 {
+    ft_ull save_key = key;
     ft_size depth = key_to_depth(key);
     ff_assert(depth < ZTREE_TOP_N);
     
     const zptr_void * ptr = &this_tree[depth];
+    const void * mem = NULL;
     while (depth)
     {
         const zptr_void & ref = *ptr;
         const zptr_void * vec = reinterpret_cast<const zptr_void *>(ref.get());
         if (!vec)
-            return NULL;
+	    goto out;
+
         ptr = vec + (key & 0xFF);
         key >>= 8;
         depth--;
     }
-    return get_leaf(*ptr, key & 0xFF);
+    mem = get_leaf(*ptr, key & 0xFF);
+out:
+    ff_log(FC_DEBUG, 0, "ztree::get(%"FT_ULL") = %s", save_key, mem ? mem : "(null)");
+    return mem;
 }
 
 const void * ztree_void::get_leaf(const zptr_void & ref, ft_u8 offset) const
 {
     const ztree_leaf * leaf = reinterpret_cast<const ztree_leaf *>(ref.get());
-    if (!leaf || !leaf->is_set(this_values_inline_size, offset))
+    if (!leaf || !leaf->is_set(this_values_inline_size, offset)) 
         return NULL;
 
     const char * mem = leaf->data(this_values_inline_size, offset);
@@ -162,6 +169,8 @@ const void * ztree_void::get_leaf(const zptr_void & ref, ft_u8 offset) const
 
 bool ztree_void::put(ft_ull key, const void * value, ft_size size)
 {
+    ff_log(FC_DEBUG, 0, "ztree::put(%"FT_ULL", %.*s)", key, (int)size, value);
+
     ft_size depth = key_to_depth(key);
     
     ff_assert(this_values_inline_size == 0 || size <= this_values_inline_size);
@@ -222,6 +231,8 @@ bool ztree_void::put_leaf(zptr_void & ref, ft_u8 offset, const void * value, ft_
 
 bool ztree_void::del(ft_ull key)
 {
+    ff_log(FC_DEBUG, 0, "ztree::del(%"FT_ULL")", key);
+   
     ft_size depth = key_to_depth(key);
     ff_assert(depth < ZTREE_TOP_N);
     

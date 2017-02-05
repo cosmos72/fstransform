@@ -50,7 +50,7 @@ private:
     
 public:
     /** default constructor */
-    ft_cache_adaptor(const V & init_zero_payload = V()) : super_type(init_zero_payload), mixin_type()
+    ft_cache_adaptor() : super_type(), mixin_type()
     { }
     
     /** copy constructor */

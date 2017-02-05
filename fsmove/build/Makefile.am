@@ -10,6 +10,7 @@ fsmove_SOURCES =                \
   ../src/copy.cc                \
   ../src/eta.cc                 \
   ../src/cache/cache_symlink.cc \
+  ../src/cache/cache_zmem.cc    \
   ../src/io/disk_stat.cc        \
   ../src/io/io.cc               \
   ../src/io/io_posix.cc         \

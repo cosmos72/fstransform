@@ -19,115 +19,73 @@
  *
  * cache_zmem.hh
  *
- *  Created on: Jan 30, 2017
+ *  Created on: Feb 5, 2017
  *      Author: max
  */
 
 #ifndef FSTRANSFORM_CACHE_ZMEM_HH
 #define FSTRANSFORM_CACHE_ZMEM_HH
 
-#include "cache.hh"      // for ft_cache<K,V>
-#include "copy.hh"       // for ff_set()
-
+#include "cache.hh"          // for ft_cache<K,V>
+#include "../log.hh"         // for ff_log()
+#include "../types.hh"       // for ft_inode
+#include "../zmem/ztree.hh"  // for ztree<T>
 
 FT_NAMESPACE_BEGIN
 
 /**
- * compressed in-memory associative array from keys *ft_ull to values (type V).
+ * compressed in-memory associative array from keys (ft_ull) to values (V).
  * Used to implement inode cache - see cache.hh for details.
  */
-template<class K>
-class ft_cache_zmem_ks
+
+class ft_cache_zmem_is : public ft_cache<ft_inode, ft_string>
 {
 private:
-    typedef ft_string V;
-
-    V zero_payload;
+    ztree<char *> tree;
+   
+    /** copy constructor - NOT IMPLEMENTED */
+    ft_cache_zmem_is(const ft_cache_zmem_is & other);
     
-    zptr_void page[sizeof(K)];
+    /** assignment operator - NOT IMPLEMENTED */
+    const ft_cache_zmem_is & operator=(const ft_cache_zmem_is & other);
     
 public:
     /** default constructor */
-    ft_cache_zmem_ks()
-    {
-        init_pages();
-    }
-    
-    /** copy constructor */
-    ft_cache_zmem(const ft_cache_zmem_ks<K> & other)
-    {
-        init_pages();
-        deep_copy_pages(page, other.page);
-    }
-    
-    /** assignment operator */
-    const ft_cache_zmem & operator=(const ft_cache_zmem<K,V> & other)
-    {
-        if (this != &other)
-            deep_copy_pages(page, other.page);
-        return *this;
-    }
-    
+    ft_cache_zmem_is();
+
     /** destructor */
-    ~ft_cache_zmem()
-    {
-        free_pages();
-    }
+    ~ft_cache_zmem_is();
+   
+    virtual int find_or_add(const ft_inode key, ft_string & inout_payload);
+
     
-    /**
-     * if cached inode found, set payload and return 1.
-     * Otherwise add it to cache and return 0.
-     * On error, return < 0.
-     * if returns 0, erase() must be called on the same inode when done with payload!
-     */
-    int find_or_add(const K key, V & inout_payload)
-    {
-        ff_assert(inout_payload != this->zero_payload);
-
-        V & value = map[key];
-        if (value == this->zero_payload) {
-            value = inout_payload;
-            return 0;
-        }
-        inout_payload = value;
-        return 1;
-    }
-
     /**
      * if cached key found, set result_payload, remove cached key and return 1.
      * Otherwise return 0. On error, return < 0.
      */
-    virtual int find_and_delete(const K key, V & result_payload)
-    {
-        typename map_type::iterator iter = map.find(key);
-        if (iter == map.end())
-            return 0;
-
-        result_payload = iter->second;
-        map.erase(iter);
-        return 1;
-    }
-
+    virtual int find_and_delete(const ft_inode key, ft_string & result_payload);
+    
     /**
      * if cached inode found, change its payload and return 1.
      * Otherwise return 0. On error, return < 0.
      */
-    virtual int find_and_update(const K key, const V & new_payload)
-    {
-        typename map_type::iterator iter = map.find(key);
-        if (iter == map.end())
-            return 0;
-        
-        iter->second = new_payload;
-        return 1;
-    }
+    virtual int find_and_update(const ft_inode key, const ft_string & new_payload);
     
-    virtual void clear()
-    {
-        map.clear();
-    }
+    virtual void clear();
 };
+
+
+
+template<class K, class V>
+  class ft_cache_zmem;
+
+
+template<>
+  class ft_cache_zmem<ft_inode, ft_string> : public ft_cache_zmem_is
+  { };
+
+
 
 FT_NAMESPACE_END
 
-#endif /* FSTRANSFORM_CACHE_MEM_HH */
+#endif /* FSTRANSFORM_CACHE_ZMEM_HH */

@@ -34,7 +34,7 @@ FT_NAMESPACE_BEGIN
 fm_args::fm_args()
 	: program_name("fsmove"),
       io_args(), exclude_list(NULL), inode_cache_path(NULL),
-      io_kind(FC_IO_AUTODETECT), ui_kind(FC_UI_NONE),
+      io_kind(FC_IO_AUTODETECT), ui_kind(FC_UI_NONE), inode_cache_kind(FC_INODE_CACHE_MEM),
       force_run(false), simulate_run(false)
 { }
 
