@@ -53,7 +53,9 @@ FSTYPE=
 
 # nilfs2 is under test, works as target but as fails as source: gets full with usage = 100%
 # ocfs2 and reiserfs4 are under test, got kernel crash testing them
-FSTYPES_TESTED="ext2 ext3 ext4 ntfs reiserfs jfs xfs"
+# ntfs is under test. ntfs->ext4 gives nasty "/dev/loop0: I/O error" kernel messages
+#                     ntfs->ext2 seems to work but FUSE ntfs-3g is unbearably slow on large files
+FSTYPES_TESTED="ext2 ext3 ext4 reiserfs jfs xfs"
 
 DEVICE_BLOCK_SIZE=
 DEVICE_SIZE_IN_BYTES=
