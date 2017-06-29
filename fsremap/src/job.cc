@@ -101,7 +101,7 @@ int fr_job::init(const fr_args & args)
     for (i = job_min; i != job_max; i++) {
         // 1 + 3*sizeof(ft_uint) chars are enough to safely print (ft_uint)
         this_dir.resize(len + 2 + 3*sizeof(ft_uint));
-        sprintf(& this_dir[len], "%"FT_ULL, (ft_ull) i);
+        sprintf(& this_dir[len], "%" FT_ULL , (ft_ull) i);
         this_dir.resize(len + strlen(& this_dir[len]));
 
         path = this_dir.c_str();
@@ -110,11 +110,11 @@ int fr_job::init(const fr_args & args)
             err = FT_IO_NS ff_mkdir(path);
 
         if (err == 0 && (err = init_log()) == 0) {
-            ff_log(FC_NOTICE, 0, "fsremap: %s job %"FT_ULL", persistence data and logs are in '%s'",
+            ff_log(FC_NOTICE, 0, "fsremap: %s job %" FT_ULL ", persistence data and logs are in '%s'",
                    this_resume_job ? "resuming" : "starting", (ft_ull)i, path);
             if (!this_resume_job && !this_simulate_run && args.io_kind != FC_IO_SELF_TEST) {
                 ff_log(FC_NOTICE, 0, "if this job is interrupted, for example by a power failure,");
-                ff_log(FC_NOTICE, 0, "you CAN RESUME it with: %s%s -q --resume-job=%"FT_ULL" -- %s",
+                ff_log(FC_NOTICE, 0, "you CAN RESUME it with: %s%s -q --resume-job=%" FT_ULL " -- %s",
                        args.program_name, this_simulate_run ? " -n" : "", (ft_ull)i, args.io_args[0]);
             }
             break;
@@ -122,9 +122,9 @@ int fr_job::init(const fr_args & args)
     }
     if (i == job_max) {
         if (this_resume_job)
-            err = ff_log(FC_ERROR, err, "failed to resume job id %"FT_ULL " from directory '%s'", (ft_ull) args.job_id, path);
+            err = ff_log(FC_ERROR, err, "failed to resume job id %" FT_ULL  " from directory '%s'", (ft_ull) args.job_id, path);
         else
-            err = ff_log(FC_ERROR, err, "failed to locate a free job id, tried range %"FT_ULL"...%"FT_ULL, (ft_ull) job_min, (ft_ull) (job_max-1));
+            err = ff_log(FC_ERROR, err, "failed to locate a free job id, tried range %" FT_ULL "...%" FT_ULL , (ft_ull) job_min, (ft_ull) (job_max-1));
     }
     if (err != 0) {
         quit();

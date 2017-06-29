@@ -81,14 +81,14 @@ void ztest_page_handle(zpool & pool, zpage_handle h)
     for (ft_size i = 0; i < size / sizeof(ft_size); i++)
     {
         if (new_address[i] != (ft_size)address + i)
-            ff_log(FC_ERROR, 0, "zpage_handle test failed! wrote 0x%"FT_XLL", read 0x%"FT_XLL, (ft_ull)address + i, (ft_ull)new_address[i]);
+            ff_log(FC_ERROR, 0, "zpage_handle test failed! wrote 0x%"  FT_XLL ", read 0x%"  FT_XLL, (ft_ull)address + i, (ft_ull)new_address[i]);
     }
 }
 
 void ztest_ptr_handle(zpool & pool, zptr_handle zh)
 {
     if (zh == 0) {
-        ff_log(FC_ERROR, 0, "zptr_handle test failed! pool.alloc_ptr(%"FT_ULL") returned NULL", (ft_ull)chunk_size);
+        ff_log(FC_ERROR, 0, "zptr_handle test failed! pool.alloc_ptr(%"  FT_ULL ") returned NULL", (ft_ull)chunk_size);
         return;
     }
 
@@ -115,7 +115,7 @@ void ztest_ptr_handle(zpool & pool, zptr_handle zh)
     for (ft_size i = 0; i < chunk_size / sizeof(ft_size); i++)
     {
         if (new_address[i] != (ft_size)address + i)
-            ff_log(FC_ERROR, 0, "zptr_handle test failed! wrote 0x%"FT_XLL", read 0x%"FT_XLL, (ft_ull)address + i, (ft_ull)new_address[i]);
+            ff_log(FC_ERROR, 0, "zptr_handle test failed! wrote 0x%" FT_XLL", read 0x%" FT_XLL, (ft_ull)address + i, (ft_ull)new_address[i]);
     }
 }
 
@@ -128,7 +128,7 @@ void ztest_ptr(ft_size allocation_count)
     for (ft_size i = 0; i < allocation_count; i++) {
         zptr<ft_size> p;
         if (!p.alloc(N)) {
-            ff_log(FC_ERROR, 0, "zptr test failed at iteration %"FT_ULL": zptr.alloc() returned false", (ft_ull)i);
+            ff_log(FC_ERROR, 0, "zptr test failed at iteration %"  FT_ULL ": zptr.alloc() returned false", (ft_ull)i);
             return;
         }
         v.push_back(p);
@@ -138,7 +138,7 @@ void ztest_ptr(ft_size allocation_count)
         zptr<ft_size> & p = v[--i];
         ft_size * address = p.get();
         if (address == NULL) {
-            ff_log(FC_ERROR, 0, "zptr test failed at iteration %"FT_ULL": zptr.get() returned NULL", (ft_ull)i);
+            ff_log(FC_ERROR, 0, "zptr test failed at iteration %"  FT_ULL ": zptr.get() returned NULL", (ft_ull)i);
             return;
         }
         if (i == allocation_count - 1)
@@ -150,7 +150,7 @@ void ztest_ptr(ft_size allocation_count)
     for (ft_size i = 0; i < allocation_count; i++) {
         zptr<ft_size> & p = v[i];
         if (!p.compress()) {
-            ff_log(FC_ERROR, 0, "zptr test failed at iteration %"FT_ULL": zptr.compress() returned false", (ft_ull)i);
+            ff_log(FC_ERROR, 0, "zptr test failed at iteration %"  FT_ULL ": zptr.compress() returned false", (ft_ull)i);
             return;
         }
     }
@@ -159,19 +159,19 @@ void ztest_ptr(ft_size allocation_count)
         zptr<ft_size> & p = v[i];
         ft_size * new_address = p.get();
         if (new_address == NULL) {
-            ff_log(FC_ERROR, 0, "zptr test failed at iteration %"FT_ULL": zptr.get() returned NULL", (ft_ull)i);
+            ff_log(FC_ERROR, 0, "zptr test failed at iteration %"  FT_ULL ": zptr.get() returned NULL", (ft_ull)i);
             return;
         }    
     
         for (ft_size j = 0; j < N; j++)
         {
             if (new_address[j] != seed + i * N + j)
-                ff_log(FC_ERROR, 0, "zptr test failed at iteration (%"FT_ULL", %"FT_ULL")! wrote 0x%"FT_XLL", read 0x%"FT_XLL,
+                ff_log(FC_ERROR, 0, "zptr test failed at iteration (%"  FT_ULL ", %"  FT_ULL ")! wrote 0x%"  FT_XLL ", read 0x%"  FT_XLL,
                        (ft_ull)i, (ft_ull)j, (ft_ull)(seed + i * N + j), (ft_ull)new_address[j]);
         }
     
         if (!p.free()) {
-            ff_log(FC_ERROR, 0, "zptr test failed at iteration %"FT_ULL": zptr.free() returned false", (ft_ull)i); 
+            ff_log(FC_ERROR, 0, "zptr test failed at iteration %"  FT_ULL ": zptr.free() returned false", (ft_ull)i); 
             return;
         }
     }

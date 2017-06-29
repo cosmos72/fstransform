@@ -274,7 +274,7 @@ int fr_io_prealloc::read_extents(fr_vector<ft_uoff> & loop_file_extents,
         // remove any such overlap!
         if (!loop_file_extents.empty() && !super_loop_file_extents.empty()) {
 
-            ff_log(FC_DEBUG, 0, "merging %"FT_ULL" prealloc extents with %"FT_ULL" %s extents",
+            ff_log(FC_DEBUG, 0, "merging %" FT_ULL " prealloc extents with %" FT_ULL " %s extents",
                     (ft_ull) loop_file_extents.size(), (ft_ull) super_loop_file_extents.size(), LABEL[FC_LOOP_FILE]);
 
             const ft_uoff eff_block_size_log2 = effective_block_size_log2(block_size_bitmask);
@@ -298,7 +298,7 @@ int fr_io_prealloc::read_extents(fr_vector<ft_uoff> & loop_file_extents,
             // loop_file_extents is now sorted by logical,
             // because fr_map<T> is intrinsically sorted by physical
 
-            ff_log(FC_DEBUG, 0, "merge completed, result is %"FT_ULL" extents",
+            ff_log(FC_DEBUG, 0, "merge completed, result is %" FT_ULL " extents",
                     (ft_ull) loop_file_extents.size());
 
             loop_file_extents.show(LABEL[FC_LOOP_FILE], " after merge", eff_block_size);
@@ -378,7 +378,7 @@ int fr_io_prealloc::hard_link(const char * src_path, const ft_stat & src_stat,
     const ft_nlink src_nlink = src_stat.st_nlink, dst_nlink = dst_stat.st_nlink;
 
     if (src_nlink != dst_nlink) {
-        ff_log(FC_ERROR, 0, "%s: '%s' has %"FT_ULL" link%s, while '%s' has %"FT_ULL" link%s",
+        ff_log(FC_ERROR, 0, "%s: '%s' has %" FT_ULL " link%s, while '%s' has %" FT_ULL " link%s",
                 FC_INVALID_FS_STR,
                 src_path, (ft_ull) src_nlink, src_nlink == 1 ? "" : "s",
                 dst_path, (ft_ull) dst_nlink, dst_nlink == 1 ? "" : "s");
@@ -535,7 +535,7 @@ int fr_io_prealloc::read_extents_file(const char * src_path, const ft_stat & src
 
         ft_uoff len[N] = { (ft_uoff) src_stat.st_size, (ft_uoff) dst_stat.st_size };
         if (len[SRC] != len[DST]) {
-            ff_log(FC_ERROR, 0, "%s: file '%s' is %"FT_ULL" bytes, while file '%s' is %"FT_ULL" bytes",
+            ff_log(FC_ERROR, 0, "%s: file '%s' is %" FT_ULL " bytes, while file '%s' is %" FT_ULL " bytes",
                     FC_INVALID_FS_STR, src_path, (ft_ull) len[SRC], dst_path, (ft_ull) len[DST]);
             err = -EINVAL;
             break;

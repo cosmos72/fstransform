@@ -83,7 +83,7 @@ bool zmem::do_compress()
     ft_size new_size = deflateBound(&z, size);
     void * new_address = ::malloc(new_size);
     if (address == NULL) {
-        ff_log(FC_ERROR, errno, "malloc(%"FT_ULL") failed", (ft_ull)new_size);
+        ff_log(FC_ERROR, errno, "malloc(%" FT_ULL ") failed", (ft_ull)new_size);
         err = Z_MEM_ERROR;
         goto cleanup;
     }
@@ -148,7 +148,7 @@ void * zmem::do_decompress()
             ft_size new2_size = new_size << 1;
             void * new2_address = ::realloc(new_address, new2_size);
             if (new2_address == NULL) {
-                ff_log(FC_ERROR, errno, "realloc(%"FT_ULL" -> %"FT_ULL") failed", (ft_ull)new_size, (ft_ull)new2_size);
+                ff_log(FC_ERROR, errno, "realloc(%" FT_ULL " -> %" FT_ULL ") failed", (ft_ull)new_size, (ft_ull)new2_size);
                 err = Z_MEM_ERROR;
                 goto cleanup;
             }

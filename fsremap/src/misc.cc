@@ -323,13 +323,13 @@ void ff_show_progressl(const char * caller_file, int caller_file_len,
     /* we write something like "1 hour and 20 minutes" instead of just "1 hour" or "1.3 hours" */
     if (time_left_label2 != NULL) {
         ff_logl(caller_file, caller_file_len, caller_func, caller_line,
-                log_level, 0, "%sprogress: %4.1f%% done, %5.1f %sbytes%s, estimated %2"FT_ULL" %s%s and %2"FT_ULL" %s%s left",
+                log_level, 0, "%sprogress: %4.1f%% done, %5.1f %sbytes%s, estimated %2" FT_ULL " %s%s and %2" FT_ULL " %s%s left",
                 prefix, percentage, pretty_len, pretty_label, suffix,
                 time_left1, time_left_label1, (time_left1 != 1 ? "s": ""),
                 time_left2, time_left_label2, (time_left2 != 1 ? "s": ""));
     } else {
         ff_logl(caller_file, caller_file_len, caller_func, caller_line,
-                log_level, 0, "%sprogress: %4.1f%% done, %5.1f %sbytes%s, estimated %2"FT_ULL" %s%s left",
+                log_level, 0, "%sprogress: %4.1f%% done, %5.1f %sbytes%s, estimated %2" FT_ULL " %s%s left",
                 prefix, percentage, pretty_len, pretty_label, suffix,
                 time_left1, time_left_label1, (time_left1 != 1 ? "s": ""));
     }

@@ -136,7 +136,7 @@ int fm_io_prealloc::copy_file_contents(const ft_string & FT_ARG_UNUSED(source_pa
             if (len == 0 || fallocate(out_fd, 0, 0, len) == 0)
                 err = this->periodic_check_free_space(len);
             else
-                err = ff_log(FC_ERROR, errno, "failed to preallocate %"FT_ULL" bytes for target file '%s': error in fallocate()",
+                err = ff_log(FC_ERROR, errno, "failed to preallocate %" FT_ULL " bytes for target file '%s': error in fallocate()",
                              (ft_ull) len, target);
         }
     }

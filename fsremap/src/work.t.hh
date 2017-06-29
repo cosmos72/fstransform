@@ -598,7 +598,7 @@ int fr_work<T>::analyze(fr_vector<ft_uoff> & loop_file_extents,
     pretty_unit = ff_pretty_size((ft_uoff) hole_total_len << eff_block_size_log2, & pretty_len);
     ft_size storage_map_n = storage_map.size();
 
-    ff_log(FC_INFO, 0, "%s: located %.2f %sbytes (%"FT_ULL" fragment%s) usable in %s (free, invariant, contiguous and aligned)",
+    ff_log(FC_INFO, 0, "%s: located %.2f %sbytes (%" FT_ULL " fragment%s) usable in %s (free, invariant, contiguous and aligned)",
            label[FC_PRIMARY_STORAGE], pretty_len, pretty_unit, (ft_ull)storage_map_n, (storage_map_n == 1 ? "" : "s"), label[FC_DEVICE]);
 
     storage_map.total_count(hole_total_len);
@@ -611,7 +611,7 @@ int fr_work<T>::analyze(fr_vector<ft_uoff> & loop_file_extents,
 
 static int unusable_storage_size(const char * label, ft_uoff requested_len, const char * type_descr, ft_ull type_bytes)
 {
-    ff_log(FC_FATAL, 0, "fatal error: cannot use job %s length = %"FT_ULL" bytes, it is incompatible with %s = %"FT_ULL" bytes,"
+    ff_log(FC_FATAL, 0, "fatal error: cannot use job %s length = %" FT_ULL " bytes, it is incompatible with %s = %" FT_ULL " bytes,"
             " original job was probably created on a platform with %s",
             label, (ft_ull) requested_len, type_descr, type_bytes);
     /* mark error as reported */
@@ -808,8 +808,8 @@ int fr_work<T>::create_storage()
         const char * avail_pretty_unit = ff_pretty_size(avail_primary_size, & avail_pretty_len);
         const char * req_pretty_unit = ff_pretty_size(req_primary_size_exact, & req_pretty_len);
 
-        ff_log(FC_ERROR, 0, "available %s is only %"FT_ULL" bytes (%.2f %sbytes),"
-               " too small for requested %"FT_ULL" bytes (%.2f %sbytes)", label[FC_PRIMARY_STORAGE],
+        ff_log(FC_ERROR, 0, "available %s is only %" FT_ULL " bytes (%.2f %sbytes),"
+               " too small for requested %" FT_ULL " bytes (%.2f %sbytes)", label[FC_PRIMARY_STORAGE],
                (ft_ull)avail_primary_size, avail_pretty_len, avail_pretty_unit,
                (ft_ull) req_primary_size_exact, req_pretty_len, req_pretty_unit);
         /* mark error as reported */
@@ -922,7 +922,7 @@ void fr_work<T>::fill_io_primary_storage_extents(ft_size primary_size)
     const char * pretty_unit = ff_pretty_size(primary_len, & pretty_len);
     ft_size fragment_n = primary_storage.size();
 
-    ff_log(FC_INFO, 0, "%s: actually using %.2f %sbytes (%"FT_ULL" fragment%s) from %s",
+    ff_log(FC_INFO, 0, "%s: actually using %.2f %sbytes (%" FT_ULL " fragment%s) from %s",
            label[FC_PRIMARY_STORAGE], pretty_len, pretty_unit,
            (ft_ull)fragment_n, (fragment_n == 1 ? "" : "s"), label[FC_DEVICE]);
 
@@ -1130,9 +1130,9 @@ int fr_work<T>::check_last_block()
 
     const char * simul_msg = io->simulate_run() ? "(simulated) " : "";
 
-    ff_log(FC_ERROR, 0, "%s%s has an odd-sized last block (%"FT_ULL" bytes long) that exceeds device rounded length.",
+    ff_log(FC_ERROR, 0, "%s%s has an odd-sized last block (%" FT_ULL " bytes long) that exceeds device rounded length.",
             simul_msg, label[FC_LOOP_FILE], (ft_ull) odd_block_len);
-    ff_log(FC_ERROR, 0, "%sExiting, please shrink %s to %"FT_ULL" bytes or less before running fsremap again.",
+    ff_log(FC_ERROR, 0, "%sExiting, please shrink %s to %" FT_ULL " bytes or less before running fsremap again.",
             simul_msg, label[FC_LOOP_FILE], (ft_ull) dev_len);
     return -EFBIG;
 }

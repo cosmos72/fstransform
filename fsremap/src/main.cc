@@ -123,7 +123,7 @@ static int test_vector_compose() {
 
     int err = result.compose(v1, v2, bitmask, unmapped);
     if (err == 0) {
-        ff_log(FC_INFO, 0, "block_size_bitmask = 0x%"FT_XLL, (ft_ull) bitmask);
+        ff_log(FC_INFO, 0, "block_size_bitmask = 0x%" FT_XLL, (ft_ull) bitmask);
         test_show("result", result);
         test_show("unmapped", unmapped);
     }
@@ -150,7 +150,7 @@ static int test_random(int argc, char ** argv) {
    
    if (max > 0x10000) {
        for (i = 0; i < n; i++)
-           ff_log(FC_INFO, 0, "ff_random(%20"FT_ULL") = %20"FT_ULL, max, ff_random(max));
+           ff_log(FC_INFO, 0, "ff_random(%20"  FT_ULL ") = %20"  FT_ULL , max, ff_random(max));
    } else {
        ft_ull r;
        ft_size * hist = new ft_size[max + 1];
@@ -162,7 +162,7 @@ static int test_random(int argc, char ** argv) {
        ++hist[r];
        }
        for (i = 0; i <= max; i++)
-           ff_log(FC_INFO, 0, "histogram[%"FT_ULL"] = %"FT_ULL, i, (ft_ull)hist[i]);
+           ff_log(FC_INFO, 0, "histogram[%"  FT_ULL "] = %"  FT_ULL , i, (ft_ull)hist[i]);
        delete[] hist;
    }
    return 0;
@@ -212,13 +212,13 @@ static int test_ioctl_fiemap(int argc, char ** argv)
 
         ft_size n = extents.size();
 
-        ff_log(FC_INFO, 0, "# %4"FT_ULL" extent%s in %s", (ft_ull) n, (n == 1 ? " " : "s"), path);
+        ff_log(FC_INFO, 0, "# %4"  FT_ULL " extent%s in %s", (ft_ull) n, (n == 1 ? " " : "s"), path);
         ff_log(FC_INFO, 0, "#  extent           physical         logical      length  user_data");
 
         for (ft_size i = 0; i < n; i++) {
             fr_extent<ft_uoff> & e = extents[i];
 
-            ff_log(FC_INFO, 0, "#%8"FT_ULL"\t%12"FT_ULL"\t%12"FT_ULL"\t%8"FT_ULL"\t(%"FT_ULL")", (ft_ull)i,
+            ff_log(FC_INFO, 0, "#%8"  FT_ULL "\t%12"  FT_ULL "\t%12"  FT_ULL "\t%8"  FT_ULL "\t(%"  FT_ULL ")", (ft_ull)i,
                    (ft_ull) e.physical(), (ft_ull) e.logical(), (ft_ull) e.length(), (ft_ull) e.user_data());
         }
     }
@@ -255,12 +255,12 @@ int ff_test_pretty_time(int argc, char ** argv) {
 
         /* we write something like "1 hour and 20 minutes" instead of just "1 hour" or "1.3 hours" */
         if (time_left_label2 != NULL) {
-            ff_log(log_level, 0, "%sprogress: %4.1f%% done, %.2f %sbytes still to relocate, estimated %"FT_ULL" %s%s and %"FT_ULL" %s%s left",
+            ff_log(log_level, 0, "%sprogress: %4.1f%% done, %.2f %sbytes still to relocate, estimated %"  FT_ULL " %s%s and %"  FT_ULL " %s%s left",
                     simul_msg, percentage, pretty_len, pretty_label,
                     time_left1, time_left_label1, (time_left1 != 1 ? "s": ""),
                     time_left2, time_left_label2, (time_left2 != 1 ? "s": ""));
         } else {
-            ff_log(log_level, 0, "%sprogress: %4.1f%% done, %.2f %sbytes still to relocate, estimated %"FT_ULL" %s%s left",
+            ff_log(log_level, 0, "%sprogress: %4.1f%% done, %.2f %sbytes still to relocate, estimated %"  FT_ULL " %s%s left",
                     simul_msg, percentage, pretty_len, pretty_label,
                     time_left1, time_left_label1, (time_left1 != 1 ? "s": ""));
         }

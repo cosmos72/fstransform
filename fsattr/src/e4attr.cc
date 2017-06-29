@@ -76,7 +76,7 @@ static e4_err e4attr_extents_apply(e4_fs fs, e4_inum inum, e4attr_extent_op appl
     e4_extent extent;
     e4_err err = ext2fs_extent_open(fs, inum, &extnum);
     if (err != 0) {
-        e4_fail(err, "ext2fs_extent_open(inode = #%"FT_ULL") failed", (ft_ull) inum);
+        e4_fail(err, "ext2fs_extent_open(inode = #%" FT_ULL ") failed", (ft_ull) inum);
         return err;
     }
     int op = EXT2_EXTENT_ROOT;
@@ -88,7 +88,7 @@ static e4_err e4attr_extents_apply(e4_fs fs, e4_inum inum, e4attr_extent_op appl
             if (err == EXT2_ET_EXTENT_NO_NEXT)
                 err = 0;
             else
-                e4_fail(err, "ext2fs_extent_get(inode = #%"FT_ULL", extent = #%"FT_ULL") failed", (ft_ull) inum, (ft_ull) extnum);
+                e4_fail(err, "ext2fs_extent_get(inode = #%" FT_ULL ", extent = #%" FT_ULL ") failed", (ft_ull) inum, (ft_ull) extnum);
             break;
         }
         op = EXT2_EXTENT_NEXT;
@@ -101,8 +101,8 @@ static e4_err e4attr_extents_apply(e4_fs fs, e4_inum inum, e4attr_extent_op appl
             continue;
 
         if (extent.e_len > max_len) {
-            ff_log(FC_ERROR, 0, "cannot %sinitialize extent %"FT_ULL" - %"FT_ULL" (%"FT_ULL" blocks) in inode #%"FT_ULL
-                   ": maximum %sinitialized extent length is %"FT_ULL" blocks", (init ? "" : "un"),
+            ff_log(FC_ERROR, 0, "cannot %sinitialize extent %" FT_ULL " - %" FT_ULL " (%" FT_ULL " blocks) in inode #%" FT_ULL 
+                   ": maximum %sinitialized extent length is %" FT_ULL " blocks", (init ? "" : "un"),
                    (ft_ull) extent.e_lblk, (ft_ull) (extent.e_lblk + (extent.e_len - 1)),
                    (ft_ull) extent.e_len, (ft_ull) inum, (init ? "" : "un"), (ft_ull) max_len);
             err = -EOVERFLOW;
@@ -111,7 +111,7 @@ static e4_err e4attr_extents_apply(e4_fs fs, e4_inum inum, e4attr_extent_op appl
         
         extent.e_flags ^= EXT2_EXTENT_FLAGS_UNINIT;
         if ((err = ext2fs_extent_replace(extnum, 0, &extent)) != 0) {
-            e4_fail(err, "ext2fs_extent_replace(inode = #%"FT_ULL", extent = #%"FT_ULL") failed", (ft_ull) inum, (ft_ull) extnum);
+            e4_fail(err, "ext2fs_extent_replace(inode = #%" FT_ULL ", extent = #%" FT_ULL ") failed", (ft_ull) inum, (ft_ull) extnum);
             break;
         }
     }
@@ -151,7 +151,7 @@ static int e4attr_dir_iterate(e4_inum dir, int entry, e4_dir_iter_ * iter_, int 
     case EXT2_FT_SOCK:     descr = "(sock)"; break;
     case EXT2_FT_SYMLINK:  descr = "(slnk)"; break;
     }
-    ff_log(FC_DEBUG, 0, "%"FT_ULL"\t->%"FT_ULL"\t%s\t%.*s", (ft_ull) dir, (ft_ull) inum, descr, name_len, iter->name);
+    ff_log(FC_DEBUG, 0, "%" FT_ULL "\t->%" FT_ULL "\t%s\t%.*s", (ft_ull) dir, (ft_ull) inum, descr, name_len, iter->name);
 
     if (is_file) {
        err = e4attr_extents_apply(fs, inum, ctx->apply_op);
@@ -160,11 +160,11 @@ static int e4attr_dir_iterate(e4_inum dir, int entry, e4_dir_iter_ * iter_, int 
     } else if (is_dir && inum != dir && (name_len != 2 || memcmp(iter->name, "..", 2))) {
         char * buf2 = (char *) malloc(fs->blocksize);
         if (buf2 == 0) {
-            err = ff_log(FC_ERROR, errno, "malloc(%"FT_ULL") failed", (ft_ull) fs->blocksize);
+            err = ff_log(FC_ERROR, errno, "malloc(%" FT_ULL ") failed", (ft_ull) fs->blocksize);
             return 1;
         }
         if ((err = ext2fs_dir_iterate2(fs, inum, 0, buf2, e4attr_dir_iterate, priv_data)) != 0)
-            e4_fail(err, "ext2fs_dir_iterate2(..., dir_inum = #%"FT_ULL") failed", (ft_ull) inum);
+            e4_fail(err, "ext2fs_dir_iterate2(..., dir_inum = #%" FT_ULL ") failed", (ft_ull) inum);
         free(buf2);
     }
     return err ? 1 : 0;
@@ -194,17 +194,17 @@ static e4_err e4attr_run(const char * dev_path, e4attr_extent_op apply_op) {
         fs_is_open = true;
         
         if ((err = ext2fs_check_directory(fs, root_inum)) != 0) {
-            e4_fail(err, "inode #%"FT_ULL" inside device '%s' is not a directory - but it is supposed to be the root directory",
+            e4_fail(err, "inode #%" FT_ULL " inside device '%s' is not a directory - but it is supposed to be the root directory",
                     dev_path, (ft_ull) root_inum);
             break;
         }
         buf = (char *) malloc(fs->blocksize);
         if (buf == 0) {
-            err = ff_log(FC_ERROR, errno, "malloc(%"FT_ULL") failed", (ft_ull) fs->blocksize);
+            err = ff_log(FC_ERROR, errno, "malloc(%" FT_ULL ") failed", (ft_ull) fs->blocksize);
             break;
         }
         if ((err = ext2fs_dir_iterate2(fs, root_inum, 0, buf, e4attr_dir_iterate, static_cast<void *>(& ctx))) != 0)
-            e4_fail(err, "ext2fs_dir_iterate2(%s, root_inum = #%"FT_ULL") failed", dev_path, (ft_ull) root_inum);
+            e4_fail(err, "ext2fs_dir_iterate2(%s, root_inum = #%" FT_ULL ") failed", dev_path, (ft_ull) root_inum);
     } while (0);
     
     if (buf)

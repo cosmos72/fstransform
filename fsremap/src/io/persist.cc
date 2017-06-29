@@ -152,14 +152,14 @@ int fr_persist::get_storage_sizes_exact(ft_size & size1, ft_size & size2)
     if (persist_size1 != 0 && job_size1 != 0
         && persist_size1 != (ft_ull) job_size1)
     {
-        ff_log(FC_ERROR, 0, "mismatched primary storage exact size: %"FT_ULL" bytes requested from command line, %"FT_ULL
+        ff_log(FC_ERROR, 0, "mismatched primary storage exact size: %" FT_ULL " bytes requested from command line, %" FT_ULL 
                " bytes found in persistence file", (ft_ull) job_size1, persist_size1);
         err = -EINVAL;
     }
     if (persist_size2 != 0 && job_size2 != 0
         && persist_size2 != (ft_ull) job_size2)
     {
-        ff_log(FC_ERROR, 0, "mismatched secondary storage exact size: %"FT_ULL" bytes requested from command line, %"FT_ULL
+        ff_log(FC_ERROR, 0, "mismatched secondary storage exact size: %" FT_ULL " bytes requested from command line, %" FT_ULL 
                " bytes found in persistence file", (ft_ull) job_size2, persist_size2);
         err = -EINVAL;
     }
@@ -199,7 +199,7 @@ int fr_persist::read(ft_ull & progress1, ft_ull & progress2)
 /** read or write a step in persistence fle */
 int fr_persist::next(ft_ull progress1, ft_ull progress2)
 {
-    ff_log(FC_DEBUG, 0, "blocks left: device = %"FT_ULL", storage = %"FT_ULL", replaying = %s",
+    ff_log(FC_DEBUG, 0, "blocks left: device = %" FT_ULL ", storage = %" FT_ULL ", replaying = %s",
             progress1, progress2, this_replaying ? "true" : "false");
 
     if (!this_replaying)
@@ -208,7 +208,7 @@ int fr_persist::next(ft_ull progress1, ft_ull progress2)
     if (progress1 != this_progress1 || progress2 != this_progress2) {
         ff_log(FC_ERROR, 0, "unexpected values found while replaying persistence file '%s'",
                 this_persist_path.c_str());
-        ff_log(FC_ERROR, 0, "\texpected %"FT_ULL" %"FT_ULL", found %"FT_ULL" %"FT_ULL"\n",
+        ff_log(FC_ERROR, 0, "\texpected %" FT_ULL " %" FT_ULL ", found %" FT_ULL " %" FT_ULL "\n",
                 progress1, progress2, this_progress1, this_progress2);
         return -EINVAL;
     }
@@ -221,7 +221,7 @@ int fr_persist::do_read(ft_ull & progress1, ft_ull & progress2)
 {
     int err = 0;
     if (this_replaying) {
-        int items = fscanf(this_persist_file, "%"FT_ULL"\t%"FT_ULL"\n", & progress1, & progress2);
+        int items = fscanf(this_persist_file, "%" FT_ULL "\t%" FT_ULL "\n", & progress1, & progress2);
         if (items == 2) {
             /* ok */
         } else if (feof(this_persist_file)) {
@@ -238,7 +238,7 @@ int fr_persist::do_read(ft_ull & progress1, ft_ull & progress2)
 /** try to write data into persistence fle */
 int fr_persist::do_write(ft_ull progress1, ft_ull progress2)
 {
-    if (fprintf(this_persist_file, "%"FT_ULL"\t%"FT_ULL"\n", progress1, progress2) <= 0)
+    if (fprintf(this_persist_file, "%" FT_ULL "\t%" FT_ULL "\n", progress1, progress2) <= 0)
         return ff_log(FC_ERROR, errno, "I/O error writing to persistence file '%s'", this_persist_path.c_str());
     return do_flush();
 }

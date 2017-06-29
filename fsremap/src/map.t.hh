@@ -800,9 +800,9 @@ void fr_map<T>::complement0_physical_shift(const fr_vector<ft_uoff> & other,
             /* oops.. some programmer really screwed up */
         	const fr_extent<ft_uoff> & prev = other[i-1];
         	ff_log(FC_FATAL, 0, "internal error in ft_map<T>::complement0_physical_shift():");
-        	ff_log(FC_FATAL, 0, "\textent[%"FT_ULL"] = {physical = %"FT_ULL", logical = %"FT_ULL", length = %"FT_ULL" /* physical end = %"FT_ULL" */} does not end before",
+        	ff_log(FC_FATAL, 0, "\textent[%" FT_ULL "] = {physical = %" FT_ULL ", logical = %" FT_ULL ", length = %" FT_ULL " /* physical end = %" FT_ULL " */} does not end before",
         			(ft_ull) (i-1), (ft_ull) prev.physical(), (ft_ull) prev.logical(), (ft_ull) prev.length(), (ft_ull) (prev.physical() + prev.length()));
-        	ff_log(FC_FATAL, 0, "\textent[%"FT_ULL"] = {physical = %"FT_ULL", logical = %"FT_ULL", length = %"FT_ULL" /* physical end = %"FT_ULL" */}",
+        	ff_log(FC_FATAL, 0, "\textent[%" FT_ULL "] = {physical = %" FT_ULL ", logical = %" FT_ULL ", length = %" FT_ULL " /* physical end = %" FT_ULL " */}",
         			(ft_ull) i,     (ft_ull) curr.physical(), (ft_ull) curr.logical(), (ft_ull) curr.length(), (ft_ull) (curr.physical() + curr.length()));
             ff_assert_fail("internal error in ft_map<T>::complement0_physical_shift(): map is not sorted by ->physical()");
         }
@@ -856,9 +856,9 @@ void fr_map<T>::complement0_logical_shift(const fr_vector<ft_uoff> & other, ft_u
             /* oops.. some programmer really screwed up */
         	const fr_extent<ft_uoff> & prev = other[i-1];
         	ff_log(FC_FATAL, 0, "internal error in ft_map<T>::complement0_logical_shift():");
-        	ff_log(FC_FATAL, 0, "\textent[%"FT_ULL"] = {physical = %"FT_ULL", logical = %"FT_ULL", length = %"FT_ULL" /* logical end = %"FT_ULL" */} does not end before",
+        	ff_log(FC_FATAL, 0, "\textent[%" FT_ULL "] = {physical = %" FT_ULL ", logical = %" FT_ULL ", length = %" FT_ULL " /* logical end = %" FT_ULL " */} does not end before",
         			(ft_ull) (i-1), (ft_ull) prev.physical(), (ft_ull) prev.logical(), (ft_ull) prev.length(), (ft_ull) (prev.logical() + prev.length()));
-        	ff_log(FC_FATAL, 0, "\textent[%"FT_ULL"] = {physical = %"FT_ULL", logical = %"FT_ULL", length = %"FT_ULL" /* logical end = %"FT_ULL" */}",
+        	ff_log(FC_FATAL, 0, "\textent[%" FT_ULL "] = {physical = %" FT_ULL ", logical = %" FT_ULL ", length = %" FT_ULL " /* logical end = %" FT_ULL " */}",
         			(ft_ull) i,     (ft_ull) curr.physical(), (ft_ull) curr.logical(), (ft_ull) curr.length(), (ft_ull) (curr.logical() + curr.length()));
             ff_assert_fail("somebody programmed a call to ft_map<T>::complement0_logical_shift() with an argument not sorted by ->logical() !");
         }

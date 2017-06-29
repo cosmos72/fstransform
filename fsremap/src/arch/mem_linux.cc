@@ -67,7 +67,7 @@ ft_uoff ff_arch_linux_mem_system_free() {
     int err;
 
     while (left != 0) {
-        if ((err = fscanf(f, "%256s %"FT_ULL" %8s\n", label, & n_ull, unit)) <= 0) {
+        if ((err = fscanf(f, "%256s %" FT_ULL " %8s\n", label, & n_ull, unit)) <= 0) {
             if (ferror(f))
                 ff_log(FC_WARN, errno, "error reading /proc/meminfo");
             break;

@@ -223,31 +223,31 @@ int fr_vector<T>::compose0(const fr_vector<T> & v1, const fr_vector<T> & v2, T &
 		const T phys2 = e2.physical(), log2 = e2.logical(), len2 = e2.length();
 
 		if (!ff_can_sum(phys1, len1) || !ff_can_sum(log1, len1)) {
-			ff_log(FC_ERROR, 0, "compose(): a<->c extent {physical = %"FT_ULL", logical = %"FT_ULL", length = %"FT_ULL"} overflows type T",
+			ff_log(FC_ERROR, 0, "compose(): a<->c extent {physical = %" FT_ULL ", logical = %" FT_ULL ", length = %" FT_ULL "} overflows type T",
 					(ft_ull) phys1, (ft_ull) log1, (ft_ull) len1);
 			err = -EFBIG;
 		}
 		else if (!ff_can_sum(phys2, len2) || !ff_can_sum(log2, len2)) {
-			ff_log(FC_ERROR, 0, "compose(): b<->c extent {physical = %"FT_ULL", logical = %"FT_ULL", length = %"FT_ULL"} overflows type T",
+			ff_log(FC_ERROR, 0, "compose(): b<->c extent {physical = %" FT_ULL ", logical = %" FT_ULL ", length = %" FT_ULL "} overflows type T",
 					(ft_ull) phys2, (ft_ull) log2, (ft_ull) len2);
 			err = -EFBIG;
 		}
 		else if (delta1 >= len1) {
-			ff_log(FC_FATAL, 0, "compose(): internal error, length offset = %"FT_ULL" is not strictly inside a<->c extent"
-					" {physical = %"FT_ULL", logical = %"FT_ULL", length = %"FT_ULL"}",
+			ff_log(FC_FATAL, 0, "compose(): internal error, length offset = %" FT_ULL " is not strictly inside a<->c extent"
+					" {physical = %" FT_ULL ", logical = %" FT_ULL ", length = %" FT_ULL "}",
 					(ft_ull) delta1, (ft_ull) log1, (ft_ull) phys1, (ft_ull) len1);
 			err = -EINVAL;
 		}
 		else if (delta2 >= len2) {
-			ff_log(FC_FATAL, 0, "compose(): internal error, length offset = %"FT_ULL" is not strictly inside b<->c extent"
-					" {physical = %"FT_ULL", length = %"FT_ULL"}",
+			ff_log(FC_FATAL, 0, "compose(): internal error, length offset = %" FT_ULL " is not strictly inside b<->c extent"
+					" {physical = %" FT_ULL ", length = %" FT_ULL "}",
 					(ft_ull) delta2, (ft_ull) log2, (ft_ull) phys2, (ft_ull) len2);
 			err = -EINVAL;
 		}
 		else if (log1 + delta1 < log2 + delta2) {
-			ff_log(FC_ERROR, 0, "compose(): unexpected hole: a<->c mapping {physical = %"FT_ULL", logical = %"FT_ULL", length = %"FT_ULL"} with offset = %"FT_ULL,
+			ff_log(FC_ERROR, 0, "compose(): unexpected hole: a<->c mapping {physical = %" FT_ULL ", logical = %" FT_ULL ", length = %" FT_ULL "} with offset = %" FT_ULL ,
 					(ft_ull) phys1, (ft_ull) log1, (ft_ull) len1, (ft_ull) delta1);
-			ff_log(FC_ERROR, 0, "           cannot be covered by b<->c mapping {physical = %"FT_ULL", logical = %"FT_ULL", length = %"FT_ULL"} with offset = %"FT_ULL,
+			ff_log(FC_ERROR, 0, "           cannot be covered by b<->c mapping {physical = %" FT_ULL ", logical = %" FT_ULL ", length = %" FT_ULL "} with offset = %" FT_ULL ,
 					(ft_ull) phys2, (ft_ull) log2, (ft_ull) len2, (ft_ull) delta2);
 			err = -EINVAL;
 		}
@@ -290,8 +290,8 @@ int fr_vector<T>::compose0(const fr_vector<T> & v1, const fr_vector<T> & v2, T &
 		const T phys2 = e2.physical(), log2 = e2.logical(), len2 = e2.length();
 
 		if (i1 < n1 && i2 == n2) {
-			ff_log(FC_ERROR, 0, "compose() error: a<->c current extent {physical = %"FT_ULL", logical = %"FT_ULL", length = %"FT_ULL"}"
-					" cannot be covered by b<->c last extent {physical = %"FT_ULL", logical = %"FT_ULL", length = %"FT_ULL"}",
+			ff_log(FC_ERROR, 0, "compose() error: a<->c current extent {physical = %" FT_ULL ", logical = %" FT_ULL ", length = %" FT_ULL "}"
+					" cannot be covered by b<->c last extent {physical = %" FT_ULL ", logical = %" FT_ULL ", length = %" FT_ULL "}",
 					(ft_ull) phys1, (ft_ull) log1, (ft_ull) len1,
 					(ft_ull) phys2, (ft_ull) log2, (ft_ull) len2);
 			err = -EINVAL;

@@ -423,7 +423,7 @@ int fm_io_posix::move_special(const ft_string & source_path, const ft_stat & sta
             }
 
         } else {
-            ff_log(FC_ERROR, 0, "special device %s has unknown type 0%"FT_OLL", cannot create it",
+            ff_log(FC_ERROR, 0, "special device %s has unknown type 0%" FT_OLL ", cannot create it",
                     source, (ft_ull)(stat.st_mode & ~07777));
             err = -EOPNOTSUPP;
             break;
@@ -668,7 +668,7 @@ int fm_io_posix::copy_stream(int in_fd, int out_fd, const ft_stat & stat, const 
 
         if ((err = this->full_read(in_fd, buf, got, source)) != 0 || got != expected) {
             if (err == 0) {
-                ff_log(FC_ERROR, 0, "error reading from `%s': expected %"FT_ULL" bytes, got %"FT_ULL" bytes",
+                ff_log(FC_ERROR, 0, "error reading from `%s': expected %" FT_ULL " bytes, got %" FT_ULL " bytes",
                         source, (ft_ull)expected, (ft_ull)got);
                 err = -EIO;
             }
@@ -681,7 +681,7 @@ int fm_io_posix::copy_stream(int in_fd, int out_fd, const ft_stat & stat, const 
             if ((hole_len = hole_length(buf + tosend_offset, tosend_left)) != 0) {
                 /* re-create hole in target file */
                 if (::lseek(out_fd, (ft_off)hole_len, SEEK_CUR) == (ft_off)-1) {
-                    err = ff_log(FC_ERROR, errno, "error seeking %"FT_ULL" bytes forward in file `%s'", (ft_ull)hole_len, target);
+                    err = ff_log(FC_ERROR, errno, "error seeking %" FT_ULL " bytes forward in file `%s'", (ft_ull)hole_len, target);
                     break;
                 }
                 tosend_offset += hole_len;
@@ -707,7 +707,7 @@ int fm_io_posix::copy_stream(int in_fd, int out_fd, const ft_stat & stat, const 
         ff_log(FC_ERROR, 0, "        AFTER freeing enough space in the source device:");
 
         offset_high >>= FT_LOG_BUFSIZE;
-        ff_log(FC_ERROR, 0, "          /bin/dd bs=%"FT_ULL" skip=%"FT_ULL" seek=%"FT_ULL" conv=notrunc if=\"%s\" of=\"%s\"",
+        ff_log(FC_ERROR, 0, "          /bin/dd bs=%" FT_ULL " skip=%" FT_ULL " seek=%" FT_ULL " conv=notrunc if=\"%s\" of=\"%s\"",
                 (ft_ull)FT_BUFSIZE, (ft_ull)offset_high, (ft_ull)offset_high, target, source);
     }
     return err;
@@ -790,7 +790,7 @@ int fm_io_posix::fd_truncate(int fd, ft_off length, const char * path)
 {
     int err = 0;
     if (::ftruncate(fd, length) == -1)
-        err = ff_log(FC_ERROR, errno, "error truncating file `%s' to %"FT_ULL" bytes", path, (ft_ull)length);
+        err = ff_log(FC_ERROR, errno, "error truncating file `%s' to %" FT_ULL " bytes", path, (ft_ull)length);
     return err;
 }
 
@@ -812,7 +812,7 @@ int fm_io_posix::fd_seek(int fd, ft_off offset, const char * path)
 {
     int err = 0;
     if (::lseek(fd, offset, SEEK_SET) != offset)
-        err = ff_log(FC_ERROR, errno, "error seeking to position %"FT_ULL" of file `%s'", (ft_ull)offset, path);
+        err = ff_log(FC_ERROR, errno, "error seeking to position %" FT_ULL " of file `%s'", (ft_ull)offset, path);
     return err;
 }
 
@@ -967,7 +967,7 @@ int fm_io_posix::copy_stat(const char * target, const ft_stat & stat)
 #endif
         {
             err = ff_log(is_error ? FC_ERROR : FC_WARN, errno,
-                    "%s set owner=%"FT_ULL" and group=%"FT_ULL" on %s `%s'",
+                    "%s set owner=%" FT_ULL " and group=%" FT_ULL " on %s `%s'",
                     fail_label, (ft_ull)stat.st_uid, (ft_ull)stat.st_gid, label, target);
             if (is_error)
                 break;
@@ -980,7 +980,7 @@ int fm_io_posix::copy_stat(const char * target, const ft_stat & stat)
          */
         if (!is_symlink && chmod(target, stat.st_mode) != 0) {
             err = ff_log(is_error ? FC_ERROR : FC_WARN, errno,
-                    "%s change mode to 0%"FT_OLL" on %s `%s'",
+                    "%s change mode to 0%" FT_OLL " on %s `%s'",
                     fail_label, (ft_ull)stat.st_mode, label, target);
             if (is_error)
                 break;

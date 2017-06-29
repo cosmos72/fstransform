@@ -292,35 +292,35 @@ int fm_move::init(int argc, char const* const* argv)
                 }
                 else if (!strncmp(arg, "--log-color=", 12)) {
                     /* --color=(auto|none|ansi) */
-                	arg += 12;
-                	if (!strcmp(arg, "ansi"))
-                		color = FC_COL_ANSI;
-                	else if (!strcmp(arg, "none"))
-                		color = FC_COL_NONE;
-                	else
-                		color = FC_COL_AUTO;
+                        arg += 12;
+                        if (!strcmp(arg, "ansi"))
+                                color = FC_COL_ANSI;
+                        else if (!strcmp(arg, "none"))
+                                color = FC_COL_NONE;
+                        else
+                                color = FC_COL_AUTO;
                 }
                 else if (!strncmp(arg, "--log-format=", 13)) {
                     /* --color=(auto|none|ansi) */
-                	arg += 13;
-                	if (!strcmp(arg, "level_msg"))
-                		format = FC_FMT_LEVEL_MSG;
-                	else if (!strcmp(arg, "time_level_msg"))
-                		format = FC_FMT_DATETIME_LEVEL_MSG;
-                	else if (!strcmp(arg, "time_level_function_msg"))
-                		format = FC_FMT_DATETIME_LEVEL_CALLER_MSG;
-                	else
-                		format = FC_FMT_MSG;
-                	format_set = true;
+                        arg += 13;
+                        if (!strcmp(arg, "level_msg"))
+                                format = FC_FMT_LEVEL_MSG;
+                        else if (!strcmp(arg, "time_level_msg"))
+                                format = FC_FMT_DATETIME_LEVEL_MSG;
+                        else if (!strcmp(arg, "time_level_function_msg"))
+                                format = FC_FMT_DATETIME_LEVEL_CALLER_MSG;
+                        else
+                                format = FC_FMT_MSG;
+                        format_set = true;
                 }
                 else if (!strncmp(arg, "--x-log-", 8)) {
                     /* --x-log-FILE=LEVEL */
-                	arg += 8;
-                	const char * equal = strchr(arg, '=');
-
-					ft_mstring logger_name(arg, equal ? equal - arg : strlen(arg));
-					ft_log_level logger_level = equal ? (ft_log_level) atoi(equal+1) : FC_INFO;
-					ft_log::get_logger(logger_name).set_level(logger_level);
+                    arg += 8;
+                    const char * equal = strchr(arg, '=');
+                    
+                    ft_mstring logger_name(arg, equal ? equal - arg : strlen(arg));
+                    ft_log_level logger_level = equal ? (ft_log_level) atoi(equal+1) : FC_INFO;
+                    ft_log::get_logger(logger_name).set_level(logger_level);
                 }
                 /* -f force run: degrade failed sanity checks from ERRORS (which stop execution) to WARNINGS (which let execution continue) */
                 else if (!strcmp(arg, "-f") || !strcmp(arg, "--force-run")) {
@@ -348,7 +348,7 @@ int fm_move::init(int argc, char const* const* argv)
                     }
                 }
                 else if (!strcmp(arg, "--inode-cache-mem")) {
-                       args.inode_cache_path = NULL;
+                    args.inode_cache_path = NULL;
                 }
                 else if (!strncmp(arg, "--inode-cache=", 14)) {
                     // do not allow empty dir name
@@ -373,55 +373,55 @@ int fm_move::init(int argc, char const* const* argv)
             else
                 err = invalid_cmdline(program_name, 0, "too many arguments");
         }
-
+        
         if (err != 0)
-        	break;
-
-		/* if autodetect, use POSIX I/O */
-		if (args.io_kind == FC_IO_AUTODETECT)
-			args.io_kind = FC_IO_POSIX;
-
-		if (args.io_kind == FC_IO_POSIX || args.io_kind == FC_IO_PREALLOC) {
-
-			if (io_args_n == 0) {
-				err = invalid_cmdline(program_name, 0, "missing arguments: %s %s", LABEL[0], LABEL[1]);
-				break;
-			} else if (io_args_n == 1) {
-				err = invalid_cmdline(program_name, 0, "missing argument: %s", LABEL[1]);
-				break;
-			}
-
-			const char * source_root = args.io_args[FT_IO_NS fm_io::FC_SOURCE_ROOT];
-			if (args.inode_cache_path != NULL && source_root != NULL
-					&& (args.inode_cache_path[0] == '/') != (source_root[0] == '/'))
-			{
-				err = invalid_cmdline(program_name, 0,
-						"relative/absolute path mismatch between source directory `%s'\n"
-						"\tand inode-cache directory `%s':\n"
-						"\tthey must be either both absolute, i.e. starting with `/',\n"
-						"\tor both relative, i.e. NOT starting with `/'",
-						source_root,
-						args.inode_cache_path);
-				break;
-			}
-		}
-
+            break;
+        
+        /* if autodetect, use POSIX I/O */
+        if (args.io_kind == FC_IO_AUTODETECT)
+            args.io_kind = FC_IO_POSIX;
+        
+        if (args.io_kind == FC_IO_POSIX || args.io_kind == FC_IO_PREALLOC) {
+            
+            if (io_args_n == 0) {
+                err = invalid_cmdline(program_name, 0, "missing arguments: %s %s", LABEL[0], LABEL[1]);
+                break;
+            } else if (io_args_n == 1) {
+                err = invalid_cmdline(program_name, 0, "missing argument: %s", LABEL[1]);
+                break;
+            }
+            
+            const char * source_root = args.io_args[FT_IO_NS fm_io::FC_SOURCE_ROOT];
+            if (args.inode_cache_path != NULL && source_root != NULL
+                && (args.inode_cache_path[0] == '/') != (source_root[0] == '/'))
+            {
+                err = invalid_cmdline(program_name, 0,
+                                      "relative/absolute path mismatch between source directory `%s'\n"
+                                      "\tand inode-cache directory `%s':\n"
+                                      "\tthey must be either both absolute, i.e. starting with `/',\n"
+                                      "\tor both relative, i.e. NOT starting with `/'",
+                                      source_root,
+                                      args.inode_cache_path);
+                break;
+            }
+        }
+        
     } while (0);
-
+    
     if (err == 0) {
         ft_log::get_root_logger().set_level(level);
-
+        
         /* note 1.4.1) -v sets format FC_FMT_LEVEL_MSG */
         /* note 1.4.2) -vv sets format FC_FMT_DATETIME_LEVEL_MSG */
         if (!format_set)
-        	format = level < FC_DEBUG ? FC_FMT_DATETIME_LEVEL_MSG : level == FC_DEBUG ? FC_FMT_LEVEL_MSG : FC_FMT_MSG;
+            format = level < FC_DEBUG ? FC_FMT_DATETIME_LEVEL_MSG : level == FC_DEBUG ? FC_FMT_LEVEL_MSG : FC_FMT_MSG;
         
         // no dot alter appenders min_level
         ft_log_appender::reconfigure_all(format, FC_LEVEL_NOT_SET, color);
-
+        
         err = init(args);
     }
-
+    
     return err;
 }
 
@@ -433,32 +433,32 @@ int fm_move::init(const fm_args & args)
 {
     FT_IO_NS fm_io * io = NULL;
     int err = 0;
-
+    
     switch (args.io_kind) {
-        case FC_IO_POSIX:
-            if ((err = check_is_closed()) != 0)
-                break;
-
-            io = new FT_IO_NS fm_io_posix();
+    case FC_IO_POSIX:
+        if ((err = check_is_closed()) != 0)
             break;
+        
+        io = new FT_IO_NS fm_io_posix();
+        break;
 #ifdef FT_HAVE_FM_IO_IO_PREALLOC
-        case FC_IO_PREALLOC:
-            if ((err = check_is_closed()) != 0)
-                break;
-
-            io = new FT_IO_NS fm_io_prealloc();
+    case FC_IO_PREALLOC:
+        if ((err = check_is_closed()) != 0)
             break;
+        
+        io = new FT_IO_NS fm_io_prealloc();
+        break;
 #endif
-        default:
-            ff_log(FC_ERROR, 0, "tried to initialize unknown I/O '%d': not POSIX"
+    default:
+        ff_log(FC_ERROR, 0, "tried to initialize unknown I/O '%d': not POSIX"
 #ifdef FT_HAVE_FM_IO_IO_PREALLOC
-                   ", not PREALLOC"
+               ", not PREALLOC"
 #endif
-                   , (int) args.io_kind);
-            err = -ENOSYS;
-            break;
+               , (int) args.io_kind);
+        err = -ENOSYS;
+        break;
     }
-
+    
     if (io != NULL) {
         if ((err = io->open(args)) == 0)
             this_io = io;

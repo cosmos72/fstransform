@@ -155,7 +155,7 @@ public:
     /** print extent to log */
     static void show(ft_size i, T physical, T logical, T length, ft_size user_data, ft_log_level level = FC_SHOW_DEFAULT_LEVEL)
     {
-        ff_log(level, 0, "#%8"FT_ULL"\t%12"FT_ULL"\t%12"FT_ULL"\t%8"FT_ULL"\t(%"FT_ULL")", (ft_ull)i,
+        ff_log(level, 0, "#%8" FT_ULL "\t%12" FT_ULL "\t%12" FT_ULL "\t%8" FT_ULL "\t(%" FT_ULL ")", (ft_ull)i,
                 (ft_ull) physical, (ft_ull) logical, (ft_ull) length, (ft_ull) user_data);
     }
 
@@ -176,11 +176,11 @@ public:
             return;
 
         if (start != end) {
-            ff_log(header_level, 0, "# %4"FT_ULL" extent%s in %s%s",
+            ff_log(header_level, 0, "# %4" FT_ULL " extent%s in %s%s",
                    (ft_ull) n, (n == 1 ? "" : "s"), label1, label2);
 
             if (ff_log_is_enabled(level)) {
-                ff_log(level, 0, "# effective block size = %"FT_ULL, (ft_ull) effective_block_size);
+                ff_log(level, 0, "# effective block size = %" FT_ULL, (ft_ull) effective_block_size);
                 show(level);
 
                 for (ft_size i = 0; start != end; ++start, ++i)

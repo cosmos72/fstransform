@@ -124,13 +124,13 @@ int ff_zero_loop_file_holes(int argc, char ** argv)
             offset = extent.first.physical << eff_block_size_log2;
             left = extent.second.length << eff_block_size_log2;
             if ((err = ff_posix_lseek(dev_fd, offset)) != 0) {
-                err = ff_log(FC_ERROR, err, "error in device lseek('%s', offset = %"FT_ULL")", args[0], (ft_ull) offset);
+                err = ff_log(FC_ERROR, err, "error in device lseek('%s', offset = %" FT_ULL ")", args[0], (ft_ull) offset);
                 break;
             }
             while (left != 0) {
                 chunk = ff_min2<ft_uoff>(left, ZERO_BUF_LEN);
                 if ((err = ff_posix_write(dev_fd, zero_buf, chunk)) != 0) {
-                    err = ff_log(FC_ERROR, err, "error in device write({'%s', offset = %"FT_ULL"}, zero_buffer, length = %"FT_ULL")",
+                    err = ff_log(FC_ERROR, err, "error in device write({'%s', offset = %" FT_ULL "}, zero_buffer, length = %" FT_ULL ")",
                                  args[0], (ft_ull) offset, (ft_ull) chunk);
                     break;
                 }

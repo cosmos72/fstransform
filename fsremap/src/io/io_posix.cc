@@ -285,7 +285,7 @@ int fr_io_posix::open_file(ft_size i, const char * path)
                                        label[i], path, label[FC_DEVICE]);
                 block_size = 4096;
             } else if (block_size < 512) {
-                ff_log(FC_WARN, errno, "%s fstat('%s') reported suspiciously small block size (%"FT_ULL" bytes) for %s, rounding block size to 512 bytes",
+                ff_log(FC_WARN, errno, "%s fstat('%s') reported suspiciously small block size (%" FT_ULL " bytes) for %s, rounding block size to 512 bytes",
                                        label[i], path, (ft_ull) block_size, label[FC_DEVICE]);
                 block_size = 512;
             }
@@ -295,17 +295,17 @@ int fr_io_posix::open_file(ft_size i, const char * path)
             dev_length(dev_len_rounded);
 
             if (len > dev_len_rounded) {
-                ff_log(FC_ERROR, 0, "cannot start %sremapping: %s '%s' length (%"FT_ULL" bytes) exceeds %s '%s' size (%"FT_ULL" bytes)",
+                ff_log(FC_ERROR, 0, "cannot start %sremapping: %s '%s' length (%" FT_ULL " bytes) exceeds %s '%s' size (%" FT_ULL " bytes)",
                         (simulate_run() ? "(simulated) " : ""),
                         label[i], path, (ft_ull)len, label[FC_DEVICE], dev_path(), (ft_ull)dev_len_rounded);
                 if (dev_len_rounded != dev_len) {
-                    ff_log(FC_ERROR, 0, "    Note: %s size is actually %"FT_ULL" bytes, "
-                            "but fsremap needs to round it down to a multiple of file-system block size (%"FT_ULL" bytes)",
+                    ff_log(FC_ERROR, 0, "    Note: %s size is actually %" FT_ULL " bytes, "
+                            "but fsremap needs to round it down to a multiple of file-system block size (%" FT_ULL " bytes)",
                             label[FC_DEVICE], (ft_ull)dev_len, (ft_ull)block_size);
-                    ff_log(FC_ERROR, 0, "    so the usable %s size is %"FT_ULL" bytes",
+                    ff_log(FC_ERROR, 0, "    so the usable %s size is %" FT_ULL " bytes",
                             label[FC_DEVICE], (ft_ull)dev_len_rounded);
                 }
-                ff_log(FC_ERROR, 0, "Exiting, please shrink %s to %"FT_ULL" bytes or less before running fsremap again.",
+                ff_log(FC_ERROR, 0, "Exiting, please shrink %s to %" FT_ULL " bytes or less before running fsremap again.",
                         label[i], (ft_ull) dev_len_rounded);
                 ff_log(FC_ERROR, 0, "    (if you are using fstransform - i.e. if you did not manually run fsremap - "
                         "then this is a BUG in fstransform, please report it)");
@@ -613,7 +613,7 @@ int fr_io_posix::create_storage(ft_size secondary_size, ft_size mem_buffer_size)
     do {
         const ft_size mmap_size = (ft_size) primary_len + secondary_size;
         if (primary_len > (ft_size)-1 - secondary_size) {
-            err = ff_log(FC_FATAL, EOVERFLOW, "internal error, %s + %s total length = %"FT_ULL" is larger than addressable memory",
+            err = ff_log(FC_FATAL, EOVERFLOW, "internal error, %s + %s total length = %" FT_ULL " is larger than addressable memory",
                          label[i], label[j], (ft_ull) primary_len + secondary_size);
             break;
         }
@@ -624,12 +624,12 @@ int fr_io_posix::create_storage(ft_size secondary_size, ft_size mem_buffer_size)
          */
         storage_mmap = mmap(NULL, mmap_size, PROT_NONE, MAP_PRIVATE|FC_MAP_ANONYMOUS, -1, 0);
         if (storage_mmap == MAP_FAILED) {
-            err = ff_log(FC_ERROR, errno, "%s: error preemptively reserving contiguous RAM: mmap(length = %"FT_ULL", PROT_NONE, MAP_PRIVATE|MAP_ANONYMOUS, -1) failed",
+            err = ff_log(FC_ERROR, errno, "%s: error preemptively reserving contiguous RAM: mmap(length = %" FT_ULL ", PROT_NONE, MAP_PRIVATE|MAP_ANONYMOUS, -1) failed",
                     label[FC_STORAGE], (ft_ull) mmap_size);
             break;
         } else
             ff_log(FC_DEBUG, 0, "%s: preemptively reserved contiguous RAM,"
-                    " mmap(length = %"FT_ULL", PROT_NONE, MAP_PRIVATE|MAP_ANONYMOUS, -1) = ok",
+                    " mmap(length = %" FT_ULL ", PROT_NONE, MAP_PRIVATE|MAP_ANONYMOUS, -1) = ok",
                     label[FC_STORAGE], (ft_ull) mmap_size);
         storage_mmap_size = mmap_size;
         /*
@@ -638,7 +638,7 @@ int fr_io_posix::create_storage(ft_size secondary_size, ft_size mem_buffer_size)
          */
         buffer_mmap = mmap(NULL, mem_buffer_size, PROT_READ|PROT_WRITE, MAP_PRIVATE|FC_MAP_ANONYMOUS, -1, 0);
         if (buffer_mmap == MAP_FAILED) {
-            err = ff_log(FC_ERROR, errno, "%s: error allocating memory buffer: mmap(length = %"FT_ULL", PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1) failed",
+            err = ff_log(FC_ERROR, errno, "%s: error allocating memory buffer: mmap(length = %" FT_ULL ", PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1) failed",
                     label[FC_STORAGE], (ft_ull) mem_buffer_size);
             break;
         }
@@ -680,7 +680,7 @@ int fr_io_posix::create_storage(ft_size secondary_size, ft_size mem_buffer_size)
                 break;
         }
         if (mem_offset != storage_mmap_size) {
-            ff_log(FC_FATAL, 0, "internal error, mapped %s extents in RAM used %"FT_ULL" bytes instead of expected %"FT_ULL" bytes",
+            ff_log(FC_FATAL, 0, "internal error, mapped %s extents in RAM used %" FT_ULL " bytes instead of expected %" FT_ULL " bytes",
                     label[FC_STORAGE], (ft_ull) mem_offset, (ft_ull) storage_mmap_size);
             err = EINVAL;
         }
@@ -718,8 +718,8 @@ int fr_io_posix::replace_storage_mmap(int fd, const char * label_i,
     int err = 0;
     do {
         if (mem_start >= storage_mmap_size || mem_end > storage_mmap_size) {
-            ff_log(FC_FATAL, 0, "internal error mapping %s extent #%"FT_ULL" in RAM!"
-                    " extent (%"FT_ULL", length = %"FT_ULL") overflows total %s length = %"FT_ULL,
+            ff_log(FC_FATAL, 0, "internal error mapping %s extent #%" FT_ULL " in RAM!"
+                    " extent (%" FT_ULL ", length = %" FT_ULL ") overflows total %s length = %" FT_ULL ,
                     label_i, (ft_ull) extent_index, (ft_ull) mem_start, (ft_ull) len,
                     label[FC_STORAGE], (ft_ull) storage_mmap_size);
             /* mark error as reported */
@@ -728,21 +728,21 @@ int fr_io_posix::replace_storage_mmap(int fd, const char * label_i,
         }
         void * addr_old = (char *) storage_mmap + mem_start;
         if (munmap(addr_old, len) != 0) {
-            err = ff_log(FC_ERROR, errno, "error mapping %s extent #%"FT_ULL" in RAM,"
-                    " munmap(address + %"FT_ULL", length = %"FT_ULL") failed",
+            err = ff_log(FC_ERROR, errno, "error mapping %s extent #%" FT_ULL " in RAM,"
+                    " munmap(address + %" FT_ULL ", length = %" FT_ULL ") failed",
                     label_i, (ft_ull) extent_index, (ft_ull) mem_start, (ft_ull) len);
             break;
         }
         void * addr_new = mmap(addr_old, len, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_FIXED, fd, storage_extent.physical());
         if (addr_new == MAP_FAILED) {
-            err = ff_log(FC_ERROR, errno, "error mapping %s extent #%"FT_ULL" in RAM,"
-                    " mmap(address + %"FT_ULL", length = %"FT_ULL", MAP_FIXED) failed",
+            err = ff_log(FC_ERROR, errno, "error mapping %s extent #%" FT_ULL " in RAM,"
+                    " mmap(address + %" FT_ULL ", length = %" FT_ULL ", MAP_FIXED) failed",
                     label_i, (ft_ull) extent_index, (ft_ull) mem_start, (ft_ull) len);
             break;
         }
         if (addr_new != addr_old) {
-            ff_log(FC_ERROR, 0, "error mapping %s extent #%"FT_ULL" in RAM,"
-                    " mmap(address + %"FT_ULL", length = %"FT_ULL", MAP_FIXED)"
+            ff_log(FC_ERROR, 0, "error mapping %s extent #%" FT_ULL " in RAM,"
+                    " mmap(address + %" FT_ULL ", length = %" FT_ULL ", MAP_FIXED)"
                    " violated MAP_FIXED and returned a different address",
                    label_i, (ft_ull) extent_index, (ft_ull) mem_start, (ft_ull) len);
             /* mark error as reported */
@@ -753,13 +753,13 @@ int fr_io_posix::replace_storage_mmap(int fd, const char * label_i,
             }
             break;
         }
-        ff_log(FC_TRACE, 0, "%s extent #%"FT_ULL" mapped in RAM,"
-                " mmap(address + %"FT_ULL", length = %"FT_ULL", MAP_FIXED) = ok",
+        ff_log(FC_TRACE, 0, "%s extent #%" FT_ULL " mapped in RAM,"
+                " mmap(address + %" FT_ULL ", length = %" FT_ULL ", MAP_FIXED) = ok",
                 label_i, (ft_ull) extent_index, (ft_ull) mem_start, (ft_ull) len);
 
 #ifdef FT_HAVE_MLOCK
         if (!simulate_run() && mlock(addr_new, len) != 0) {
-            ff_log(FC_WARN, errno, "%s extent #%"FT_ULL" mlock(address + %"FT_ULL", length = %"FT_ULL") failed",
+            ff_log(FC_WARN, errno, "%s extent #%" FT_ULL " mlock(address + %" FT_ULL ", length = %" FT_ULL ") failed",
                    label_i, (ft_ull) extent_index, (ft_ull) mem_start, (ft_ull) len);
         }
 #else
@@ -803,7 +803,7 @@ int fr_io_posix::create_secondary_storage(ft_size len)
     do {
         const ft_off s_len = (ft_off) len;
         if (s_len < 0 || len != (ft_size) s_len) {
-            err = ff_log(FC_FATAL, EOVERFLOW, "internal error, %s length = %"FT_ULL" overflows type (off_t)", label[j], (ft_ull) len);
+            err = ff_log(FC_FATAL, EOVERFLOW, "internal error, %s length = %" FT_ULL " overflows type (off_t)", label[j], (ft_ull) len);
             break;
         }
         
@@ -825,7 +825,7 @@ int fr_io_posix::create_secondary_storage(ft_size len)
                 err = ff_log(FC_ERROR, err, "%s: fstat('%s') failed", label[j], path);
 
             } else if (actual_len != (ft_uoff) len) {
-                ff_log(FC_ERROR, 0, "%s: file '%s' is %"FT_ULL" bytes long, expecting %"FT_ULL" bytes instead",
+                ff_log(FC_ERROR, 0, "%s: file '%s' is %" FT_ULL " bytes long, expecting %" FT_ULL " bytes instead",
                         label[j], path, (ft_ull) actual_len, (ft_ull) len);
                 err = -EINVAL;
             } else
@@ -836,7 +836,7 @@ int fr_io_posix::create_secondary_storage(ft_size len)
                     pretty_len, pretty_label, path);
             if (simulated) {
                 if ((err = ff_posix_lseek(fd[j], len - 1)) != 0) {
-                    err = ff_log(FC_ERROR, errno, "error in %s lseek('%s', offset = %"FT_ULL" - 1)", label[j], path, (ft_ull)len);
+                    err = ff_log(FC_ERROR, errno, "error in %s lseek('%s', offset = %" FT_ULL " - 1)", label[j], path, (ft_ull)len);
                     break;
                 }
                 char zero = '\0';
@@ -940,19 +940,19 @@ int fr_io_posix::check_last_block()
 
     for (int i = 0; err == 0 && i < 2; i++) {
         if ((err = ff_posix_lseek(fd_dev, loop_file_len)) != 0) {
-            err = ff_log(FC_ERROR, err, "I/O error in %s lseek(fd = %d, offset = %"FT_ULL", SEEK_SET)",
+            err = ff_log(FC_ERROR, err, "I/O error in %s lseek(fd = %d, offset = %" FT_ULL ", SEEK_SET)",
                          label_dev, fd_dev, (ft_ull)loop_file_len);
             break;
         }
 
         if (i == 0) {
             if ((err = ff_posix_read(fd_dev, &ch, 1)) != 0)
-                err = ff_log(FC_ERROR, err, "I/O error in %s read(fd = %d, offset = %"FT_ULL", len = 1)",
+                err = ff_log(FC_ERROR, err, "I/O error in %s read(fd = %d, offset = %" FT_ULL ", len = 1)",
                         label_dev, fd_dev, (ft_ull)loop_file_len);
 
         } else if (!simulated) {
             if ((err = ff_posix_write(fd_dev, &ch, 1)) != 0)
-                err = ff_log(FC_ERROR, err, "last position to be written into %s (offset = %"FT_ULL") is NOT writable",
+                err = ff_log(FC_ERROR, err, "last position to be written into %s (offset = %" FT_ULL ") is NOT writable",
                         label_dev, (ft_ull)loop_file_len);
         }
     }
@@ -1125,11 +1125,11 @@ int fr_io_posix::flush_copy_bytes(fr_dir_posix dir, ft_uoff from_offset, ft_uoff
     do {
         if (!simulated) {
             if ((err = ff_posix_lseek(fd, dev_offset)) != 0) {
-                err = ff_log(FC_ERROR, err, "I/O error in %s lseek(fd = %d, offset = %"FT_ULL", SEEK_SET)",
+                err = ff_log(FC_ERROR, err, "I/O error in %s lseek(fd = %d, offset = %" FT_ULL ", SEEK_SET)",
                         label_dev, fd, (ft_ull)dev_offset);
                 break;
             }
-#define CURRENT_OP_FMT "from %s to %s, %s({fd = %d, offset = %"FT_ULL"}, address + %"FT_ULL", length = %"FT_ULL")"
+#define CURRENT_OP_FMT "from %s to %s, %s({fd = %d, offset = %" FT_ULL "}, address + %" FT_ULL ", length = %" FT_ULL ")"
 #define CURRENT_OP_ARGS label_from, label_to, (read_dev ? "read" : "write"), fd, (ft_ull)dev_offset, (ft_ull)mem_offset, (ft_ull)mem_length
 
 #ifdef ENABLE_CHECK_IF_MEM_IS_ZERO
@@ -1202,7 +1202,7 @@ int fr_io_posix::flush_bytes()
 
 #if 1
         if ((err = msync(storage_mmap, storage_mmap_size, MS_SYNC)) != 0) {
-            ff_log(FC_WARN, errno, "I/O error in %s msync(address + %"FT_ULL", length = %"FT_ULL")",
+            ff_log(FC_WARN, errno, "I/O error in %s msync(address + %" FT_ULL ", length = %" FT_ULL ")",
                     label[FC_STORAGE], (ft_ull)0, (ft_ull)storage_mmap_size);
             err = 0;
         }
@@ -1232,7 +1232,7 @@ int fr_io_posix::msync_bytes(const fr_extent<ft_uoff> & extent) const
     ft_size mem_length = (ft_size) extent.second.length; // check for overflow?
     int err;
     if ((err = msync((char *)storage_mmap + mem_offset, mem_length, MS_SYNC)) != 0) {
-        ff_log(FC_WARN, errno, "I/O error in %s msync(address + %"FT_ULL", length = %"FT_ULL")",
+        ff_log(FC_WARN, errno, "I/O error in %s msync(address + %" FT_ULL ", length = %" FT_ULL ")",
                 label[FC_STORAGE], (ft_ull)mem_offset, (ft_ull)mem_length);
         err = 0;
     }
@@ -1251,8 +1251,8 @@ int fr_io_posix::zero_bytes(fr_to to, ft_uoff offset, ft_uoff length)
     int err = 0;
     do {
         if (!ff_can_sum(offset, length) || length > max || offset > max - length) {
-            err = ff_log(FC_FATAL, EOVERFLOW, "internal error! %s io.zero(to = %d, offset = %"FT_ULL", length = %"FT_ULL")"
-                         " overflows maximum allowed %"FT_ULL,
+            err = ff_log(FC_FATAL, EOVERFLOW, "internal error! %s io.zero(to = %d, offset = %" FT_ULL ", length = %" FT_ULL ")"
+                         " overflows maximum allowed %" FT_ULL ,
                          label[to == FC_TO_DEV ? FC_DEVICE : FC_STORAGE],
                          (int)to, (ft_ull)offset, (ft_ull)length, (ft_ull)max);
             break;
@@ -1275,14 +1275,14 @@ int fr_io_posix::zero_bytes(fr_to to, ft_uoff offset, ft_uoff length)
         }
         int dev_fd = fd[FC_DEVICE];
         if ((err = ff_posix_lseek(dev_fd, offset)) != 0) {
-            err = ff_log(FC_ERROR, err, "error in %s lseek(fd = %d, offset = %"FT_ULL")", label[FC_DEVICE], dev_fd, (ft_ull) offset);
+            err = ff_log(FC_ERROR, err, "error in %s lseek(fd = %d, offset = %" FT_ULL ")", label[FC_DEVICE], dev_fd, (ft_ull) offset);
             break;
         }
         ft_uoff chunk;
         while (length != 0) {
             chunk = ff_min2<ft_uoff>(length, ZERO_BUF_LEN);
             if ((err = ff_posix_write(dev_fd, zero_buf, chunk)) != 0) {
-                err = ff_log(FC_ERROR, err, "error in %s write({fd = %d, offset = %"FT_ULL"}, zero_buffer, length = %"FT_ULL")",
+                err = ff_log(FC_ERROR, err, "error in %s write({fd = %d, offset = %" FT_ULL "}, zero_buffer, length = %" FT_ULL ")",
                              label[FC_DEVICE], dev_fd, (ft_ull) offset, (ft_ull) chunk);
                 break;
             }
