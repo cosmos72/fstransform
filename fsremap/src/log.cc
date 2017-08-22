@@ -2,17 +2,17 @@
  * logging utilities for fsattr, fsmove, fsremap
  *
  * Copyright (C) 2011-2012 Massimiliano Ghilardi
- * 
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 2 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
@@ -84,7 +84,7 @@ const char * ff_log_level_to_string(ft_log_level level)
 
     if (level == FC_LEVEL_NOT_SET)
         return "NOT_SET";
-    
+
     return "UNKNOWN";
 }
 
@@ -126,7 +126,7 @@ ft_log_appender::~ft_log_appender()
 
 /**
  * write a log message to stream.
- * 
+ *
  * print fmt and subsequent printf-style args to log stream.
  * if err != 0, append ": ", strerror(errno) and "\n"
  * else append "\n"
@@ -216,7 +216,7 @@ void ft_log_appender::reconfigure_all(ft_log_fmt format_except_fatal, ft_log_lev
 {
     ft_log_appenders & all_appenders = get_all_appenders();
     ft_log_appenders_citerator iter = all_appenders.begin(), end = all_appenders.end();
-    
+
     for (; iter != end; ++iter)
         (*iter)->reconfigure(format_except_fatal, stdout_min_level, color);
 }
@@ -256,7 +256,7 @@ void ft_log::initialize()
 {
     if (fc_log_initialized)
         return;
-    
+
     fc_log_initialized = true;
 
 #ifdef FT_HAVE_TZSET
@@ -315,7 +315,7 @@ ft_log & ft_log::get_logger(const ft_mstring & logger_name)
     all_loggers_iterator iter = all_loggers.find(logger_name);
     if (iter != all_loggers.end())
         return * iter->second;
-        
+
     ft_log & parent = get_parent(logger_name);
 
     return * new ft_log(logger_name, & parent);
@@ -387,7 +387,7 @@ void ft_log::add_appender(ft_log_appender & appender)
 {
     appenders.insert(& appender);
 }
-    
+
 /** remove an appender */
 void ft_log::remove_appender(ft_log_appender & appender)
 {
@@ -410,10 +410,10 @@ bool ff_logl_is_enabled(const char * file, int file_len, ft_log_level level)
         /* va_list vargs field follows - but no portable way to value-initialize it */
     };
     ff_pretty_file(event);
-    
+
     ft_mstring logger_name(event.file, event.file_len);
     ft_log & logger = ft_log::get_logger(logger_name);
-    
+
     return logger.is_enabled(level);
 }
 
@@ -441,11 +441,11 @@ int ff_logl(const char * file, int file_len, const char * func, int line, ft_log
 
     ft_mstring logger_name(event.file, event.file_len);
     ft_log & logger = ft_log::get_logger(logger_name);
-    
+
     va_start(event.vargs, fmt);
     logger.log(event);
     va_end(event.vargs);
-    
+
     /* note 1.2.1) ff_log() and ff_vlog() always return errors as reported (-EINVAL, -ENOMEM...) */
     return ff_log_is_reported(err) ? err : -err;
 }
@@ -476,11 +476,11 @@ int ff_logv(const char * file, int file_len, const char * func, int line, ft_log
 
     ft_mstring logger_name(event.file, event.file_len);
     ft_log & logger = ft_log::get_logger(logger_name);
-    
+
     ff_va_copy(event.vargs, vargs);
     logger.log(event);
     va_end(event.vargs);
-    
+
     /* note 1.2.1) ff_log() and ff_vlog() always return errors as reported (-EINVAL, -ENOMEM...) */
     return ff_log_is_reported(err) ? err : -err;
 }

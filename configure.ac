@@ -91,11 +91,11 @@ FT_NEED_ALL_LIBS([z_deflate])
 if test "$ac_cv_func_fallocate" != "yes"
 then
   AC_MSG_WARN([missing function fallocate(), experimental files preallocation will NOT be compiled])
-  
+
 elif test "$ac_cv_lib_com_err_error_message" != "yes"
 then
   AC_MSG_WARN([missing function error_message() in -lcom_err, experimental files preallocation will NOT be compiled])
-  
+
 elif test "$ac_cv_lib_ext2fs_ext2fs_extent_replace" != "yes"
 then
   AC_MSG_WARN([missing function ext2fs_extent_replace() in -lext2fs, experimental files preallocation will NOT be compiled])

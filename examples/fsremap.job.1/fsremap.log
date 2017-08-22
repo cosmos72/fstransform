@@ -268,7 +268,7 @@
 2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     256	     1553153	     1553153	       7	(0)
 2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     257	     1554152	     1554152	    1023	(0)
 2012-02-10 01:02:42 DEBUG  [work<T>.show(90)] #     258	     1555191	     1555191	   17657	(0)
-2012-02-10 01:02:42 DEBUG  [work<T>.show(75)] 
+2012-02-10 01:02:42 DEBUG  [work<T>.show(75)]
 2012-02-10 01:02:42 DEBUG  [work<T>.show(63)] # 1753 extents in free-space (after to-clear)
 2012-02-10 01:02:42 DEBUG  [work<T>.show(73)] #   no extents in device
 2012-02-10 01:02:42 DEBUG  [work<T>.show(63)] #  259 extents in loop-holes (initial)

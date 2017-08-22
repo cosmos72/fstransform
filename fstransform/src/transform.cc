@@ -369,7 +369,7 @@ int ft_transform::init(int argc, char const* const* argv)
         /* note 1.4.2) -vv sets format FC_FMT_DATETIME_LEVEL_MSG */
         if (!format_set)
         	format = level < FC_DEBUG ? FC_FMT_DATETIME_LEVEL_MSG : level == FC_DEBUG ? FC_FMT_LEVEL_MSG : FC_FMT_MSG;
-        
+
         // no dot alter appenders min_level
         ft_log_appender::reconfigure_all(format, FC_LEVEL_NOT_SET, color);
 

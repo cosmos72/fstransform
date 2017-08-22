@@ -84,7 +84,7 @@ protected:
      * (may include estimated overhead for special files, inodes...),
      * reset total number of bytes moved,
      * initialize this_eta to 0% at current time
-     * 
+     *
      * returns error if source or target file-system are almost full (typical threshold is 97%)
      */
     int init_work();

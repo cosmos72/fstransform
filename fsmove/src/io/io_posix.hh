@@ -79,7 +79,7 @@ private:
      * currently, it runs 'xfs_fsr <path>' which can free some space on 'xfs' file-systems
      */
     void try_to_make_free_space(const char * path);
-    
+
     /**
      * fill 'stat' with information about the file/directory/special-device 'path'
      */
@@ -159,7 +159,7 @@ private:
      * on return, len will contain the number of bytes actually read
      */
     int full_read(int in_fd, char * data, ft_size & len, const char * source_path);
-    
+
     /**
      * write bytes to out_fd, retrying in case of short writes or interrupted system calls.
      * returns 0 for success, else error

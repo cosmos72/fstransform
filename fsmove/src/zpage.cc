@@ -50,7 +50,7 @@ bool zpage::alloc_init_page(ft_size chunk_size)
     ft_size new_size = MAX_ALIGN + n * chunk_size;
     if (!alloc_page(new_size))
         return false;
-    
+
     zpage_content * content = reinterpret_cast<zpage_content *>(address);
     content->next = 0;
     content->count = n;
@@ -63,7 +63,7 @@ bool zpage::is_full_page()
 {
     if (!decompress_page())
         return false;
-    
+
     zpage_content * content = reinterpret_cast<zpage_content *>(address);
     return content->next >= content->count;
 }
@@ -72,11 +72,11 @@ bool zpage::is_empty_page()
 {
     if (!decompress_page())
         return false;
-    
+
     zpage_content * content = reinterpret_cast<zpage_content *>(address);
     if (content->next != 0)
         return false;
-    
+
     static const uint8_t zero[sizeof(content->bitmap)] = { }; /* zero-initialize */
     return !memcmp(content->bitmap, zero, sizeof(content->bitmap));
 }
@@ -85,7 +85,7 @@ ft_size zpage::get_page_chunk_size()
 {
     if (!decompress_page())
         return 0;
-    
+
     zpage_content * content = reinterpret_cast<zpage_content *>(address);
     ft_size chunk_size;
     if (content->count > 1)
@@ -99,14 +99,14 @@ zptr_handle zpage::alloc_ptr(zpage_handle page_handle)
 {
     if (!decompress_page())
         return 0;
-    
+
     zpage_content * content = reinterpret_cast<zpage_content *>(address);
-    
+
     ft_size n = content->count;
     ft_size i = content->next;
     ft_size mask = (ft_size)1 << (i % PTR_BITS);
     uint8_t * bitmap = content->bitmap + (i / PTR_BITS);
-    
+
     for (; i < n; i++, mask <<= 1)
     {
         if (mask > PTR_MASK) {
@@ -126,10 +126,10 @@ bool zpage::free_ptr(zptr_handle handle)
 {
     if (!decompress_page())
         return false;
-    
+
     zpage_content * content = reinterpret_cast<zpage_content *>(address);
     uint8_t i = (handle & PTR_MASK), n = content->count;
-    
+
     if (i >= n)
         return false;
 

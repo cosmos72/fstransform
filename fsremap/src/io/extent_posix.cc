@@ -3,17 +3,17 @@
  *               preserving its contents and without the need for a backup
  *
  * Copyright (C) 2011-2012 Massimiliano Ghilardi
- * 
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
@@ -50,7 +50,7 @@
 #endif
 #ifdef FT_HAVE_LINUX_FIEMAP_H
  /* if <linux/fs.h> defines FS_IOC_FIEMAP, <linux/fiemap.h> is supposed to exist */
-# include <linux/fiemap.h> // for struct fiemap and struct fiemap_extent. 
+# include <linux/fiemap.h> // for struct fiemap and struct fiemap_extent.
 #endif
 
 #include <utility>         // for std::pair<T1,T2> and std::make_pair()
@@ -225,10 +225,10 @@ static int ff_linux_fiemap(int fd, fr_vector<ft_uoff> & ret_list, ft_uoff & ret_
 
         ft_u32 i, extent_n = k_map->fm_mapped_extents;
         const struct fiemap_extent * extents = k_map->fm_extents;
-        
+
         if (extent_n == 0) {
             /* we did not get any extent... bail out */
-            ff_log(FC_WARN, 0, "ioctl(%d, FS_IOC_FIEMAP) is refusing to return any extent after file offset = %" FT_ULL 
+            ff_log(FC_WARN, 0, "ioctl(%d, FS_IOC_FIEMAP) is refusing to return any extent after file offset = %" FT_ULL
                     ", falling back on ioctl(FIBMAP) ...", fd, (ft_ull) file_start);
             /* mark the error as reported, WARN is quite a severe level */
             err = -ENOSYS; /* ioctl(FS_IOC_FIEMAP) not working as expected... */

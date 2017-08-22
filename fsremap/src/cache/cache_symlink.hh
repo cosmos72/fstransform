@@ -111,7 +111,7 @@ public:
 	ft_cache_symlink_kv(const V & init_zero_payload = V())
 		: super_type(init_zero_payload)
 	{ }
-    
+
     /** destructor */
     virtual ~ft_cache_symlink_kv()
     { }

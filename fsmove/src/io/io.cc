@@ -62,7 +62,7 @@ fm_io::fm_io()
       this_source_stat(), this_target_stat(),
       this_source_root(), this_target_root(),
       this_eta(), this_work_total(0), this_work_report_threshold(0),
-      this_work_done(0), this_work_last_reported(0), 
+      this_work_done(0), this_work_last_reported(0),
       this_work_last_reported_time(0.0),
       this_progress_msg(NULL), this_force_run(false), this_simulate_run(false)
 { }
@@ -199,7 +199,7 @@ int fm_io::is_almost_full(const fm_disk_stat & stat) const
  * set total number of bytes to move (may include estimated overhead for special files, inodes...),
  * reset total number of bytes moved,
  * initialize this_eta to 0% at current time
- * 
+ *
  * returns error if source or target file-system are almost full (typical threshold is 97%)
  */
 int fm_io::init_work()
@@ -215,13 +215,13 @@ int fm_io::init_work()
     ft_uoff work_total = source_used > target_used ? source_used - target_used : 0;
 
     this_work_total = work_total;
-    
+
     ft_uoff work_total_GB = work_total >> 30;
-    
+
     if (work_total_GB <= 4)
         /* up to 4GB, report approximately every 5% progress */
         this_work_report_threshold = work_total / 20;
-    
+
     else if (work_total_GB <= 100)
         /* up to 100GB, report approximately every 2% progress */
         this_work_report_threshold = work_total / 50;
@@ -229,7 +229,7 @@ int fm_io::init_work()
         /* above 100GB, report approximately every 2GB * sqrt(size/100GB) */
         this_work_report_threshold = (ft_uoff)
             (((ft_uoff)2 << 30) * sqrt(0.01 * work_total_GB));
-    
+
     this_work_done = this_work_last_reported = 0;
     ff_now(this_work_last_reported_time);
     this_eta.add(0.0);

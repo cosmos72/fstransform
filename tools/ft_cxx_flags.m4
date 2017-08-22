@@ -13,7 +13,7 @@ m4_define([FT_CXX_FLAGS],
      CXXFLAGS="$save_CXXFLAGS"]
     )
   ])
-  
+
   AC_CACHE_CHECK([whether $CXX accepts -Wextra],
     [ac_cv_cxx_flag_Wextra],
     [save_CXXFLAGS="$CXXFLAGS"

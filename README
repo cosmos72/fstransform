@@ -23,7 +23,7 @@ device - usually a disk partition - from a filesystem type to another
 while preserving its contents.
 
 For example, a disk partition can be transformed from 'jfs' to 'ext4',
-or from 'ext2' to 'xfs', or many other combinations. 
+or from 'ext2' to 'xfs', or many other combinations.
 
 Currently, the programs mentioned above have been tested on Linux
 with the following filesystems, both as source and as target:
@@ -75,7 +75,7 @@ There are five requirements for fstransform to have a chance to succeed:
 1. the device must be unmountable, i.e. `umount DEVICE` must work.
    In particular, if some running programs are using the device,
    you must first close or kill them.
-   
+
    Transforming the current root directory does not work. For that, you should
    boot from a different installation (for example a live CD, DVD or USB).
 
@@ -84,7 +84,7 @@ There are five requirements for fstransform to have a chance to succeed:
    WARNING: transforming an almost full device to 'xfs' file-system
    can be tricky:
    * you need either slightly more free space, typically at least 10%,
-   * or you must be VERY quick at suspending fstransform 
+   * or you must be VERY quick at suspending fstransform
      when either the source or the target (or both) file-system is almost full
      and run 'xfs_fsr' on the source or target device (or both)
      before resuming fstransform.
@@ -95,7 +95,7 @@ There are five requirements for fstransform to have a chance to succeed:
    and at least one of the two system calls "ioctl(FS_IOC_FIEMAP)" or "ioctl(FIBMAP)"
    (see the file Documentation/filesystems/fiemap.txt in any recent Linux kernel
    for an explanation, or search for the same file on Internet)
-   
+
    ioctl(FIBMAP) is limited by design to 2G-1 blocks, which typically translates to 8TB - 4kB.
    To transform file systems equal or larger than 8TB, ioctl(FIEMAP) is required.
 
@@ -103,7 +103,7 @@ There are five requirements for fstransform to have a chance to succeed:
    (i.e. it must be able to mount them)
    and by the tools 'mkfs' and 'fsck'
    (i.e. it must be possible to create them and check them for errors).
-   
+
    Support through FUSE (userspace) drivers is acceptable, as long as
    there is also a kernel driver that can mount the same file system
    at least read-only. For example, this is the case for ntfs.
@@ -112,7 +112,7 @@ There are five requirements for fstransform to have a chance to succeed:
    the three custom-made programs 'fsmove', 'fsmount_kernel' 'fsremap'
    (distributed with the script) and several common Linux tools:
       which, expr, id, blockdev, losetup, mount, umount,
-      mkdir, rmdir, rm, mkfifo, dd, sync, fsck, mkfs 
+      mkdir, rmdir, rm, mkfifo, dd, sync, fsck, mkfs
 
 
 ### KNOWN LIMITATIONS
@@ -125,7 +125,7 @@ There are five requirements for fstransform to have a chance to succeed:
    as /usr, /home or /var or similar heavily-used directories is difficult,
    because quite often there are programs using those, which prevents
    them from being unmounted.
-   
+
 2) If the device contains a HUGE number of files with multiple hard links,
    fstransform will be very slow and consume a LOT of memory.
    Devices with more than one million files with multiple hard links
@@ -134,7 +134,7 @@ There are five requirements for fstransform to have a chance to succeed:
 3) JFS and NTFS file systems equal or larger than 8TB cannot be converted
    due to missing support for ioctl(FIEMAP) in the kernel:
    the fallback ioctl(FIBMAP) is limited by design to < 8TB (assuming 4k blocks)
-   
+
    Also, ioctl(FIBMAP) must be called for _each_ block so the conversion
    will be a bit slower.
 
@@ -161,7 +161,7 @@ but please understand that using a too small secondary storage
 can slow down the procedure.
 
 To pass the same option to 'fstransform', you must execute something like
-  fstransform --opts-fsremap='-s <size>' <other-options-and-arguments> 
+  fstransform --opts-fsremap='-s <size>' <other-options-and-arguments>
 
 
 ### PROCEDURE
@@ -169,13 +169,13 @@ To pass the same option to 'fstransform', you must execute something like
 0. compile fsmove, fsmount_kernel and fsremap.
    Running "./configure" then "make" should suffice on any recent Linux machine,
    as long as g++ is installed.
-   
+
    You will get three executables, fsmove and fsremap.
    They will be located at
      ./fsmove/build/fsmove
      ./fsmount_kernel/build/fsmount_kernel
      ./fsremap/build/fsremap
-   
+
    You are suggested to either run "make install" or to copy them to a simpler path.
    Below, they will be referred as {fsmove}, {fsmount_kernel} and {fsremap}
 
@@ -196,43 +196,43 @@ To pass the same option to 'fstransform', you must execute something like
 
    For example, an 'ext2' or 'ext3' filesystem can be transformed into 'ext3'
    or 'ext4' using the program 'tune2fs'.
-   
+
    Explaining how to use 'tune2fs' is beyond the scope of this document,
    just read its man-page or search on the Internet for one of
-   "convert Linux File System ext2 to ext3" 
-   "convert Linux File System ext2 to ext3" 
-   "convert Linux File System ext3 to ext4" 
-   
+   "convert Linux File System ext2 to ext3"
+   "convert Linux File System ext2 to ext3"
+   "convert Linux File System ext3 to ext4"
+
    But for most combinations, the only way is either to do a full backup +
    format + restore the data, or use 'fstransform'
 
 3. execute the program
 
      fstransform {device} {target-file-system-type}
-   
+
    when converting _from_ NTFS, you must execute a slightly more verbose command:
 
      fstransform {device} {target-file-system-type} --current-fstype=ntfs
-   
+
    because fstransform currently cannot autodetect FUSE-based file systems.
 
 4. follow the instructions - the program will tell you what it is doing,
    and will also call 'fsmove' and 'fsremap' which show progress percentage
    and estimated time left.
-   
+
    Note that 'fsmove' and 'fsremap' need approximately the same time to run,
    so if 'fsmove' tells you that it will need 2 hours, 'fsmove' will
    likely need a similar amount of time, for a total of 4 hours.
 
    In case there are errors, you can even try to fix them instead of
    aborting the execution (if you know what you are doing).
-   
+
 5. be PATIENT. Transforming a large device takes a LONG time...
    On a fairly fast disk, it takes about one minute per gigabyte.
    It means transforming 1000GB takes about 16 hours.
    Raid disks can be somewhat faster, and solid state disks (SSD)
    can be _much_ faster.
-   
+
 6) if something goes really wrong, check in /var/tmp/fstransform
    for the log files
    fstransform.log.<NNN> and fsremap.job.<MMM>/fsremap.log
@@ -244,7 +244,7 @@ To pass the same option to 'fstransform', you must execute something like
    by running 'fsremap --resume-job=<MMM> {device}'.
    Also, 'fsremap' will show at its startup the exact command line
    needed to resume its execution.
-   
+
    The loop file created by fstransform must NEVER be  as argument to
    'fsremap --resume-job=<MMM> {...}'. You would IRREVERSIBLY LOSE YOUR DATA!
 

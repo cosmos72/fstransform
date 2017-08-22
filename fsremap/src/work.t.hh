@@ -3,17 +3,17 @@
  *               preserving its contents and without the need for a backup
  *
  * Copyright (C) 2011-2012 Massimiliano Ghilardi
- * 
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
@@ -647,7 +647,7 @@ int fr_work<T>::create_storage()
 
     ft_size req_mem_buffer_size = io->job_storage_size(FC_MEM_BUFFER_SIZE);
     ft_size req_secondary_size = io->job_storage_size(FC_SECONDARY_STORAGE_SIZE);
-    
+
     ft_size tmp_primary_size_exact = 0, tmp_secondary_size_exact = 0;
     FT_IO_NS fr_persist & persist = io->persist();
     bool persist_has_sizes_exact = persist.is_replaying();
@@ -660,7 +660,7 @@ int fr_work<T>::create_storage()
     const ft_size req_primary_size_exact = tmp_primary_size_exact;
     const ft_size req_secondary_size_exact = tmp_secondary_size_exact;
     const ft_size req_total_size_exact = req_primary_size_exact + req_secondary_size_exact;
-   
+
 
     double free_pretty_len = 0.0;
     const char * free_pretty_unit = ff_pretty_size(free_ram_or_min, & free_pretty_len);
@@ -838,7 +838,7 @@ int fr_work<T>::create_storage()
     /*
      * also save exact primary/secondary storage exact sizes to persistence,
      * in case this jobs gets interrupted and somebody else will try to resume it later.
-     * 
+     *
      * mem_buffer_size is not saved because it does not influence the remapping algorithm.
      */
     if (!persist_has_sizes_exact) {
@@ -953,7 +953,7 @@ int fr_work<T>::relocate()
 
     if (!simulated) {
         err = io->umount_dev();
-            
+
         if (err == 0) {
             if (ask_questions) {
                 ff_log(FC_NOTICE, 0, "everything ready for in-place remapping, this is your LAST chance to quit.");
