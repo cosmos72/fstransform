@@ -190,9 +190,9 @@ int ft_cache_symlink::find_and_delete(const ft_string & inode, ft_string & resul
         // not found
         return 0;
 
-        if (err != 0)
-            ff_log(FC_WARN, errno, "failed to read cache symlink `%s'", link_from.c_str());
-    
+    if (err != 0)
+        ff_log(FC_WARN, errno, "failed to read cache symlink `%s'", link_from.c_str());
+
         // either found, or error
     if (::unlink(link_from.c_str()) != 0)
         ff_log(FC_WARN, errno, "failed to remove cache symlink `%s'", link_from.c_str());
@@ -222,7 +222,7 @@ int ft_cache_symlink::find_and_update(const ft_string inode, const ft_string & n
     if (::symlink(new_payload.c_str(), link_from.c_str()) != 0)
         return ff_log(FC_ERROR, errno, "failed to create cache symlink `%s' -> `%s'", link_from.c_str(), new_payload.c_str());
 
-        return 1;
+    return 1;
 }
 
 void ft_cache_symlink::clear()
