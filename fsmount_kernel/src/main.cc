@@ -228,7 +228,7 @@ int main(int argc, char ** argv)
     const char * arg;
     bool allow_options = true;
     
-    if (*argv)
+    if (argc && *argv)
         program_name = *argv++;
     
     while ((arg = *argv++))
