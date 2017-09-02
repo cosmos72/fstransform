@@ -52,22 +52,22 @@ public:
     /** default constructor */
 	ft_cache_adaptor(const V & init_zero_payload = V()) : super_type(init_zero_payload), mixin_type()
     { }
-    
+
     /** copy constructor */
 	ft_cache_adaptor(const this_type & other) : super_type(other), mixin_type(other)
     { }
-    
+
     /** assignment operator */
     virtual const super_type & operator=(const this_type & other)
     {
         mixin_type::operator=(other);
         return super_type::operator=(other);
     }
-    
+
     /** destructor */
     virtual ~ft_cache_adaptor()
     { }
-    
+
     /**
      * if cached inode found, set payload and return 1.
      * Otherwise add it to cache and return 0.

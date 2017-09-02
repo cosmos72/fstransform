@@ -3,17 +3,17 @@
  *               preserving its contents and without the need for a backup
  *
  * Copyright (C) 2011-2012 Massimiliano Ghilardi
- * 
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
@@ -63,7 +63,7 @@ private:
 
     /** flush this_persist_file to disk: calls fflush() then fdatasync() or fsync() */
     int do_flush();
-    
+
 public:
     /** constructor */
     fr_persist(fr_job & job);
@@ -89,7 +89,7 @@ public:
 
     /** read a step from persistence fle */
     int read(ft_ull & progress1, ft_ull & progress2);
-   
+
     /** read or write a step in persistence file */
     int next(ft_ull progress1, ft_ull progress2);
 

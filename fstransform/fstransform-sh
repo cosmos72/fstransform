@@ -4,17 +4,17 @@
 #               preserving its contents and without the need for a backup
 #
 # Copyright (C) 2012 Massimiliano Ghilardi
-# 
+#
 #     This program is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
 #     the Free Software Foundation, either version 3 of the License, or
 #     (at your option) any later version.
-# 
+#
 #     This program is distributed in the hope that it will be useful,
 #     but WITHOUT ANY WARRANTY; without even the implied warranty of
 #     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #     GNU General Public License for more details.
-# 
+#
 #     You should have received a copy of the GNU General Public License
 #     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
@@ -364,22 +364,22 @@ log_def_file() {
     log_file_no_timestamp
     echo 1>&5
     log_file_timestamp
-    echo "ERROR! $PROG: $@" 1>&5  
+    echo "ERROR! $PROG: $@" 1>&5
   }
   log_file_err_add() {
     log_file_no_timestamp
-    echo "       $@" 1>&5  
+    echo "       $@" 1>&5
   }
   log_file_err_add_prompt() {
     log_file_no_timestamp
-    echo "       $@" 1>&5  
+    echo "       $@" 1>&5
   }
 }
 
 log_init_file() {
   "$CMD_mkdir" -p "$PROG_DIR" >/dev/null 2>&1
   > "$PROG_LOG_FILE" >/dev/null 2>&1
-  
+
   if test -w "$PROG_LOG_FILE"; then
     exec 5>"$PROG_LOG_FILE"
   fi
@@ -497,9 +497,9 @@ detect_cmd() {
   local cmd="$1"
   local my_cmd=
   local user_cmd="`eval echo '$USER_CMD_'\"$cmd\"`"
-  
+
   log_start "checking for $cmd...         "
-  
+
   if test "$user_cmd" != ""; then
     my_cmd="`$my_cmd_which \"$user_cmd\"`" >/dev/null 2>&1
     if test "$my_cmd" != ""; then
@@ -532,10 +532,10 @@ detect_cmd_dual() {
   if test "$my_cmd_which" = ""; then
     my_cmd_which="$BOOT_CMD_which"
   fi
-  
+
   local cmd="$1"
   local source_or_target="$2"
-  
+
   local user_cmd="`eval echo '$USER_CMD_'\"$cmd\"'_'\"$source_or_target\"`"
   local my_cmd=
   log_start "checking for ${cmd}($source_or_target file-system)...        "
@@ -573,7 +573,7 @@ fix_for_fstype_ntfs() {
       log_warn "command 'ntfsresize' not found, it is needed to check integrity of file-system type 'ntfs'"
     fi
   fi
-  
+
   if test "$DEVICE_FSTYPE" = "ntfs"; then
     DEVICE_MOUNT_OPTS_RW="rw,big_writes"
     if test "$my_cmd_ntfsresize" != "" -a "$USER_CMD_fsck_source" = ""; then
@@ -676,7 +676,7 @@ parse_args_late "$@"
 
 if test "$OPT_PREALLOC" = yes; then
   CMDS="$CMDS $CMDS_prealloc"
-  
+
   for cmd in $CMDS_prealloc; do
     detect_cmd "$cmd" || ERR="$?"
   done
@@ -774,7 +774,7 @@ CLEANUP_5=
 
 do_cleanup() {
   trap - 0 $CLEANUP_SIGNALS
-  
+
   if test "$CLEANUP_5" != ""; then
     eval "$CLEANUP_5" >/dev/null 2>/dev/null
   fi
@@ -909,9 +909,9 @@ echo_device_mount_point_and_fstype() {
 initial_mount_device() {
   DEVICE_MOUNT_POINT="$TMP_DIR/fstransform.mount.$$"
   "$CMD_mkdir" -p "$DEVICE_MOUNT_POINT" >/dev/null 2>&1
-  
+
   CLEANUP_0="'$CMD_rmdir' '$DEVICE_MOUNT_POINT'"
-  
+
   if test "$DEVICE_FSTYPE" != ""; then
     exec_cmd "$CMD_mount" "$DEVICE" "$DEVICE_MOUNT_POINT" -t "$DEVICE_FSTYPE"
   else
@@ -1002,7 +1002,7 @@ check_for_tested_fstypes() {
   if test "$my_fstype_source_ok" = "yes" -a "$my_fstype_target_ok" = "yes"; then
     return 0
   fi
-  
+
   local my_log=log_err my_log_add=log_err_add
   if test "$USER_FORCE_UNTESTED_FSTYPES" = "yes"; then
     my_log=log_warn
@@ -1019,7 +1019,7 @@ check_for_tested_fstypes() {
     "$my_log" "this program is UNTESTED on target file system '$FSTYPE' !"
   fi
   "$my_log_add" "this program is tested ONLY on file systems: $FSTYPES_TESTED"
-  
+
   if test "$USER_FORCE_UNTESTED_FSTYPES" = "yes"; then
     "$my_log_add" "continuing anyway due to option '--force-untested-file-systems' (DANGEROUS)"
     return 0
@@ -1098,7 +1098,7 @@ create_loop_or_zero_file() {
     fi
     log_info "overwriting $my_kind file '$my_file' inside device '$DEVICE'..."
   fi
-  
+
   exec_cmd_noquit "$CMD_dd" "if=/dev/zero" "of=$my_file" bs=1 count=1
   if test "$ERR" != 0; then
     log_err "failed to create or truncate '$my_file' to zero bytes"
@@ -1110,12 +1110,12 @@ create_loop_or_zero_file() {
 
 create_loop_file() {
   create_loop_or_zero_file loop LOOP_FILE "$LOOP_FILE"
-  
+
   CLEANUP_1="'$CMD_rm' -f '$LOOP_FILE'"
 
   # loop file length is = device size truncated down to a multiple of its block size:
   # avoids annoying problems if device's last block has an odd length
-  
+
   capture_cmd DEVICE_BLOCK_SIZE "$CMD_stat" -c %o "$LOOP_FILE"
   log_info "device file-system block size = $DEVICE_BLOCK_SIZE bytes"
   if test "$DEVICE_BLOCK_SIZE" = "" -o "$DEVICE_BLOCK_SIZE" -lt 512; then
@@ -1125,7 +1125,7 @@ create_loop_file() {
   : $(( DEVICE_SIZE_IN_BLOCKS = DEVICE_SIZE_IN_BYTES / DEVICE_BLOCK_SIZE ))
   : $(( LOOP_SIZE_IN_BYTES = DEVICE_SIZE_IN_BLOCKS * DEVICE_BLOCK_SIZE ))
   log_info "device usable size = $LOOP_SIZE_IN_BYTES bytes"
-  
+
   if test "$USER_LOOP_SIZE_IN_BYTES" != ""; then
     # only accept user-specified new-size if smaller than maximum allowed,
     # and in any case truncate it down to a multiple of device block size
@@ -1169,7 +1169,7 @@ connect_loop_device() {
   capture_cmd LOOP_DEVICE "$CMD_losetup" -f
   exec_cmd "$CMD_losetup" "$@" "$LOOP_DEVICE" "$LOOP_FILE"
   log_info "connected loop device '$LOOP_DEVICE' to file '$LOOP_FILE'"
-  
+
   CLEANUP_2="'$CMD_losetup' -d '$LOOP_DEVICE'"
 }
 connect_loop_device
@@ -1235,14 +1235,14 @@ mount_loop_file() {
     fi
   fi
   log_info "mounting loop device '$LOOP_DEVICE' on '$LOOP_MOUNT_POINT' $1..."
-  
+
   local my_mount_opts="$LOOP_MOUNT_OPTS_RW"
   if test "$1" = readonly; then
     my_mount_opts="ro"
   fi
   exec_cmd "$CMD_mount" "$LOOP_DEVICE" "$LOOP_MOUNT_POINT" -t "$FSTYPE" -o "$my_mount_opts"
   log_info "loop device '$LOOP_DEVICE' mounted successfully."
-  
+
   CLEANUP_3="'$CMD_rmdir' $LOOP_MOUNT_POINT"
   CLEANUP_4="'$CMD_umount' $LOOP_DEVICE"
 }
@@ -1254,7 +1254,7 @@ move_device_contents_into_loop_file() {
   if test "$OPT_PREALLOC" = yes; then
     log_info "preallocating loop file contents."
     log_info "this may take some time, please be patient..."
-    
+
     OPTS_fsmove="$OPTS_fsmove --io=prealloc"
   else
     log_info "preliminary steps completed, now comes the delicate part:"
@@ -1280,11 +1280,11 @@ move_device_contents_into_loop_file() {
     fi
     log_info "moving '$DEVICE' contents into the loop file."
     log_info "this may take a long time, please be patient..."
-    
+
     # do not remove $LOOP_FILE anymore: in a moment it will contain users' data!
     CLEANUP_1=
   fi
-  
+
   exec_cmd "$CMD_fsmove" $OPTS_fsmove -- "$DEVICE_MOUNT_POINT" "$LOOP_MOUNT_POINT" --exclude "$LOOP_FILE"
 }
 move_device_contents_into_loop_file
@@ -1292,7 +1292,7 @@ move_device_contents_into_loop_file
 umount_and_fsck_loop_file() {
   log_info "unmounting and running '$CMD_fsck_target' (disk check) on loop file '$LOOP_FILE'"
   exec_cmd "$CMD_umount" "$LOOP_DEVICE"
-  
+
   CLEANUP_4=
 
   exec_cmd_fsck "$CMD_fsck_target" $OPTS_fsck_target "$LOOP_DEVICE"
@@ -1321,9 +1321,9 @@ create_zero_file() {
     return 0
   fi
   create_loop_or_zero_file zero ZERO_FILE "$ZERO_FILE"
-  
+
   CLEANUP_5="'$CMD_rm' -f '$ZERO_FILE'"
-  
+
   log_info "filling '$ZERO_FILE' with zeroes until device '$DEVICE' is full"
   log_info_add "needed by '$CMD_fsremap' to locate unused space."
   log_info_add "this may take a while, please be patient..."
@@ -1337,7 +1337,7 @@ create_zero_file() {
   # next command will fail with "no space left on device".
   # this is normal and expected.
   "$CMD_dd" if=/dev/zero of="$ZERO_FILE" bs=64k >/dev/null 2>/dev/null
-  
+
   exec_cmd "$CMD_sync"
   log_info "file full of zeroes created successfully"
 }
@@ -1354,12 +1354,12 @@ remount_device_ro_and_fsck() {
   log_info "running '$CMD_fsck_source' (disk check) on device '$DEVICE'"
   exec_cmd_fsck "$CMD_fsck_source" $OPTS_fsck_source "$DEVICE"
   exec_cmd "$CMD_sync"
-  
+
   if test "$X_COPY_DEVICE" != ""; then
     log_info "(internal option) copying device '$DEVICE' to '$X_COPY_DEVICE'"
     exec_cmd "$CMD_dd" bs=64k if="$DEVICE" of="$X_COPY_DEVICE"
   fi
-  
+
   log_info "mounting again device '$DEVICE' read-only with kernel driver"
   exec_cmd "$CMD_fsmount_kernel" "$DEVICE" "$DEVICE_MOUNT_POINT" -o ro -t "$DEVICE_FSTYPE"
 }
@@ -1370,10 +1370,10 @@ remount_device_ro_and_fsck
 reconnect_and_remount_ro_loop_device_for_prealloc() {
   # losetup option "-r" means read-only
   connect_loop_device "-r"
-  
+
   mount_loop_file readonly
 
-  # update 'fsremap' options  
+  # update 'fsremap' options
   OPTS_fsremap="$OPTS_fsremap --io=prealloc --device-mount-point=$DEVICE_MOUNT_POINT --loop-mount-point=$LOOP_MOUNT_POINT --loop-device=$LOOP_DEVICE --cmd-losetup=$CMD_losetup"
 }
 if test "$OPT_PREALLOC" = yes; then
@@ -1384,31 +1384,31 @@ fi
 
 remap_device_and_sync() {
   local my_OPTS_fsremap="--questions=$OPT_ASK_QUESTIONS $OPTS_fsremap"
-  
+
   log_info "launching '$CMD_fsremap' in simulated mode"
   if test "$OPT_CREATE_ZERO_FILE" = "yes"; then
     exec_cmd "$CMD_fsremap" -q $my_OPTS_fsremap -n -- "$DEVICE" "$LOOP_FILE" "$ZERO_FILE"
   else
     exec_cmd "$CMD_fsremap" -q $my_OPTS_fsremap -n -- "$DEVICE" "$LOOP_FILE"
   fi
-  
+
   log_info "launching '$CMD_fsremap' in REAL mode to perform in-place remapping."
-  
+
   # starting to remap device, $ZERO_FILE will not exist anymore
   CLEANUP_5=
-  
+
   if test "$OPT_CREATE_ZERO_FILE" = "yes"; then
     exec_cmd "$CMD_fsremap" -q $my_OPTS_fsremap --cmd-umount="$CMD_umount" -- "$DEVICE" "$LOOP_FILE" "$ZERO_FILE"
   else
     exec_cmd "$CMD_fsremap" -q $my_OPTS_fsremap --cmd-umount="$CMD_umount" -- "$DEVICE" "$LOOP_FILE"
   fi
-  
+
   exec_cmd "$CMD_sync"
-  
+
 
   if test "$X_COPY_LOOP_FILE" != ""; then
     log_info "(internal option) comparing transformed device '$DEVICE' with previously saved loop file '$X_COPY_LOOP_FILE'"
-    
+
     # loop file may be smaller than device...
     # more exactly its length will be = device length rounded down to device block size
     "$CMD_dd" if="$DEVICE" bs="$DEVICE_BLOCK_SIZE" count="$DEVICE_SIZE_IN_BLOCKS" | "$CMD_cmp" - "$X_COPY_LOOP_FILE" || exit 1

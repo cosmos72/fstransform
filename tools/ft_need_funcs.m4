@@ -19,7 +19,7 @@ m4_define([FT_NEED_ANY_FUNC], [
   for ft_func in $@
   do :
     ft_funcs_missing="$ft_funcs_missing$ft_func "
-    
+
     if test "`eval echo '$ac_cv_func_'$ft_func`" = "yes"
     then
       ft_funcs_found=1

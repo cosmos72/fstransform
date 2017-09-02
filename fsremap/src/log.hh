@@ -125,7 +125,7 @@ private:
     ft_log_fmt format;
     ft_log_level min_level, max_level;
     ft_log_color color;
-    
+
     /** destructor. */
     ~ft_log_appender();
 
@@ -137,18 +137,18 @@ public:
     ft_log_appender(FILE * stream, ft_log_fmt format = FC_FMT_MSG,
                     ft_log_level min_level = FC_DUMP, ft_log_level max_level = FC_FATAL,
                     ft_log_color color = FC_COL_AUTO);
-    
+
     FT_INLINE void set_format(ft_log_fmt format) { this->format = format; }
 
     FT_INLINE void set_min_level(ft_log_level min_level) { this->min_level = min_level; }
     FT_INLINE void set_max_level(ft_log_level max_level) { this->max_level = max_level; }
-    
+
     /** write a log message to stream */
     void append(ft_log_event & event);
 
     /** flush this appender */
     void flush();
-    
+
     /** flush all buffered streams used to log messages for specified level */
     static void flush_all(ft_log_level level);
 
@@ -181,7 +181,7 @@ private:
 
     /** return map of all existing loggers. */
     static all_loggers_type & get_all_loggers();
-    
+
     /** constructor. */
     ft_log(const ft_mstring & name, ft_log * parent, ft_log_level level = FC_LEVEL_NOT_SET);
 
@@ -199,7 +199,7 @@ private:
 
     /** log a message (skip threshold_level check) */
     void append(ft_log_event & event);
-    
+
 public:
 
     /** return root logger */
@@ -217,7 +217,7 @@ public:
 
     /** get logger name. */
     FT_INLINE const ft_mstring & get_name() const { return * name; }
-    
+
     /** return the level, i.e. least serious level that is not suppressed. */
     FT_INLINE ft_log_level get_level() const { return level; }
 
@@ -232,7 +232,7 @@ public:
 
     /** add an appender */
     void add_appender(ft_log_appender & appender);
-    
+
     /** remove an appender */
     void remove_appender(ft_log_appender & appender);
 };

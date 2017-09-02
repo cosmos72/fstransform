@@ -195,7 +195,7 @@ int fm_io_posix::disk_stat(const char * path, fm_disk_stat & disk_stat)
     for (int i = 0; i < 2; i++) {
         if (::statvfs(path, & buf) != 0)
             return ff_log(FC_ERROR, errno, "failed to statvfs() `%s'", path);
-        
+
         ft_uoff disk_total = (ft_uoff) buf.f_bsize * (ft_uoff) buf.f_blocks;
         ft_uoff disk_free =  (ft_uoff) buf.f_bsize * (ft_uoff) buf.f_bfree;
         disk_stat.set_total(disk_total);
@@ -217,7 +217,7 @@ int fm_io_posix::disk_stat(const char * path, fm_disk_stat & disk_stat)
 void fm_io_posix::try_to_make_free_space(const char * FT_ARG_UNUSED(path))
 {
 #if 0
-    /* 
+    /*
      * we COULD run 'xfs_fsr <path>' and try to free some space on 'xfs' file-systems,
      * but at least on linux with an almost-full source device
      * xfs_fsr can WORSEN the problem by triggering 'loop write error' kernel errors,
@@ -226,7 +226,7 @@ void fm_io_posix::try_to_make_free_space(const char * FT_ARG_UNUSED(path))
      */
     const char * cmd = "xfs_fsr";
     const char * const args[] = { cmd, path, NULL };
-    
+
     if (ff_posix_exec_silent(cmd, args) == 0)
         ff_log(FC_INFO, 0, "successfully executed '%s %s' to free some disk space", args[0], args[1]);
 #endif
@@ -487,10 +487,10 @@ int fm_io_posix::move_file(const ft_string & source_path, const ft_stat & stat, 
         /** hard link failed */
         return err;
     }
-    
+
     /* no luck with inode_cache, proceed as usual */
     err = copy_file_contents(source_path, stat, target_path);
-    
+
 move_file_remove_source:
     if (err == 0)
         err = remove_file(source);
@@ -505,7 +505,7 @@ int fm_io_posix::copy_file_contents(const ft_string & source_path, const ft_stat
 {
     const char * source = source_path.c_str(), * target = target_path.c_str();
     int err = 0;
-    
+
     int in_fd = ::open(source, O_RDWR);
     if (in_fd < 0)
         err = ff_log(FC_ERROR, errno, "failed to open source file `%s'", source);

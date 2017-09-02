@@ -3,17 +3,17 @@
  *               preserving its contents and without the need for a backup
  *
  * Copyright (C) 2011-2017 Massimiliano Ghilardi
- * 
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
@@ -284,7 +284,7 @@ int fr_remap::init(int argc, char const* const* argv)
         bool allow_opts = true;
 
         args.program_name = argv[0];
-        
+
         // skip program_name
         while (err == 0 && --argc) {
             arg = * ++argv;
@@ -350,7 +350,7 @@ int fr_remap::init(int argc, char const* const* argv)
                 }
                 /* -m, --mem-buffer=RAM_SIZE[k|M|G|T|P|E|Z|Y] */
                 else if ((argc > 1 && !strcmp(arg, "-m")) || !strncmp(arg, "--mem-buffer=", opt_len)) {
-                    
+
                     if ((err = ff_str2un_scaled(opt_arg, & args.storage_size[FC_MEM_BUFFER_SIZE])) != 0) {
                         err = invalid_cmdline(args, err, "invalid memory buffer size '%s'", opt_arg);
                         break;
@@ -409,7 +409,7 @@ int fr_remap::init(int argc, char const* const* argv)
                 }
                 /* -xp, --exact-primary-storage=PRIMARY_SIZE[k|M|G|T|P|E|Z|Y] */
                 else if ((argc > 1 && !strcmp(arg, "-xp")) || !strncmp(arg, "--exact-primary-storage=", opt_len)) {
-                    
+
                     if ((err = ff_str2un_scaled(opt_arg, & args.storage_size[FC_PRIMARY_STORAGE_EXACT_SIZE])) != 0) {
                         err = invalid_cmdline(args, err, "invalid primary storage exact size '%s'", opt_arg);
                         break;
@@ -419,7 +419,7 @@ int fr_remap::init(int argc, char const* const* argv)
                 }
                 /* -xs, --exact-secondary-storage=SECONDARY_SIZE[k|M|G|T|P|E|Z|Y] */
                 else if ((argc > 1 && !strcmp(arg, "-xs")) || !strncmp(arg, "--exact-secondary-storage=", opt_len)) {
-                    
+
                     if ((err = ff_str2un_scaled(opt_arg, & args.storage_size[FC_SECONDARY_STORAGE_EXACT_SIZE])) != 0) {
                         err = invalid_cmdline(args, err, "invalid secondary storage exact size '%s'", opt_arg);
                         break;

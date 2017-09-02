@@ -3,17 +3,17 @@
  *               preserving its contents and without the need for a backup
  *
  * Copyright (C) 2011-2012 Massimiliano Ghilardi
- * 
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
@@ -126,7 +126,7 @@ int fr_io_prealloc::open(const fr_args & args)
             err = -EINVAL;
             break;
         }
-        
+
         ft_size i, n = FC_MOUNT_POINTS_N;
         for (i = 0; i < n; i++) {
             ft_string path = mount_point_dir[i];
@@ -397,11 +397,11 @@ int fr_io_prealloc::hard_link(const char * src_path, const ft_stat & src_stat,
     // (dst_nlink - 1) because we just found one link to this inode:
     // we expect to find (dst_nlink - 1) other links
     ft_nlink cached_nlink = dst_nlink - 1;
-    
+
     int err = this_inode_cache->find_or_add(dst_inode, cached_nlink);
     if (err < 0)
         return err;
-    
+
     if (err == 0) {
         // fake error to tell caller that inode was not in inode_cache
         return EAGAIN;
@@ -573,7 +573,7 @@ int fr_io_prealloc::read_extents_file(const char * src_path, const ft_stat & src
         if (end1 > end2 && end2 >= len[SRC])
                 extent[SRC].truncate_at_logical(end2);
         }
-       
+
         if ((err = loop_file_extents.compose(extent[SRC], extent[DST], block_size_bitmask, unmapped)) != 0)
             break;
 

@@ -139,7 +139,7 @@ int fm_move::main(int argc, char ** argv)
     ztest();
     ztest_ptr();
 #endif
-    
+
     fm_move mover;
 
     int err = mover.init(argc, argv);
@@ -317,7 +317,7 @@ int fm_move::init(int argc, char const* const* argv)
                     /* --x-log-FILE=LEVEL */
                     arg += 8;
                     const char * equal = strchr(arg, '=');
-                    
+
                     ft_mstring logger_name(arg, equal ? equal - arg : strlen(arg));
                     ft_log_level logger_level = equal ? (ft_log_level) atoi(equal+1) : FC_INFO;
                     ft_log::get_logger(logger_name).set_level(logger_level);
@@ -373,16 +373,16 @@ int fm_move::init(int argc, char const* const* argv)
             else
                 err = invalid_cmdline(program_name, 0, "too many arguments");
         }
-        
+
         if (err != 0)
             break;
-        
+
         /* if autodetect, use POSIX I/O */
         if (args.io_kind == FC_IO_AUTODETECT)
             args.io_kind = FC_IO_POSIX;
-        
+
         if (args.io_kind == FC_IO_POSIX || args.io_kind == FC_IO_PREALLOC) {
-            
+
             if (io_args_n == 0) {
                 err = invalid_cmdline(program_name, 0, "missing arguments: %s %s", LABEL[0], LABEL[1]);
                 break;
@@ -390,7 +390,7 @@ int fm_move::init(int argc, char const* const* argv)
                 err = invalid_cmdline(program_name, 0, "missing argument: %s", LABEL[1]);
                 break;
             }
-            
+
             const char * source_root = args.io_args[FT_IO_NS fm_io::FC_SOURCE_ROOT];
             if (args.inode_cache_path != NULL && source_root != NULL
                 && (args.inode_cache_path[0] == '/') != (source_root[0] == '/'))
@@ -405,23 +405,23 @@ int fm_move::init(int argc, char const* const* argv)
                 break;
             }
         }
-        
+
     } while (0);
-    
+
     if (err == 0) {
         ft_log::get_root_logger().set_level(level);
-        
+
         /* note 1.4.1) -v sets format FC_FMT_LEVEL_MSG */
         /* note 1.4.2) -vv sets format FC_FMT_DATETIME_LEVEL_MSG */
         if (!format_set)
             format = level < FC_DEBUG ? FC_FMT_DATETIME_LEVEL_MSG : level == FC_DEBUG ? FC_FMT_LEVEL_MSG : FC_FMT_MSG;
-        
+
         // no dot alter appenders min_level
         ft_log_appender::reconfigure_all(format, FC_LEVEL_NOT_SET, color);
-        
+
         err = init(args);
     }
-    
+
     return err;
 }
 
@@ -433,19 +433,19 @@ int fm_move::init(const fm_args & args)
 {
     FT_IO_NS fm_io * io = NULL;
     int err = 0;
-    
+
     switch (args.io_kind) {
     case FC_IO_POSIX:
         if ((err = check_is_closed()) != 0)
             break;
-        
+
         io = new FT_IO_NS fm_io_posix();
         break;
 #ifdef FT_HAVE_FM_IO_IO_PREALLOC
     case FC_IO_PREALLOC:
         if ((err = check_is_closed()) != 0)
             break;
-        
+
         io = new FT_IO_NS fm_io_prealloc();
         break;
 #endif
@@ -458,7 +458,7 @@ int fm_move::init(const fm_args & args)
         err = -ENOSYS;
         break;
     }
-    
+
     if (io != NULL) {
         if ((err = io->open(args)) == 0)
             this_io = io;

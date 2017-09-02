@@ -60,11 +60,11 @@ public:
     /** default constructor */
     ft_cache_mem(const V & init_zero_payload = V()) : super_type(init_zero_payload), map()
     { }
-    
+
     /** copy constructor */
     ft_cache_mem(const ft_cache_mem<K,V> & other) : super_type(other), map(other.map)
     { }
-    
+
     /** assignment operator */
     virtual const super_type & operator=(const ft_cache_mem<K,V> & other)
     {
@@ -72,11 +72,11 @@ public:
             map = other.map;
         return super_type::operator=(other);
     }
-    
+
     /** destructor */
     virtual ~ft_cache_mem()
     { }
-    
+
     /**
      * if cached inode found, set payload and return 1.
      * Otherwise add it to cache and return 0.
@@ -120,11 +120,11 @@ public:
         typename map_type::iterator iter = map.find(key);
         if (iter == map.end())
             return 0;
-        
+
         iter->second = new_payload;
         return 1;
     }
-    
+
     virtual void clear()
     {
         map.clear();

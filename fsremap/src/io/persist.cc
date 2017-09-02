@@ -3,17 +3,17 @@
  *               preserving its contents and without the need for a backup
  *
  * Copyright (C) 2011-2012 Massimiliano Ghilardi
- * 
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
@@ -148,24 +148,24 @@ int fr_persist::get_storage_sizes_exact(ft_size & size1, ft_size & size2)
     int err = read(persist_size1, persist_size2);
     if (err != 0)
         return err;
-   
+
     if (persist_size1 != 0 && job_size1 != 0
         && persist_size1 != (ft_ull) job_size1)
     {
-        ff_log(FC_ERROR, 0, "mismatched primary storage exact size: %" FT_ULL " bytes requested from command line, %" FT_ULL 
+        ff_log(FC_ERROR, 0, "mismatched primary storage exact size: %" FT_ULL " bytes requested from command line, %" FT_ULL
                " bytes found in persistence file", (ft_ull) job_size1, persist_size1);
         err = -EINVAL;
     }
     if (persist_size2 != 0 && job_size2 != 0
         && persist_size2 != (ft_ull) job_size2)
     {
-        ff_log(FC_ERROR, 0, "mismatched secondary storage exact size: %" FT_ULL " bytes requested from command line, %" FT_ULL 
+        ff_log(FC_ERROR, 0, "mismatched secondary storage exact size: %" FT_ULL " bytes requested from command line, %" FT_ULL
                " bytes found in persistence file", (ft_ull) job_size2, persist_size2);
         err = -EINVAL;
     }
     if (err != 0)
         return err;
-   
+
     // reuse persisted primary/secondary exact size.
     // ABSOLUTELY needed to reproduce the same operations while replaying
     size1 = (ft_size) persist_size1;
@@ -188,10 +188,10 @@ int fr_persist::read(ft_ull & progress1, ft_ull & progress2)
 {
     if (!this_replaying)
         ff_log(FC_ERROR, 0, "tried to read after end of persistence file '%s'", this_persist_path.c_str());
-    
+
     progress1 = this_progress1;
     progress2 = this_progress2;
-    
+
     return do_read(this_progress1, this_progress2);
 }
 
@@ -204,7 +204,7 @@ int fr_persist::next(ft_ull progress1, ft_ull progress2)
 
     if (!this_replaying)
         return do_write(progress1, progress2);
-    
+
     if (progress1 != this_progress1 || progress2 != this_progress2) {
         ff_log(FC_ERROR, 0, "unexpected values found while replaying persistence file '%s'",
                 this_persist_path.c_str());

@@ -99,7 +99,7 @@ public:
      * return true if 'free' amount of free space would trigger a 'critically low free space' error
      */
     bool is_too_low_free_space(ft_uoff free) const;
-    
+
     /** return the used disk space */
     FT_INLINE ft_uoff get_used() const { return this_free < this_total ? this_total - this_free : 0; }
 };

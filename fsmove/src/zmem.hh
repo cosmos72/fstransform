@@ -48,32 +48,32 @@ protected:
 
     void * address;
     ft_size size; /* if mem is compressed, contains ~actual_size */
-    
+
 public:
     inline zmem() : address(NULL), size(0)
     {
     }
-    
+
     inline bool compressed() const
     {
         return size >> compressed_shift;
     }
-    
+
     inline bool current_size() const
     {
         return compressed() ? size : ~size;
     }
-    
+
     bool alloc_page(ft_size new_size);
     bool free_page();
-        
+
     inline bool compress_page()
     {
         if (address != NULL && !compressed())
             return do_compress();
         return address != NULL; /* already decompressed, or does not exist */
     }
-    
+
     inline void * decompress_page()
     {
         if (address != NULL && compressed())

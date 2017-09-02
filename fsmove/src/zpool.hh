@@ -37,7 +37,7 @@ class zpool_base {
 protected:
     std::vector<zpage> pool;
     zpage_handle next_handle;
-    
+
     void update_next_handle();
 
 public:
@@ -54,7 +54,7 @@ public:
             return NULL;
         return pool[page_handle].decompress_page();
     }
-    
+
     inline bool compress_page(zpage_handle page_handle)
     {
         if (page_handle >= pool.size())
@@ -67,11 +67,11 @@ class zpool : public zpool_base {
 private:
     typedef std::multimap<ft_size, zpage_handle> map_type;
     typedef map_type::iterator iter_type;
-    
+
     map_type avail_pool;
 
     iter_type do_alloc_init_page(ft_size chunk_size);
-    
+
 public:
     zpool();
     ~zpool();
@@ -91,7 +91,7 @@ public:
             return NULL;
         return pool[page_handle].decompress_ptr(ptr_handle);
     }
-    
+
     inline bool compress_ptr(zptr_handle ptr_handle)
     {
         zpage_handle page_handle = ptr_handle >> zpage::PTR_BITS;

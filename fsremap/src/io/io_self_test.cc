@@ -3,17 +3,17 @@
  *               preserving its contents and without the need for a backup
  *
  * Copyright (C) 2011-2012 Massimiliano Ghilardi
- * 
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
@@ -75,7 +75,7 @@ int fr_io_self_test::open(const fr_args & args)
 
     /* dev_len is a random number in the range [block_size, 1TB * block_size] */
     ft_uoff dev_len_shift = (ft_uoff) ff_random(20);
-    
+
     ft_uoff dev_len = (1 + ff_random((ft_ull)1047576)) << (this_block_size_log2 + dev_len_shift);
 
     dev_length(dev_len);
@@ -85,7 +85,7 @@ int fr_io_self_test::open(const fr_args & args)
     double pretty_len;
     const char * pretty_label = ff_pretty_size(dev_len, & pretty_len);
     ff_log(FC_INFO, 0, "%s%s length is %.2f %sbytes", sim_msg, label[FC_DEVICE], pretty_len, pretty_label);
-    
+
     return err;
 }
 

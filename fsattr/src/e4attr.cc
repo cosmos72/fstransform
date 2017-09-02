@@ -2,16 +2,16 @@
  * fsattr - modify file-system internal data structures
  *
  * Copyright (C) 2012 Massimiliano Ghilardi
- * 
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, version 2 of the License.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
@@ -60,7 +60,7 @@ typedef struct ext2fs_extent e4_extent;
 
 enum e4attr_extent_op { E4_EXTENT_UNKNOWN_OP, E4_EXTENT_SET_UNINITIALIZED, E4_EXTENT_SET_INITIALIZED };
 
-struct e4attr_ctx 
+struct e4attr_ctx
 {
     const char * dev_path;
     e4_fs fs;
@@ -101,14 +101,14 @@ static e4_err e4attr_extents_apply(e4_fs fs, e4_inum inum, e4attr_extent_op appl
             continue;
 
         if (extent.e_len > max_len) {
-            ff_log(FC_ERROR, 0, "cannot %sinitialize extent %" FT_ULL " - %" FT_ULL " (%" FT_ULL " blocks) in inode #%" FT_ULL 
+            ff_log(FC_ERROR, 0, "cannot %sinitialize extent %" FT_ULL " - %" FT_ULL " (%" FT_ULL " blocks) in inode #%" FT_ULL
                    ": maximum %sinitialized extent length is %" FT_ULL " blocks", (init ? "" : "un"),
                    (ft_ull) extent.e_lblk, (ft_ull) (extent.e_lblk + (extent.e_len - 1)),
                    (ft_ull) extent.e_len, (ft_ull) inum, (init ? "" : "un"), (ft_ull) max_len);
             err = -EOVERFLOW;
             break;
         }
-        
+
         extent.e_flags ^= EXT2_EXTENT_FLAGS_UNINIT;
         if ((err = ext2fs_extent_replace(extnum, 0, &extent)) != 0) {
             e4_fail(err, "ext2fs_extent_replace(inode = #%" FT_ULL ", extent = #%" FT_ULL ") failed", (ft_ull) inum, (ft_ull) extnum);
@@ -155,7 +155,7 @@ static int e4attr_dir_iterate(e4_inum dir, int entry, e4_dir_iter_ * iter_, int 
 
     if (is_file) {
        err = e4attr_extents_apply(fs, inum, ctx->apply_op);
-       
+
        // skip "." and ".."
     } else if (is_dir && inum != dir && (name_len != 2 || memcmp(iter->name, "..", 2))) {
         char * buf2 = (char *) malloc(fs->blocksize);
@@ -192,7 +192,7 @@ static e4_err e4attr_run(const char * dev_path, e4attr_extent_op apply_op) {
             break;
         }
         fs_is_open = true;
-        
+
         if ((err = ext2fs_check_directory(fs, root_inum)) != 0) {
             e4_fail(err, "inode #%" FT_ULL " inside device '%s' is not a directory - but it is supposed to be the root directory",
                     dev_path, (ft_ull) root_inum);
@@ -206,7 +206,7 @@ static e4_err e4attr_run(const char * dev_path, e4attr_extent_op apply_op) {
         if ((err = ext2fs_dir_iterate2(fs, root_inum, 0, buf, e4attr_dir_iterate, static_cast<void *>(& ctx))) != 0)
             e4_fail(err, "ext2fs_dir_iterate2(%s, root_inum = #%" FT_ULL ") failed", dev_path, (ft_ull) root_inum);
     } while (0);
-    
+
     if (buf)
         free(buf);
     if (fs_is_open && (err = ext2fs_close(fs)) != 0)
@@ -259,9 +259,9 @@ int e4attr_main(int argc, char ** argv) {
         if (allow_opts && arg[0] == '-') {
             if (!strcmp(arg, "--"))
                 allow_opts = false;
-            else if (!strcmp(arg, "--help")) 
+            else if (!strcmp(arg, "--help"))
                 return e4attr_help(program_name);
-            else if (!strcmp(arg, "--version")) 
+            else if (!strcmp(arg, "--version"))
                 return e4attr_version();
             else if (!strcmp(arg, "--files=prealloc"))
                 apply_op = E4_EXTENT_SET_UNINITIALIZED;
@@ -287,7 +287,7 @@ int e4attr_main(int argc, char ** argv) {
         ff_log(FC_ERROR, 0, "%s: missing operation, please specify one of --files=normal or --files=prealloc", program_name);
         return e4attr_usage(program_name);
     }
-    
+
     e4_err err = ft::e4attr_run(dev_path, apply_op);
     return err != 0 ? 1 : 0;
 }
@@ -302,6 +302,6 @@ int e4attr_main(int argc, char ** argv) {
 }
 
 #endif /* defined(FT_HAVE_LIBEXT2FS) && defined(FT_HAVE_LIBCOM_ERR) */
-        
+
 FT_NAMESPACE_END
 

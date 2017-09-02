@@ -1,8 +1,8 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.65])
-AC_INIT([fstransform], [0.9.3.work13], [BUG-REPORT-ADDRESS])
+AC_PREREQ([2.69])
+AC_INIT([fstransform],[0.9.3.work13],[BUG-REPORT-ADDRESS])
 AC_CONFIG_SRCDIR([fsremap/src/remap.cc])
 AC_CONFIG_HEADERS([fsremap/src/config.hh])
 AC_CONFIG_AUX_DIR([tools])
@@ -91,11 +91,11 @@ FT_NEED_ALL_LIBS([z_deflate])
 if test "$ac_cv_func_fallocate" != "yes"
 then
   AC_MSG_WARN([missing function fallocate(), experimental files preallocation will NOT be compiled])
-  
+
 elif test "$ac_cv_lib_com_err_error_message" != "yes"
 then
   AC_MSG_WARN([missing function error_message() in -lcom_err, experimental files preallocation will NOT be compiled])
-  
+
 elif test "$ac_cv_lib_ext2fs_ext2fs_extent_replace" != "yes"
 then
   AC_MSG_WARN([missing function ext2fs_extent_replace() in -lext2fs, experimental files preallocation will NOT be compiled])

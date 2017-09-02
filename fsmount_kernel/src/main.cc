@@ -2,17 +2,17 @@
  * fsmount_kernel - invoke raw linux syscall mount(), bypassing /sbin/mount
  *
  * Copyright (C) 2017 Massimiliano Ghilardi
- * 
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 2 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
@@ -49,22 +49,22 @@
 # define MS_BIND 0
 #endif
 #ifndef MS_DIRSYNC
-# define MS_DIRSYNC 0 
+# define MS_DIRSYNC 0
 #endif
 #ifndef MS_LAZYTIME
-# define MS_LAZYTIME 0 
+# define MS_LAZYTIME 0
 #endif
 #ifndef MS_REC
-# define MS_REC 0 
+# define MS_REC 0
 #endif
 #ifndef MS_RELATIME
-# define MS_RELATIME 0 
+# define MS_RELATIME 0
 #endif
 #ifndef MS_STRICTATIME
-# define MS_STRICTATIME 0 
+# define MS_STRICTATIME 0
 #endif
 #ifndef MS_SILENT
-# define MS_SILENT 0 
+# define MS_SILENT 0
 #endif
 
 
@@ -116,7 +116,7 @@ int parse_options()
     {
         sep = strchr(src, ',');
         len = sep ? sep - src : strlen(src);
-        
+
         if (len == 5 && !memcmp(src, "atime", len))
             mountflags &= ~MS_NOATIME;
         else if (len == 5 && !memcmp(src, "async", len))
@@ -187,7 +187,7 @@ int parse_options()
     }
     if (dst)
         *dst++ = '\0';
-    
+
     if (!source) {
         ff_log(FC_ERROR, 0, "%s: missing argument SOURCE", program_name);
         return usage(1);
@@ -227,10 +227,10 @@ int main(int argc, char ** argv)
 {
     const char * arg;
     bool allow_options = true;
-    
-    if (*argv)
+
+    if (argc && *argv)
         program_name = *argv++;
-    
+
     while ((arg = *argv++))
     {
         if (allow_options && arg[0] == '-') {
@@ -271,7 +271,7 @@ int main(int argc, char ** argv)
 }
 
 FT_NAMESPACE_END
-    
+
 int main(int argc, char ** argv)
 {
     return FT_NS main(argc, argv);

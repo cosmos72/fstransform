@@ -3,17 +3,17 @@
  *               preserving its contents and without the need for a backup
  *
  * Copyright (C) 2011-2012 Massimiliano Ghilardi
- * 
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
@@ -79,7 +79,7 @@ public:
     /** set secondary storage, buffer, or primary/secondary exact length to use (in bytes), or 0 to activate autodetection */
     FT_INLINE void job_storage_size(fr_storage_size which, ft_size len) { this_storage_size[which] = len; }
 
-    
+
     /**
      * return which free blocks to clear after remapping:
      * all, only blocks used as primary storage or renumbered device, or none
@@ -92,7 +92,7 @@ public:
      */
     FT_INLINE void job_clear(fr_clear_free_space clear) { this_clear = clear; }
 
-    
+
     /**
      * return true if I/O classes should be less strict on sanity checks
      * and generate WARNINGS (and keep going) for failed sanity checks
@@ -112,7 +112,7 @@ public:
 
     /** set to true if I/O classes should simulate run, i.e. run WITHOUT reading or writing device blocks */
     FT_INLINE void simulate_run(bool simulate_flag) { this_simulate_run = simulate_flag; }
-    
+
     /** return true if resuming an existing job */
     FT_INLINE bool resuming_job() const { return this_resume_job; }
 

@@ -50,7 +50,7 @@ bool zpool_base::free_page(zpage_handle handle)
         return false;
 
     bool success = pool[handle].free_page();
-    
+
     if (success && next_handle > handle)
         next_handle = handle;
     return success;
@@ -68,7 +68,7 @@ zpage_handle zpool_base::alloc_page(ft_size size)
         update_next_handle();
     else
         handle = 0;
-    
+
     return handle;
 }
 
@@ -88,14 +88,14 @@ void zpool_base::update_next_handle()
 
 zpool default_zpool;
 
-zpool::zpool() 
+zpool::zpool()
 { }
 
 zpool::~zpool()
 { }
 
 zpool::iter_type zpool::do_alloc_init_page(ft_size chunk_size)
-{    
+{
     zpage_handle handle = next_handle;
     if (pool.size() <= handle)
         pool.resize(handle + 1);
@@ -106,7 +106,7 @@ zpool::iter_type zpool::do_alloc_init_page(ft_size chunk_size)
         iter = avail_pool.insert(std::make_pair(chunk_size, handle));
     } else
         iter = avail_pool.end();
-    
+
     return iter;
 }
 
@@ -151,17 +151,17 @@ ft_size zpool::round_up_chunk_size(ft_size size) {
 zptr_handle zpool::alloc_ptr(ft_size size)
 {
     ft_size chunk_size = round_up_chunk_size(size);
-    
+
     zptr_handle ptr_handle = 0;
     zpage_handle page_handle;
-    
+
     iter_type iter = avail_pool.lower_bound(chunk_size), end = avail_pool.end();
     while (iter != end && iter->first == chunk_size)
     {
         page_handle = iter->second;
         zpage & page = pool[page_handle];
         ptr_handle = page.alloc_ptr(page_handle);
-        
+
         if (ptr_handle == 0 || page.is_full_page()) {
             /* page is full... try another one. */
             /* C++11 allows the elegant "iter = avail_pool.erase(iter)" */
@@ -171,8 +171,8 @@ zptr_handle zpool::alloc_ptr(ft_size size)
         if (ptr_handle != 0)
             return ptr_handle;
     }
-        
-    iter = do_alloc_init_page(chunk_size); 
+
+    iter = do_alloc_init_page(chunk_size);
     if (iter != end) {
         page_handle = iter->second;
         zpage & page = pool[page_handle];

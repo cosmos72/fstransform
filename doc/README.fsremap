@@ -85,16 +85,16 @@ If you are still reading, let's see to how to actually use fsremap and fsmove:
 
 0) compile them. Running "make" should suffice on any recent Linux
    machine, as long as g++ is installed.
-   
+
    You will get two executables, fsmove and fsremap.
    They will be located at
      fstransform-{version}-src/fsmove/Release/fsmove
    and
      fstransform-{version}-src/fsremap/Release/fsmap
-   
+
    You are suggested to either run "make install" or to copy them to a simpler path.
    Below, they will be referred as {fsmove} and {fsremap}
-   
+
 
 1) mount read-write the device you want to remap to a different file-system
 
@@ -105,7 +105,7 @@ If you are still reading, let's see to how to actually use fsremap and fsmove:
 
 2) create a sparse file inside the device to be used as loop-file,
    with the same length as the device itself
-   
+
    dd if=/dev/zero of={device-mount-point}/{loop-file} bs=1 count=1 seek=$(( {device-size-in-bytes} - 1 ))
    or, if you have truncate(1)
    truncate -s {device-size-in-bytes} {device-mount-point}/{loop-file}
@@ -138,52 +138,52 @@ If you are still reading, let's see to how to actually use fsremap and fsmove:
    This part is the most delicate, because {loop-file} disk usage will grow while
    you copy files inside it, and {device} or /dev/loop{n} - or both -
    can become full: if it happens, you will be in BIG troubles.
-   
+
    Let's see how to perform this delicate recursive move.
-   
+
    You should have the fsmove program distributed with fstransform.
    If you have it in {fsmove}, run:
-   
+
    {fsmove} {device-mount-point} {loop-file-mount-point} --exclude {device-mount-point}/{loop-file}
-   
+
    ################## WARNING ####### WARNING ####### WARNING ################
-   
+
    The last command above can take a LONG time to complete, and it CAN fill either filesystem
    {device-mount-point} and/or {loop-file-mount-point}.
-   
+
    Even if {fsmove} periodically checks for free space, you still MUST monitor its progress with something like
-   
+
    watch df {device-mount-point} {loop-file-mount-point}
-   
+
    because, if {device-mount-point} becomes full and the copy receives an 'I/O error', you are in trouble:
    the filesystem inside {loop-file-mount-point} will become CORRUPTED!
-   
+
    So if you realize {device-mount-point} is going to become full, you MUST interrupt the copy BEFORE it happens
    (and give up, sorry).
-   
+
    ######################## ALTERNATIVE SOLUTION #############################
-   
+
    If you don't have fsmove, things get a bit more ugly - and slow - and you need find(1), mv(1) and cpio(1)
    This is how: first recreate the directory tree inside loop-file with:
-   
+
    ( cd {device-mount-point} && find -xdev -type d ) | cpio -o | ( cd {loop-file-mount-point} && cpio -i )
-   
+
    then move all the files one by one, except {loop-file} (note: {loop-file-mount-point} must be an absolute path)
-   
+
    cd {device-mount-point} && find . -xdev \! -type d \! -path ./{loop-file} | while read i; do mv "$i" {loop-file-mount-point}/"$i" || break; done
 
    The same WARNING above still applies: you MUST monitor the free space
    on {device-mount-point} and {loop-file-mount-point} and interrupt
-   the operation if you realize {device-mount-point} is going to become full. 
+   the operation if you realize {device-mount-point} is going to become full.
 
    Actually, since these alternative commands do a simple file-by-file
    copy and do not check for free space, in this case it is even more
    critical to monitor the free space.
 
-   
+
 6) once all your files are inside the file-system in {loop-file}, things get less delicate.
    now you need to umount {loop-file}, 'sync' and check that {loop-file} is not corrupted
-   
+
    umount {loop-file-mount-point}
    # if you used losetup before, you will need also:
    losetup -d /dev/loop{n}
@@ -198,9 +198,9 @@ If you are still reading, let's see to how to actually use fsremap and fsmove:
    Additionally, it is now the time to check that the kernel did not
    report any error while writing to {loop-file-mount-point}.
    Please run:
-   
+
    dmesg
-   
+
    and check that there are no recent I/O errors in the produced
    messages.
 
@@ -223,7 +223,7 @@ If you are still reading, let's see to how to actually use fsremap and fsmove:
 
 9) choose a folder with some free space (NOT inside {device}) where fsremap
    can write its (hopefully small) backup data and log files, and name it {storage-dir}
-   
+
    If you skip this step, fsremap will use your home directory as
    default {storage-dir}.
 
@@ -233,7 +233,7 @@ If you are still reading, let's see to how to actually use fsremap and fsmove:
 
    if you did not choose a {storage-dir} folder, omit the arguments -t {storage-dir}
    and fsremap will use your home directory as default {storage-dir}
-   
+
    if {device} has very little free space, fsremap will create a file
    {storage-dir}/.fsremap/job.{x}/storage.bin and use it to store blocks
    while moving them around.

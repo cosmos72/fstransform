@@ -3,17 +3,17 @@
  *               preserving its contents and without the need for a backup
  *
  * Copyright (C) 2011-2012 Massimiliano Ghilardi
- * 
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
@@ -190,9 +190,9 @@ int ft_cache_symlink::find_and_delete(const ft_string & inode, ft_string & resul
         // not found
         return 0;
 
-        if (err != 0)
-            ff_log(FC_WARN, errno, "failed to read cache symlink `%s'", link_from.c_str());
-    
+    if (err != 0)
+        ff_log(FC_WARN, errno, "failed to read cache symlink `%s'", link_from.c_str());
+
         // either found, or error
     if (::unlink(link_from.c_str()) != 0)
         ff_log(FC_WARN, errno, "failed to remove cache symlink `%s'", link_from.c_str());
@@ -209,7 +209,7 @@ int ft_cache_symlink::find_and_update(const ft_string inode, const ft_string & n
 {
     ft_string link_from;
     build_path(inode, link_from, FT_ICP_READONLY);
-    
+
     int err = ::unlink(link_from.c_str());
     if (err == ENOENT)
             // not found
@@ -217,12 +217,12 @@ int ft_cache_symlink::find_and_update(const ft_string inode, const ft_string & n
 
     if (err != 0)
         ff_log(FC_WARN, errno, "failed to remove cache symlink `%s'", link_from.c_str());
-    
+
         // either found, or warning
     if (::symlink(new_payload.c_str(), link_from.c_str()) != 0)
         return ff_log(FC_ERROR, errno, "failed to create cache symlink `%s' -> `%s'", link_from.c_str(), new_payload.c_str());
 
-        return 1;
+    return 1;
 }
 
 void ft_cache_symlink::clear()

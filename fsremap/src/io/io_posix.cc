@@ -3,17 +3,17 @@
  *               preserving its contents and without the need for a backup
  *
  * Copyright (C) 2011-2012 Massimiliano Ghilardi
- * 
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
@@ -141,7 +141,7 @@ int fr_io_posix::open_dev(const char * path)
     int err = open_dev0(path, & fd[i], & dev_blk, & dev_len);
     if (err != 0)
         return err;
-        
+
     /* remember device length */
     dev_length(dev_len);
     /* also remember device path */
@@ -317,7 +317,7 @@ int fr_io_posix::open_file(ft_size i, const char * path)
             }
         }
     } while (0);
-    
+
     return err;
 }
 
@@ -344,7 +344,7 @@ int fr_io_posix::open(const fr_args & args)
         ft_size i = FC_DEVICE;
         if ((err = open_dev(path[i])) != 0)
             break;
-        
+
         if (!is_replaying())
             for (i = FC_DEVICE + 1; i < FC_FILE_COUNT; i++)
                 if ((err = open_file(i, path[i])) != 0)
@@ -806,7 +806,7 @@ int fr_io_posix::create_secondary_storage(ft_size len)
             err = ff_log(FC_FATAL, EOVERFLOW, "internal error, %s length = %" FT_ULL " overflows type (off_t)", label[j], (ft_ull) len);
             break;
         }
-        
+
         double pretty_len = 0.0;
         const char * pretty_label = ff_pretty_size(len, & pretty_len);
         const char * simulated_msg = simulated ? " (simulated)" : "";
@@ -854,7 +854,7 @@ int fr_io_posix::create_secondary_storage(ft_size len)
         }
         if (err != 0)
             break;
-        
+
         /* remember secondary_storage details */
         fr_extent<ft_uoff> & extent = secondary_storage();
         extent.physical() = extent.logical() = 0;
@@ -1147,7 +1147,7 @@ int fr_io_posix::flush_copy_bytes(fr_dir_posix dir, ft_uoff from_offset, ft_uoff
 # define CHECK_IF_MEM_IS_ZERO do { } while (0)
 
 #endif // ENABLE_CHECK_IF_MEM_IS_ZERO
-            
+
             if (read_dev) {
                 err = ff_posix_read(fd, mmap_address + mem_offset, mem_length);
                 if (err == 0) {

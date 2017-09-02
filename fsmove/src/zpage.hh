@@ -55,12 +55,13 @@ public:
     bool is_empty_page();
     bool is_full_page();
     ft_size get_page_chunk_size();
-    
+
     zptr_handle alloc_ptr(zpage_handle page_handle);
     bool free_ptr(zptr_handle handle);
 
     inline bool compress_ptr(zptr_handle handle)
     {
+        {(void) handle;}
         return compress_page();
     }
 

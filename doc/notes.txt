@@ -12,17 +12,17 @@
    the latter have opposite sign (-EINVAL, -ENOMEM...) and are reported as " (caused by previous error: %s)"
 
 1.2.1) ff_log() and ff_vlog() always return errors as reported (-EINVAL, -ENOMEM...)
-  
+
 1.2.2) ft_remap.main() and other high-level *.main() methods
    must check for unreported errors and log them them with message
    "failed with unreported error"
-  
+
 1.3) configurable log format:
    FC_FMT_MSG, // message only
    FC_FMT_LEVEL_MSG, // level + message
    FC_FMT_DATETIME_LEVEL_MSG, // datetime + level + message
    FC_FMT_DATETIME_LEVEL_CALLER_MSG, // datetime + level + [file.func(line)] + message
-  
+
 1.4.1) -v enables FC_FMT_LEVEL_MSG also for stdout/stderr
 1.4.2) -vv enables FC_FMT_DATETIME_LEVEL_MSG also for stdout/stderr
 1.4.3) instead fsremap.log always uses FC_FMT_DATETIME_LEVEL_CALLER_MSG
@@ -39,23 +39,23 @@
 4) mlock(primary_storage). without it we get a lot of disk thrashing,
    but even with it disk I/O is not fully sequential.
    An alternative would be not to mmap() at all primary_storage,
-   and maybe neither secondary_storage  
+   and maybe neither secondary_storage
 
 5) fsremap must correctly handle the case where device_len and/or loop_file_len
    are not multiples of effective block size
    and file-system in loop_file uses a smaller block size than file-system in device
-   
+
    PARTIALLY implemented: fstransform creates a loop_file that is always multiple
    of device block size. In this way, fsremap will not have problems.
-   
+
 6) some ioctl(FIEMAP) implementations are strange (buggy?) and refuse
    to return more than a certain number of extents (approx. 1300)
    in a single call.
-   
+
    if this case happens, fsremap MUST detect that the returned extents
    are incomplete, log the problem, and work around it
    - currently, fsremap switches to ioctl(FIBMAP) if it happens.
-   
+
 7) fsmove MUST preemptively check for DISK ALMOST FULL conditions
    on {source-device} and {target-device}
 
@@ -64,7 +64,7 @@
    when writing to the backing sparse file fails because of disk full,
    but only write the I/O error to kernel messages (dmesg).
 
-   
+
 ###############################################
 ################### TO DO #####################
 ###############################################

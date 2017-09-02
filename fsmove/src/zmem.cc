@@ -43,7 +43,7 @@ bool zmem::alloc_page(ft_size new_size)
 {
     if (new_size == 0)
         new_size = 1;
-    
+
     void * new_address = ::calloc(1, new_size);
     if (new_address != NULL)
     {
@@ -68,7 +68,7 @@ bool zmem::do_compress()
     z_stream z = { }; /* zero-initialize */
     z.zalloc = Z_NULL;
     z.zfree = Z_NULL;
-    
+
     int err = deflateInit(&z, 3);
     if (err != Z_OK) {
         ff_log(FC_ERROR, 0, "zlib deflateInit() failed: %s",
@@ -79,7 +79,7 @@ bool zmem::do_compress()
                : "unknown error");
         return false;
     }
-    
+
     ft_size new_size = deflateBound(&z, size);
     void * new_address = ::malloc(new_size);
     if (address == NULL) {
@@ -102,7 +102,7 @@ bool zmem::do_compress()
         if (new2_address != NULL)
             new_address = new2_address;
     }
-    
+
 cleanup:
     deflateEnd(&z);
     if (err == Z_STREAM_END) {
@@ -120,7 +120,7 @@ void * zmem::do_decompress()
     z_stream z = { }; /* zero-initialize */
     z.zalloc = Z_NULL;
     z.zfree = Z_NULL;
-    
+
     int err = inflateInit(&z);
     if (err != Z_OK) {
         ff_log(FC_ERROR, 0, "zlib inflateInit() failed: %s",
@@ -131,7 +131,7 @@ void * zmem::do_decompress()
                : "unknown error");
         return NULL;
     }
-    
+
     ft_size old_size = ~size;
     ft_size new_size = old_size * 3;
     void * new_address = ::malloc(new_size);
@@ -169,7 +169,7 @@ void * zmem::do_decompress()
         if (new2_address)
             new_address = new2_address;
     }
-    
+
 cleanup:
     inflateEnd(&z);
     if (err == Z_STREAM_END) {
