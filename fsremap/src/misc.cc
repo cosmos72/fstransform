@@ -30,6 +30,7 @@
 #elif defined(FT_HAVE_CSTDLIB)
 # include <cstdlib>    // for srandom(), random(), rand(), srand()
 #endif
+
 #if defined(FT_HAVE_TIME_H)
 # include <time.h>     // for time()
 #elif defined(FT_HAVE_CTIME)

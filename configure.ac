@@ -76,8 +76,8 @@ AC_CHECK_LIB(com_err, error_message,        [AC_DEFINE(HAVE_LIBCOM_ERR, 1, [Defi
                                              AC_SUBST(LD_LIBCOM_ERR, [-lcom_err])])
 AC_CHECK_LIB(ext2fs, ext2fs_extent_replace, [AC_DEFINE(HAVE_LIBEXT2FS, 1, [Define to 1 if you have the ext2fs library.])
                                              AC_SUBST(LD_LIBEXT2FS, [-lext2fs])])
-AC_CHECK_LIB(z,      deflate,               [AC_DEFINE(HAVE_Z_DEFLATE, 1, [Define to 1 if you have the z library.])
-                                             AC_SUBST(LD_LIBZ, [-lz])])
+dnl AC_CHECK_LIB(z,      deflate,               [AC_DEFINE(HAVE_Z_DEFLATE, 1, [Define to 1 if you have the z library.])
+dnl                                              AC_SUBST(LD_LIBZ, [-lz])])
 
 FT_NEED_ALL_FUNCS([execvp fileno ftruncate memmove memset mkdir mkfifo mount msync munmap \
                    remove strerror strftime sync time waitpid])
@@ -86,7 +86,7 @@ FT_NEED_ANY_FUNC([lchown chown])
 
 dnl FT_NEED_ALL_LIBS([com_err_error_message ext2fs_ext2fs_extent_replace])
 
-FT_NEED_ALL_LIBS([z_deflate])
+dnl FT_NEED_ALL_LIBS([z_deflate])
 
 if test "$ac_cv_func_fallocate" != "yes"
 then

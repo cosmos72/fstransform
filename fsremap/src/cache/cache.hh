@@ -17,7 +17,7 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * inode_cache.hh
+ * cache.hh
  *
  *  Created on: Aug 18, 2011
  *      Author: max
@@ -39,7 +39,7 @@ template<class K, class V>
 class ft_cache
 {
 protected:
-	V zero_payload;
+    V zero_payload;
 
 public:
     /** default constructor */
@@ -54,7 +54,7 @@ public:
     virtual const ft_cache<K,V> & operator=(const ft_cache<K,V> & other)
     {
     	if (this != &other)
-    		zero_payload = other.zero_payload;
+            zero_payload = other.zero_payload;
     	return *this;
     }
 

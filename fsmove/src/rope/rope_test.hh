@@ -2,7 +2,7 @@
  * fstransform - transform a file-system to another file-system type,
  *               preserving its contents and without the need for a backup
  *
- * Copyright (C) 2011-2017 Massimiliano Ghilardi
+ * Copyright (C) 2011-2012 Massimiliano Ghilardi
  *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -17,24 +17,19 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * zfwd.hh
+ * rope_test.hh
  *
- *  Created on: Jan 23, 2017
+ *  Created on: Mar 3, 2018
  *      Author: max
  */
 
-#ifndef FSTRANSFORM_ZFWD_HH
-#define FSTRANSFORM_ZFWD_HH
+#ifndef FSTRANSFORM_ROPE_TEST_HH
+#define FSTRANSFORM_ROPE_TEST_HH
 
-#include "types.hh"     // for ft_size
+FT_NAMESPACE_BEGIN
 
-typedef ft_size zpage_handle;
-typedef ft_size zptr_handle;
+bool rope_test();
 
-class zmem;
-class zpool_base;
-class zpool;
-class zptr_base;
-template<class T> class zptr;
+FT_NAMESPACE_END
 
-#endif /* FSTRANSFORM_ZFWD_HH */
+#endif /* FSTRANSFORM_ROPE_TEST_HH */

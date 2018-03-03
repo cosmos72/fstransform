@@ -20,12 +20,11 @@ fsmove_SOURCES = \
   ../src/misc.cc \
   ../src/move.cc \
   ../src/mstring.cc \
-  ../src/zmem.cc \
-  ../src/zpage.cc \
-  ../src/zpool.cc \
-  ../src/zptr.cc \
-  ../src/ztest.cc
+  ../src/rope/rope.cc \
+  ../src/rope/rope_impl.cc \
+  ../src/rope/rope_pool.cc \
+  ../src/rope/rope_test.cc
 
 # ../src/io/util.cc
 
-fsmove_LDADD = $(LD_LIBZ)
+# fsmove_LDADD = $(LD_LIBZ)

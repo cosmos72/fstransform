@@ -30,11 +30,6 @@
 #include "io/io_posix.hh"    // for fm_io_posix
 #include "io/io_prealloc.hh" // for fm_io_prealloc
 
-#define ZTEST
-#ifdef ZTEST
-# include "ztest.hh"
-#endif
-
 #if defined(FT_HAVE_STRING_H)
 # include <stdlib.h>       // for atoi()
 #elif defined(FT_HAVE_CSTRING)

@@ -27,7 +27,12 @@
 
 #if defined(FM_TEST_)
 
+#include "rope/rope_test.hh"
+
 /* main for test programs here... */
+int FM_MAIN(int argc, char ** argv) {
+	return FT_NS rope_test() ? 0 : 1;
+}
 
 #else /* actual fsmove program */
 
