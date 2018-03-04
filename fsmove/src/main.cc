@@ -31,7 +31,7 @@
 
 /* main for test programs here... */
 int FM_MAIN(int argc, char ** argv) {
-	return FT_NS rope_test() ? 0 : 1;
+	return FT_NS rope_test(argc, argv);
 }
 
 #else /* actual fsmove program */

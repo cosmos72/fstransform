@@ -28,7 +28,7 @@
 
 FT_NAMESPACE_BEGIN
 
-bool rope_test();
+int rope_test(int argc, char ** argv);
 
 FT_NAMESPACE_END
 

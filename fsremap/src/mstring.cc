@@ -30,7 +30,7 @@
 
 #if defined(FT_HAVE_STRING_H)
 # include <string.h>     // for memcmp(), memcpy(), memrchr()
-#elif defined(FT_HAVE_STRING)
+#elif defined(FT_HAVE_CSTRING)
 # include <cstring>      // for memcmp(), memcpy(), memrchr()
 #endif
 

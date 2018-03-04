@@ -85,7 +85,7 @@ public:
      */
     virtual int find_or_add(const K key, V & inout_payload)
     {
-        ff_assert(inout_payload != this->zero_payload);
+	ff_assert(inout_payload != this->zero_payload);
 
         V & value = map[key];
         if (value == this->zero_payload) {

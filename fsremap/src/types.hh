@@ -55,6 +55,9 @@
 // ft_size is the type used to represent number of items in memory. when size_t exists, they must be the same type
 typedef size_t ft_size;
 
+// ft_ssize is the signed version of ft_size. when ssize_t exists, they must be the same type
+typedef ssize_t ft_ssize;
+
 // ft_off is the type used to represent files length and block devices length. when off_t exists, they must be the same type
 typedef off_t  ft_off;
 
@@ -63,6 +66,9 @@ typedef uint64_t ft_u64;
 
 // ft_u32 must be exactly 32-bit unsigned integer. used for ioctl(FS_IOC_FIEMAP), e4_cpu2fs() and e4_fs2cpu()
 typedef uint32_t ft_u32;
+
+// ft_i32 must be exactly 32-bit signed integer. used for ft_rope_impl
+typedef int32_t ft_i32;
 
 // ft_u16 must be exactly 16-bit unsigned integer. only used for e4_cpu2fs() and e4_fs2cpu()
 typedef uint16_t ft_u16;

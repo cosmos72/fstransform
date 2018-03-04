@@ -23,7 +23,7 @@
  *      Author: max
  */
 
-#include "first.hh"
+#include "../first.hh"
 
 #include "rope_impl.hh"
 #include "rope_pool.hh"
@@ -65,12 +65,13 @@ void ft_rope_pool::rehash(ft_size new_len)
 		end = bucket.end();
 		for (; iter != end; ++iter) {
 			const ft_rope & r = *iter;
-		    ft_size index = r.hash() & (new_len - 1);
-		    table[index].push_front(r);
+			ft_size index = r.hash() & (new_len - 1);
+			table[index].push_front(r);
 		}
 	}
 }
 
+// returned pointer is valid only while pool is not modified
 const ft_rope * ft_rope_pool::find(const char s[], ft_size len) const
 {
 	ft_size n = table.size();
@@ -88,36 +89,45 @@ const ft_rope * ft_rope_pool::find(const char s[], ft_size len) const
 	return NULL;
 }
 
-const ft_rope & ft_rope_pool::find_or_add(const char s[], ft_size len)
+ft_rope ft_rope_pool::make(const char s[], ft_size len)
 {
+	if (len == 0)
+		return ft_rope();
 	const ft_rope * r = find(s, len);
 	if (r != NULL)
 		return *r;
 
-	enum { MINSPLIT = sizeof(ft_rope_impl) };
+	enum { SPLIT_LO = sizeof(ft_rope_impl), SPLIT_HI = SPLIT_LO / 3 };
 
-	const ft_rope * prefix = NULL;
+	// rehash() invalidates all pooled (ft_rope *), so prefix cannot be a pointer
+	ft_rope prefix;
 	const char * suffix = s;
 	ft_size suffix_len = len;
-	if (len > 2 * MINSPLIT) {
-		ft_size split = len - MINSPLIT;
-		for (; split > MINSPLIT; split--) {
+	if (len >= SPLIT_LO + SPLIT_HI) {
+		ft_size split = len - SPLIT_HI;
+		for (; split >= SPLIT_LO; split--) {
 			if (s[split] == '/') {
-				prefix = &find_or_add(s, ++split);
+				prefix = make(s, ++split);
+				prefix.validate();
 				suffix += split;
 				suffix_len -= split;
 				break;
 			}
 		}
 	}
-	ft_size n = table.size();
-	if (count >= n)
-		rehash(n = (n ? n * 2 : 64));
-	ft_size index = ft_rope::hash(s, len) & (n - 1);
-	ft_bucket & bucket = table[index];
-	bucket.push_front(ft_rope(prefix, suffix, suffix_len));
-	count++;
-	return bucket.front();
+	ft_rope result(& prefix, suffix, suffix_len);
+	if (suffix[suffix_len - 1] == '/') {
+		// only cache directory names
+		ft_size n = table.size();
+		if (count / 2 >= n)
+			rehash(n = (n ? n * 2 : 64));
+
+		ft_size index = ft_rope::hash(s, len) & (n - 1);
+		ft_bucket & bucket = table[index];
+		bucket.push_front(result);
+		count++;
+	}
+	return result;
 }
 
 FT_NAMESPACE_END

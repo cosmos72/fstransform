@@ -29,8 +29,9 @@
 #include <list>
 #include <vector>
 
-#include "rope.hh"   // for ft_rope
-#include "types.hh"  // for ft_string
+#include "../types.hh"  // for ft_string
+#include "rope.hh"      // for ft_rope
+#include "rope_list.hh" // for ft_rope_list
 
 FT_NAMESPACE_BEGIN
 
@@ -42,13 +43,13 @@ FT_NAMESPACE_BEGIN
 class ft_rope_pool
 {
 private:
-	typedef std::list<ft_rope> ft_bucket;
+	typedef ft_rope_list ft_bucket;
 	typedef std::vector<ft_bucket> ft_table;
 
-    ft_size count;
-    ft_table table;
+	ft_size count;
+	ft_table table;
 
-    void rehash(ft_size new_len);
+	void rehash(ft_size new_len);
 
 public:
 	/** default constructor. */
@@ -63,18 +64,19 @@ public:
 	/* destructor. */
 	~ft_rope_pool();
 
+	/** returned pointer is valid only until pool is rehashed.
+	  * copy returned ft_rope if you need it further */
 	const ft_rope * find(const char s[], ft_size len) const;
-
-	const ft_rope & find_or_add(const char s[], ft_size len);
 
 	FT_INLINE const ft_rope * find(const ft_string & s) const {
 		return find(s.c_str(), s.size());
 	}
 
-	FT_INLINE const ft_rope & find_or_add(const ft_string & s) {
-		return find_or_add(s.c_str(), s.size());
-	}
+	ft_rope make(const char s[], ft_size len);
 
+	FT_INLINE ft_rope make(const ft_string & s) {
+		return make(s.c_str(), s.size());
+	}
 	void erase(const ft_string & s);
 };
 

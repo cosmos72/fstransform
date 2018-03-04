@@ -26,7 +26,7 @@
 #ifndef FSTRANSFORM_ROPE_IMPL_HH
 #define FSTRANSFORM_ROPE_IMPL_HH
 
-#include "types.hh"   // for ft_string, ft_size
+#include "../types.hh"   // for ft_string, ft_size
 
 FT_NAMESPACE_BEGIN
 
@@ -36,11 +36,13 @@ FT_NAMESPACE_BEGIN
 class ft_rope_impl
 {
 private:
-	ft_rope_impl * prefix;
+	enum { PREFIX_SCALE = sizeof(void *) };
+	 
+	ft_i32 prefix_delta;
 	ft_u32 refcount, suffix_len;
 
 	/** default constructor. private use only, call make() instead */
-	FT_INLINE ft_rope_impl() : prefix(NULL), refcount(0), suffix_len(0)
+	FT_INLINE ft_rope_impl() : prefix_delta(0), refcount(0), suffix_len(0)
 	{ }
 
 	/** copy constructor. forbidden. call make() instead */
@@ -50,12 +52,10 @@ private:
 	const ft_rope_impl & operator=(const ft_rope_impl & other);
 
 	/**
-      * constructor. private use only. call make() instead.
-      * makes a copy of 'suffix'
-      */
-	FT_INLINE ft_rope_impl(ft_rope_impl * prefix_ptr, ft_size suffix_length)
-	: prefix(prefix_ptr), refcount(0), suffix_len(suffix_length)
-	{ }
+	  * constructor. private use only. call make() instead.
+	  * makes a copy of 'suffix'
+	  */
+	FT_INLINE ft_rope_impl(ft_rope_impl * prefix_ptr, ft_size suffix_length);
 
 	/** destructor. private use only. call unref() instead */
 	~ft_rope_impl();
@@ -68,28 +68,34 @@ private:
 		return reinterpret_cast<const char *>(this) + sizeof(ft_rope_impl);
 	}
 
-	FT_INLINE ft_size prefix_len(ft_size delta = 0) const {
-		return prefix ? prefix->len(delta) : delta;
+	FT_INLINE ft_rope_impl * prefix() const {
+		if (!prefix_delta)
+	            return NULL;
+	        ft_size self = (ft_size)(this);
+		return reinterpret_cast<ft_rope_impl *>(self + (ft_size)prefix_delta * PREFIX_SCALE);
 	}
 
-	FT_INLINE ft_size len(ft_size delta = 0) const {
-		return prefix_len(delta + suffix_len);
+	FT_INLINE ft_size prefix_len() const {
+		ft_rope_impl * ptr = prefix();
+		return ptr ? ptr->len() : 0;
 	}
 
 public:
-    /** create an empty rope */
+	/** create an empty rope */
 	static ft_rope_impl * make();
 
-    /** create a rope with given prefix and suffix. makes a private copy of 'suffix' */
+	/** create a rope with given prefix and suffix. makes a private copy of 'suffix' */
 	static ft_rope_impl * make(ft_rope_impl * prefix, const char * suffix, ft_size suffix_length);
 
 	/** increment reference count */
-	FT_INLINE void ref() {
-		refcount++;
-	}
+	void ref();
 
 	/** decrement reference count */
 	void unref();
+
+	bool empty() const;
+
+	ft_size len() const;
 
 	/** convert to ft_string */
 	void to_string(ft_string & append_dst) const;

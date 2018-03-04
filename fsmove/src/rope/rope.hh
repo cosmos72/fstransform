@@ -26,7 +26,7 @@
 #ifndef FSTRANSFORM_ROPE_HH
 #define FSTRANSFORM_ROPE_HH
 
-#include "types.hh"   // for ft_string, ft_size
+#include "../types.hh"   // for ft_string, ft_size
 
 FT_NAMESPACE_BEGIN
 
@@ -58,8 +58,25 @@ public:
 	/** assignment operator */
 	const ft_rope & operator=(const ft_rope & other);
         
-	/* destructor */
+	/** destructor */
 	~ft_rope();
+
+	/**
+	 * identity comparison: returns true ONLY if pointing to the same ft_rope_impl.
+	 * enough for the comparison against empty ft_rope() made by ft_cache_mem<K,V>.
+	 * does NOT compare the char[] array!
+	 */
+	FT_INLINE bool operator==(const ft_rope & other) const {
+		return p == other.p;
+	}
+	FT_INLINE bool operator!=(const ft_rope & other) const {
+		return p != other.p;
+	}
+
+	bool empty() const;
+
+	/* validate ft_rope_impl pointer */
+	void validate() const;
 
 	/** convert to ft_string */
 	void to_string(ft_string & append_dst) const;
