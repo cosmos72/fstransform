@@ -27,12 +27,12 @@ or from 'ext2' to 'xfs', or many other combinations.
 
 Currently, the programs mentioned above have been tested on Linux
 with the following filesystems, both as source and as target:
-ext2, ext3, ext4, jfs, ntfs, reiserfs, xfs.
+ext2, ext3, ext4, jfs, reiserfs, xfs.
 
 Do NOT use these programs with other filesystems
 unless you are willing to LOSE your data.
 
-In particular, they do NOT (yet) support msdos, vfat and exfat file systems.
+In particular, they do NOT (yet) support ntfs, msdos, vfat and exfat file systems.
 
 Common sense and experience tell that you should ALWAYS have a backup
 of your valuable data: while the programs do NOT need to backup your data
@@ -104,9 +104,9 @@ There are five requirements for fstransform to have a chance to succeed:
    and by the tools 'mkfs' and 'fsck'
    (i.e. it must be possible to create them and check them for errors).
 
-   Support through FUSE (userspace) drivers is acceptable, as long as
-   there is also a kernel driver that can mount the same file system
-   at least read-only. For example, this is the case for ntfs.
+   Support through FUSE (userspace) drivers is acceptable in theory,
+   but there are currently no tested FUSE filesystems that can be converted
+   reliably with fstransform.
 
 5. the following programs must be available:
    the three custom-made programs 'fsmove', 'fsmount_kernel' 'fsremap'
@@ -131,7 +131,7 @@ There are five requirements for fstransform to have a chance to succeed:
    Devices with more than one million files with multiple hard links
    can cause fstransform to crash with "out of memory" errors.
 
-3) JFS and NTFS file systems equal or larger than 8TB cannot be converted
+3) JFS file systems equal or larger than 8TB cannot be converted
    due to missing support for ioctl(FIEMAP) in the kernel:
    the fallback ioctl(FIBMAP) is limited by design to < 8TB (assuming 4k blocks)
 
@@ -210,12 +210,6 @@ To pass the same option to 'fstransform', you must execute something like
 
      fstransform {device} {target-file-system-type}
 
-   when converting _from_ NTFS, you must execute a slightly more verbose command:
-
-     fstransform {device} {target-file-system-type} --current-fstype=ntfs
-
-   because fstransform currently cannot autodetect FUSE-based file systems.
-
 4. follow the instructions - the program will tell you what it is doing,
    and will also call 'fsmove' and 'fsremap' which show progress percentage
    and estimated time left.
@@ -257,8 +251,6 @@ SOME REAL-WORLD TESTS
 
 2) 1540GB encrypted raid0 (3 disks), 56% full, ext2->ext4: SUCCESS, took 8 hours
 
-3) 213GB disk, 85% full, ntfs->xfs: SUCCESS, took 12 hours
-   (Yes, that's slow. But it works)
 
 
 Good luck!
