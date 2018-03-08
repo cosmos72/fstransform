@@ -24,7 +24,8 @@ fsmove_SOURCES = \
   ../src/rope/rope_impl.cc \
   ../src/rope/rope_list.cc \
   ../src/rope/rope_pool.cc \
-  ../src/rope/rope_test.cc
+  ../src/rope/rope_test.cc \
+  ../src/zstring.cc
 
 # ../src/io/util.cc
 

@@ -95,8 +95,6 @@ bool ft_rope::empty() const
 /* validate ft_rope_impl pointer */
 void ft_rope::validate() const
 {
-	if (this == NULL)
-		throw std::invalid_argument("ft_rope method called on null pointer");
 	if (p == NULL)
 		return;
 	ft_size n = (ft_size)p;

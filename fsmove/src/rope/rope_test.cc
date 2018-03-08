@@ -32,9 +32,9 @@
 #endif
 
 #if defined(FT_HAVE_STRING_H)
-# include <string.h>     // for strcmp(), strlen()
+# include <string.h>     // for strcmp(), strdup(), strlen()
 #elif defined(FT_HAVE_CSTRING)
-# include <cstring>      // for strcmp(), strlen()
+# include <cstring>      // for strcmp(), strdup(), strlen()
 #endif
 
 #ifdef FT_HAVE_FT_UNSORTED_MAP
@@ -48,14 +48,15 @@
 #include "../log.hh"
 #include "../io/io_posix_dir.hh"
 #include "../cache/cache_mem.hh"
+#include "../zstring.hh"
 
 #include "rope_test.hh"
 #include "rope_pool.hh"
 
 FT_NAMESPACE_BEGIN
 
-static ft_uoff recursive_readdir_map(ft_unsorted_map<ft_inode, ft_string> & cache,
-				     const ft_string & path)
+static ft_uoff recursive_readdir(ft_unsorted_map<ft_inode, ft_string> & cache,
+                                 const ft_string & path)
 {
 	ft_uoff count = 0;
 	io::ft_io_posix_dir dir;
@@ -67,19 +68,82 @@ static ft_uoff recursive_readdir_map(ft_unsorted_map<ft_inode, ft_string> & cach
 		if (!strcmp(dirent->d_name, ".") || !strcmp(dirent->d_name, ".."))
 			continue;
 		
-		ft_string subpath = path, tmp;
+		ft_string subpath = path;
 		if (subpath[subpath.size() - 1] != '/')
 			subpath += '/';
 		subpath += dirent->d_name;
 		cache[dirent->d_ino] = subpath;
 
+#ifdef DT_DIR
 		if (dirent->d_type == DT_DIR) {
-			count += recursive_readdir_map(cache, subpath);
+			count += recursive_readdir(cache, subpath);
+		}
+#endif
+	}
+	return count;
+}
+
+static ft_uoff recursive_readdir_cstr(ft_unsorted_map<ft_inode, char *> & cache,
+                                      const ft_string & path)
+{
+	ft_uoff count = 0;
+	io::ft_io_posix_dir dir;
+	if (dir.open(path) != 0) {
+		return count;
+	}
+	io::ft_io_posix_dirent * dirent = NULL;
+	while (dir.next(dirent) == 0 && dirent != NULL) {
+		if (!strcmp(dirent->d_name, ".") || !strcmp(dirent->d_name, ".."))
+			continue;
+
+		ft_string subpath = path;
+		if (subpath[subpath.size() - 1] != '/')
+			subpath += '/';
+		subpath += dirent->d_name;
+		char * & cstr = cache[dirent->d_ino];
+                if (cstr) {
+                        free(cstr);
+                        cstr = NULL;
+                }
+                cstr = strdup(subpath.c_str());
+                if (!cstr)
+                        throw std::bad_alloc();
+
+		if (dirent->d_type == DT_DIR) {
+			count += recursive_readdir_cstr(cache, subpath);
 		}
 	}
 	return count;
 }
-	
+
+static ft_uoff recursive_readdir_zstring(ft_unsorted_map<ft_inode, ft_string> & cache,
+                                         const ft_string & path)
+{
+	ft_uoff count = 0;
+	io::ft_io_posix_dir dir;
+	if (dir.open(path) != 0) {
+		return count;
+	}
+	io::ft_io_posix_dirent * dirent = NULL;
+	while (dir.next(dirent) == 0 && dirent != NULL) {
+		if (!strcmp(dirent->d_name, ".") || !strcmp(dirent->d_name, ".."))
+			continue;
+
+		ft_string subpath = path;
+		if (subpath[subpath.size() - 1] != '/')
+			subpath += '/';
+		subpath += dirent->d_name;
+		ft_string & compressed = cache[dirent->d_ino];
+                compressed.resize(0);
+                z(compressed, subpath);
+
+		if (dirent->d_type == DT_DIR) {
+			count += recursive_readdir_zstring(cache, subpath);
+		}
+	}
+	return count;
+}
+
 static ft_uoff recursive_readdir_cachemem(ft_cache_mem<ft_inode, ft_string> & cache,
 					  const ft_string & path)
 {
@@ -137,13 +201,6 @@ static ft_uoff recursive_readdir_pool(ft_rope_pool & pool,
 
 int rope_test(int argc, char ** argv)
 {
-#if 0
-# define REF(s) (s), (sizeof(s)-1)
-	ft_rope_pool pool;
-	pool.find_or_add(REF("very_very_very/long_long_long/name_name_name/some_some_some/file_file_file_1"));
-	pool.find_or_add(REF("very_very_very/long_long_long/name_name_name/some_some_some/file_file_file_2"));
-	pool.find_or_add(REF("very_very_very/long_long_long/name_name_name/some_some_some/file_file_file_3"));
-#endif // 0
 	ft_string path = "/";
 	if (argc > 1 && !strcmp(argv[1], "pool")) {
 		ft_rope_pool pool;
@@ -158,9 +215,21 @@ int rope_test(int argc, char ** argv)
 		fputs("recursive_readdir_cachemem() completed. check RAM usage and press ENTER\n", stdout);
 		fflush(stdout);
 		fgetc(stdin);
+	} else if (argc > 1 && !strcmp(argv[1], "zstring")) {
+		ft_map<ft_inode, ft_string> cache;
+		recursive_readdir_zstring(cache, path);
+		fputs("recursive_zstring() completed. check RAM usage and press ENTER\n", stdout);
+		fflush(stdout);
+		fgetc(stdin);
+	} else if (argc > 1 && !strcmp(argv[1], "cstr")) {
+		ft_map<ft_inode, char *> cache;
+		recursive_readdir_cstr(cache, path);
+		fputs("recursive_readdir_cstr() completed. check RAM usage and press ENTER\n", stdout);
+		fflush(stdout);
+		fgetc(stdin);
 	} else {
 		ft_map<ft_inode, ft_string> cache;
-		recursive_readdir_map(cache, path);
+		recursive_readdir(cache, path);
 		fputs("recursive_readdir() completed. check RAM usage and press ENTER\n", stdout);
 		fflush(stdout);
 		fgetc(stdin);

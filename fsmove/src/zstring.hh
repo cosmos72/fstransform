@@ -17,31 +17,28 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * main.cc
- *  Created on: Aug 18, 2011
+ * xstring.hh
+ *
+ *  Created on: Mar 5, 2018
  *      Author: max
  */
-#include "first.hh"
 
-#undef  FM_TEST_ROPE
-#undef  FM_TEST_ZSTRING
+#ifndef FSTRANSFORM_ZSTRING_HH
+#define FSTRANSFORM_ZSTRING_HH
 
-#if defined(FM_TEST_ROPE)
-# include "rope/rope_test.hh" // rope self-test
-#define FM_MAIN(argc, argv) FT_NS rope_test(argc, argv)
+#include "types.hh"   // for ft_string
 
-#elif defined(FM_TEST_ZSTRING)
-# include "zstring.hh"        // zstring self-test
-#define FM_MAIN(argc, argv) FT_NS ztest()
+FT_NAMESPACE_BEGIN
 
-#else
-# include "move.hh"           // actual fsmove program
-# define FM_MAIN(argc, argv) FT_NS fm_move::main(argc, argv)
+int ztest();
 
-#endif // defined(FT_TEST_*)
+void zinit();
 
+/** compress src into dst */
+void z(ft_string & dst, const ft_string & src, bool force = false);
+/** decompress src into dst */
+void unz(ft_string & dst, const ft_string & src);
 
+FT_NAMESPACE_END
 
-int main(int argc, char ** argv) {
-    return FM_MAIN(argc, argv);
-}
+#endif /* FSTRANSFORM_ZSTRING_HH */
