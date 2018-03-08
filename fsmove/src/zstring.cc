@@ -70,17 +70,8 @@ struct zinit_compare {
         }
 };
 
-static ft_u8 unzvec_start[32];
+static ft_u8 unzvec_start[31], code_min_len;
 static zhuff unzvec[256], zvec[256];
-
-static ft_u16 reverse_bits(ft_u16 bits, ft_u8 len)
-{
-        bits = (bits >> 8) | (bits << 8);
-        bits = ((bits >> 4) & 0x0f0f) | ((bits << 4) & 0xf0f0);
-        bits = ((bits >> 2) & 0x3333) | ((bits << 2) & 0xcccc);
-        bits = ((bits >> 1) & 0x5555) | ((bits << 1) & 0xaaaa);
-        return bits >> (16 - len);
-}
 
 void zinit()
 {
@@ -95,6 +86,7 @@ void zinit()
         ft_u8 len = unzvec[0].len, newlen;
 
         unzvec_start[len] = 0;
+        code_min_len = len;
 
         for (size_t i = 1; i < 256; i++) {
                 newlen = unzvec[i].len;
@@ -105,7 +97,7 @@ void zinit()
         }
         for (size_t i = 0; i < 256; i++) {
                 zhuff & code = unzvec[i];
-                zvec[code.sym].set(code.sym, code.len, reverse_bits(code.bits, code.len));
+                zvec[code.sym].set(code.sym, code.len, code.bits);
         }
 }
 
@@ -128,11 +120,10 @@ void z(ft_string & dst, const ft_string & src, bool force)
         dst.push_back('\0'); // compressed strings marker
         for (ft_size i = 0, n = src.size(); i < n; i++) {
                 const zhuff & code = zvec[(ft_u8)s[i]];
-                bits = bits | ((ft_u32)code.bits << len);
+                bits = (bits << code.len) | (ft_u32)code.bits;
                 len += code.len;
                 while (len >= 8) {
-                        dst.push_back((ft_u8)bits);
-                        bits >>= 8;
+                        dst.push_back((ft_u8)(bits >> (len - 8)));
                         len -= 8;
                 }
         }
@@ -140,7 +131,7 @@ void z(ft_string & dst, const ft_string & src, bool force)
                 // fill any remainder with ones. 0b111..111 is the longest code:
                 // it will never fit 7 bits or less, so we can just discard
                 // any incomplete last fragment when decompressing
-                bits |= (ft_u32)0xffff << len;
+                bits = (bits << (8-len)) | ((ft_u32)0xff >> len);
                 dst.push_back((ft_u8)bits);
         }
         if (!force && dst.size() > src.size()) {
@@ -156,8 +147,7 @@ void unz(ft_string & dst, const ft_string & src)
                 return;
 
         const char * s = src.c_str();
-        ft_u32 bits = 0, match_bits = 0;
-        ft_u16 code_start, code_end;
+        ft_u32 bits = 0;
         ft_u8 len = 0, match_len = 0;
 
         if (s[0] != '\0') {
@@ -166,38 +156,37 @@ void unz(ft_string & dst, const ft_string & src)
                 return;
         }
         for (ft_size i = 1, n = src.size(); i < n; i++) {
-                bits |= (ft_u32)(ft_u8)s[i] << len;
+                bits = (bits << 8) | (ft_u8)s[i];
                 len += 8;
 again:
-                while ((code_start = unzvec_start[match_len]) == (code_end = unzvec_start[match_len + 1]) && len) {
-                        match_bits = (match_bits << 1) | (bits & 1);
+                ft_u16 code_start, code_end;
+                while ((code_start = unzvec_start[match_len]) == (code_end = unzvec_start[match_len + 1]) && match_len < len)
                         match_len++;
-                        bits >>= 1;
-                        len--;
-                }
-                if (code_start == code_end) { // also implies len == 0
+
+                if (code_start == code_end) { // also implies match_len == len
                         if (match_len < 16)
                                 continue; // read more compressed bits
-                        if (i == n - 1 && match_bits == ((ft_u32)~0 >> (32 - match_len)))
+                        if (i == n - 1 && bits == ((ft_u32)0x7fffffffu >> (31 - len))) // (ft_u32)x >> 32 is implementation-defined
                                 break; // ignore final padding with 0b11...11
                         throw std::invalid_argument("invalid compressed string");
                 }
-                ft_u16 code_start_bits = unzvec[code_start].bits;
+                ft_u32 match_bits = (bits >> (len - match_len));
+                ft_u32 code_start_bits = unzvec[code_start].bits;
                 if (match_bits >= code_start_bits && match_bits <= unzvec[(ft_u8)(code_end-1)].bits) { // code_end == 256 is stored as 0 in unzvec_start[]
                         // for a given length, unzvec[].bits have consecutive values:
                         // no need to search, simply jump to the correct code
                         code_start += match_bits - code_start_bits;
                         dst.push_back(unzvec[code_start].sym);
-                        match_bits = 0;
+                        
+                        // actually consume bits
+                        len -= match_len;
+                        bits &= ((ft_u32)0x7fffffffu >> (31 - len)); // (ft_u32)x >> 32 is implementation-defined
                         match_len = 0;
                 }
-                if (!len)
-                        continue;
-                match_bits = (match_bits << 1) | (bits & 1);
-                match_len++;
-                bits >>= 1;
-                len--;
-                goto again;
+                if (match_len < len) {
+                        match_len++;
+                        goto again;
+                }
         }
 }
 
@@ -219,7 +208,7 @@ int ztest()
                 "",
         };
 
-        tmp.resize(256);
+        tmp.resize(1024*1024*1024);
         for (ft_size i = 0, n = tmp.size(); i < n; i++)
                 tmp[i] = (ft_u8)i;
         src[N-1].swap(tmp);
