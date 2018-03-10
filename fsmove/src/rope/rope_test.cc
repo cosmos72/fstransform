@@ -31,6 +31,12 @@
 # include <cstdio>      // for getchar()
 #endif
 
+#if defined(FT_HAVE_STDLIB_H)
+# include <stdlib.h>     // for free()
+#elif defined(FT_HAVE_CSTDLIB)
+# include <cstdlib>      // for free()
+#endif
+
 #if defined(FT_HAVE_STRING_H)
 # include <string.h>     // for strcmp(), strdup(), strlen()
 #elif defined(FT_HAVE_CSTRING)
