@@ -70,7 +70,8 @@ struct unzbyte {
 static ft_u8 unzvec_start[31], code_min_len;
 static zhuff unzvec[256], zvec[256];
 
-enum { UNZBITS = 12 };
+enum { UNZBITS = 14 }; // must be >= max(huffman_lengths[])
+
 static unzbyte unztable[1 << UNZBITS];
 
 static void unztable_init();
@@ -101,11 +102,16 @@ void zinit()
                 zhuff & code = unzvec[i];
                 zvec[code.sym].set(code.sym, code.len, code.bits);
         }
+        if (len > (1U << UNZBITS))
+                throw std::invalid_argument("zstring: decompression table is too small! increase UNZBITS and recompile");
+                
         unztable_init();
 }
 
 static void unztable_init()
 {
+        if (UNZBITS > 16)
+                throw std::invalid_argument("zstring: decompression table is too large! decrease UNZBITS and recompile");
         ft_u8 ilen, jlen, klen;
         for (ft_size i = 0; i < 256; i++) {
                 ilen = unzvec[i].len;
@@ -211,7 +217,7 @@ void unz(ft_string & dst, const ft_string & src)
 
         const char * s = src.c_str();
         ft_u32 bits = 0;
-        ft_u8 len = 0, match_len = code_min_len;
+        ft_u8 len = 0;
 
         if (s[0] != '\0') {
                 // src is not compressed
@@ -219,78 +225,33 @@ void unz(ft_string & dst, const ft_string & src)
                 return;
         }
         ft_size i = 1, n = src.size();
+        dst.reserve(n);
+
         while (i < n) {
                 do {
                         bits = (bits << 8) | (ft_u8)s[i++];
                         len += 8;
                 } while (i < n && len <= 24);
-fast:
-                // fast decode
-                if (match_len <= UNZBITS) {
-                        while (len >= code_min_len) {
-                                ft_u16 match_bits = len >= UNZBITS ? (bits >> (len - UNZBITS)) : (bits << (UNZBITS - len));
-                                const unzbyte & entry = unztable[match_bits & ((1<<UNZBITS)-1)];
-                                ft_u8 nbits;
-                                if (!(nbits = entry.nbits[0])) {
-                                        match_len = UNZBITS + 1;
-                                        if (match_len <= len)
-                                                goto slow;
-                                        break;
-                                }
-                                if (nbits > len)
-                                        break;
 
-                                dst.push_back(entry.sym[0]);
-                                len -= nbits;
-                                if ((nbits = entry.nbits[1]) && nbits <= len) {
-                                        dst.push_back(entry.sym[1]);
-                                        len -= nbits;
-                                        if ((nbits = entry.nbits[2]) && nbits <= len) {
-                                                dst.push_back(entry.sym[2]);
-                                                len -= nbits;
-                                        }
-                                }
-                                // actually consume bits
-                                bits &= ((ft_u32)0x7fffffffu >> (31 - len)); // (ft_u32)x >> 32 is implementation-defined
-                                match_len = code_min_len;
-                        }
-                        if (match_len > len || (match_len <= UNZBITS && len < UNZBITS && i < n)) // read more bits only if needed
-                                continue;
-                }
-slow:
-                // slow decode
-                ft_u16 code_start, code_end;
-                while ((code_start = unzvec_start[match_len]) == (code_end = unzvec_start[match_len + 1]) && match_len < len)
-                        match_len++;
-
-                if (code_start == code_end) { // also implies match_len == len
-                        if (match_len < 16)
-                                continue; // read more compressed bits
-                        if (i == n - 1 && bits == ((ft_u32)0x7fffffffu >> (31 - len))) // (ft_u32)x >> 32 is implementation-defined
-                                break; // ignore final padding with 0b11...11
-                        throw std::invalid_argument("invalid compressed string");
-                }
-                ft_u32 match_bits = (bits >> (len - match_len));
-                ft_u32 code_start_bits = unzvec[code_start].bits;
-                if (match_bits >= code_start_bits && match_bits <= unzvec[(ft_u8)(code_end-1)].bits) { // code_end == 256 is stored as 0 in unzvec_start[]
-                        // for a given length, unzvec[].bits have consecutive values:
-                        // no need to search, simply jump to the correct code
-                        code_start += match_bits - code_start_bits;
-                        dst.push_back(unzvec[code_start].sym);
+                while (len >= code_min_len) {
+                        ft_u16 match_bits = len >= UNZBITS ? (bits >> (len - UNZBITS)) : (bits << (UNZBITS - len));
+                        const unzbyte & entry = unztable[match_bits & ((1<<UNZBITS)-1)];
+                        ft_u8 nbits = entry.nbits[0];
+                        if (nbits > len)
+                                break;
                         
+                        dst.push_back(entry.sym[0]);
+                        len -= nbits;
+                        if ((nbits = entry.nbits[1]) && nbits <= len) {
+                                dst.push_back(entry.sym[1]);
+                                len -= nbits;
+                                if ((nbits = entry.nbits[2]) && nbits <= len) {
+                                        dst.push_back(entry.sym[2]);
+                                        len -= nbits;
+                                }
+                        }
                         // actually consume bits
-                        len -= match_len;
                         bits &= ((ft_u32)0x7fffffffu >> (31 - len)); // (ft_u32)x >> 32 is implementation-defined
-                        match_len = code_min_len - 1;
-                }
-                if (match_len < len) {
-                        match_len++;
-                        if (i < n)
-                                continue;
-                        if (match_len <= UNZBITS && len >= UNZBITS)
-                                goto fast;
-                        if (match_len <= len)
-                                goto slow;
                 }
         }
 }
@@ -299,13 +260,13 @@ int ztest()
 {
         enum { N = 12 };
         ft_string dst, tmp, src[N] = {
-                "/usr/local/docs/ref/am_conf/byteorder.html",
                 "/bin/bash",
                 "/sbin/init",
                 "/usr/sbin/apache2",
                 "/usr/lib/bluetooth/obexd",
                 "/usr/lib/python2.7/dist-packages/OpenGL/GLES1/ARM/__init__.py",
                 "/usr/lib/vmware/lib/libglibmm_generate_extra_defs-2.4.so.1/libglibmm_generate_extra_defs-2.4.so.1",
+                "/usr/local/docs/ref/am_conf/byteorder.html",
                 "/sys/devices/pci0000:00/power",
                 "/sys/kernel/mm/transparent_hugepage/khugepaged/alloc_sleep_millisecs",
                 "/media/windows/Users/Default/AppData/Local/Microsoft/Windows/Temporary Internet Files/Content.IE5/87654321/desktop.ini",
