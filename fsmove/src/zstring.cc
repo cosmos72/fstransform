@@ -58,29 +58,31 @@ struct zhuff {
 
 static FT_INLINE bool operator<(const zhuff & lhs, const zhuff & rhs)
 {
-        // order by length, then bits. used at runtime to match a given bitset
-        return lhs.len < rhs.len || (lhs.len == rhs.len && lhs.bits < rhs.bits);
-}
+        // canonical huffman code ordering. used by zinit()
+        return lhs.len < rhs.len || (lhs.len == rhs.len && lhs.sym < rhs.sym);
+};
 
-struct zinit_compare {
-        FT_INLINE bool operator()(const zhuff & lhs, const zhuff & rhs)
-        {
-                // canonical huffman code ordering. used by zinit()
-                return lhs.len < rhs.len || (lhs.len == rhs.len && lhs.sym < rhs.sym);
-        }
+struct unzbyte {
+        // how to decode a single byte
+        ft_u8 nbits[3], sym[3];
 };
 
 static ft_u8 unzvec_start[31], code_min_len;
 static zhuff unzvec[256], zvec[256];
 
+enum { UNZBITS = 12 };
+static unzbyte unztable[1 << UNZBITS];
+
+static void unztable_init();
+
 void zinit()
 {
         if (unzvec[0].len != 0)
                 return;
-        for (size_t i = 0; i < 256; i++) {
+        for (ft_size i = 0; i < 256; i++) {
                 unzvec[i].set(i, huffman_lengths[i], 0);
         }
-        std::sort(unzvec, unzvec+256, zinit_compare());
+        std::sort(unzvec, unzvec+256);
         // rebuild canonical huffman code from lengths
         ft_u16 bits = unzvec[0].bits = 0;
         ft_u8 len = unzvec[0].len, newlen;
@@ -88,18 +90,79 @@ void zinit()
         unzvec_start[len] = 0;
         code_min_len = len;
 
-        for (size_t i = 1; i < 256; i++) {
+        for (ft_size i = 1; i < 256; i++) {
                 newlen = unzvec[i].len;
                 bits = (bits+1) << (newlen - len);
                 unzvec[i].bits = bits;
                 while (len < newlen)
                         unzvec_start[++len] = i;
         }
-        for (size_t i = 0; i < 256; i++) {
+        for (ft_size i = 0; i < 256; i++) {
                 zhuff & code = unzvec[i];
                 zvec[code.sym].set(code.sym, code.len, code.bits);
         }
+        unztable_init();
 }
+
+static void unztable_init()
+{
+        ft_u8 ilen, jlen, klen;
+        for (ft_size i = 0; i < 256; i++) {
+                ilen = unzvec[i].len;
+                if (ilen > UNZBITS)
+                        break;
+                for (ft_size j = 0; j < 256; j++) {
+                        jlen = unzvec[j].len;
+                        if (ilen + jlen > UNZBITS)
+                                break;
+                        for (ft_size k = 0; k < 256; k++) {
+                                klen = unzvec[k].len;
+                                if (ilen + jlen + klen > UNZBITS)
+                                        break;
+                                ft_u8 free_len = UNZBITS - ilen - jlen - klen;
+                                ft_u16 bits = ((ft_u16)unzvec[i].bits << (UNZBITS - ilen)) |
+                                        ((ft_u16)unzvec[j].bits << (UNZBITS - ilen - jlen)) |
+                                        ((ft_u16)unzvec[k].bits << free_len);
+                                for (ft_size f = 0; f < (1U<<free_len); f++) {
+                                        unzbyte & entry = unztable[bits + f];
+                                        entry.nbits[0] = ilen;
+                                        entry.nbits[1] = jlen;
+                                        entry.nbits[2] = klen;
+                                        entry.sym[0] = unzvec[i].sym;
+                                        entry.sym[1] = unzvec[j].sym;
+                                        entry.sym[2] = unzvec[k].sym;
+                                }
+                        }
+                        ft_u8 free_len = UNZBITS - ilen - jlen;
+                        ft_u16 bits = ((ft_u16)unzvec[i].bits << (UNZBITS - ilen)) | ((ft_u16)unzvec[j].bits << free_len);
+                        for (ft_size f = 0; f < (1U<<free_len); f++) {
+                                unzbyte & entry = unztable[bits + f];
+                                if (entry.nbits[0])
+                                        continue;
+                                entry.nbits[0] = ilen;
+                                entry.nbits[1] = jlen;
+                                entry.nbits[2] = 0;
+                                entry.sym[0] = unzvec[i].sym;
+                                entry.sym[1] = unzvec[j].sym;
+                                entry.sym[2] = 0;
+                        }
+                }
+                ft_u8 free_len = UNZBITS - ilen;
+                ft_u16 bits = (ft_u16)unzvec[i].bits << free_len;
+                for (ft_size f = 0; f < (1U<<free_len); f++) {
+                        unzbyte & entry = unztable[bits + f];
+                        if (entry.nbits[0])
+                                continue;
+                        entry.nbits[0] = ilen;
+                        entry.nbits[1] = 0;
+                        entry.nbits[2] = 0;
+                        entry.sym[0] = unzvec[i].sym;
+                        entry.sym[1] = 0;
+                        entry.sym[2] = 0;
+                }
+        }
+}
+
 
 static FT_INLINE ft_u8 compress_byte(ft_u16 & dst_bits, ft_u8 byte) {
         zhuff & code = zvec[byte];
@@ -148,17 +211,54 @@ void unz(ft_string & dst, const ft_string & src)
 
         const char * s = src.c_str();
         ft_u32 bits = 0;
-        ft_u8 len = 0, match_len = 0;
+        ft_u8 len = 0, match_len = code_min_len;
 
         if (s[0] != '\0') {
                 // src is not compressed
                 dst = src;
                 return;
         }
-        for (ft_size i = 1, n = src.size(); i < n; i++) {
-                bits = (bits << 8) | (ft_u8)s[i];
-                len += 8;
-again:
+        ft_size i = 1, n = src.size();
+        while (i < n) {
+                do {
+                        bits = (bits << 8) | (ft_u8)s[i++];
+                        len += 8;
+                } while (i < n && len <= 24);
+fast:
+                // fast decode
+                if (match_len <= UNZBITS) {
+                        while (len >= code_min_len) {
+                                ft_u16 match_bits = len >= UNZBITS ? (bits >> (len - UNZBITS)) : (bits << (UNZBITS - len));
+                                const unzbyte & entry = unztable[match_bits & ((1<<UNZBITS)-1)];
+                                ft_u8 nbits;
+                                if (!(nbits = entry.nbits[0])) {
+                                        match_len = UNZBITS + 1;
+                                        if (match_len <= len)
+                                                goto slow;
+                                        break;
+                                }
+                                if (nbits > len)
+                                        break;
+
+                                dst.push_back(entry.sym[0]);
+                                len -= nbits;
+                                if ((nbits = entry.nbits[1]) && nbits <= len) {
+                                        dst.push_back(entry.sym[1]);
+                                        len -= nbits;
+                                        if ((nbits = entry.nbits[2]) && nbits <= len) {
+                                                dst.push_back(entry.sym[2]);
+                                                len -= nbits;
+                                        }
+                                }
+                                // actually consume bits
+                                bits &= ((ft_u32)0x7fffffffu >> (31 - len)); // (ft_u32)x >> 32 is implementation-defined
+                                match_len = code_min_len;
+                        }
+                        if (match_len > len || (match_len <= UNZBITS && len < UNZBITS && i < n)) // read more bits only if needed
+                                continue;
+                }
+slow:
+                // slow decode
                 ft_u16 code_start, code_end;
                 while ((code_start = unzvec_start[match_len]) == (code_end = unzvec_start[match_len + 1]) && match_len < len)
                         match_len++;
@@ -181,11 +281,16 @@ again:
                         // actually consume bits
                         len -= match_len;
                         bits &= ((ft_u32)0x7fffffffu >> (31 - len)); // (ft_u32)x >> 32 is implementation-defined
-                        match_len = 0;
+                        match_len = code_min_len - 1;
                 }
                 if (match_len < len) {
                         match_len++;
-                        goto again;
+                        if (i < n)
+                                continue;
+                        if (match_len <= UNZBITS && len >= UNZBITS)
+                                goto fast;
+                        if (match_len <= len)
+                                goto slow;
                 }
         }
 }
@@ -194,13 +299,13 @@ int ztest()
 {
         enum { N = 12 };
         ft_string dst, tmp, src[N] = {
+                "/usr/local/docs/ref/am_conf/byteorder.html",
                 "/bin/bash",
                 "/sbin/init",
                 "/usr/sbin/apache2",
                 "/usr/lib/bluetooth/obexd",
                 "/usr/lib/python2.7/dist-packages/OpenGL/GLES1/ARM/__init__.py",
                 "/usr/lib/vmware/lib/libglibmm_generate_extra_defs-2.4.so.1/libglibmm_generate_extra_defs-2.4.so.1",
-                "/usr/local/docs/ref/am_conf/byteorder.html",
                 "/sys/devices/pci0000:00/power",
                 "/sys/kernel/mm/transparent_hugepage/khugepaged/alloc_sleep_millisecs",
                 "/media/windows/Users/Default/AppData/Local/Microsoft/Windows/Temporary Internet Files/Content.IE5/87654321/desktop.ini",
