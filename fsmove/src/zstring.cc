@@ -67,19 +67,19 @@ struct unzbyte {
         ft_u8 nbits[3], sym[3];
 };
 
-static ft_u8 unzvec_start[31], code_min_len;
-static zhuff unzvec[256], zvec[256];
+static ft_u8 code_min_len;
+static zhuff zvec[256];
 
 enum { UNZBITS = 14 }; // must be >= max(huffman_lengths[])
 
 static unzbyte unztable[1 << UNZBITS];
 
-static void unztable_init();
-
 void zinit()
 {
-        if (unzvec[0].len != 0)
+        if (code_min_len != 0)
                 return;
+        code_min_len = 1;
+        zhuff unzvec[256];
         for (ft_size i = 0; i < 256; i++) {
                 unzvec[i].set(i, huffman_lengths[i], 0);
         }
@@ -88,15 +88,13 @@ void zinit()
         ft_u16 bits = unzvec[0].bits = 0;
         ft_u8 len = unzvec[0].len, newlen;
 
-        unzvec_start[len] = 0;
         code_min_len = len;
 
         for (ft_size i = 1; i < 256; i++) {
                 newlen = unzvec[i].len;
                 bits = (bits+1) << (newlen - len);
                 unzvec[i].bits = bits;
-                while (len < newlen)
-                        unzvec_start[++len] = i;
+                len = newlen;
         }
         for (ft_size i = 0; i < 256; i++) {
                 zhuff & code = unzvec[i];
@@ -105,11 +103,6 @@ void zinit()
         if (len > (1U << UNZBITS))
                 throw std::invalid_argument("zstring: decompression table is too small! increase UNZBITS and recompile");
                 
-        unztable_init();
-}
-
-static void unztable_init()
-{
         if (UNZBITS > 16)
                 throw std::invalid_argument("zstring: decompression table is too large! decrease UNZBITS and recompile");
         ft_u8 ilen, jlen, klen;
