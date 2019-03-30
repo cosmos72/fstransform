@@ -30,10 +30,12 @@
 
 #include <map>       // for std::map<K,V>
 
-#include "types.hh"  // for ft_uoff
+#include "assert.hh" // for ff_assert macro
+#include "extent.hh" // for fr_extent_key<T>, fr_extent_payload<T>, ft_match
 #include "fwd.hh"    // for fr_map<T> and fr_vector<T> forward declarations
 #include "log.hh"    // for ft_log_level, FC_SHOW_DEFAULT_LEVEL. also used by map.t.hh for ff_log()
-#include "extent.hh" // for fr_extent_key<T>, fr_extent_payload<T>, ft_match
+#include "map_iterator.hh"
+#include "types.hh"  // for ft_uoff
 
 FT_NAMESPACE_BEGIN
 
@@ -41,14 +43,19 @@ template<typename T>
 class fr_map : private std::map<fr_extent_key<T>, fr_extent_payload<T> >
 {
 private:
+    typedef fr_map<T>                                         this_type;
     typedef std::map<fr_extent_key<T>, fr_extent_payload<T> > super_type;
+
+    typedef typename super_type::iterator                     super_iterator;
+    typedef typename super_type::const_iterator               super_const_iterator;
 
 public:
     typedef typename super_type::key_type       key_type;
     typedef typename super_type::mapped_type    mapped_type;
     typedef typename super_type::value_type     value_type;
-    typedef typename super_type::iterator       iterator;
-    typedef typename super_type::const_iterator const_iterator;
+
+    typedef fr_map_iterator<T>                  iterator;
+    typedef fr_map_const_iterator<T>            const_iterator;
 
 private:
 
@@ -136,10 +143,20 @@ public:
     ~fr_map();
 
     // return iterator to beginning of this map
-    using super_type::begin;
+    iterator begin() {
+    	return iterator(super_type::begin(), this);
+    }
+    const_iterator begin() const {
+    	return const_iterator(super_type::begin(), this);
+    }
 
     // return iterator one past the end of this map
-    using super_type::end;
+    iterator end() {
+    	return iterator(super_type::end(), this);
+    }
+    const_iterator end() const {
+    	return const_iterator(super_type::end(), this);
+    }
 
     // return true is this map is empty, i.e. if it size() == 0
     using super_type::empty;
@@ -151,7 +168,13 @@ public:
     using super_type::clear;
 
     // find an extent given its starting ->physical
-    using super_type::find;
+    iterator find(const key_type & key) {
+    	return iterator(super_type::find(key), this);
+    }
+
+    const_iterator find(const key_type & key) const {
+    	return const_iterator(super_type::find(key), this);
+    }
 
     // copy fr_map, i.e. set this fr_map contents as a copy of other's contents.
     const fr_map<T> & operator=(const fr_map<T> & other);
@@ -165,13 +188,19 @@ public:
      */
     void bounds(key_type & min_key, key_type & max_key) const;
 
+#if 0 // unused
     /**
      * find the intersection (matching physical)
      * between the specified single block and this map, and store the intersection in ret_extent.
      * if no intersections, return false and ret_extent will be unchanged.
      */
     bool find_physical_block(T key_physical, value_type & ret_extent) const;
+#endif // 0
 
+    /**
+     * validate iterator
+     */
+    void validate(iterator iter);
 
     /**
      * find the intersection (matching physical, or both physical and logical)
@@ -206,11 +235,16 @@ public:
     bool intersect_all_all(const fr_map<T> & map1, const fr_map<T> & map2, ft_match match);
 
     /**
-     * add a single extent the fr_map
-     *
-     * use with extreme caution, it does NOT merge and does NOT CHECK for merges
+     * log fatal error during insert() then terminate the program
      */
-    void insert0(const key_type & key, const mapped_type & value);
+    void log_fatal_terminate(iterator iter, const key_type & key, const mapped_type & value);
+
+    /**
+     * add a single extent the fr_map
+     * use with extreme caution, it does NOT merge and does NOT CHECK for merges
+     * return iterator to inserted extent
+     */
+    iterator insert0(const key_type & key, const mapped_type & value);
 
     /**
      * add a single extent the fr_map
@@ -327,7 +361,6 @@ public:
      * into this map, skipping any intersection.
      */
     void merge_shift(const fr_vector<ft_uoff> & other, ft_uoff effective_block_size_log2, ft_match match);
-
 
     /**
      * makes the physical complement of 'other' vector,

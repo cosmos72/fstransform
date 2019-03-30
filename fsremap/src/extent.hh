@@ -70,7 +70,7 @@ FT_INLINE ft_match ff_match_transpose(ft_match match) { return (ft_match)-match;
 template<typename T>
 struct fr_extent_key
 {
-    mutable T physical;  /* physical offset in bytes for the start of the extent from the beginning of the device */
+    T physical;  /* physical offset in bytes for the start of the extent from the beginning of the device */
 };
 
 

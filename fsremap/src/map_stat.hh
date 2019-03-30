@@ -92,7 +92,6 @@ public:
         this_used_count -= shrink_length;
     }
 
-
     FT_INLINE T total_count() const { return this_total_count; }
     FT_INLINE T used_count() const { return this_used_count; }
     FT_INLINE T free_count() const { return this_total_count - this_used_count; }

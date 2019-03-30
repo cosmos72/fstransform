@@ -243,18 +243,18 @@ static T ff_round_up(T n, T power_of_2_minus_1)
 
 /* trim extent on both ends to align it to page_size. return trimmed extent length (can be zero) */
 template<typename T>
-T ff_extent_align(typename fr_map<T>::value_type & extent, T page_size_blocks_m_1)
+T ff_extent_align(typename fr_map<T>::key_type & key, typename fr_map<T>::mapped_type & value, T page_size_blocks_m_1)
 {
-    T physical = extent.first.physical;
-    T end = physical + extent.second.length;
+    T physical = key.physical;
+    T end = physical + value.length;
     T new_physical = ff_round_up<T>(physical, page_size_blocks_m_1);
     T new_end = end & ~page_size_blocks_m_1;
     if (new_end <= new_physical)
-        return extent.second.length = 0;
+        return value.length = 0;
 
-    extent.first.physical = new_physical;
-    extent.second.logical += new_physical - physical;
-    return extent.second.length = new_end - new_physical;
+    key.physical = new_physical;
+    value.logical += new_physical - physical;
+    return value.length = new_end - new_physical;
 }
 
 
@@ -268,8 +268,8 @@ T ff_extent_align(typename fr_map<T>::value_type & extent, T page_size_blocks_m_
  * assumes that vectors are ordered by extent->logical, and modifies them
  * in place: vector contents will be UNDEFINED when this method returns.
  *
- * basic implementation idea: to compute this->dev_map, performs in-place the union of specified
- * loop_file_extents and free_space_extents, then sorts in-place and complements such union.
+ * basic implementation idea: to compute this->dev_map, perform in-place the union of specified
+ * loop_file_extents and free_space_extents, then sort in-place and complement such union.
  *
  * detailed implementation is quite complicated... see the comments and the documentation
  */
@@ -338,23 +338,23 @@ int fr_work<T>::analyze(fr_vector<ft_uoff> & loop_file_extents,
      * this converts FC_EXTENT_ZEROED extents into free extents,
      * and will also mark them to be cleared after relocate() finishes.
      */
-    map_iterator iter = loop_map.begin(), tmp, end = loop_map.end();
     {
+        map_iterator iter = loop_map.begin(), tmp, end = loop_map.end();
+    	fr_vector<ft_uoff> toclear_vec;
         T physical, length;
         while (iter != end) {
             map_value_type & extent = *iter;
             if (extent.second.user_data == FC_EXTENT_ZEROED) {
-                physical = extent.first.physical;
-                length = extent.second.length;
                 /* extent must be inserted in toclear_map even if io->job_clear() == FC_CLEAR_ALL */
-                toclear_map.insert(physical, physical, length, FC_DEFAULT_USER_DATA);
-                dev_free.insert(physical, physical, length, FC_DEFAULT_USER_DATA);
+            	toclear_vec.append(extent.first.physical, extent.first.physical, extent.second.length, FC_DEFAULT_USER_DATA);
                 tmp = iter;
                 ++iter;
                 loop_map.remove(tmp);
             } else
                 ++iter;
         }
+        toclear_map.merge_shift(toclear_vec, 0, FC_PHYSICAL1);
+        dev_free.merge_shift(toclear_vec, 0, FC_PHYSICAL1);
     }
     toclear_map.show("to-clear", " (initial)", eff_block_size, FC_DEBUG);
     dev_free.show(label[FC_FREE_SPACE], " (after to-clear)", eff_block_size);
@@ -453,8 +453,8 @@ int fr_work<T>::analyze(fr_vector<ft_uoff> & loop_file_extents,
         renumbered_map.clear();
         renumbered_map.intersect_all_all(dev_transpose, toclear_map, FC_PHYSICAL2);
         toclear_map.remove_all(renumbered_map);
-        iter = dev_transpose.begin();
-        end = dev_transpose.end();
+        map_iterator iter = dev_transpose.begin();
+        map_iterator end = dev_transpose.end();
         for (; iter != end; ++iter) {
             const map_value_type & extent = *iter;
             toclear_map.insert(extent.first.physical, extent.first.physical, extent.second.length, FC_DEFAULT_USER_DATA);
@@ -472,28 +472,28 @@ int fr_work<T>::analyze(fr_vector<ft_uoff> & loop_file_extents,
      * already in their final destination, and forget them (no work on those).
      * also compute total length of extents remaining in LOOP-FILE and store in work_count.
      */
-    iter = loop_map.begin();
-    end = loop_map.end();
-    T work_count = 0; /**< number of blocks to be relocated */
-
-    while (iter != end) {
-        if (iter->first.physical == iter->second.logical) {
-            /* move INVARIANT extents to renumbered_map, to show them later */
-            renumbered_map.insert(*iter);
-            tmp = iter;
-            ++iter;
-            /* forget INVARIANT extents (i.e. remove from loop_map) */
-            loop_map.remove(tmp);
-        } else {
-            /* not INVARIANT, compute loop_map length... */
-            work_count += iter->second.length;
-            /*
-             * also prepare for item 3) "merge renumbered DEVICE extents with remaining LOOP-FILE extents"
-             * i.e. remember who's who
-             */
-            iter->second.user_data = FC_LOOP_FILE;
-            ++iter;
-        }
+	T work_count = 0; /**< number of blocks to be relocated */
+    {
+		map_iterator iter = loop_map.begin(), end = loop_map.end(), tmp;
+		while (iter != end) {
+			if (iter->first.physical == iter->second.logical) {
+				/* move INVARIANT extents to renumbered_map, to show them later */
+				renumbered_map.insert(*iter);
+				tmp = iter;
+				++iter;
+				/* forget INVARIANT extents (i.e. remove from loop_map) */
+				loop_map.remove(tmp);
+			} else {
+				/* not INVARIANT, compute loop_map length... */
+				work_count += iter->second.length;
+				/*
+				 * also prepare for item 3) "merge renumbered DEVICE extents with remaining LOOP-FILE extents"
+				 * i.e. remember who's who
+				 */
+				iter->second.user_data = FC_LOOP_FILE;
+				++iter;
+			}
+		}
     }
     /* show LOOP-FILE (INVARIANT) blocks, sorted by physical */
     renumbered_map.show(label[FC_LOOP_FILE], " (invariant)", eff_block_size);
@@ -504,19 +504,20 @@ int fr_work<T>::analyze(fr_vector<ft_uoff> & loop_file_extents,
 
 
 
-
     /*
      * algorithm: 3) merge renumbered DEVICE extents with LOOP-FILE blocks (remember who's who)
      * also compute total length of extents remaining in DEVICE and add it to work_count.
      */
-    iter = dev_map.begin();
-    end = dev_map.end();
-    for (; iter != end; ++iter) {
-        work_count += iter->second.length;
-        iter->second.user_data = FC_DEVICE;
-        loop_map.insert0(iter->first, iter->second);
+    {
+    	map_iterator iter = dev_map.begin();
+    	map_iterator end = dev_map.end();
+		for (; iter != end; ++iter) {
+			work_count += iter->second.length;
+			iter->second.user_data = FC_DEVICE;
+			loop_map.insert0(iter->first, iter->second);
+		}
+		dev_map.clear();
     }
-    dev_map.clear();
     /*
      * from now on, we only need one of dev_map or loop_map, not both.
      * we choose dev_map: more intuitive name, and already stored in 'this'
@@ -557,33 +558,47 @@ int fr_work<T>::analyze(fr_vector<ft_uoff> & loop_file_extents,
      * 1) at least 1024 * PAGE_SIZE bytes long, or at least work_count / 1024 blocks long
      * 2) in any case, at least 1 * PAGE_SIZE bytes long
      */
-    ft_uoff hole_threshold = ff_max2((ft_uoff)page_size_blocks, ff_min2((ft_uoff) work_count >> 10, (ft_uoff) page_size << 10 >> eff_block_size_log2));
-    T hole_len, hole_total_len = 0;
+    T hole_total_len = 0;
+    {
+		ft_uoff hole_threshold
+			= ff_max2((ft_uoff)page_size_blocks,
+					  ff_min2((ft_uoff) work_count >> 10,
+							  (ft_uoff) page_size << 10 >> eff_block_size_log2));
 
-    iter = renumbered_map.begin();
-    end = renumbered_map.end();
-    renumbered_map.show(label[FC_FREE_SPACE], " (invariant)", eff_block_size);
-    while (iter != end) {
-        map_value_type & extent = *iter;
-        /*
-         * whether this hole (extent from dev_free) is large enough to be useful or not,
-         * it is invariant free space. the current remapping algorithm will never use it,
-         * so remove it from free space to get accurate calculation of usable free space.
-         */
-        dev_free.remove(extent);
+		map_iterator iter = renumbered_map.begin(), end = renumbered_map.end();
+		renumbered_map.show(label[FC_FREE_SPACE], " (invariant)", eff_block_size);
+		while (iter != end) {
+			map_value_type & extent = *iter;
+			/*
+			 * whether this hole (extent from dev_free) is large enough to be useful or not,
+			 * it is invariant free space. the current remapping algorithm will never use it,
+			 * so remove it from free space to get accurate calculation of usable free space.
+			 */
+			dev_free.remove(extent);
 
-        if ((ft_uoff) (hole_len = iter->second.length) >= hole_threshold) {
-            /* trim hole on both ends to align it to PAGE_SIZE */
-            if (page_size_blocks <= 1 || (ft_uoff) (hole_len = ff_extent_align(extent, page_size_blocks - 1)) >= hole_threshold) {
-                hole_total_len += hole_len;
-                ++iter;
-                continue;
-            }
-        }
-        /* extent is small, do not use for PRIMARY-STORAGE */
-        tmp = iter;
-        ++iter;
-        renumbered_map.remove(tmp);
+			T hole_len;
+			if ((ft_uoff) (hole_len = iter->second.length) >= hole_threshold) {
+				/* trim hole on both ends to align it to PAGE_SIZE */
+
+				// extent.first is constant reference to map key => cannot modify it in-place, make a copy
+				map_key_type key = extent.first;
+				map_mapped_type value = extent.second;
+
+				if (page_size_blocks <= 1 || (ft_uoff) (hole_len = ff_extent_align(key, value, page_size_blocks - 1)) >= hole_threshold) {
+					renumbered_map.remove(iter);
+					iter = renumbered_map.insert0(key, value);
+					if (iter != end) {
+						++iter;
+					}
+					hole_total_len += hole_len;
+					continue;
+				}
+			}
+			/* extent is small, do not use for PRIMARY-STORAGE */
+			map_iterator tmp = iter;
+			++iter;
+			renumbered_map.remove(tmp);
+		}
     }
     /*
      * move FREE-SPACE (INVARIANT) extents into storage_map (i.e. PRIMARY-STORAGE),
@@ -1190,6 +1205,11 @@ int fr_work<T>::fill_storage()
 template<typename T>
 int fr_work<T>::move(ft_size counter, map_iterator from_iter, fr_dir dir, T & ret_moved)
 {
+	{
+        map_stat_type & from_map = ff_is_from_dev(dir) ? dev_map : storage_map;
+        from_map.validate(from_iter);
+	}
+
     T moved, length = from_iter->second.length;
     const bool is_to_dev = ff_is_to_dev(dir);
     map_stat_type & to_map = is_to_dev ? dev_map : storage_map;
@@ -1232,6 +1252,13 @@ int fr_work<T>::move(ft_size counter, map_iterator from_iter, fr_dir dir, T & re
 template<typename T>
 int fr_work<T>::move_fragment(map_iterator from_iter, map_iterator to_free_iter, fr_dir dir, T & ret_queued)
 {
+	{
+        map_stat_type & from_map = ff_is_from_dev(dir) ? dev_map : storage_map;
+        map_type & to_free_map = ff_is_to_dev(dir) ? dev_free : storage_free;
+        from_map.validate(from_iter);
+        to_free_map.validate(to_free_iter);
+	}
+
     map_value_type & from_extent = *from_iter, & to_free_extent = *to_free_iter;
     map_mapped_type & from_value = from_extent.second;
 
@@ -1256,9 +1283,9 @@ int fr_work<T>::move_fragment(map_iterator from_iter, map_iterator to_free_iter,
 
     /* update the 'to' maps */
     {
-        const bool is_to_dev = ff_is_to_dev(dir);
+    	const bool is_to_dev = ff_is_from_dev(dir);
 
-        map_stat_type & to_map = is_to_dev ? dev_map : storage_map;
+    	map_stat_type & to_map = is_to_dev ? dev_map : storage_map;
         to_map.stat_insert(to_physical, logical, length, user_data);
 
         map_type & to_transpose = is_to_dev ? dev_transpose : storage_transpose;

@@ -25,7 +25,6 @@
 
 #include "first.hh"
 
-#include "assert.hh"     // for ff_assert macro
 #include "map.hh"        // for fr_map<T>
 #include "misc.hh"       // for ff_max2(), ff_min2()
 #include "vector.hh"     // for fr_vector<T>
@@ -98,6 +97,20 @@ fr_extent_relation fr_map<T>::compare(const key_type & key1, const mapped_type &
     return rel;
 }
 
+#define FR_MAP_VALIDATE(iter) do { \
+	ff_assert((iter).this_map == this); \
+	ff_assert((iter) != end()); \
+	iterator __match = find((iter)->first); \
+	ff_assert((iter) == __match); \
+} while (false)
+
+/**
+ * validate iterator
+ */
+template<typename T>
+void fr_map<T>::validate(iterator iter) {
+	FR_MAP_VALIDATE(iter);
+}
 
 /**
  * merge extent (which can belong to this fr_map) into specified position.
@@ -113,20 +126,24 @@ fr_extent_relation fr_map<T>::compare(const key_type & key1, const mapped_type &
 template<typename T>
 typename fr_map<T>::iterator fr_map<T>::merge0(iterator pos1, const key_type & key2, const mapped_type & value2)
 {
+	FR_MAP_VALIDATE(pos1);
     fr_extent_relation rel = compare(pos1, key2, value2);
-    const key_type & key1 = pos1->first;
-    mapped_type & value1 = pos1->second;
-
-    // modify extent in-place
-    value1.length += value2.length;
 
     if (rel == FC_EXTENT_TOUCH_BEFORE) {
-        // nothing to do
+        // modify extent in-place
+        mapped_type & value1 = pos1->second;
+        value1.length += value2.length;
 
     } else if (rel == FC_EXTENT_TOUCH_AFTER) {
-        // modify extent_key in-place. possible, since we defined fr_extent_key<T>::physical as 'mutable'
-        key1.physical = key2.physical;
-        value1.logical = value2.logical;
+        // for safety, remove and reinsert pos1 entry instead of modifying it in place:
+    	// we do not want to risk creating out-of-order entries in map!
+    	mapped_type value = pos1->second;
+    	value.logical = value2.logical;
+    	value.length += value2.length;
+
+        remove(pos1);
+        pos1 = insert0(key2, value);
+
     } else {
         /* must not happen! trigger an assertion failure. */
         ff_map_assert(rel == FC_EXTENT_TOUCH_BEFORE || rel == FC_EXTENT_TOUCH_AFTER);
@@ -151,22 +168,26 @@ typename fr_map<T>::iterator fr_map<T>::merge0(iterator pos1, const key_type & k
 template<typename T>
 typename fr_map<T>::iterator fr_map<T>::merge0(iterator pos1, iterator pos2)
 {
+	FR_MAP_VALIDATE(pos1);
+	FR_MAP_VALIDATE(pos2);
+	ff_assert(pos1 != pos2);
+
     fr_extent_relation rel = compare(pos1, pos2);
     mapped_type & value1 = pos1->second;
     mapped_type & value2 = pos2->second;
 
-    T length = value1.length + value2.length;
+    const T length = value1.length + value2.length;
 
     if (rel == FC_EXTENT_TOUCH_BEFORE) {
         // modify first extent in-place, erase second
         value1.length = length;
-        super_type::erase(pos2);
+        remove(pos2);
         return pos1;
 
     } else if (rel == FC_EXTENT_TOUCH_AFTER) {
         // modify second extent in-place, erase first
         value2.length = length;
-        super_type::erase(pos1);
+        remove(pos1);
         return pos2;
 
     } else {
@@ -193,7 +214,9 @@ typename fr_map<T>::iterator fr_map<T>::merge0(iterator pos1, iterator pos2)
 template<typename T>
 typename fr_map<T>::iterator fr_map<T>::merge(iterator pos1, const key_type & key2, const mapped_type & value2)
 {
-    fr_extent_relation rel = compare(pos1, key2, value2);
+	FR_MAP_VALIDATE(pos1);
+
+	fr_extent_relation rel = compare(pos1, key2, value2);
 
     if (rel == FC_EXTENT_TOUCH_BEFORE) {
         pos1 = merge0(pos1, key2, value2);
@@ -256,6 +279,7 @@ void fr_map<T>::bounds(key_type & min_key, key_type & max_key) const
         min_key.physical = max_key.physical = 0;
 }
 
+#if 0 // unused
 /**
  * find the intersection (matching physical)
  * between the specified single block and this map, and store the intersection in ret_extent.
@@ -288,7 +312,7 @@ bool fr_map<T>::find_physical_block(T key_physical, value_type & ret_extent) con
     ret_extent.second.user_data = extent1.second.user_data;
     return true;
 }
-
+#endif // 0
 
 /**
  * find the intersection (matching physical, or both physical and logical) between the two specified extents,
@@ -363,7 +387,10 @@ template<typename T>
 bool fr_map<T>::intersect_all(const fr_map<T> & map, const value_type & extent, ft_match match)
 {
     const key_type & key1 = extent.first;
-    const_iterator pos = map.super_type::upper_bound(key1), begin = map.begin(), end = map.end();
+    super_const_iterator
+		pos   = map.super_type::upper_bound(key1),
+		begin = map.super_type::begin(),
+		end   = map.super_type::end();
     bool ret = false;
 
     if (pos != begin) {
@@ -405,8 +432,10 @@ bool fr_map<T>::intersect_all_all(const fr_map<T> & map1, const fr_map<T> & map2
     key_type bound_lo, bound_hi;
     map_other.bounds(bound_lo, bound_hi);
 
-    const_iterator iter = map_iterate.super_type::upper_bound(bound_lo), end = map_iterate.super_type::lower_bound(bound_hi);
-    if (iter != map_iterate.begin())
+    super_const_iterator
+		iter = map_iterate.super_type::upper_bound(bound_lo),
+		end  = map_iterate.super_type::lower_bound(bound_hi);
+    if (iter != map_iterate.super_type::begin())
         /* iter is now last position less than bound_lo */
         --iter;
 
@@ -415,6 +444,22 @@ bool fr_map<T>::intersect_all_all(const fr_map<T> & map1, const fr_map<T> & map2
     for (; iter != end; ++iter)
         ret |= intersect_all(map_other, *iter, match);
     return ret;
+}
+
+/**
+ * log fatal error during insert() then terminate the program
+ */
+template<typename T>
+void fr_map<T>::log_fatal_terminate(iterator iter, const key_type & key, const mapped_type & value) {
+	ff_log(FC_FATAL, 0,
+			"cannot insert extent {phys=%" FT_ULL ", log=%" FT_ULL ", len=%" FT_ULL "} "
+			"in %" FT_ULL "-elements map, it already contains "
+			"{phys=%" FT_ULL ", log=%" FT_ULL ", len=%" FT_ULL "}",
+			(ft_ull)key.physical, (ft_ull)value.logical, (ft_ull)value.length,
+			(ft_ull)size(),
+			(ft_ull)iter->first.physical, (ft_ull)iter->second.logical, (ft_ull)iter->second.length);
+	ft_log_appender::flush_all(FC_FATAL);
+	exit(1);
 }
 
 /**
@@ -429,12 +474,15 @@ typename fr_map<T>::iterator fr_map<T>::insert(const key_type & key, const mappe
      * first extent greater than or equal to this key,
      * or end() if no such extent exists
      */
-    iterator pos = super_type::lower_bound(key);
+    iterator pos(super_type::lower_bound(key), this);
     fr_extent_relation rel;
 
     if (pos != end()) {
         // check if extent to be added intersects or touches "next" extent
         rel = compare(pos, key, value);
+        if (rel == FC_EXTENT_INTERSECT) {
+        	log_fatal_terminate(pos, key, value);
+        }
         if (rel == FC_EXTENT_TOUCH_BEFORE || rel == FC_EXTENT_TOUCH_AFTER)
             return merge(pos, key, value);
     }
@@ -442,12 +490,15 @@ typename fr_map<T>::iterator fr_map<T>::insert(const key_type & key, const mappe
         // check if extent to be added intersects or touches "previous" extent
         --pos;
         rel = compare(pos, key, value);
+        if (rel == FC_EXTENT_INTERSECT) {
+        	log_fatal_terminate(pos, key, value);
+        }
         if (rel == FC_EXTENT_TOUCH_BEFORE || rel == FC_EXTENT_TOUCH_AFTER)
             return merge(pos, key, value);
         ++pos;
     }
     // just insert the key/value pair
-    return super_type::insert(pos, std::make_pair(key, value));
+    return insert0(key, value);
 }
 
 /**
@@ -488,8 +539,8 @@ void fr_map<T>::remove1(const value_type & extent, ft_match match)
      * pos = "next" extent, i.e. first extent greater than key to remove,
      * or end() if no such extent exists
      */
-    iterator pos = super_type::upper_bound(key);
-    ff_assert(pos != begin());
+    super_iterator pos = super_type::upper_bound(key);
+    ff_assert(pos != super_type::begin());
     /*
      * go back one place. pos will now be "prev",
      * i.e. the last extent lesser than or equal to key to remove
@@ -569,7 +620,8 @@ void fr_map<T>::remove1(const value_type & extent, ft_match match)
 template<typename T>
 void fr_map<T>::remove(iterator iter)
 {
-    super_type::erase(iter);
+	FR_MAP_VALIDATE(iter);
+    super_type::erase(iter.super());
 }
 
 
@@ -614,8 +666,10 @@ void fr_map<T>::remove_all(const fr_map<T> & map, ft_match match)
     }
     key_type bound_lo, bound_hi;
     bounds(bound_lo, bound_hi);
-    const_iterator iter = map.super_type::upper_bound(bound_lo), end = map.super_type::lower_bound(bound_hi);
-    if (iter != map.begin())
+    super_const_iterator
+		iter = map.super_type::upper_bound(bound_lo),
+		end = map.super_type::lower_bound(bound_hi);
+    if (iter != map.super_type::begin())
         --iter;
     remove_all(iter, end, match);
 }
@@ -628,24 +682,26 @@ void fr_map<T>::remove_all(const fr_map<T> & map, ft_match match)
 template<typename T>
 typename fr_map<T>::iterator fr_map<T>::remove_front(iterator iter, T shrink_length)
 {
-    ff_assert(iter != end());
-    value_type & extent = *iter;
-    const key_type & key = extent.first;
-    mapped_type & value = extent.second;
+	FR_MAP_VALIDATE(iter);
 
-    T length = value.length;
+    key_type key = iter->first;
+    mapped_type value = iter->second;
+    const T length = value.length;
+
     ff_assert(length >= shrink_length);
 
+    /** do not modify the extent in-place: for safety, remove and reinsert it if needed */
+    remove(iter);
+
     if (length == shrink_length) {
-        super_type::erase(iter);
         return end();
     }
-    /** modify the extent in-place */
-    key.physical += shrink_length; /* key_type::physical is mutable :) */
+
+    key.physical += shrink_length;
     value.logical += shrink_length;
     value.length -= shrink_length;
 
-    return iter;
+    return insert0(key, value);
 }
 
 /**
@@ -684,10 +740,11 @@ void fr_map<T>::insert0(T physical, T logical, T length, ft_size user_data)
  * does not merge and does not check for merges
  */
 template<typename T>
-void fr_map<T>::insert0(const key_type & key, const mapped_type & value)
+typename fr_map<T>::iterator fr_map<T>::insert0(const key_type & key, const mapped_type & value)
 {
-    mapped_type & value_ = (*this)[key];
-    value_ = value; /* struct assignment: copy logical, length and user_data */
+    std::pair<super_iterator,bool> inserted = super_type::insert(value_type(key, value));
+    ff_map_assert(inserted.second == true);
+    return iterator(inserted.first, this);
 }
 
 /**
@@ -702,7 +759,7 @@ void fr_map<T>::append0(T physical, T logical, T length, ft_size user_data)
     mapped_type value = { logical, length, user_data };
     value_type extent(key, value);
 
-    super_type::insert(end(), extent);
+    super_type::insert(super_type::end(), extent);
 }
 
 
@@ -757,7 +814,6 @@ void fr_map<T>::merge_shift(const fr_vector<ft_uoff> & other, ft_uoff effective_
 		this->insert_all(other_map);
 	}
 }
-
 
 
 /**
