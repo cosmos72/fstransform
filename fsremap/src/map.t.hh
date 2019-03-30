@@ -100,6 +100,7 @@ fr_extent_relation fr_map<T>::compare(const key_type & key1, const mapped_type &
 #define FR_MAP_VALIDATE(iter) do { \
 	ff_assert((iter).this_map == this); \
 	ff_assert((iter) != end()); \
+	/* iter->first also calls iter->validate_deref() */ \
 	iterator __match = find((iter)->first); \
 	ff_assert((iter) == __match); \
 } while (false)

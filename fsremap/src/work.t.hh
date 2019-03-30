@@ -324,6 +324,7 @@ int fr_work<T>::analyze(fr_vector<ft_uoff> & loop_file_extents,
     }
 
     /* sanity check: LOOP-FILE and FREE-SPACE extents ->physical must NOT intersect */
+    renumbered_map.clear();
     renumbered_map.intersect_all_all(loop_map, dev_free, FC_PHYSICAL1);
     if (!renumbered_map.empty()) {
         ff_log(FC_FATAL, 0, "inconsistent %s and %s: they share common blocks on %s !", label[FC_LOOP_FILE], label[FC_FREE_SPACE], label[FC_DEVICE]);
@@ -341,7 +342,6 @@ int fr_work<T>::analyze(fr_vector<ft_uoff> & loop_file_extents,
     {
         map_iterator iter = loop_map.begin(), tmp, end = loop_map.end();
     	fr_vector<ft_uoff> toclear_vec;
-        T physical, length;
         while (iter != end) {
             map_value_type & extent = *iter;
             if (extent.second.user_data == FC_EXTENT_ZEROED) {
@@ -356,9 +356,18 @@ int fr_work<T>::analyze(fr_vector<ft_uoff> & loop_file_extents,
         toclear_map.merge_shift(toclear_vec, 0, FC_PHYSICAL1);
         dev_free.merge_shift(toclear_vec, 0, FC_PHYSICAL1);
     }
-    toclear_map.show("to-clear", " (initial)", eff_block_size, FC_DEBUG);
+    toclear_map.show("to-clear", " (after to-clear)", eff_block_size, FC_DEBUG);
     dev_free.show(label[FC_FREE_SPACE], " (after to-clear)", eff_block_size);
 
+
+    /* sanity check: LOOP-FILE and FREE-SPACE extents ->physical must NOT intersect */
+    renumbered_map.clear();
+    renumbered_map.intersect_all_all(loop_map, dev_free, FC_PHYSICAL1);
+    if (!renumbered_map.empty()) {
+        ff_log(FC_FATAL, 0, "inconsistent %s and %s: they share common blocks on %s !", label[FC_LOOP_FILE], label[FC_FREE_SPACE], label[FC_DEVICE]);
+        renumbered_map.show(label[FC_LOOP_FILE], " intersection with free-space", eff_block_size, FC_DEBUG);
+        return -EFAULT;
+    }
 
 
     /* algorithm: 0) compute DEVICE extents
@@ -376,6 +385,22 @@ int fr_work<T>::analyze(fr_vector<ft_uoff> & loop_file_extents,
 
 
 
+    /* sanity check: DEVICE and LOOP-FILE extents ->physical must NOT intersect */
+    renumbered_map.clear();
+    renumbered_map.intersect_all_all(dev_map, loop_map, FC_PHYSICAL1);
+    if (!renumbered_map.empty()) {
+        ff_log(FC_FATAL, 0, "inconsistent %s and %s: they share common blocks !", label[FC_DEVICE], label[FC_LOOP_FILE]);
+        renumbered_map.show(label[FC_DEVICE], " intersection with loop-file", eff_block_size, FC_DEBUG);
+        return -EFAULT;
+    }
+    /* sanity check: DEVICE and DEV-FREE extents ->physical must NOT intersect */
+    renumbered_map.clear();
+    renumbered_map.intersect_all_all(dev_map, dev_free, FC_PHYSICAL1);
+    if (!renumbered_map.empty()) {
+        ff_log(FC_FATAL, 0, "inconsistent %s and %s: they share common blocks !", label[FC_DEVICE], label[FC_FREE_SPACE]);
+        renumbered_map.show(label[FC_DEVICE], " intersection with free-space", eff_block_size, FC_DEBUG);
+        return -EFAULT;
+    }
 
     /*
      * algorithm: 2), 3) allocate LOOP-HOLES for DEVICE extents logical destination
@@ -528,6 +553,16 @@ int fr_work<T>::analyze(fr_vector<ft_uoff> & loop_file_extents,
     /* show DEVICE + LOOP-FILE extents after merge, sorted by physical */
     dev_map.show("device + loop-file", " (merged)", eff_block_size);
 
+
+    /* sanity check: DEVICE and DEV-FREE extents ->physical must NOT intersect */
+    renumbered_map.clear();
+    renumbered_map.intersect_all_all(dev_map, dev_free, FC_PHYSICAL1);
+    if (!renumbered_map.empty()) {
+        ff_log(FC_FATAL, 0, "inconsistent %s and %s: they share common blocks !", label[FC_DEVICE], label[FC_FREE_SPACE]);
+        renumbered_map.show(label[FC_DEVICE], " intersection with free-space", eff_block_size, FC_DEBUG);
+        return -EFAULT;
+    }
+
     double pretty_len = 0.0;
     const char * pretty_unit = ff_pretty_size((ft_uoff) work_count << eff_block_size_log2, & pretty_len);
 
@@ -608,6 +643,15 @@ int fr_work<T>::analyze(fr_vector<ft_uoff> & loop_file_extents,
     /* show PRIMARY-STORAGE extents, sorted by physical */
     storage_map.show(label[FC_PRIMARY_STORAGE], " (= free-space, invariant, contiguous, aligned)", eff_block_size);
 
+
+    /* sanity check: DEVICE and PRIMARY_STORAGE extents ->physical must NOT intersect */
+    renumbered_map.clear();
+    renumbered_map.intersect_all_all(dev_map, dev_free, FC_PHYSICAL1);
+    if (!renumbered_map.empty()) {
+        ff_log(FC_FATAL, 0, "inconsistent %s and %s: they share common blocks !", label[FC_DEVICE], label[FC_PRIMARY_STORAGE]);
+        renumbered_map.show(label[FC_DEVICE], " intersection with primary-storage", eff_block_size, FC_DEBUG);
+        return -EFAULT;
+    }
 
     pretty_len = 0.0;
     pretty_unit = ff_pretty_size((ft_uoff) hole_total_len << eff_block_size_log2, & pretty_len);
