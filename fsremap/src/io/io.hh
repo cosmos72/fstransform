@@ -326,7 +326,8 @@ public:
 
     /**
      * create and open SECONDARY-STORAGE job.job_dir() + '/storage.bin' and fill it with 'secondary_len' bytes of zeros.
-     * setup a virtual storage composed by this->primary_storage extents inside DEVICE, plus secondary-storage extents.
+     * then setup a virtual storage composed by this->primary_storage extents inside DEVICE, plus secondary-storage extents.
+     * finally allocate a RAM buffer containing mem_buffer_size bytes.
      * return 0 if success, else error
      */
     virtual int create_storage(ft_size secondary_len, ft_size mem_buffer_len) = 0;

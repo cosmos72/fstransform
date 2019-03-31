@@ -17,26 +17,27 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * io/io_null.hh
+ * io/io_mem.hh
  *
- *  Created on: Feb 28, 2011
+ *  Created on: Mar 31, 2019
  *      Author: max
  */
 
-#ifndef FSREMAP_IO_IO_NULL_HH
-#define FSREMAP_IO_IO_NULL_HH
+#ifndef FSREMAP_IO_IO_MEM_HH
+#define FSREMAP_IO_IO_MEM_HH
+
+#include <vector>
 
 #include "../types.hh"    // for ft_uoff
-
 #include "io.hh"          // for fr_io
 
 
 FT_IO_NAMESPACE_BEGIN
 
 /**
- * "null" class emulating I/O
+ * class emulating I/O via a RAM buffer
  */
-class ft_io_null: public fr_io
+class ft_io_mem: public fr_io
 {
 public:
     enum {
@@ -52,6 +53,8 @@ public:
 
 private:
     typedef fr_io super_type;
+
+    std::vector<ft_uoff> device, storage, mem;
 
 protected:
 
@@ -70,6 +73,7 @@ protected:
      * and for FREE-SPACE) and that also exactly exactly divides device length.
      *
      * implementation: does nothing.
+     * subclasses should override with method.
      */
     virtual int read_extents(fr_vector<ft_uoff> & loop_file_extents,
                              fr_vector<ft_uoff> & free_space_extents,
@@ -78,11 +82,10 @@ protected:
 
     /**
      * actually copy a list of fragments from DEVICE or FREE-STORAGE, to STORAGE to FREE-DEVICE.
-     * must be implemented by sub-classes.
      * note: parameters are in bytes!
      * return 0 if success, else error.
      *
-     * implementation: do nothing and return success
+     * implementation: perform the copy on in-memory buffers
      */
     virtual int flush_copy_bytes(fr_dir dir, fr_vector<ft_uoff> & request_vec);
 
@@ -98,17 +101,15 @@ protected:
     /**
      * write zeroes to device (or to storage).
      * used to remove device-renumbered blocks once remapping is finished
-     *
-     * implementation: do nothing and return success
      */
     virtual int zero_bytes(fr_to to, ft_uoff offset, ft_uoff length);
 
 public:
     /** constructor */
-    ft_io_null(fr_persist & persist);
+    ft_io_mem(fr_persist & persist);
 
-    /** destructor. does nothing. */
-    virtual ~ft_io_null();
+    /** destructor */
+    virtual ~ft_io_mem();
 
     /**
      * close the file descriptors for LOOP-FILE and ZERO-FILE
@@ -118,11 +119,12 @@ public:
     virtual void close_extents();
 
     /**
-     * create SECONDARY-STORAGE as job.job_dir() + '.storage' and fill it with 'len' bytes of zeros,
-     * setup a virtual storage composed by this->primary_storage extents inside DEVICE, plus secondary-storage extents.
+     * create and open SECONDARY-STORAGE job.job_dir() + '/storage.bin' and fill it with 'secondary_len' bytes of zeros.
+     * then setup a virtual storage composed by this->primary_storage extents inside DEVICE, plus secondary-storage extents.
+     * finally allocate a RAM buffer containing mem_buffer_size bytes.
      * return 0 if success, else error
      *
-     * implementation: do nothing and return success
+     * implementation: allocate memory for SECONDARY-STORAGE and RAM buffer
      */
     virtual int create_storage(ft_size secondary_len, ft_size buffer_len);
 
@@ -136,20 +138,18 @@ public:
     /**
      * write zeroes to primary storage.
      * used to remove primary-storage once remapping is finished
-     * and clean the remaped file-system
-     *
-     * implementation: do nothing and return success
+     * and clean the remapped file-system
      */
     virtual int zero_primary_storage();
 
     /**
      * close PRIMARY-STORAGE and SECONDARY-STORAGE. called by work<T>::close_storage()
      *
-     * implementation: do nothing and return success
+     * implementation: deallocate memory for SECONDARY-STORAGE
      */
     virtual int close_storage();
 };
 
 FT_IO_NAMESPACE_END
 
-#endif /* FSREMAP_IO_IO_NULL_HH */
+#endif /* FSREMAP_IO_IO_MEM_HH */
