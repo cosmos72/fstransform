@@ -1022,8 +1022,6 @@ int fr_io_posix::flush_copy_bytes(fr_dir dir, fr_vector<ft_uoff> & request_vec)
                     if ((err = flush_copy_bytes(FC_POSIX_RAM2DEV, (ft_uoff) extent.user_data(), extent.logical(), extent.length())) != 0)
                         break;
                 }
-                if (err != 0)
-                    break;
             }
 
             if (err != 0 || (err = flush_bytes()) != 0)
@@ -1046,7 +1044,9 @@ int fr_io_posix::flush_copy_bytes(fr_dir dir, fr_vector<ft_uoff> & request_vec)
                         || (err = flush_bytes()) != 0)
                         break;
 
-                    length -= (ft_uoff) buf_length;
+                    length      -= (ft_uoff) buf_length;
+                    from_offset += (ft_uoff) buf_length;
+                    to_offset   += (ft_uoff) buf_length;
                 }
                 if (err != 0)
                     break;
