@@ -86,10 +86,11 @@ public:
      * remove an initial part of an existing extent from this fr_map.
      * returns iterator to new, smaller extent, or end() if the whole extent was removed
      */
-    FT_INLINE void stat_remove_front(iterator iter, T shrink_length)
+    FT_INLINE iterator stat_remove_front(iterator iter, T shrink_length)
     {
-        super_type::remove_front(iter, shrink_length);
+    	iter = super_type::remove_front(iter, shrink_length);
         this_used_count -= shrink_length;
+        return iter;
     }
 
     FT_INLINE T total_count() const { return this_total_count; }

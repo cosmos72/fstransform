@@ -132,6 +132,7 @@ private:
     void remove1(const value_type & extent, ft_match match);
 
 public:
+    ft_string label;
 
     // construct empty fr_map
     fr_map();

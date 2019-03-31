@@ -453,12 +453,11 @@ bool fr_map<T>::intersect_all_all(const fr_map<T> & map1, const fr_map<T> & map2
 template<typename T>
 void fr_map<T>::log_fatal_terminate(iterator iter, const key_type & key, const mapped_type & value) {
 	ff_log(FC_FATAL, 0,
-			"cannot insert extent {phys=%" FT_ULL ", log=%" FT_ULL ", len=%" FT_ULL "} "
-			"in %" FT_ULL "-elements map, it already contains "
-			"{phys=%" FT_ULL ", log=%" FT_ULL ", len=%" FT_ULL "}",
-			(ft_ull)key.physical, (ft_ull)value.logical, (ft_ull)value.length,
-			(ft_ull)size(),
+			"internal error! cannot insert extent {phys=%" FT_ULL ", log=%" FT_ULL ", len=%" FT_ULL "} "
+			"in %s, it already contains {phys=%" FT_ULL ", log=%" FT_ULL ", len=%" FT_ULL "}",
+			(ft_ull)key.physical, (ft_ull)value.logical, (ft_ull)value.length, label.c_str(),
 			(ft_ull)iter->first.physical, (ft_ull)iter->second.logical, (ft_ull)iter->second.length);
+	show("", "", 0, FC_FATAL);
 	ft_log_appender::flush_all(FC_FATAL);
 	exit(1);
 }
@@ -938,7 +937,9 @@ void fr_map<T>::complement0_logical_shift(const fr_vector<ft_uoff> & other, ft_u
 template<typename T>
 void fr_map<T>::show(const char * label1, const char * label2, ft_uoff effective_block_size, ft_log_level level) const
 {
-	fr_extent<T>::show(this->begin(), this->end(), this->size(), label1, label2, effective_block_size, level);
+	fr_extent<T>::show(this->begin(), this->end(), this->size(),
+					   (label1 && *label1 ? label1 : this->label.c_str()), label2,
+				       effective_block_size, level);
 }
 
 

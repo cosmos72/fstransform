@@ -71,7 +71,15 @@ fr_work<T>::fr_work()
     : dev_map(), storage_map(), dev_free(), dev_transpose(),
       storage_free(), storage_transpose(), toclear_map(),
       io(NULL), eta(), work_total(0)
-{ }
+{
+	dev_map.label           = label[FC_DEVICE];
+	storage_map.label       = label[FC_STORAGE];
+	dev_free.label          = label[FC_DEVICE] + ft_string("-free");
+	dev_transpose.label     = label[FC_DEVICE] + ft_string("-transpose");
+	storage_free.label      = label[FC_STORAGE] + ft_string("-free");
+	storage_transpose.label = label[FC_STORAGE] + ft_string("-transpose");
+	toclear_map.label       = "to-clear";
+}
 
 
 #ifdef FT_HAVE_EXTERNAL_TEMPLATE
@@ -214,6 +222,14 @@ int fr_work<T>::init(FT_IO_NS fr_io & io)
 }
 
 
+/**
+ * return "(simulated) " or "(replaying) " string
+ * when appropriate
+ */
+template<typename T>
+const char * fr_work<T>::simul_prefix() {
+	return io->simulate_run() ? "(simulated) " : io->is_replaying() ? "(replaying) " : "";
+}
 
 
 static ft_size ff_mem_page_size()
@@ -1124,8 +1140,6 @@ int fr_work<T>::update_persistence()
 template<typename T>
 void fr_work<T>::show_progress(ft_log_level log_level)
 {
-    const char * simul_msg = io->simulate_run() ? "(simulated) " : io->is_replaying() ? "(replaying) " : "";
-
     const ft_uoff eff_block_size_log2 = io->effective_block_size_log2();
 
     T dev_used = dev_map.used_count(), storage_used = storage_map.used_count();
@@ -1144,7 +1158,7 @@ void fr_work<T>::show_progress(ft_log_level log_level)
         percentage *= 100.0;
     }
 
-    ff_show_progress(log_level, simul_msg, percentage, total_len, " still to remap", time_left);
+    ff_show_progress(log_level, simul_prefix(), percentage, total_len, " still to remap", time_left);
 
     const ft_uoff eff_block_size = (ft_uoff)1 << eff_block_size_log2;
 
@@ -1197,7 +1211,16 @@ int fr_work<T>::check_last_block()
 }
 
 
-
+template<typename T>
+void fr_work<T>::show(ft_log_level level, const char * msg) {
+	const ft_uoff effective_block_size = (ft_uoff)1 << io->effective_block_size_log2();
+	dev_map.show("", msg, effective_block_size, level);
+	dev_transpose.show("", msg, effective_block_size, level);
+	dev_free.show("", msg, effective_block_size, level);
+	storage_map.show("", msg, effective_block_size, level);
+	storage_transpose.show("", msg, effective_block_size, level);
+	storage_free.show("", msg, effective_block_size, level);
+}
 
 
 
@@ -1207,15 +1230,16 @@ int fr_work<T>::fill_storage()
 {
     map_iterator from_iter = dev_map.begin(), from_pos, from_end = dev_map.end();
     T moved = 0, from_used_count = dev_map.used_count(), to_free_count = storage_map.free_count();
-    const bool simulated = io->simulate_run();
-    const bool replaying = io->is_replaying();
-    const char * simul_msg = simulated ? "(simulated) " : replaying ? "(replaying) " : "";
 
+    const char * simul_msg = simul_prefix();
     double pretty_len = 0.0;
     const char * pretty_label = ff_pretty_size((ft_uoff)ff_min2<T>(from_used_count, to_free_count)
                                                << io->effective_block_size_log2(), & pretty_len);
     ff_log(FC_INFO, 0, "%sfilling %s by moving %.2f %sbytes from %s ...",
            simul_msg, label[FC_STORAGE], pretty_len, pretty_label, label[FC_DEVICE]);
+
+    show(FC_DUMP, " before fill_storage");
+
     fr_extent<T>::show(); /* show extents header */
 
     ft_size counter = 0;
@@ -1249,10 +1273,9 @@ int fr_work<T>::fill_storage()
 template<typename T>
 int fr_work<T>::move(ft_size counter, map_iterator from_iter, fr_dir dir, T & ret_moved)
 {
-	{
-        map_stat_type & from_map = ff_is_from_dev(dir) ? dev_map : storage_map;
-        from_map.validate(from_iter);
-	}
+	map_stat_type & from_map = ff_is_from_dev(dir) ? dev_map : storage_map;
+	map_iterator from_end = from_map.end();
+	from_map.validate(from_iter);
 
     T moved, length = from_iter->second.length;
     const bool is_to_dev = ff_is_to_dev(dir);
@@ -1262,17 +1285,21 @@ int fr_work<T>::move(ft_size counter, map_iterator from_iter, fr_dir dir, T & re
     map_iterator to_free_iter = to_free_map.begin(), to_free_pos, to_free_end = to_free_map.end();
     int err = 0;
 
-    if (ff_logl_is_enabled("extent", 6/*strlen("extent")*/, FC_SHOW_DEFAULT_LEVEL)) {
-        const map_value_type & extent = *from_iter;
-        fr_extent<T>::show(counter, extent.first.physical, extent.second.logical,
-                           ff_min2(extent.second.length, to_map.free_count()),
-                           extent.second.user_data);
+    if (ff_log_is_enabled(FC_TRACE)) {
+        const map_value_type & from = *from_iter;
+        moved = ff_min2(from.second.length, to_map.free_count());
+        ff_log(FC_TRACE, 0, "%smoving: %" FT_ULL " block%s from %s to %s:",
+        		simul_prefix(), (ft_ull)moved, moved == 1 ? "" : "s",
+				from_map.label.c_str(), to_free_map.label.c_str());
+        fr_extent<T>::show(counter, from.first.physical, from.second.logical,
+        		           moved, from.second.user_data);
     }
 
-    while (err == 0 && length != 0 && to_free_iter != to_free_end) {
+    while (err == 0 && from_iter != from_end && length != 0 && to_free_iter != to_free_end) {
         to_free_pos = to_free_iter;
         ++to_free_iter;
         moved = 0;
+        // updates from_iter
         err = move_fragment(from_iter, to_free_pos, dir, moved);
         length -= moved;
         ret_moved += moved;
@@ -1290,18 +1317,16 @@ int fr_work<T>::move(ft_size counter, map_iterator from_iter, fr_dir dir, T & re
  *
  * updates dev_* and storage_* maps.
  *
- * if from_length <= to_length, invalidates from_iter.
- * if from_length >= to_length, invalidates to_iter.
+ * if from_length <= to_length, increments from_iter
+ * if from_length >= to_length, updates from_iter and invalidates to_iter.
  */
 template<typename T>
-int fr_work<T>::move_fragment(map_iterator from_iter, map_iterator to_free_iter, fr_dir dir, T & ret_queued)
+int fr_work<T>::move_fragment(map_iterator &from_iter, map_iterator to_free_iter, fr_dir dir, T & ret_queued)
 {
-	{
-        map_stat_type & from_map = ff_is_from_dev(dir) ? dev_map : storage_map;
-        map_type & to_free_map = ff_is_to_dev(dir) ? dev_free : storage_free;
-        from_map.validate(from_iter);
-        to_free_map.validate(to_free_iter);
-	}
+    map_stat_type & from_map = ff_is_from_dev(dir) ? dev_map : storage_map;
+    map_type & to_free_map = ff_is_to_dev(dir) ? dev_free : storage_free;
+	from_map.validate(from_iter);
+	to_free_map.validate(to_free_iter);
 
     map_value_type & from_extent = *from_iter, & to_free_extent = *to_free_iter;
     map_mapped_type & from_value = from_extent.second;
@@ -1312,6 +1337,16 @@ int fr_work<T>::move_fragment(map_iterator from_iter, map_iterator to_free_iter,
     T from_physical = from_extent.first.physical;
     T to_physical = to_free_extent.first.physical;
 
+   	if (ff_log_is_enabled(FC_TRACE)) {
+		ff_log(FC_TRACE, 0, "%smoving fragment: %" FT_ULL " block%s from %s at physical = %"
+				FT_ULL " to %s at physical = %" FT_ULL, simul_prefix(),
+				(ft_ull) length, length == 1 ? "" : "s",
+				from_map.label.c_str(), (ft_ull)from_physical,
+				to_free_map.label.c_str(), (ft_ull)to_physical);
+
+		show(FC_DUMP, " before move_fragment");
+    }
+
     int err = io->copy(dir, from_physical, to_physical, length);
     if (err != 0)
         return err;
@@ -1319,15 +1354,14 @@ int fr_work<T>::move_fragment(map_iterator from_iter, map_iterator to_free_iter,
     ret_queued += length;
     /*
      * some blocks were copied (or queued for copying).
-     * update 'from' and 'to' maps also in case of errors,
-     * since we know how many blocks were actually copied
+     * update 'from' and 'to' maps
      */
     T logical = from_value.logical;
     ft_size user_data = from_extent.second.user_data;
 
     /* update the 'to' maps */
     {
-    	const bool is_to_dev = ff_is_from_dev(dir);
+    	const bool is_to_dev = ff_is_to_dev(dir);
 
     	map_stat_type & to_map = is_to_dev ? dev_map : storage_map;
         to_map.stat_insert(to_physical, logical, length, user_data);
@@ -1349,7 +1383,7 @@ int fr_work<T>::move_fragment(map_iterator from_iter, map_iterator to_free_iter,
 
         map_stat_type & from_map = is_from_dev ? dev_map : storage_map;
         /* beware: this could be a _partial_ remove! */
-        from_map.stat_remove_front(from_iter, length); /* can invalidate from_iter, from_extent, from_value */
+        from_iter = from_map.stat_remove_front(from_iter, length); /* invalidates from_iter, from_extent, from_value */
 
         map_type & from_transpose = is_from_dev ? dev_transpose : storage_transpose;
         from_transpose.remove(logical, from_physical, length);
@@ -1376,9 +1410,8 @@ int fr_work<T>::move_to_target(fr_from from)
 
     const char * label_from = label[from == FC_FROM_DEV ? FC_DEVICE : FC_STORAGE];
     const fr_dir dir = from == FC_FROM_DEV ? FC_DEV2DEV : FC_STORAGE2DEV;
+    const char * simul_msg = simul_prefix();
     int err = 0;
-    const bool simulated = io->simulate_run();
-    const char * simul_msg = simulated ? "(simulated) " : io->is_replaying() ? "(replaying) " : "";
 
     /* find all DEVICE or STORAGE extents that can be moved to their final destination into DEVICE free space */
     movable.intersect_all_all(from_transpose, dev_free, FC_PHYSICAL1);

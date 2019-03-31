@@ -80,6 +80,17 @@ private:
     int init(FT_IO_NS fr_io & io);
 
     /**
+     * return "(simulated) " or "(replaying) " string
+     * when appropriate
+     */
+    const char * simul_prefix();
+
+    /**
+     * print the contents of dev_map and storage_map
+     */
+    void show(ft_log_level level, const char * msg);
+
+    /**
      * analysis phase of remapping algorithm,
      * must be executed before create_secondary_storage() and relocate()
      *
@@ -173,13 +184,13 @@ private:
      *
      * updates dev_* and storage_* maps.
      *
-     * if from_length <= to_length, invalidates from_iter.
-     * if from_length >= to_length, invalidates to_iter.
+	 * if from_length <= to_length, increments from_iter
+	 * if from_length >= to_length, updates from_iter and invalidates to_iter.
      *
      * on return, 'ret_moved' will be increased by the number of blocks actually moved
      * note: some blocks may be moved even in case of errors!
      */
-    int move_fragment(map_iterator from_iter, map_iterator to_free_iter, fr_dir dir, T & ret_moved);
+    int move_fragment(map_iterator &from_iter, map_iterator to_free_iter, fr_dir dir, T & ret_moved);
 
     /** read or write next step from persistence file */
     int update_persistence();

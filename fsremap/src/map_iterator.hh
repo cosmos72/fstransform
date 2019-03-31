@@ -121,9 +121,28 @@ public:
 
 	void validate_deref() {
 		ff_assert(this_map != 0);
-		ff_assert(this_iter != this_map->end().this_iter);
-		iterator match = this_map->find(this_iter->first);
-		ff_assert(this_iter == match.this_iter);
+		base end = this_map->end().super();
+		ff_assert(this_iter != end);
+		base match = this_map->find(this_iter->first).super();
+		if (this_iter != match) {
+			ff_log(FC_FATAL, 0, "%s iterator validation failed! this_iter:", this_map->label.c_str());
+			fr_extent<T> extent;
+			extent.first = this_iter->first;
+			extent.second = this_iter->second;
+			fr_extent<T>::show(FC_FATAL);
+			fr_extent<T>::show(0, extent, FC_FATAL);
+			if (match == end) {
+				ff_log(FC_FATAL, 0, "\tnot found in %s", this_map->label.c_str());
+			} else {
+				ff_log(FC_FATAL, 0, "\tbut %s contains", this_map->label.c_str());
+				extent.first = match->first;
+				extent.second = match->second;
+				fr_extent<T>::show(0, extent, FC_FATAL);
+			}
+			ff_log(FC_ERROR, 0, "\tthe whole %s is", this_map->label.c_str());
+			this_map->show("", "", 0, FC_ERROR);
+			ff_assert(this_iter == match);
+		}
 	}
 
 	void validate_increment() {
@@ -226,9 +245,28 @@ public:
 
 	void validate_deref() const {
 		ff_assert(this_map != 0);
-		ff_assert(this_iter != this_map->end().this_iter);
-		const_iterator match = this_map->find(this_iter->first);
-		ff_assert(this_iter == match.this_iter);
+		base end = this_map->end().super();
+		ff_assert(this_iter != end);
+		base match = this_map->find(this_iter->first).super();
+		if (this_iter != match) {
+			ff_log(FC_FATAL, 0, "%s iterator validation failed! this_iter:", this_map->label.c_str());
+			fr_extent<T> extent;
+			extent.first = this_iter->first;
+			extent.second = this_iter->second;
+			fr_extent<T>::show(FC_FATAL);
+			fr_extent<T>::show(0, extent, FC_FATAL);
+			if (match == end) {
+				ff_log(FC_FATAL, 0, "\tnot found in %s", this_map->label.c_str());
+			} else {
+				ff_log(FC_FATAL, 0, "\tbut %s contains", this_map->label.c_str());
+				extent.first = match->first;
+				extent.second = match->second;
+				fr_extent<T>::show(0, extent, FC_FATAL);
+			}
+			ff_log(FC_ERROR, 0, "\tthe whole %s is", this_map->label.c_str());
+			this_map->show("", "contains", FC_ERROR);
+			ff_assert(this_iter == match);
+		}
 	}
 
 	void validate_increment() const {
