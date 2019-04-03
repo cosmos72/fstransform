@@ -974,6 +974,8 @@ int fr_io_posix::flush_copy_bytes(fr_dir dir, fr_vector<ft_uoff> & request_vec)
                         || (err = flush_bytes()) != 0)
                         break;
 
+                    from_offset += (ft_uoff) buf_length;
+                    to_offset += (ft_uoff) buf_length;
                     length -= (ft_uoff) buf_length;
                 }
                 if (err != 0)
