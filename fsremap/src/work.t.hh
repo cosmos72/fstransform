@@ -3,17 +3,17 @@
  *               preserving its contents and without the need for a backup
  *
  * Copyright (C) 2011-2012 Massimiliano Ghilardi
- * 
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
@@ -64,57 +64,13 @@ char const* const label_LOOP_HOLES = "loop-holes";
 
 
 
-template<typename T>
-void fr_work<T>::show(const char * label1, const char * label2, ft_uoff effective_block_size,
-                      const fr_map<T> & map, ft_log_level level)
-{
-    ft_log_level header_level = level >= FC_DEBUG ? level : (ft_log_level)(level + 1);
-
-    if (!ff_log_is_enabled(header_level) && !ff_log_is_enabled(level))
-        return;
-
-    map_const_iterator iter = map.begin(), end = map.end();
-    ft_size n = map.size();
-
-    if (iter != end) {
-        ff_log(header_level, 0, "# %4"FT_ULL" extent%s in %s%s",
-               (ft_ull) n, (n == 1 ? " " : "s"), label1, label2);
-
-        if (ff_log_is_enabled(level)) {
-            ff_log(level, 0, "# effective block size = %"FT_ULL, (ft_ull) effective_block_size);
-            show(level);
-
-            for (ft_size i = 0; iter != end; ++iter, ++i)
-                show(i, *iter, level);
-        }
-    } else {
-        ff_log(header_level, 0, "#   no extents in %s%s", label1, label2);
-    }
-    ff_log(level, 0, "");
-}
-
-/** print extents header to log */
-template<typename T>
-void fr_work<T>::show(ft_log_level level)
-{
-    ff_log(level, 0, "#  extent        physical         logical      length  user_data");
-}
-
-/** print extent contents to log */
-template<typename T>
-void fr_work<T>::show(ft_size i, T physical, T logical, T length, ft_size user_data, ft_log_level level)
-{
-    ff_log(level, 0, "#%8"FT_ULL"\t%12"FT_ULL"\t%12"FT_ULL"\t%8"FT_ULL"\t(%"FT_ULL")", (ft_ull)i,
-           (ft_ull) physical, (ft_ull) logical, (ft_ull) length, (ft_ull) user_data);
-}
-
 
 /** default constructor */
 template<typename T>
 fr_work<T>::fr_work()
     : dev_map(), storage_map(), dev_free(), dev_transpose(),
       storage_free(), storage_transpose(), toclear_map(),
-      eta(), work_total(0)
+      io(NULL), eta(), work_total(0)
 { }
 
 
@@ -170,10 +126,12 @@ void fr_work<T>::cleanup()
  */
 template<typename T>
 int fr_work<T>::main(fr_vector<ft_uoff> & loop_file_extents,
-                     fr_vector<ft_uoff> & free_space_extents, FT_IO_NS fr_io & io)
+                     fr_vector<ft_uoff> & free_space_extents,
+                     fr_vector<ft_uoff> & to_zero_extents,
+                     FT_IO_NS fr_io & io)
 {
     fr_work<T> worker;
-    return worker.run(loop_file_extents, free_space_extents, io);
+    return worker.run(loop_file_extents, free_space_extents, to_zero_extents, io);
 
     // worker.cleanup() is called automatically by destructor, no need to call explicitly
 }
@@ -181,16 +139,19 @@ int fr_work<T>::main(fr_vector<ft_uoff> & loop_file_extents,
 /** full remapping algorithm */
 template<typename T>
 int fr_work<T>::run(fr_vector<ft_uoff> & loop_file_extents,
-                    fr_vector<ft_uoff> & free_space_extents, FT_IO_NS fr_io & io)
+                    fr_vector<ft_uoff> & free_space_extents,
+                    fr_vector<ft_uoff> & to_zero_extents,
+                    FT_IO_NS fr_io & io)
 {
     int err;
-    (err = init(io)) == 0
-        && (err = analyze(loop_file_extents, free_space_extents)) == 0
+    if ((err = init(io)) == 0
+        && (err = analyze(loop_file_extents, free_space_extents, to_zero_extents)) == 0
         && (err = create_storage()) == 0
         && (err = start_ui()) == 0
         && (err = relocate()) == 0
         && (err = clear_free_space()) == 0
-        && (err = close_storage_after_success()) == 0;
+        && (err = close_storage_after_success()) == 0)
+    { }
 
     if (err == 0) {
         ff_log(FC_NOTICE, 0, "%sjob completed.", io.simulate_run() ? "(simulated) " : "");
@@ -314,7 +275,8 @@ T ff_extent_align(typename fr_map<T>::value_type & extent, T page_size_blocks_m_
  */
 template<typename T>
 int fr_work<T>::analyze(fr_vector<ft_uoff> & loop_file_extents,
-                        fr_vector<ft_uoff> & free_space_extents)
+                        fr_vector<ft_uoff> & free_space_extents,
+                        fr_vector<ft_uoff> & to_zero_extents)
 {
     // cleanup in case dev_map, storage_map or storage_map are not empty, or work_count != 0
     cleanup();
@@ -333,14 +295,14 @@ int fr_work<T>::analyze(fr_vector<ft_uoff> & loop_file_extents,
     if (io->job_clear() == FC_CLEAR_ALL)
         toclear_map = loop_holes_map;
 
-
-
+    // merge to_zero_extents into toclear_map
+    toclear_map.merge_shift(to_zero_extents, eff_block_size_log2, FC_PHYSICAL1);
 
     /* algorithm: 0) compute LOOP-FILE extents and store in loop_map, sorted by physical */
     loop_file_extents.sort_by_physical();
     loop_map.append0_shift(loop_file_extents, eff_block_size_log2);
     /* show LOOP-FILE extents sorted by physical */
-    show(label[FC_LOOP_FILE], "", eff_block_size, loop_map);
+    loop_map.show(label[FC_LOOP_FILE], "", eff_block_size);
 
 
     /* algorithm: 0) compute FREE-SPACE extents and store in dev_free, sorted by physical
@@ -365,7 +327,7 @@ int fr_work<T>::analyze(fr_vector<ft_uoff> & loop_file_extents,
     renumbered_map.intersect_all_all(loop_map, dev_free, FC_PHYSICAL1);
     if (!renumbered_map.empty()) {
         ff_log(FC_FATAL, 0, "inconsistent %s and %s: they share common blocks on %s !", label[FC_LOOP_FILE], label[FC_FREE_SPACE], label[FC_DEVICE]);
-        show(label[FC_LOOP_FILE], " intersection with free-space", eff_block_size, renumbered_map, FC_DEBUG);
+        renumbered_map.show(label[FC_LOOP_FILE], " intersection with free-space", eff_block_size, FC_DEBUG);
         return -EFAULT;
     }
 
@@ -394,8 +356,8 @@ int fr_work<T>::analyze(fr_vector<ft_uoff> & loop_file_extents,
                 ++iter;
         }
     }
-    show("to-clear", " (initial)", eff_block_size, toclear_map, FC_DEBUG);
-    show(label[FC_FREE_SPACE], " (after to-clear)", eff_block_size, dev_free);
+    toclear_map.show("to-clear", " (initial)", eff_block_size, FC_DEBUG);
+    dev_free.show(label[FC_FREE_SPACE], " (after to-clear)", eff_block_size);
 
 
 
@@ -410,7 +372,7 @@ int fr_work<T>::analyze(fr_vector<ft_uoff> & loop_file_extents,
     loop_file_extents.sort_by_physical();
     dev_map.complement0_physical_shift(loop_file_extents, eff_block_size_log2, dev_length);
     /* show DEVICE extents sorted by physical */
-    show(label[FC_DEVICE], "", eff_block_size, dev_map);
+    dev_map.show(label[FC_DEVICE], "", eff_block_size);
 
 
 
@@ -420,7 +382,7 @@ int fr_work<T>::analyze(fr_vector<ft_uoff> & loop_file_extents,
      * and for LOOP-FILE invariant extents
      */
     /* show LOOP-HOLES extents before allocation, sorted by physical */
-    show(label_LOOP_HOLES, " (initial)", eff_block_size, loop_holes_map);
+    loop_holes_map.show(label_LOOP_HOLES, " (initial)", eff_block_size);
 
     /* algorithm: 2) re-number used DEVICE blocks, setting ->logical to values
      * from LOOP-HOLES. do not greedily use low hole numbers:
@@ -432,7 +394,7 @@ int fr_work<T>::analyze(fr_vector<ft_uoff> & loop_file_extents,
     /* how: intersect dev_map and loop_holes_map and put result into renumbered_map */
     renumbered_map.intersect_all_all(dev_map, loop_holes_map, FC_BOTH);
     /* show DEVICE INVARIANT extents (i.e. already in their final destination), sorted by physical */
-    show(label[FC_DEVICE], " (invariant)", eff_block_size, renumbered_map);
+    renumbered_map.show(label[FC_DEVICE], " (invariant)", eff_block_size);
     /* remove from dev_map all the INVARIANT extents in renumbered_map */
     dev_map.remove_all(renumbered_map);
     /*
@@ -447,7 +409,7 @@ int fr_work<T>::analyze(fr_vector<ft_uoff> & loop_file_extents,
      */
     renumbered_map.clear();
     /* show LOOP-HOLES (sorted by physical) after allocating DEVICE-INVARIANT extents */
-    show(label_LOOP_HOLES, " after device (invariant)", eff_block_size, loop_holes_map);
+    loop_holes_map.show(label_LOOP_HOLES, " after device (invariant)", eff_block_size);
 
 
 
@@ -463,15 +425,15 @@ int fr_work<T>::analyze(fr_vector<ft_uoff> & loop_file_extents,
      */
     loop_holes_pool.allocate_all(dev_map, renumbered_map);
     /* show DEVICE RENUMBERED extents sorted by physical */
-    show(label[FC_DEVICE], " (renumbered)", eff_block_size, renumbered_map);
+    renumbered_map.show(label[FC_DEVICE], " (renumbered)", eff_block_size);
     /* show LOOP-HOLES extents after allocation, sorted by physical */
-    show(label_LOOP_HOLES, " (final)", eff_block_size, loop_holes_map);
+    loop_holes_map.show(label_LOOP_HOLES, " (final)", eff_block_size);
 
     /* sanity check */
     if (!dev_map.empty()) {
         ff_log(FC_FATAL, 0, "internal error: there are extents in DEVICE not fitting DEVICE. this is impossible! I give up");
         /* show DEVICE-NOTFITTING extents sorted by physical */
-        show(label[FC_DEVICE], " (not fitting)", eff_block_size, dev_map, FC_NOTICE);
+        dev_map.show(label[FC_DEVICE], " (not fitting)", eff_block_size, FC_NOTICE);
         return ENOSPC;
     }
     /* move DEVICE (RENUMBERED) back into dev_map and clear renumbered_map */
@@ -498,7 +460,7 @@ int fr_work<T>::analyze(fr_vector<ft_uoff> & loop_file_extents,
             toclear_map.insert(extent.first.physical, extent.first.physical, extent.second.length, FC_DEFAULT_USER_DATA);
         }
         dev_transpose.clear();
-        show("to-clear", " (final)", eff_block_size, toclear_map, FC_DEBUG);
+        toclear_map.show("to-clear", " (final)", eff_block_size, FC_DEBUG);
     }
 
 
@@ -534,7 +496,7 @@ int fr_work<T>::analyze(fr_vector<ft_uoff> & loop_file_extents,
         }
     }
     /* show LOOP-FILE (INVARIANT) blocks, sorted by physical */
-    show(label[FC_LOOP_FILE], " (invariant)", eff_block_size, renumbered_map);
+    renumbered_map.show(label[FC_LOOP_FILE], " (invariant)", eff_block_size);
     /* then forget them */
     renumbered_map.clear();
 
@@ -563,7 +525,7 @@ int fr_work<T>::analyze(fr_vector<ft_uoff> & loop_file_extents,
     dev_map.total_count(work_count);
     dev_map.used_count(work_count);
     /* show DEVICE + LOOP-FILE extents after merge, sorted by physical */
-    show("device + loop-file", " (merged)", eff_block_size, dev_map);
+    dev_map.show("device + loop-file", " (merged)", eff_block_size);
 
     double pretty_len = 0.0;
     const char * pretty_unit = ff_pretty_size((ft_uoff) work_count << eff_block_size_log2, & pretty_len);
@@ -600,7 +562,7 @@ int fr_work<T>::analyze(fr_vector<ft_uoff> & loop_file_extents,
 
     iter = renumbered_map.begin();
     end = renumbered_map.end();
-    show(label[FC_FREE_SPACE], " (invariant)", eff_block_size, renumbered_map);
+    renumbered_map.show(label[FC_FREE_SPACE], " (invariant)", eff_block_size);
     while (iter != end) {
         map_value_type & extent = *iter;
         /*
@@ -629,14 +591,14 @@ int fr_work<T>::analyze(fr_vector<ft_uoff> & loop_file_extents,
      */
     storage_map.swap(renumbered_map);
     /* show PRIMARY-STORAGE extents, sorted by physical */
-    show(label[FC_PRIMARY_STORAGE], " (= free-space, invariant, contiguous, aligned)", eff_block_size, storage_map);
+    storage_map.show(label[FC_PRIMARY_STORAGE], " (= free-space, invariant, contiguous, aligned)", eff_block_size);
 
 
     pretty_len = 0.0;
     pretty_unit = ff_pretty_size((ft_uoff) hole_total_len << eff_block_size_log2, & pretty_len);
     ft_size storage_map_n = storage_map.size();
 
-    ff_log(FC_INFO, 0, "%s: located %.2f %sbytes (%"FT_ULL" fragment%s) usable in %s (free, invariant, contiguous and aligned)",
+    ff_log(FC_INFO, 0, "%s: located %.2f %sbytes (%" FT_ULL " fragment%s) usable in %s (free, invariant, contiguous and aligned)",
            label[FC_PRIMARY_STORAGE], pretty_len, pretty_unit, (ft_ull)storage_map_n, (storage_map_n == 1 ? "" : "s"), label[FC_DEVICE]);
 
     storage_map.total_count(hole_total_len);
@@ -649,7 +611,7 @@ int fr_work<T>::analyze(fr_vector<ft_uoff> & loop_file_extents,
 
 static int unusable_storage_size(const char * label, ft_uoff requested_len, const char * type_descr, ft_ull type_bytes)
 {
-    ff_log(FC_FATAL, 0, "fatal error: cannot use job %s length = %"FT_ULL" bytes, it is incompatible with %s = %"FT_ULL" bytes,"
+    ff_log(FC_FATAL, 0, "fatal error: cannot use job %s length = %" FT_ULL " bytes, it is incompatible with %s = %" FT_ULL " bytes,"
             " original job was probably created on a platform with %s",
             label, (ft_ull) requested_len, type_descr, type_bytes);
     /* mark error as reported */
@@ -685,7 +647,7 @@ int fr_work<T>::create_storage()
 
     ft_size req_mem_buffer_size = io->job_storage_size(FC_MEM_BUFFER_SIZE);
     ft_size req_secondary_size = io->job_storage_size(FC_SECONDARY_STORAGE_SIZE);
-    
+
     ft_size tmp_primary_size_exact = 0, tmp_secondary_size_exact = 0;
     FT_IO_NS fr_persist & persist = io->persist();
     bool persist_has_sizes_exact = persist.is_replaying();
@@ -698,7 +660,7 @@ int fr_work<T>::create_storage()
     const ft_size req_primary_size_exact = tmp_primary_size_exact;
     const ft_size req_secondary_size_exact = tmp_secondary_size_exact;
     const ft_size req_total_size_exact = req_primary_size_exact + req_secondary_size_exact;
-   
+
 
     double free_pretty_len = 0.0;
     const char * free_pretty_unit = ff_pretty_size(free_ram_or_min, & free_pretty_len);
@@ -732,8 +694,8 @@ int fr_work<T>::create_storage()
                     req_pretty_len, req_pretty_unit, "mmapped() ", req_label);
             ff_log(FC_WARN, 0, "continuing, but troubles (memory exhaustion) are possible");
         } else if ((ft_uoff) req_len >= free_ram_or_0 / 2) {
-            ff_log(FC_WARN, 0, "using %.2f %sbytes as requested for %s, but only %.2f %sbytes RAM are free",
-                    req_pretty_len, req_pretty_unit, req_label, free_pretty_len, free_pretty_unit);
+            ff_log(FC_WARN, 0, "using %.2f %sbytes as requested for %s%s, but only %.2f %sbytes RAM are free",
+                    req_pretty_len, req_pretty_unit, "mmapped() ", req_label, free_pretty_len, free_pretty_unit);
             ff_log(FC_WARN, 0, "honoring the request, but expect troubles (memory exhaustion)");
         }
     }
@@ -846,8 +808,8 @@ int fr_work<T>::create_storage()
         const char * avail_pretty_unit = ff_pretty_size(avail_primary_size, & avail_pretty_len);
         const char * req_pretty_unit = ff_pretty_size(req_primary_size_exact, & req_pretty_len);
 
-        ff_log(FC_ERROR, 0, "available %s is only %"FT_ULL" bytes (%.2f %sbytes),"
-               " too small for requested %"FT_ULL" bytes (%.2f %sbytes)", label[FC_PRIMARY_STORAGE],
+        ff_log(FC_ERROR, 0, "available %s is only %" FT_ULL " bytes (%.2f %sbytes),"
+               " too small for requested %" FT_ULL " bytes (%.2f %sbytes)", label[FC_PRIMARY_STORAGE],
                (ft_ull)avail_primary_size, avail_pretty_len, avail_pretty_unit,
                (ft_ull) req_primary_size_exact, req_pretty_len, req_pretty_unit);
         /* mark error as reported */
@@ -876,7 +838,7 @@ int fr_work<T>::create_storage()
     /*
      * also save exact primary/secondary storage exact sizes to persistence,
      * in case this jobs gets interrupted and somebody else will try to resume it later.
-     * 
+     *
      * mem_buffer_size is not saved because it does not influence the remapping algorithm.
      */
     if (!persist_has_sizes_exact) {
@@ -960,11 +922,11 @@ void fr_work<T>::fill_io_primary_storage_extents(ft_size primary_size)
     const char * pretty_unit = ff_pretty_size(primary_len, & pretty_len);
     ft_size fragment_n = primary_storage.size();
 
-    ff_log(FC_INFO, 0, "%s: actually using %.2f %sbytes (%"FT_ULL" fragment%s) from %s",
+    ff_log(FC_INFO, 0, "%s: actually using %.2f %sbytes (%" FT_ULL " fragment%s) from %s",
            label[FC_PRIMARY_STORAGE], pretty_len, pretty_unit,
            (ft_ull)fragment_n, (fragment_n == 1 ? "" : "s"), label[FC_DEVICE]);
 
-    show(label[FC_PRIMARY_STORAGE], " (actually used)", (ft_uoff) 1 << eff_block_size_log2, storage_map);
+    storage_map.show(label[FC_PRIMARY_STORAGE], " (actually used)", (ft_uoff) 1 << eff_block_size_log2);
 }
 
 /** start UI, passing I/O object to it. requires I/O to know device length and storage size */
@@ -991,7 +953,7 @@ int fr_work<T>::relocate()
 
     if (!simulated) {
         err = io->umount_dev();
-            
+
         if (err == 0) {
             if (ask_questions) {
                 ff_log(FC_NOTICE, 0, "everything ready for in-place remapping, this is your LAST chance to quit.");
@@ -1115,22 +1077,23 @@ void fr_work<T>::show_progress(ft_log_level log_level)
     if (work_total != 0) {
         percentage = 1.0 - ((double)dev_used + 0.5 * (double)storage_used) / (double)work_total;
 
-        if (simul_msg[0] == '\0')
-            time_left = eta.add(percentage);
-        else
-            eta.clear();
+        /* underestimate the progress percentage: algorithm slows down near the end */
+        /* time_left = eta.add(percentage); */
+        double x = percentage;
+        time_left = eta.add(0.5*x + 0.5*x*x);
+
         percentage *= 100.0;
     }
 
-    ff_show_progress(log_level, simul_msg, percentage, total_len, " still to relocate", time_left);
+    ff_show_progress(log_level, simul_msg, percentage, total_len, " still to remap", time_left);
 
     const ft_uoff eff_block_size = (ft_uoff)1 << eff_block_size_log2;
 
-    show(label[FC_DEVICE], "", eff_block_size, dev_map, FC_DUMP);
-    show(label[FC_DEVICE], " free space", eff_block_size, dev_free, FC_DUMP);
+    dev_map.show(label[FC_DEVICE], "", eff_block_size, FC_DUMP);
+    dev_free.show(label[FC_DEVICE], " free space", eff_block_size, FC_DUMP);
 
-    show(label[FC_STORAGE], "", eff_block_size, storage_map, FC_DUMP);
-    show(label[FC_STORAGE], " free space", eff_block_size, storage_free, FC_DUMP);
+    storage_map.show(label[FC_STORAGE], "", eff_block_size, FC_DUMP);
+    storage_free.show(label[FC_STORAGE], " free space", eff_block_size, FC_DUMP);
 }
 
 
@@ -1167,9 +1130,9 @@ int fr_work<T>::check_last_block()
 
     const char * simul_msg = io->simulate_run() ? "(simulated) " : "";
 
-    ff_log(FC_ERROR, 0, "%s%s has an odd-sized last block (%"FT_ULL" bytes long) that exceeds device rounded length.",
+    ff_log(FC_ERROR, 0, "%s%s has an odd-sized last block (%" FT_ULL " bytes long) that exceeds device rounded length.",
             simul_msg, label[FC_LOOP_FILE], (ft_ull) odd_block_len);
-    ff_log(FC_ERROR, 0, "%sExiting, please shrink %s to %"FT_ULL" bytes or less before running fsremap again.",
+    ff_log(FC_ERROR, 0, "%sExiting, please shrink %s to %" FT_ULL " bytes or less before running fsremap again.",
             simul_msg, label[FC_LOOP_FILE], (ft_ull) dev_len);
     return -EFBIG;
 }
@@ -1194,7 +1157,7 @@ int fr_work<T>::fill_storage()
                                                << io->effective_block_size_log2(), & pretty_len);
     ff_log(FC_INFO, 0, "%sfilling %s by moving %.2f %sbytes from %s ...",
            simul_msg, label[FC_STORAGE], pretty_len, pretty_label, label[FC_DEVICE]);
-    show(); /* show extents header */
+    fr_extent<T>::show(); /* show extents header */
 
     ft_size counter = 0;
     int err = 0;
@@ -1235,11 +1198,11 @@ int fr_work<T>::move(ft_size counter, map_iterator from_iter, fr_dir dir, T & re
     map_iterator to_free_iter = to_free_map.begin(), to_free_pos, to_free_end = to_free_map.end();
     int err = 0;
 
-    if (ff_log_is_enabled((ft_log_level)FC_SHOW_DEFAULT_LEVEL)) {
+    if (ff_logl_is_enabled("extent", 6/*strlen("extent")*/, FC_SHOW_DEFAULT_LEVEL)) {
         const map_value_type & extent = *from_iter;
-        show(counter, extent.first.physical, extent.second.logical,
-             ff_min2(extent.second.length, to_map.free_count()),
-             extent.second.user_data);
+        fr_extent<T>::show(counter, extent.first.physical, extent.second.logical,
+                           ff_min2(extent.second.length, to_map.free_count()),
+                           extent.second.user_data);
     }
 
     while (err == 0 && length != 0 && to_free_iter != to_free_end) {
@@ -1352,8 +1315,8 @@ int fr_work<T>::move_to_target(fr_from from)
     if (movable.empty()) {
         ff_log(FC_INFO, 0, "%smoved 0 bytes from %s to target (not so useful)", simul_msg, label_from);
         ft_uoff eff_block_size = (ft_uoff)1 << io->effective_block_size_log2();
-        show(label_from, " transposed", eff_block_size, from_transpose, FC_DEBUG);
-        show(label[FC_DEVICE], " free space", eff_block_size, dev_free, FC_DEBUG);
+        from_transpose.show(label_from, " transposed", eff_block_size);
+        dev_free.show(label[FC_DEVICE], " free space", eff_block_size);
         return err;
     }
 
@@ -1368,7 +1331,7 @@ int fr_work<T>::move_to_target(fr_from from)
         const char * pretty_label = ff_pretty_size(movable_length, & pretty_len);
         ff_log(FC_INFO, 0, "%smoving %.2f %sbytes from %s to target ...",
                simul_msg, pretty_len, pretty_label, label_from);
-        show(); /* show extents header */
+        fr_extent<T>::show(); /* show extents header */
     }
 
     /* move them */
@@ -1383,7 +1346,7 @@ int fr_work<T>::move_to_target(fr_from from)
 
         /* sequential disk access: consecutive calls to io->copy() are sorted by to_physical, i.e. device to_offset */
         err = io->copy(dir, from_physical, to_physical, length);
-        show(counter++, from_physical, to_physical, length, extent.second.user_data);
+        fr_extent<T>::show(counter++, from_physical, to_physical, length, extent.second.user_data);
         if (err != 0)
             return err;
         from_transpose.remove(extent);
@@ -1428,7 +1391,7 @@ int fr_work<T>::clear_free_space()
 
         map_const_iterator iter = toclear_map.begin(), end = toclear_map.end();
         for (; iter != end; ++iter)
-            toclear_len += iter->second.length << io->effective_block_size_log2();
+            toclear_len += (ft_uoff) iter->second.length << io->effective_block_size_log2();
 
         double pretty_len = 0.0;
         const char * pretty_label = ff_pretty_size(toclear_len, & pretty_len);

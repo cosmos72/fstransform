@@ -2,18 +2,18 @@
  * fstransform - transform a file-system to another file-system type,
  *               preserving its contents and without the need for a backup
  *
- * Copyright (C) 2011-2012 Massimiliano Ghilardi
- * 
+ * Copyright (C) 2011-2017 Massimiliano Ghilardi
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
@@ -37,17 +37,20 @@
 # include <cstdlib>        // for atoi()
 #endif
 
-#include "log.hh"           // for ff_log()
-#include "map.hh"           // for fr_map<T>
-#include "vector.hh"        // for fr_vector<T>
-#include "dispatch.hh"      // for fr_dispatch
-#include "remap.hh"     // for fr_remap
-#include "misc.hh"          // for ff_strtoul()
+#include "log.hh"             // for ff_log()
+#include "map.hh"             // for fr_map<T>
+#include "vector.hh"          // for fr_vector<T>
+#include "dispatch.hh"        // for fr_dispatch
+#include "remap.hh"           // for fr_remap
+#include "misc.hh"            // for ff_strtoul()
 
-#include "io/io.hh"         // for fr_io
-#include "io/io_posix.hh"   // for fr_io_posix
+#include "io/io.hh"           // for fr_io
+#include "io/io_posix.hh"     // for fr_io_posix
+#ifdef FT_HAVE_IO_PREALLOC
+# include "io/io_prealloc.hh"  // for fr_io_prealloc
+#endif
 #include "io/io_self_test.hh" // for fr_io_self_test
-#include "io/util.hh"       // for ff_mkdir()
+#include "io/util_dir.hh"     // for ff_mkdir()
 
 
 FT_NAMESPACE_BEGIN
@@ -114,7 +117,7 @@ int fr_remap::usage(const char * program_name)
     quit_immediately = true;
 
     ff_log(FC_NOTICE, 0, "Usage: %s [OPTION]... %s %s [%s]", program_name, LABEL[0], LABEL[1], LABEL[2]);
-    ff_log(FC_NOTICE, 0, "  or:  %s [OPTION]... --resume-job=JOB_ID %s", program_name, LABEL[0]);
+    ff_log(FC_NOTICE, 0, "  or:  %s [OPTION]... --resume-job=JOB_ID %s", program_name, LABEL[FC_DEVICE]);
     ff_log(FC_NOTICE, 0, "Replace the contents of %s with the contents of %s, i.e. write %s onto %s",
             LABEL[FC_DEVICE], LABEL[FC_LOOP_FILE], LABEL[FC_LOOP_FILE], LABEL[FC_DEVICE]);
     ff_log(FC_NOTICE, 0, "even if %s is inside a file system _inside_ %s\n", LABEL[FC_LOOP_FILE], LABEL[FC_DEVICE]);
@@ -129,18 +132,41 @@ int fr_remap::usage(const char * program_name)
      "                          after remapping\n"
      "      --clear=none      (DANGEROUS) do not clear any free blocks after remapping\n"
      "      --cmd-umount=CMD  command to unmount %s (default: /bin/umount)\n"
+     "      --cmd-losetup=CMD 'losetup' command (default: /sbin/losetup)\n"
+     "      --color=MODE      set messages color. MODE is one of:\n"
+     "                          auto (default), none, ansi\n"
+#ifdef FT_HAVE_IO_PREALLOC
+     "      --device-mount-point=DIR\n"
+     "                        set device mount point (needed by --io=prealloc)\n"
+#endif
      "  -f, --force-run       continue even if some sanity checks fail\n"
+     "  -i, --interactive     ask confirmation after analysis, before actual work\n"
      "      --io=posix        use posix I/O (default)\n"
+#ifdef FT_HAVE_IO_PREALLOC
+     "      --io=prealloc     use posix I/O with EXPERIMENTAL preallocated files\n"
+#endif
      "      --io=self-test    perform in-memory self-test with random data\n"
      "      --io=test         use test I/O. Arguments are:\n"
      "                          DEVICE-LENGTH LOOP-FILE-EXTENTS FREE-SPACE-EXTENTS\n"
+#ifdef FT_HAVE_IO_PREALLOC
+     "      --loop-device=LOOP-DEVICE\n"
+     "                        loop device to disconnect (needed by --io=prealloc)\n"
+     "      --loop-mount-point=DIR\n"
+     "                        set loop file mount point (needed by --io=prealloc)\n"
+#endif
      "  -m, --mem-buffer=RAM_SIZE[k|M|G|T|P|E|Z|Y]\n"
      "                        set RAM buffer size (default: autodetect)\n"
      "  -n, --no-action, --simulate-run\n"
      "                        do not actually read or write any disk block\n"
+     "      --questions=MODE  set interactive mode. MODE is one of:\n"
+     "                          no: never ask questions, abort on errors (default)\n"
+     "                          yes: ask questions in case of user-fixable errors\n"
+     "                          extra: also ask confirmation before dangerous steps\n"
      "  -q, --quiet           be quiet, print less output\n"
      "  -qq                   be very quiet, only print warnings or errors\n"
-     "      --resume-job=NUM  resume an interrupted job\n"
+     "      --resume-job=NUM  resume the interrupted job NUM. The only non-option\n"
+     "                         argument must be %s. Do _not_ pass %s\n"
+     "                         as argument, or you will LOSE YOUR DATA!\n"
      "  -s, --secondary-storage=SECONDARY_SIZE[k|M|G|T|P|E|Z|Y]\n"
      "                        set secondary storage file length (default: autodetect)\n"
      "  -t, --temp-dir=DIR    write storage and log files inside DIR\n"
@@ -150,15 +176,15 @@ int fr_remap::usage(const char * program_name)
      "  -vv                   be very verbose\n"
      "  -vvv                  be incredibly verbose (warning: prints lots of output)\n"
      "  -xp, --exact-primary-storage=PRIMARY_SIZE[k|M|G|T|P|E|Z|Y]\n"
-     "                        set *exact* primary storage length, or fail\n"
+     "                        set _exact_ primary storage length, or fail\n"
      "                          (default: autodetect)\n"
      "  -xs, --exact-secondary-storage=SECONDARY_SIZE[k|M|G|T|P|E|Z|Y]\n"
-     "                        set *exact* secondary storage length, or fail\n"
+     "                        set _exact_ secondary storage length, or fail\n"
      "                          (default: autodetect)\n"
-     "       --x-OPTION=VALUE set internal, undocumented option. for maintainers only\n"
-     "       --help           display this help and exit\n"
-     "       --version        output version information and exit\n",
-     label[FC_DEVICE]);
+     "      --x-OPTION=VALUE  set internal, undocumented option. for maintainers only\n"
+     "      --help            display this help and exit\n"
+     "      --version         output version information and exit\n",
+     LABEL[FC_DEVICE], LABEL[FC_DEVICE], LABEL[FC_LOOP_FILE]);
 }
 
 
@@ -169,7 +195,7 @@ int fr_remap::version()
 
     return ff_log(FC_NOTICE, 0,
             "fsremap (fstransform utilities) " FT_VERSION "\n"
-            "Copyright (C) 2011-2012 Massimiliano Ghilardi\n"
+            "Copyright (C) 2011-2017 Massimiliano Ghilardi\n"
             "\n"
             "License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.\n"
             "This is free software: you are free to change and redistribute it.\n"
@@ -237,9 +263,12 @@ int fr_remap::init(int argc, char const* const* argv)
 {
     fr_args args;
     int err;
-    ft_log_level level = FC_INFO, new_level;
     fr_io_kind io_kind;
     fr_clear_free_space new_clear;
+    ft_log_fmt format = FC_FMT_MSG;
+    ft_log_level level = FC_INFO, new_level;
+    ft_log_color color = FC_COL_AUTO;
+    bool format_set = false;
 
     do {
         if ((err = check_is_closed()) != 0)
@@ -255,7 +284,7 @@ int fr_remap::init(int argc, char const* const* argv)
         bool allow_opts = true;
 
         args.program_name = argv[0];
-        
+
         // skip program_name
         while (err == 0 && --argc) {
             arg = * ++argv;
@@ -270,7 +299,7 @@ int fr_remap::init(int argc, char const* const* argv)
                 if (!strcmp(arg, "--"))
                     allow_opts = false;
 
-                /* -a, --no-questions: run automatically without asking any confirmation  */
+                /* -a, --no-questions run automatically without asking any confirmation  */
                 else if (!strcmp(arg, "-a") || !strcmp(arg, "--no-questions")) {
                     args.ask_questions = false;
                 }
@@ -285,28 +314,43 @@ int fr_remap::init(int argc, char const* const* argv)
                         err = invalid_cmdline(args, 0,
                                 "options --clear=all, --clear=minimal and --clear=none are mutually exclusive");
                 }
+                /* --cmd-losetup=CMD */
+                else if (!strncmp(arg, "--cmd-losetup=", opt_len)) {
+                    args.cmd_losetup = opt_arg;
+                }
                 /* --cmd-umount=CMD */
                 else if (!strncmp(arg, "--cmd-umount=", opt_len)) {
-                    args.umount_cmd = opt_arg;
+                    args.cmd_umount = opt_arg;
                 }
                 /* -f, --force-run: consider failed sanity checks as WARNINGS (which let execution continue) instead of ERRORS (which stop execution) */
                 else if (!strcmp(arg, "-f") || !strcmp(arg, "--force-run")) {
                     args.force_run = true;
                 }
-                /* --io=posix, --io=test, --io=self-test */
-                else if ((io_kind = FC_IO_POSIX,   !strcmp(arg, "--io=posix"))
-                    || (io_kind = FC_IO_TEST,      !strcmp(arg, "--io=test"))
-                    || (io_kind = FC_IO_SELF_TEST, !strcmp(arg, "--io=self-test")))
+                /* -i, --interactive: ask confirmation after analysis, before starting real work */
+                else if (!strcmp(arg, "-i") || !strcmp(arg, "--interactive")) {
+                    args.ask_questions = true;
+                }
+                /* --io=test, --io=self-test, --io=posix, --io=prealloc */
+                else if ((io_kind = FC_IO_TEST,        !strcmp(arg, "--io=test"))
+                        || (io_kind = FC_IO_SELF_TEST, !strcmp(arg, "--io=self-test"))
+                        || (io_kind = FC_IO_POSIX,     !strcmp(arg, "--io=posix"))
+#ifdef FT_HAVE_IO_PREALLOC
+                        || (io_kind = FC_IO_PREALLOC,  !strcmp(arg, "--io=prealloc"))
+#endif
+                        )
                 {
                     if (args.io_kind == FC_IO_AUTODETECT)
                         args.io_kind = io_kind;
                     else
                         err = invalid_cmdline(args, 0,
-                                "options --io=posix, --io=test and --io=self-test are mutually exclusive");
+                                "options --io=posix, --io=prealloc, --io=test and --io=self-test are mutually exclusive");
+                }
+                else if (!strncmp(arg, "--loop-device=", opt_len)) {
+                    args.loop_dev = opt_arg;
                 }
                 /* -m, --mem-buffer=RAM_SIZE[k|M|G|T|P|E|Z|Y] */
                 else if ((argc > 1 && !strcmp(arg, "-m")) || !strncmp(arg, "--mem-buffer=", opt_len)) {
-                    
+
                     if ((err = ff_str2un_scaled(opt_arg, & args.storage_size[FC_MEM_BUFFER_SIZE])) != 0) {
                         err = invalid_cmdline(args, err, "invalid memory buffer size '%s'", opt_arg);
                         break;
@@ -314,9 +358,20 @@ int fr_remap::init(int argc, char const* const* argv)
                     if (is_short_opt)
                         --argc, ++argv;
                 }
+                else if (!strncmp(arg, "--device-mount-point=", opt_len)) {
+                    args.mount_points[FC_MOUNT_POINT_DEVICE] = opt_arg;
+                }
+                else if (!strncmp(arg, "--loop-mount-point=", opt_len)) {
+                    args.mount_points[FC_MOUNT_POINT_LOOP_FILE] = opt_arg;
+                }
                 /* -n, --no-action, --simulate-run: do not read or write device blocks  */
                 else if (!strcmp(arg, "-n") || !strcmp(arg, "--no-action") || !strcmp(arg, "--simulate-run")) {
                     args.simulate_run = true;
+                }
+                /* --questions=[no|yes|extra] */
+                else if (!strncmp(arg, "--questions=", opt_len))
+                {
+                    args.ask_questions = !strcmp("extra", opt_arg);
                 }
                 /* --resume-job=JOB_ID */
                 else if (!strncmp(arg, "--resume-job=", opt_len)) {
@@ -352,15 +407,9 @@ int fr_remap::init(int argc, char const* const* argv)
                     args.ui_kind = FC_UI_TTY;
                     args.ui_arg = opt_arg;
                 }
-                /* --x-log-FILE=LEVEL */
-                else if (!strncmp(arg, "--x-log-", 8)) {
-                	ft_string logger_name(arg + 8, opt_len - 9); // 9 == 8 for "--x-log-" plus 1 for '='
-                	ft_log_level logger_level = (ft_log_level) atoi(opt_arg);
-                	ft_log::get_logger(logger_name).set_level(logger_level);
-                }
                 /* -xp, --exact-primary-storage=PRIMARY_SIZE[k|M|G|T|P|E|Z|Y] */
                 else if ((argc > 1 && !strcmp(arg, "-xp")) || !strncmp(arg, "--exact-primary-storage=", opt_len)) {
-                    
+
                     if ((err = ff_str2un_scaled(opt_arg, & args.storage_size[FC_PRIMARY_STORAGE_EXACT_SIZE])) != 0) {
                         err = invalid_cmdline(args, err, "invalid primary storage exact size '%s'", opt_arg);
                         break;
@@ -370,13 +419,19 @@ int fr_remap::init(int argc, char const* const* argv)
                 }
                 /* -xs, --exact-secondary-storage=SECONDARY_SIZE[k|M|G|T|P|E|Z|Y] */
                 else if ((argc > 1 && !strcmp(arg, "-xs")) || !strncmp(arg, "--exact-secondary-storage=", opt_len)) {
-                    
+
                     if ((err = ff_str2un_scaled(opt_arg, & args.storage_size[FC_SECONDARY_STORAGE_EXACT_SIZE])) != 0) {
                         err = invalid_cmdline(args, err, "invalid secondary storage exact size '%s'", opt_arg);
                         break;
                     }
                     if (is_short_opt)
                         --argc, ++argv;
+                }
+                /* --x-log-FILE=LEVEL */
+                else if (!strncmp(arg, "--x-log-", 8)) {
+                    ft_mstring logger_name(arg + 8, opt_len - 9); // 9 == 8 for "--x-log-" plus 1 for '='
+                    ft_log_level logger_level = (ft_log_level) atoi(opt_arg);
+                    ft_log::get_logger(logger_name).set_level(logger_level);
                 }
                 /* -q, --quiet decrease verbosity by one */
                 /* -qq decrease verbosity by two */
@@ -396,11 +451,36 @@ int fr_remap::init(int argc, char const* const* argv)
                                 "options -q, -qq, -v, -vv, -vvv, --quiet, --verbose are mutually exclusive");
                         break;
                     }
-                } else if (!strcmp(arg, "--help")) {
+                } else if (!strncmp(arg, "--log-color=", 12)) {
+                    /* --color=(auto|none|ansi) */
+                    arg += 12;
+                    if (!strcmp(arg, "ansi"))
+                        color = FC_COL_ANSI;
+                    else if (!strcmp(arg, "none"))
+                        color = FC_COL_NONE;
+                    else
+                        color = FC_COL_AUTO;
+                }
+                else if (!strncmp(arg, "--log-format=", 13)) {
+                    /* --color=(auto|none|ansi) */
+                    arg += 13;
+                    if (!strcmp(arg, "level_msg"))
+                        format = FC_FMT_LEVEL_MSG;
+                    else if (!strcmp(arg, "time_level_msg"))
+                        format = FC_FMT_DATETIME_LEVEL_MSG;
+                    else if (!strcmp(arg, "time_level_function_msg"))
+                        format = FC_FMT_DATETIME_LEVEL_CALLER_MSG;
+                    else
+                        format = FC_FMT_MSG;
+                    format_set = true;
+                }
+                else if (!strcmp(arg, "--help")) {
                     return usage(args.program_name);
-                } else if (!strcmp(arg, "--version")) {
+                }
+                else if (!strcmp(arg, "--version")) {
                     return version();
-                } else {
+                }
+                else {
                     err = invalid_cmdline(args, 0, "unknown option: '%s'", arg);
                     break;
                 }
@@ -413,61 +493,67 @@ int fr_remap::init(int argc, char const* const* argv)
                 err = invalid_cmdline(args, 0, "too many arguments");
         }
 
-        if (err == 0) {
-            /* if autodetect, clear all free blocks */
-            if (args.job_clear == FC_CLEAR_AUTODETECT)
-                args.job_clear = FC_CLEAR_ALL;
+        if (err != 0)
+            break;
 
-            /* if autodetect, use POSIX I/O */
-            if (args.io_kind == FC_IO_AUTODETECT)
-                args.io_kind = FC_IO_POSIX;
+        /* if autodetect, clear all free blocks */
+        if (args.job_clear == FC_CLEAR_AUTODETECT)
+            args.job_clear = FC_CLEAR_ALL;
 
-            if (args.io_kind == FC_IO_POSIX) {
-                if (args.job_id == FC_JOB_ID_AUTODETECT) {
-                    if (io_args_n == 0) {
-                        err = invalid_cmdline(args, 0, "missing arguments: %s %s [%s]", LABEL[0], LABEL[1], LABEL[2]);
-                    } else if (io_args_n == 1) {
-                        err = invalid_cmdline(args, 0, "missing arguments: %s [%s]", LABEL[1], LABEL[2]);
-                    } else if (io_args_n == 2 || io_args_n == 3) {
-                         /* ok */
-                    } else
-                        err = invalid_cmdline(args, 0, "too many arguments");
-                } else {
-                    if (io_args_n == 0) {
-                        err = invalid_cmdline(args, 0, "missing argument: %s", LABEL[0]);
-                    } else if (io_args_n == 1) {
-                        /* ok */
-                    } else
-                        err = invalid_cmdline(args, 0, "too many arguments");
-                }
-            } else if (args.io_kind == FC_IO_TEST) {
+        /* if autodetect, use POSIX I/O */
+        if (args.io_kind == FC_IO_AUTODETECT)
+            args.io_kind = FC_IO_POSIX;
+
+        if (args.io_kind == FC_IO_POSIX || args.io_kind == FC_IO_PREALLOC) {
+            if (args.job_id == FC_JOB_ID_AUTODETECT) {
                 if (io_args_n == 0) {
-                    err = invalid_cmdline(args, 0, "missing arguments: %s %s %s", LABEL[0], LABEL[1], LABEL[2]);
+                    err = invalid_cmdline(args, 0, "missing arguments: %s %s [%s]", LABEL[0], LABEL[1], LABEL[2]);
                 } else if (io_args_n == 1) {
-                    err = invalid_cmdline(args, 0, "missing arguments: %s %s", LABEL[1], LABEL[2]);
-                } else if (io_args_n == 2) {
-                    err = invalid_cmdline(args, 0, "missing argument: %s", LABEL[2]);
-                } else if (io_args_n == 3) {
+                    err = invalid_cmdline(args, 0, "missing arguments: %s [%s]", LABEL[1], LABEL[2]);
+                } else if (io_args_n == 2 || io_args_n == 3) {
+                     /* ok */
+                } else
+                    err = invalid_cmdline(args, 0, "too many arguments");
+            } else {
+                if (io_args_n == 0) {
+                    err = invalid_cmdline(args, 0, "missing argument: %s", LABEL[0]);
+                } else if (io_args_n == 1) {
                     /* ok */
                 } else
                     err = invalid_cmdline(args, 0, "too many arguments");
             }
+        } else if (args.io_kind == FC_IO_TEST) {
+            if (io_args_n == 0) {
+                err = invalid_cmdline(args, 0, "missing arguments: %s %s %s", LABEL[0], LABEL[1], LABEL[2]);
+            } else if (io_args_n == 1) {
+                err = invalid_cmdline(args, 0, "missing arguments: %s %s", LABEL[1], LABEL[2]);
+            } else if (io_args_n == 2) {
+                err = invalid_cmdline(args, 0, "missing argument: %s", LABEL[2]);
+            } else if (io_args_n == 3) {
+                /* ok */
+            } else
+                err = invalid_cmdline(args, 0, "too many arguments");
         }
     } while (0);
 
     if (err == 0) {
-        /* always enable at least DEBUG level, to let fsremap.log collect all messages from DEBUG to FATAL */
+        ff_log(FC_INFO, 0, "setting log level to %s", ff_log_level_to_string(level));
+
+        /*
+         * always enable at least DEBUG level, to let let the appender installed by fr_job::init_log()
+         * intercept all messages from DEBUG to FATAL.
+         * we avoid spamming the user by setting stdout appender->min_level = level below
+         */
         ft_log::get_root_logger().set_level(level < FC_DEBUG ? level : FC_DEBUG);
 
-        /* note 1.4.1) -v enables FC_FMT_LEVEL_MSG also for stdout/stderr */
-        /* note 1.4.2) -vv enables FC_FMT_DATETIME_LEVEL_MSG also for stdout/stderr */
-        ft_log_fmt format = level < FC_DEBUG ? FC_FMT_DATETIME_LEVEL_MSG : level == FC_DEBUG ? FC_FMT_LEVEL_MSG : FC_FMT_MSG;
-        if (format != FC_FMT_MSG)
-            ft_log_appender::redefine(stderr, format, FC_WARN);
+        /* note 1.4.1) -v sets format FC_FMT_LEVEL_MSG */
+        /* note 1.4.2) -vv sets format FC_FMT_DATETIME_LEVEL_MSG */
+        if (!format_set)
+            format = level < FC_DEBUG ? FC_FMT_DATETIME_LEVEL_MSG : level == FC_DEBUG ? FC_FMT_LEVEL_MSG : FC_FMT_MSG;
 
-        ft_log_appender::redefine(stdout, format, level, FC_NOTICE);
-        
-        
+        // set stdout appender->min_level, since we played tricks with root_logger->level above.
+        ft_log_appender::reconfigure_all(format, level, color);
+
         err = init(args);
     }
 
@@ -594,17 +680,22 @@ int fr_remap::init_io(const fr_args & args)
 {
     int err;
     switch (args.io_kind) {
-        case FC_IO_POSIX:
-            err = init_io_posix(args);
-            break;
         case FC_IO_TEST:
-            err = init_io_test(args);
+            err = init_io_class<FT_IO_NS fr_io_test>(args);
             break;
         case FC_IO_SELF_TEST:
-            err = init_io_self_test(args);
+            err = init_io_class<FT_IO_NS fr_io_self_test>(args);
             break;
+        case FC_IO_POSIX:
+            err = init_io_class<FT_IO_NS fr_io_posix>(args);
+            break;
+#ifdef FT_HAVE_IO_PREALLOC
+        case FC_IO_PREALLOC:
+            err = init_io_class<FT_IO_NS fr_io_prealloc>(args);
+            break;
+#endif
         default:
-            ff_log(FC_ERROR, 0, "tried to initialize unknown I/O '%d': not POSIX, not self-test", (int) args.io_kind);
+            ff_log(FC_ERROR, 0, "tried to initialize unknown I/O '%d': not POSIX, not PREALLOC, not TEST, not SELF-TEST", (int) args.io_kind);
             err = -ENOSYS;
             break;
     }
@@ -613,55 +704,21 @@ int fr_remap::init_io(const fr_args & args)
 
 
 /**
- * initialize remapper to use POSIX I/O.
- * POSIX I/O requires three arguments in args.io_args: DEVICE, LOOP-FILE and ZERO-FILE.
+ * initialize remapper to use I/O type IO_T.
+ *
+ * args depend on I/O type:
+ * POSIX and PREALLOC I/O require two or three arguments in args.io_args: DEVICE, LOOP-FILE and optionally ZERO-FILE;
+ * test I/O requires three arguments in args.io_args: DEVICE-LENGTH, LOOP-FILE-EXTENTS and ZERO-FILE-EXTENTS;
+ * self-test I/O does not require any argument in args.io_args;
  * return 0 if success, else error.
  */
-int fr_remap::init_io_posix(const fr_args & args)
+template<class IO_T>
+    int fr_remap::init_io_class(const fr_args & args)
 {
     int err;
     if ((err = pre_init_io()) == 0) {
 
-        FT_IO_NS fr_io_posix * io = new FT_IO_NS fr_io_posix(* this_persist);
-
-        if ((err = io->open(args)) == 0)
-            post_init_io(io);
-        else
-            delete io;
-    }
-    return err;
-}
-
-/**
- * initialize remapper to use test I/O.
- * test I/O requires three arguments in args.io_args: DEVICE-LENGTH, LOOP-FILE-EXTENTS and ZERO-FILE-EXTENTS.
- * return 0 if success, else error.
- */
-int fr_remap::init_io_test(const fr_args & args)
-{
-    int err;
-    if ((err = pre_init_io()) == 0) {
-
-        FT_IO_NS fr_io_test * io = new FT_IO_NS fr_io_test(* this_persist);
-
-        if ((err = io->open(args)) == 0)
-            post_init_io(io);
-        else
-            delete io;
-    }
-    return err;
-}
-
-/**
- * initialize remapper to use self-test I/O.
- * return 0 if success, else error.
- */
-int fr_remap::init_io_self_test(const fr_args & args)
-{
-    int err;
-    if ((err = pre_init_io()) == 0) {
-
-        FT_IO_NS fr_io_self_test * io = new FT_IO_NS fr_io_self_test(* this_persist);
+        IO_T * io = new IO_T(* this_persist);
 
         if ((err = io->open(args)) == 0)
             post_init_io(io);
@@ -718,18 +775,24 @@ int fr_remap::run()
         /* allocate fr_vector<ft_uoff> for both LOOP-FILE and FREE-SPACE extents */
         fr_vector<ft_uoff> loop_file_extents, free_space_extents;
 
+        // preallocated extents in files inside loop file
+        // which do NOT have a correspondence in files inside device:
+        // they must be cleared once remapping is completed!
+        fr_vector<ft_uoff> to_zero_extents;
+
+
         /* ask actual I/O subsystem to read LOOP-FILE and FREE-SPACE extents */
-        if ((err = io.read_extents(loop_file_extents, free_space_extents)) != 0)
+        if ((err = io.read_extents(loop_file_extents, free_space_extents, to_zero_extents)) != 0)
             break;
 
         /* persistence: save LOOP-FILE and FREE-SPACE extents to disk */
-        if ((err = io.save_extents(loop_file_extents, free_space_extents)) != 0)
+        if ((err = io.save_extents(loop_file_extents, free_space_extents, to_zero_extents)) != 0)
             break;
 
         io.close_extents();
 
         /* invoke fr_dispatch::main() to choose which fr_work<T> to instantiate, and run it */
-        err = fr_dispatch::main(loop_file_extents, free_space_extents, io);
+        err = fr_dispatch::main(loop_file_extents, free_space_extents, to_zero_extents, io);
 
     } while (0);
 

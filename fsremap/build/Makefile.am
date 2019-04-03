@@ -1,3 +1,5 @@
+AUTOMAKE_OPTIONS = subdir-objects
+
 sbin_PROGRAMS = fsremap
 
 fsremap_SOURCES = \
@@ -13,10 +15,12 @@ fsremap_SOURCES = \
   ../src/io/io.cc \
   ../src/io/io_null.cc \
   ../src/io/io_posix.cc \
+  ../src/io/io_posix_dir.cc \
+  ../src/io/io_prealloc.cc \
   ../src/io/io_self_test.cc \
   ../src/io/io_test.cc \
   ../src/io/persist.cc \
-  ../src/io/util.cc \
+  ../src/io/util_dir.cc \
   ../src/io/util_posix.cc \
   ../src/job.cc \
   ../src/log.cc \
@@ -24,6 +28,7 @@ fsremap_SOURCES = \
   ../src/map.cc \
   ../src/map_stat.cc \
   ../src/misc.cc \
+  ../src/mstring.cc \
   ../src/pool.cc \
   ../src/remap.cc \
   ../src/tmp_zero.cc \
@@ -31,4 +36,3 @@ fsremap_SOURCES = \
   ../src/ui/ui_tty.cc \
   ../src/vector.cc \
   ../src/work.cc
-

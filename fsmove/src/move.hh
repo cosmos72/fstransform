@@ -41,6 +41,9 @@ class fm_move
 private:
     FT_IO_NS fm_io * this_io;
 
+    /** true if usage() or version() was called. */
+    bool quit_immediately;
+
     /** cannot call copy constructor */
     fm_move(const fm_move &);
 

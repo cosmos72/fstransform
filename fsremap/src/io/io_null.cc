@@ -3,17 +3,17 @@
  *               preserving its contents and without the need for a backup
  *
  * Copyright (C) 2011-2012 Massimiliano Ghilardi
- * 
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
@@ -32,7 +32,9 @@
 
 FT_IO_NAMESPACE_BEGIN
 
-char const * const ft_io_null::extents_label[ft_io_null::FC_FILE_COUNT] = { "DEVICE-LENGTH", "LOOP-EXTENTS", "FREE-SPACE-EXTENTS" };
+char const * const ft_io_null::extents_label[ft_io_null::FC_EXTENTS_FILE_COUNT] = {
+		"DEVICE-LENGTH", "LOOP-EXTENTS", "FREE-SPACE-EXTENTS", "TO-ZERO-EXTENTS"
+};
 
 char const * const ft_io_null::sim_msg = "(simulated) ";
 
@@ -59,9 +61,10 @@ ft_io_null::~ft_io_null()
  *
  * implementation: does nothing.
  */
-int ft_io_null::read_extents(fr_vector<ft_uoff> & loop_file_extents,
-                             fr_vector<ft_uoff> & free_space_extents,
-                             ft_uoff & ret_block_size_bitmask)
+int ft_io_null::read_extents(fr_vector<ft_uoff> & FT_ARG_UNUSED(loop_file_extents),
+                             fr_vector<ft_uoff> & FT_ARG_UNUSED(free_space_extents),
+                             fr_vector<ft_uoff> & FT_ARG_UNUSED(to_zero_extents),
+                             ft_uoff & FT_ARG_UNUSED(ret_block_size_bitmask))
 {
     return 0;
 }
@@ -111,7 +114,8 @@ int ft_io_null::umount_dev()
  *
  * implementation: do nothing and return success
  */
-int ft_io_null::flush_copy_bytes(fr_dir dir, fr_vector<ft_uoff> & request_vec)
+int ft_io_null::flush_copy_bytes(fr_dir FT_ARG_UNUSED(dir),
+                                 fr_vector<ft_uoff> & FT_ARG_UNUSED(request_vec))
 {
     return 0;
 }
@@ -133,7 +137,7 @@ int ft_io_null::flush_bytes()
  *
  * implementation: do nothing and return success
  */
-int ft_io_null::zero_bytes(fr_to to, ft_uoff offset, ft_uoff length)
+int ft_io_null::zero_bytes(fr_to FT_ARG_UNUSED(to), ft_uoff FT_ARG_UNUSED(offset), ft_uoff FT_ARG_UNUSED(length))
 {
     return 0;
 }

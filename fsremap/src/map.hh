@@ -3,17 +3,17 @@
  *               preserving its contents and without the need for a backup
  *
  * Copyright (C) 2011-2012 Massimiliano Ghilardi
- * 
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
@@ -28,11 +28,12 @@
 
 #include "check.hh"
 
-#include <map>       // for std::map<K,V> */
+#include <map>       // for std::map<K,V>
 
-#include "types.hh"  // for ft_uoff */
-#include "fwd.hh"    // for fr_map<T> and fr_vector<T> forward declarations */
-#include "extent.hh" // for fr_extent_key<T>, fr_extent_payload<T>, ft_match */
+#include "types.hh"  // for ft_uoff
+#include "fwd.hh"    // for fr_map<T> and fr_vector<T> forward declarations
+#include "log.hh"    // for ft_log_level, FC_SHOW_DEFAULT_LEVEL. also used by map.t.hh for ff_log()
+#include "extent.hh" // for fr_extent_key<T>, fr_extent_payload<T>, ft_match
 
 FT_NAMESPACE_BEGIN
 
@@ -121,7 +122,7 @@ private:
      *
      * does not support removing an extent that is part of TWO OR MORE existing extents.
      */
-    void remove1(const value_type & extent);
+    void remove1(const value_type & extent, ft_match match);
 
 public:
 
@@ -135,22 +136,22 @@ public:
     ~fr_map();
 
     // return iterator to beginning of this map
-    super_type::begin;
+    using super_type::begin;
 
     // return iterator one past the end of this map
-    super_type::end;
+    using super_type::end;
 
     // return true is this map is empty, i.e. if it size() == 0
-    super_type::empty;
+    using super_type::empty;
 
     // return number of extents in this map
-    super_type::size;
+    using super_type::size;
 
     // clear this map, i.e. erase all elements
-    super_type::clear;
+    using super_type::clear;
 
     // find an extent given its starting ->physical
-    super_type::find;
+    using super_type::find;
 
     // copy fr_map, i.e. set this fr_map contents as a copy of other's contents.
     const fr_map<T> & operator=(const fr_map<T> & other);
@@ -232,7 +233,7 @@ public:
      *
      * simply calls insert(key_type, value_type)
      */
-    iterator insert(const value_type & extent) { return insert(extent.first, extent.second); }
+    FT_INLINE iterator insert(const value_type & extent) { return insert(extent.first, extent.second); }
 
     /**
      * insert a single extent into this fr_map,
@@ -266,23 +267,23 @@ public:
      * remove a part of an existing extent (or one or more existing extents)
      * from this fr_map, splitting the existing extents if needed.
      */
-    void remove(const value_type & extent);
+    void remove(const value_type & extent, ft_match match = FC_BOTH);
 
     /**
      * remove a part of an existing extent (or one or more existing extents)
      * from this fr_map, splitting the existing extents if needed.
      */
-    void remove(T physical, T logical, T length);
+    void remove(T physical, T logical, T length, ft_match match = FC_BOTH);
 
     /**
      * remove any (partial or full) intersection with existing extents from this fr_map,
      * splitting the existing extents if needed.
      */
     template<typename const_iter>
-    void remove_all(const_iter iter, const_iter end)
+    void remove_all(const_iter iter, const_iter end, ft_match match = FC_BOTH)
     {
         for (; iter != end; ++iter)
-            remove(*iter);
+            remove(*iter, match);
     }
 
 
@@ -291,7 +292,7 @@ public:
      * remove any (partial or full) intersection with existing extents from this fr_map,
      * splitting the existing extents if needed.
      */
-    void remove_all(const fr_map<T> & map);
+    void remove_all(const fr_map<T> & map, ft_match match = FC_BOTH);
 
 
 
@@ -300,8 +301,6 @@ public:
      * returns iterator to new, smaller extent, or end() if the whole extent was removed
      */
     iterator remove_front(iterator iter, T shrink_length);
-
-
 
 
     /**
@@ -322,6 +321,13 @@ public:
      * does not check for overflows
      */
     void append0_shift(const fr_vector<ft_uoff> & other, ft_uoff effective_block_size_log2);
+
+    /**
+     * shift and merge specified extent vector
+     * into this map, skipping any intersection.
+     */
+    void merge_shift(const fr_vector<ft_uoff> & other, ft_uoff effective_block_size_log2, ft_match match);
+
 
     /**
      * makes the physical complement of 'other' vector,
@@ -352,6 +358,12 @@ public:
      * does not check for overflows
      */
     void complement0_logical_shift(const fr_vector<ft_uoff> & other, ft_uoff effective_block_size_log2, ft_uoff device_length);
+
+
+
+    /** print map contents to log */
+    void show(const char * label1, const char * label2, ft_uoff effective_block_size,
+    		  ft_log_level level = FC_SHOW_DEFAULT_LEVEL) const;
 };
 
 

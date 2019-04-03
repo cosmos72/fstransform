@@ -3,17 +3,17 @@
  *               preserving its contents and without the need for a backup
  *
  * Copyright (C) 2011-2012 Massimiliano Ghilardi
- * 
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
@@ -48,7 +48,7 @@ private:
 
     /** true if usage() or version() was called. */
     bool quit_immediately;
-    
+
     /** cannot call copy constructor */
     fr_remap(const fr_remap &);
 
@@ -85,6 +85,20 @@ private:
     void quit_ui();
 
     int pre_init_io();
+
+    /**
+     * initialize remapper to use I/O type IO_T.
+     *
+     * args depend on I/O type:
+     * POSIX and PREALLOC I/O require two or three arguments in args.io_args: DEVICE, LOOP-FILE and optionally ZERO-FILE;
+	 * test I/O requires three arguments in args.io_args: DEVICE-LENGTH, LOOP-FILE-EXTENTS and ZERO-FILE-EXTENTS;
+     * self-test I/O does not require any argument in args.io_args;
+     * return 0 if success, else error.
+     */
+    template<class IO_T>
+    	int init_io_class(const fr_args & args);
+
+
     void post_init_io(FT_IO_NS fr_io * io);
 
 public:
@@ -131,26 +145,6 @@ public:
      * return 0 if success, else error.
      */
     int init_io(const fr_args & args);
-
-    /**
-     * initialize remapper to use POSIX I/O.
-     * POSIX I/O requires three arguments in args.io_args: DEVICE, LOOP-FILE and ZERO-FILE.
-     * return 0 if success, else error.
-     */
-    int init_io_posix(const fr_args & args);
-
-    /**
-     * initialize remapper to use test I/O.
-     * test I/O requires three arguments in args.io_args: DEVICE-LENGTH, LOOP-FILE-EXTENTS and ZERO-FILE-EXTENTS.
-     * return 0 if success, else error.
-     */
-    int init_io_test(const fr_args & args);
-
-    /**
-     * initialize remapper to use self-test I/O.
-     * return 0 if success, else error.
-     */
-    int init_io_self_test(const fr_args & args);
 
     /**
      * perform actual work using configured I/O

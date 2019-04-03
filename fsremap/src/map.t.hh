@@ -3,17 +3,17 @@
  *               preserving its contents and without the need for a backup
  *
  * Copyright (C) 2011-2012 Massimiliano Ghilardi
- * 
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
@@ -388,7 +388,7 @@ bool fr_map<T>::intersect_all(const fr_map<T> & map, const value_type & extent, 
  * if no intersections, return false and this map will be unchanged
  *
  * note: if the intersection is only physical,
- * the intersection will contain the appropriate subrange of extent1 -> logical
+ * the intersection will contain the appropriate subrange of map[match] -> logical
  */
 template<typename T>
 bool fr_map<T>::intersect_all_all(const fr_map<T> & map1, const fr_map<T> & map2, ft_match match)
@@ -479,7 +479,7 @@ void fr_map<T>::insert_all(const fr_map<T> & map)
  * does not support removing an extent that is part of TWO OR MORE existing extents.
  */
 template<typename T>
-void fr_map<T>::remove1(const value_type & extent)
+void fr_map<T>::remove1(const value_type & extent, ft_match match)
 {
     ff_assert(!empty());
     const key_type & key = extent.first;
@@ -496,21 +496,23 @@ void fr_map<T>::remove1(const value_type & extent)
      */
     --pos;
     const key_type & last_key = pos->first;
-    mapped_type & last_value_ = pos->second;
+    mapped_type & last_payload = pos->second;
 
     T last_physical = last_key.physical;
-    T last_logical = last_value_.logical;
-    T last_length = last_value_.length;
-    ft_size user_data = last_value_.user_data;
+    T last_logical = last_payload.logical;
+    T last_length = last_payload.length;
+    ft_size user_data = last_payload.user_data;
 
     T physical = key.physical;
     T logical = value.logical;
     T length = value.length;
 
     ff_assert(last_physical <= physical);
-    ff_assert(last_logical  <= logical);
-    /* also logical to remove must match */
-    ff_assert(physical - last_physical == logical - last_logical);
+    if (match == FC_BOTH) {
+        ff_assert(last_logical  <= logical);
+    	/* also logical to remove must match */
+    	ff_assert(physical - last_physical == logical - last_logical);
+    }
     /* last must finish together or after extent to remove */
     ff_assert(last_physical + last_length >= physical + length);
 
@@ -524,7 +526,7 @@ void fr_map<T>::remove1(const value_type & extent)
          *  | last extent
          *  +--------------
          */
-        last_value_.length = physical - last_physical;
+        last_payload.length = physical - last_physical;
     } else {
         /* second case:
          * "last" existing extent starts together with extent to remove
@@ -576,13 +578,13 @@ void fr_map<T>::remove(iterator iter)
  * from this fr_map, splitting the existing extents if needed.
  */
 template<typename T>
-void fr_map<T>::remove(const value_type & extent)
+void fr_map<T>::remove(const value_type & extent, ft_match match)
 {
     fr_map<T> intersect_list;
-    intersect_list.intersect_all(*this, extent, FC_BOTH);
+    intersect_list.intersect_all(*this, extent, match);
     const_iterator iter = intersect_list.begin(), end = intersect_list.end();
     for (; iter != end; ++iter)
-        remove1(*iter);
+        remove1(*iter, match);
 }
 
 /**
@@ -590,12 +592,12 @@ void fr_map<T>::remove(const value_type & extent)
  * from this fr_map, splitting the existing extents if needed.
  */
 template<typename T>
-void fr_map<T>::remove(T physical, T logical, T length)
+void fr_map<T>::remove(T physical, T logical, T length, ft_match match)
 {
     key_type key = { physical };
     mapped_type value = { logical, length, FC_DEFAULT_USER_DATA };
     value_type extent(key, value);
-    remove(extent);
+    remove(extent, match);
 }
 
 
@@ -604,7 +606,7 @@ void fr_map<T>::remove(T physical, T logical, T length)
  * splitting the existing extents if needed.
  */
 template<typename T>
-void fr_map<T>::remove_all(const fr_map<T> & map)
+void fr_map<T>::remove_all(const fr_map<T> & map, ft_match match)
 {
     if (this == & map) {
         clear();
@@ -615,7 +617,7 @@ void fr_map<T>::remove_all(const fr_map<T> & map)
     const_iterator iter = map.super_type::upper_bound(bound_lo), end = map.super_type::lower_bound(bound_hi);
     if (iter != map.begin())
         --iter;
-    remove_all(iter, end);
+    remove_all(iter, end, match);
 }
 
 
@@ -645,7 +647,6 @@ typename fr_map<T>::iterator fr_map<T>::remove_front(iterator iter, T shrink_len
 
     return iter;
 }
-
 
 /**
  * set this map to a transposed copy of other map,
@@ -730,6 +731,36 @@ void fr_map<T>::append0_shift(const fr_vector<ft_uoff> & other, ft_uoff effectiv
 
 
 /**
+ * shift and merge specified extent vector
+ * into this map, skipping any intersection.
+ */
+template<typename T>
+void fr_map<T>::merge_shift(const fr_vector<ft_uoff> & other, ft_uoff effective_block_size_log2, ft_match match)
+{
+	if (other.empty()) {
+		// nothing to do
+	} else if (this->empty()) {
+		// easy
+		this->append0_shift(other, effective_block_size_log2);
+	} else {
+		fr_map<T> other_map;
+
+		other_map.append0_shift(other, effective_block_size_log2);
+
+		// delete the intersection between this and other
+		if (match == FC_PHYSICAL1)
+			other_map.remove_all(* this, FC_PHYSICAL2);
+		else
+			this->remove_all(other_map, FC_PHYSICAL2);
+
+		// insert the remainder into this
+		this->insert_all(other_map);
+	}
+}
+
+
+
+/**
  * makes the physical complement of 'other' vector,
  * i.e. calculates the physical extents NOT used in 'other' vector,
  * shifts them by effective_block_size_log2,
@@ -757,7 +788,8 @@ void fr_map<T>::complement0_physical_shift(const fr_vector<ft_uoff> & other,
     }
     /* loop on 'other' extents */
     for (i = 0; i < n; i++) {
-        physical = other[i].physical() >> effective_block_size_log2;
+    	const fr_extent<ft_uoff> & curr = other[i];
+        physical = curr.physical() >> effective_block_size_log2;
 
         if (physical == last) {
             /* nothing to do */
@@ -766,10 +798,16 @@ void fr_map<T>::complement0_physical_shift(const fr_vector<ft_uoff> & other,
             append0(last, last, physical - last, FC_DEFAULT_USER_DATA);
         } else {
             /* oops.. some programmer really screwed up */
-            ff_assert_fail("somebody programmed a call to ft_map<T>::complement0_physical_shift() with an argument not sorted by ->physical() !");
+        	const fr_extent<ft_uoff> & prev = other[i-1];
+        	ff_log(FC_FATAL, 0, "internal error in ft_map<T>::complement0_physical_shift():");
+        	ff_log(FC_FATAL, 0, "\textent[%" FT_ULL "] = {physical = %" FT_ULL ", logical = %" FT_ULL ", length = %" FT_ULL " /* physical end = %" FT_ULL " */} does not end before",
+        			(ft_ull) (i-1), (ft_ull) prev.physical(), (ft_ull) prev.logical(), (ft_ull) prev.length(), (ft_ull) (prev.physical() + prev.length()));
+        	ff_log(FC_FATAL, 0, "\textent[%" FT_ULL "] = {physical = %" FT_ULL ", logical = %" FT_ULL ", length = %" FT_ULL " /* physical end = %" FT_ULL " */}",
+        			(ft_ull) i,     (ft_ull) curr.physical(), (ft_ull) curr.logical(), (ft_ull) curr.length(), (ft_ull) (curr.physical() + curr.length()));
+            ff_assert_fail("internal error in ft_map<T>::complement0_physical_shift(): map is not sorted by ->physical()");
         }
 
-        last = physical + (other[i].length() >> effective_block_size_log2);
+        last = physical + (curr.length() >> effective_block_size_log2);
     }
     device_length >>= effective_block_size_log2;
     if (last < device_length) {
@@ -806,7 +844,8 @@ void fr_map<T>::complement0_logical_shift(const fr_vector<ft_uoff> & other, ft_u
     }
     /* loop on 'other' extents */
     for (i = 0; i < n; i++) {
-        logical = other[i].logical() >> effective_block_size_log2;
+    	const fr_extent<ft_uoff> & curr = other[i];
+        logical = curr.logical() >> effective_block_size_log2;
 
         if (logical == last) {
             /* nothing to do */
@@ -815,10 +854,16 @@ void fr_map<T>::complement0_logical_shift(const fr_vector<ft_uoff> & other, ft_u
             append0(last, last, logical - last, FC_DEFAULT_USER_DATA);
         } else {
             /* oops.. some programmer really screwed up */
+        	const fr_extent<ft_uoff> & prev = other[i-1];
+        	ff_log(FC_FATAL, 0, "internal error in ft_map<T>::complement0_logical_shift():");
+        	ff_log(FC_FATAL, 0, "\textent[%" FT_ULL "] = {physical = %" FT_ULL ", logical = %" FT_ULL ", length = %" FT_ULL " /* logical end = %" FT_ULL " */} does not end before",
+        			(ft_ull) (i-1), (ft_ull) prev.physical(), (ft_ull) prev.logical(), (ft_ull) prev.length(), (ft_ull) (prev.logical() + prev.length()));
+        	ff_log(FC_FATAL, 0, "\textent[%" FT_ULL "] = {physical = %" FT_ULL ", logical = %" FT_ULL ", length = %" FT_ULL " /* logical end = %" FT_ULL " */}",
+        			(ft_ull) i,     (ft_ull) curr.physical(), (ft_ull) curr.logical(), (ft_ull) curr.length(), (ft_ull) (curr.logical() + curr.length()));
             ff_assert_fail("somebody programmed a call to ft_map<T>::complement0_logical_shift() with an argument not sorted by ->logical() !");
         }
 
-        last = logical + (other[i].length() >> effective_block_size_log2);
+        last = logical + (curr.length() >> effective_block_size_log2);
     }
     /*
      * NOTE: right-shifting device_length by effective_block_size_log2
@@ -830,5 +875,15 @@ void fr_map<T>::complement0_logical_shift(const fr_vector<ft_uoff> & other, ft_u
         append0(last, last, device_length - last, FC_DEFAULT_USER_DATA);
     }
 }
+
+
+/** print map contents to log */
+template<typename T>
+void fr_map<T>::show(const char * label1, const char * label2, ft_uoff effective_block_size, ft_log_level level) const
+{
+	fr_extent<T>::show(this->begin(), this->end(), this->size(), label1, label2, effective_block_size, level);
+}
+
+
 
 FT_NAMESPACE_END

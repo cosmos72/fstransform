@@ -3,17 +3,17 @@
  *               preserving its contents and without the need for a backup
  *
  * Copyright (C) 2011-2012 Massimiliano Ghilardi
- * 
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
@@ -99,13 +99,42 @@ protected:
     static int validate(const char * type_name, ft_uoff type_max, fr_dir_posix dir, ft_uoff from, ft_uoff to, ft_uoff length);
 
     /**
-     * retrieve LOOP-FILE extents and FREE-SPACE extents and insert them into
-     * the vectors loop_file_extents and free_space_extents.
-     * the vectors will be ordered by extent ->logical.
+     * retrieve LOOP-FILE extents and any additional extents to be ZEROED
+     * and insert them into the vectors loop_file_extents, and to_zero_extents
+     * the vectors will be ordered by extent ->logical (for to_zero_extents, ->physical and ->logical will be the same).
      *
      * return 0 for success, else error (and vectors contents will be UNDEFINED).
      *
-     * if success, also returns in ret_effective_block_size_log2 the log2()
+     * if success, also update the parameter ret_effective_block_size_log2 to be the log2()
+     * of device effective block size (see read_extents() for detailed meaning of this parameter)
+     */
+    int read_extents_loop_file(fr_vector<ft_uoff> & loop_file_extents,
+                               fr_vector<ft_uoff> & to_zero_extents,
+                               ft_uoff & ret_block_size_bitmask);
+
+    /**
+     * retrieve FREE-SPACE extents and any additional extents to be ZEROED
+     * and insert them into the vectors free_space_extents, and to_zero_extents
+     * the vectors will be ordered by extent ->logical (for to_zero_extents, ->physical and ->logical will be the same).
+     *
+     * return 0 for success, else error (and vectors contents will be UNDEFINED).
+     *
+     * if success, also update the parameter ret_effective_block_size_log2 to be the log2()
+     * of device effective block size (see read_extents() for detailed meaning of this parameter)
+     */
+    int read_extents_free_space(const fr_vector<ft_uoff> & loop_file_extents,
+                                fr_vector<ft_uoff> & free_space_extents,
+                                fr_vector<ft_uoff> & to_zero_extents,
+                                ft_uoff & ret_block_size_bitmask);
+
+    /**
+     * retrieve LOOP-FILE extents, FREE-SPACE extents and any additional extents to be ZEROED
+     * and insert them into the vectors loop_file_extents, free_space_extents and to_zero_extents
+     * the vectors will be ordered by extent ->logical (for to_zero_extents, ->physical and ->logical will be the same).
+     *
+     * return 0 for success, else error (and vectors contents will be UNDEFINED).
+     *
+     * if success, also update the parameter ret_effective_block_size_log2 to be the log2()
      * of device effective block size.
      * the device effective block size is defined as follows:
      * it is the largest power of 2 that exactly divides all physical,
@@ -118,6 +147,7 @@ protected:
      */
     virtual int read_extents(fr_vector<ft_uoff> & loop_file_extents,
                              fr_vector<ft_uoff> & free_space_extents,
+                             fr_vector<ft_uoff> & to_zero_extents,
                              ft_uoff & ret_block_size_bitmask);
 
 
@@ -130,7 +160,7 @@ protected:
      * or this->fd[FC_SECONDARY_STORAGE] for secondary storage
      */
     int replace_storage_mmap(int fd, const char * label, fr_extent<ft_uoff> & storage_extent,
-             ft_size extent_index, ft_size & mem_offset);
+                             ft_size extent_index, ft_size & mem_offset);
 
     /**
      * create and open SECONDARY-STORAGE in job.job_dir() + '.storage.bin'
@@ -179,7 +209,7 @@ public:
     virtual ~fr_io_posix();
 
     /** check for consistency and open DEVICE, LOOP-FILE and ZERO-FILE */
-    int open(const fr_args & args);
+    virtual int open(const fr_args & args);
 
     /** return true if this fr_io_posix is currently (and correctly) open */
     virtual bool is_open() const;
@@ -222,7 +252,7 @@ public:
 
     /** close and munmap() SECONDARY-STORAGE. called by close() and by work<T>::close_storage() */
     virtual int close_storage();
-    
+
     /** called to remove SECONDARY-STORAGE from file system if execution is completed successfully */
     virtual int remove_storage_after_success();
 };

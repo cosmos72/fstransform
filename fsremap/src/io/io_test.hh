@@ -3,17 +3,17 @@
  *               preserving its contents and without the need for a backup
  *
  * Copyright (C) 2011-2012 Massimiliano Ghilardi
- * 
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
@@ -48,7 +48,7 @@ class fr_io_test: public ft_io_null
 private:
     typedef ft_io_null super_type;
 
-    FILE * this_f[FC_FILE_COUNT];
+    FILE * this_f[FC_EXTENTS_FILE_COUNT];
 
 protected:
 
@@ -59,9 +59,9 @@ protected:
     void close0(ft_size which);
 
     /**
-     * retrieve LOOP-FILE extents and FREE-SPACE extents and insert them into
-     * the vectors loop_file_extents and free_space_extents.
-     * the vectors will be ordered by extent ->logical.
+     * retrieve LOOP-FILE extents, FREE-SPACE extents and any additional extents to be ZEROED
+     * and insert them into the vectors loop_file_extents, free_space_extents and to_zero_extents
+     * the vectors will be ordered by extent ->logical (for to_zero_extents, ->physical and ->logical will be the same).
      *
      * return 0 for success, else error (and vectors contents will be UNDEFINED).
      *
@@ -72,12 +72,11 @@ protected:
      * logical and lengths in all returned extents (both for LOOP-FILE
      * and for FREE-SPACE) and that also exactly exactly divides device length.
      *
-     * the trick fr_io_posix uses to implement this method
-     * is to fill the device's free space with a ZERO-FILE,
-     * and actually retrieve the extents used by ZERO-FILE.
+     * this implementation simply reads extents from persistence files.
      */
     virtual int read_extents(fr_vector<ft_uoff> & loop_file_extents,
                              fr_vector<ft_uoff> & free_space_extents,
+                             fr_vector<ft_uoff> & to_zero_extents,
                              ft_uoff & ret_block_size_bitmask);
 
 public:

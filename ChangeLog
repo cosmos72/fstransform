@@ -1,3 +1,31 @@
+From 0.9.3 to 0.9.4, Massimiliano Ghilardi 2012-04-15:
+  all:
+    * testing IN PROGRESS on 'nilfs2' and 'ocfs2' file systems
+    * some changes to compile on FreeBSD - still NOT finished!
+
+  fsattr:
+    * new program, used for fallocate() speedup on ext4 file system.
+      it removes the 'fallocate' flag (actually named 'uninit')
+      from all files inside an unmounted ext4 file system
+
+  fsmove:
+    * added option --io=prealloc to fallocate() target files
+      instead of moving them from source to target.
+      it's much faster and 100% safe, unlike default --io=posix
+      that incrementally moves source files during work
+      and cannot move them back in case of 'disk full' errors.
+
+  fsremap:
+    * UNFINISHED: added options --io=prealloc, --mount-point-device=DIR
+      and --mount-point-loop-file=DIR
+      used together with fsmove option --io=prealloc:
+      in addition to the normal setup (i.e. scanning loop file and zero file)
+      they assume target files (inside loop file) are preallocated
+      and their contents still reside in the corresponding source
+      files (inside device)
+    * FIXME: support replaying preallocation
+
+
 From 0.9.2 to 0.9.3, Massimiliano Ghilardi 2012-03-27:
   fsremap:
     * added automatic checkpointing to persistence file
@@ -58,7 +86,7 @@ From 0.3.7 to 0.9.0, Massimiliano Ghilardi 2012-02-06:
     * replaced Eclipse-generated makefiles with automake+autoconf ones.
       new 'configure' script also autodetects required C functions,
       headers and types
-    
+
     * added warning to README about transforming to 'xfs'
       a device more than 90% full
 
@@ -68,11 +96,11 @@ From 0.3.7 to 0.9.0, Massimiliano Ghilardi 2012-02-06:
   fsremap:
     * zero-file is now optional. if not specified, fsremap performs
       an irreversible remapping
-  
+
   fstransform:
     * added option '--show-time' to print time-of-day before each message
     * added option '--irreversible' to skip creating zero-file
-    
+
   fstransform and fsremap:
     * added option '--no-questions' to run automatically without asking
       any confirmation.
@@ -82,14 +110,14 @@ From 0.3.7 to 0.9.0, Massimiliano Ghilardi 2012-02-06:
       _rounded_down_ to file-system block size,
       and fsremap refuses to run if loop-file length exceeds device size
       _rounded_down_ to file-system block size
-    
+
 
 From 0.3.6 to 0.3.7, Massimiliano Ghilardi 2012-01-21:
   fsremap:
     * fixed a bug in the routine to show progress percentage.
       This bug cause fsremap to crash while remapping the device,
       leaving your data UNUSABLE.
-      
+
       For this reason, PLEASE DO NOT USE FSTRANSFORM VERSION 0.3.6
 
 
@@ -97,15 +125,15 @@ From 0.2.8 to 0.3.6, Massimiliano Ghilardi 2012-01-21:
   fsmove:
     * added periodic checks for enough free space in both the source
       and target file-systems
-    
+
   fsremap:
     * improved the routine to show progress percentage
 
       This routine was found to be bugged and crash while remapping
       the device, leaving your data UNUSABLE.
-      
+
       For this reason, PLEASE DO NOT USE FSTRANSFORM VERSION 0.3.6
-      
+
     * added check and workaround for device lengths not multiples of block size
     * added check and workaround for incomplete information sometimes returned
       by ioctl(FS_IOC_FIEMAP)

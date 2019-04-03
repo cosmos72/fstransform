@@ -1,7 +1,7 @@
 /*
  * fstransform - transform a file-system to another file-system type,
  *               preserving its contents and without the need for a backup
- * 
+ *
  * Copyright (C) 2011-2012 Massimiliano Ghilardi
  *
  *     This program is free software: you can redistribute it and/or modify

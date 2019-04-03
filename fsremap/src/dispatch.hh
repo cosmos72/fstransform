@@ -3,17 +3,17 @@
  *               preserving its contents and without the need for a backup
  *
  * Copyright (C) 2011-2012 Massimiliano Ghilardi
- * 
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
@@ -45,7 +45,9 @@ public:
      * calls ff_work<T>::run(), then ff_work<T>::cleanup()
      */
     static int main(fr_vector<ft_uoff> & loop_file_extents,
-                    fr_vector<ft_uoff> & free_space_extents, FT_IO_NS fr_io & io);
+                    fr_vector<ft_uoff> & free_space_extents,
+                    fr_vector<ft_uoff> & to_zero_extents,
+                    FT_IO_NS fr_io & io);
 
 };
 

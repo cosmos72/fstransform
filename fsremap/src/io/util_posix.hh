@@ -3,17 +3,17 @@
  *               preserving its contents and without the need for a backup
  *
  * Copyright (C) 2011-2012 Massimiliano Ghilardi
- * 
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
@@ -35,6 +35,9 @@ int ff_posix_ioctl(int fd, int request, void * arg);
 /** return file stats in (*ret_stat) */
 int ff_posix_stat(int fd, ft_stat * ret_stat);
 
+/** return file stats in (*ret_stat) */
+int ff_posix_stat(const char * path, ft_stat * ret_stat);
+
 /** return file size in (*ret_size) */
 int ff_posix_size(int fd, ft_uoff * ret_size);
 
@@ -50,9 +53,6 @@ int ff_posix_blkdev_dev(int fd, ft_dev * ret_dev);
 /** if file is special block device, return its length in (*ret_dev) */
 int ff_posix_blkdev_size(int fd, ft_uoff * ret_size);
 
-
-/** create a directory */
-int ff_posix_mkdir(const char * path, ft_mode mode = 0755);
 
 /**
  * seek file descriptor to specified position from file beginning.

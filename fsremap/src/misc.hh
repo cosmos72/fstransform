@@ -173,7 +173,8 @@ ft_ull ff_pretty_number(double t);
  *
  * if time_left < 0, omits the part "estimated {time_left} left"
  */
-#define ff_show_progress(log_level, prefix, percentage, bytes_left, suffix, ...) ff_show_progressl(FT_THIS_FILE, FT_THIS_FUNCTION, FT_THIS_LINE, \
+#define ff_show_progress(log_level, prefix, percentage, bytes_left, suffix, ...) ff_show_progressl( \
+						 FT_THIS_FILE, sizeof(FT_THIS_FILE), FT_THIS_FUNCTION, FT_THIS_LINE, \
 						 log_level, prefix, percentage, bytes_left, suffix, __VA_ARGS__)
 
 /**
@@ -182,7 +183,8 @@ ft_ull ff_pretty_number(double t);
  *
  * if time_left < 0, omits the part "estimated {time_left} left"
  */
-void ff_show_progressl(const char * caller_file, const char * caller_func, int caller_line,
+void ff_show_progressl(const char * caller_file, int caller_file_len,
+		const char * caller_func, int caller_line,
 		ft_log_level log_level, const char * prefix, double percentage,
 		ft_uoff bytes_left, const char * suffix, double time_left = -1.0);
 

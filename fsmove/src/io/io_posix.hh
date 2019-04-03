@@ -57,37 +57,29 @@ private:
     };
 
     /**
-     * fill 'disk_stat' with information about the file-system containing 'path'.
-     * return error if statvfs() fails or if free disk space becomes critically low
-     */
-    int disk_stat(const char * path, fm_disk_stat & disk_stat);
-
-    /**
      * return true if estimated free space is comfortably high enough to write 'bytes_to_write'
      * if first_check is true, does a more conservative estimation, requiring twice more free space than normal
      */
     bool enough_free_space(ft_uoff bytes_to_write = 0, bool first_check = false);
 
     /**
-     * add bytes_just_written to bytes_copied_since_last_check.
-     *
-     * if enough_free_space() returns false,
-     * also call check_free_space() and reset bytes_copied_since_last_check to zero
-     */
-    int periodic_check_free_space(ft_size bytes_just_written = APPROX_INODE_COST, ft_uoff bytes_to_write = 0);
-
-    /**
-     * call disk_stat() twice: one time on source_root() and another on target_root().
-     * return error if statvfs() fails or if free disk space becomes critically low
+     * call sync(), then call disk_stat() twice: one time on source_root() and another on target_root().
+	 * return error if statvfs() fails or if free disk space becomes critically low
      */
     int check_free_space();
+
+    /**
+     * fill 'disk_stat' with information about the file-system containing 'path'.
+     * return error if statvfs() fails or if free disk space becomes critically low
+     */
+    int disk_stat(const char * path, fm_disk_stat & disk_stat);
 
     /**
      * use some file-system specific trickery to try and free some space.
      * currently, it runs 'xfs_fsr <path>' which can free some space on 'xfs' file-systems
      */
     void try_to_make_free_space(const char * path);
-    
+
     /**
      * fill 'stat' with information about the file/directory/special-device 'path'
      */
@@ -99,7 +91,12 @@ private:
     int move(const ft_string & source_path, const ft_string & target_path);
 
     /**
-     * move the single regurlar file 'source_path' to 'target_path'.
+     * try to rename a file, directory or special-device from 'source_path' to 'target_path'.
+     */
+    int move_rename(const char * source, const char * target);
+
+    /**
+     * move the single regular file 'source_path' to 'target_path'.
      */
     int move_file(const ft_string & source_path, const ft_stat & source_stat, const ft_string & target_path);
 
@@ -109,9 +106,9 @@ private:
     int move_special(const ft_string & source_path, const ft_stat & source_stat, const ft_string & target_path);
 
     /**
-     * try to rename a file, directory or special-device from 'source_path' to 'target_path'.
+     * move the single directory 'source_path' to 'target_path'.
      */
-    int move_rename(const char * source, const char * target);
+    int move_dir(const ft_string & source_path, const ft_stat & source_stat, const ft_string & target_path);
 
     /**
      * forward or backward copy file/stream contents from in_fd to out_fd.
@@ -162,7 +159,7 @@ private:
      * on return, len will contain the number of bytes actually read
      */
     int full_read(int in_fd, char * data, ft_size & len, const char * source_path);
-    
+
     /**
      * write bytes to out_fd, retrying in case of short writes or interrupted system calls.
      * returns 0 for success, else error
@@ -177,19 +174,8 @@ private:
      */
     int hard_link(const ft_stat & stat, const ft_string & target_path);
 
-    /**
-     * copy the permission bits, owner/group and timestamps from 'stat' to 'target'
-     */
-    int copy_stat(const char * target, const ft_stat & stat);
-
     /** create a target directory */
     int create_dir(const ft_string & path);
-
-    /**
-     * remove a source directory, which must be empty
-     * exception: will not remove '/lost+found' directory inside source_root()
-     */
-    int remove_dir(const ft_string & path);
 
     /**
      * return true if path is the source directory lost+found.
@@ -202,6 +188,44 @@ private:
      * Treated specially because it is allowed to exist already.
      */
     bool is_target_lost_found(const ft_string & path) const;
+
+protected:
+    /** call ::sync(). slow, but needed to get accurate disk stats when loop devices are involved */
+    virtual void sync();
+
+    /**
+     * add bytes_just_written to bytes_copied_since_last_check.
+     *
+     * if enough_free_space() returns false,
+     * also call check_free_space() and reset bytes_copied_since_last_check to zero
+     */
+    int periodic_check_free_space(ft_uoff bytes_just_written = APPROX_INODE_COST, ft_uoff bytes_to_write = 0);
+
+    /**
+     * copy the permission bits, owner/group and timestamps from 'stat' to 'target'
+     */
+    int copy_stat(const char * target, const ft_stat & stat);
+
+    /**
+     * copy the contents of single regular file 'source_path' to 'target_path'.
+     */
+    virtual int copy_file_contents(const ft_string & source_path, const ft_stat & source_stat, const ft_string & target_path);
+
+    /**
+     * remove a regular file inside source directory
+     */
+    virtual int remove_file(const char * source_path);
+
+    /**
+     * remove a special file inside source directory
+     */
+    virtual int remove_special(const char * source_path);
+
+    /**
+     * remove a source directory, which must be empty
+     * exception: will not remove '/lost+found' directory inside source_root()
+     */
+    virtual int remove_dir(const ft_string & path);
 
 public:
     /** constructor */

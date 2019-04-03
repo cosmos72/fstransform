@@ -26,13 +26,23 @@
 #include "../first.hh"
 
 #include "../args.hh"      // for fm_args
+#include "../assert.hh"    // for ff_assert()
 #include "../misc.hh"      // for ff_show_progress(), ff_now()
 #include "io.hh"           // for fm_io
+
+#include "cache/cache_mem.hh"     // for ft_cache_mem
+#include "cache/cache_symlink.hh" // for ft_cache_symlink_kv
 
 #if defined(FT_HAVE_MATH_H)
 # include <math.h>         // for sqrt()
 #elif defined(FT_HAVE_CMATH)
 # include <cmath>          // for sqrt()
+#endif
+
+#if defined(FT_HAVE_STRING_H)
+# include <string.h>       // for strcmp()
+#elif defined(FT_HAVE_CSTRING)
+# include <cstring>        // for strcmp()
 #endif
 
 
@@ -48,12 +58,13 @@ char const * const fm_io::LABEL[] = {
 
 /** constructor */
 fm_io::fm_io()
-    : this_inode_cache(), this_exclude_set(),
+    : this_inode_cache(NULL), this_exclude_set(),
       this_source_stat(), this_target_stat(),
       this_source_root(), this_target_root(),
       this_eta(), this_work_total(0), this_work_report_threshold(0),
-      this_work_done(0), this_work_last_reported(0), 
-      this_work_last_reported_time(0.0), this_force_run(false), this_simulate_run(false)
+      this_work_done(0), this_work_last_reported(0),
+      this_work_last_reported_time(0.0),
+      this_progress_msg(NULL), this_force_run(false), this_simulate_run(false)
 { }
 
 /**
@@ -61,7 +72,10 @@ fm_io::fm_io()
  * sub-classes must override it to call close()
  */
 fm_io::~fm_io()
-{ }
+{
+	// in case it's != NULL
+	delete this_inode_cache;
+}
 
 
 /**
@@ -71,6 +85,7 @@ fm_io::~fm_io()
 int fm_io::open(const fm_args & args)
 {
     const char * arg1 = args.io_args[FC_SOURCE_ROOT], * arg2 = args.io_args[FC_TARGET_ROOT];
+
     int err = 0;
     do {
         if (arg1 == NULL) {
@@ -83,6 +98,27 @@ int fm_io::open(const fm_args & args)
             err = -EINVAL;
             break;
         }
+    	const char * inode_cache_path = args.inode_cache_path;
+    	delete this_inode_cache;
+    	this_inode_cache = NULL;
+    	if (inode_cache_path != NULL)
+    	{
+    		ft_cache_symlink_kv<ft_inode, ft_string> * icp = new ft_cache_symlink_kv<ft_inode, ft_string>(inode_cache_path);
+    		err = icp->init(inode_cache_path);
+    		if (err != 0)
+    		{
+    			delete icp;
+    			break;
+    		}
+    		// icp->get_path() removes trailing '/' unless it's exactly the path "/"
+    		inode_cache_path = icp->get_path();
+    		this_inode_cache = icp;
+    	}
+    	else
+    		this_inode_cache = new ft_cache_mem<ft_inode,ft_string>();
+
+
+
         this_source_stat.set_name("source");
         this_target_stat.set_name("target");
         this_source_root = arg1;
@@ -91,13 +127,45 @@ int fm_io::open(const fm_args & args)
         this_work_total = this_work_report_threshold = this_work_done = this_work_last_reported = 0;
         this_force_run = args.force_run;
         this_simulate_run = args.simulate_run;
+        this_progress_msg = " still to move";
 
         char const * const * exclude_list = args.exclude_list;
         if (exclude_list != NULL) {
             for (; * exclude_list != NULL; ++exclude_list)
                 this_exclude_set.insert(* exclude_list);
         }
+        // do NOT move the inode-cache!
+        if (inode_cache_path != NULL)
+        {
+            this_exclude_set.insert(inode_cache_path);
+        }
+
     } while (0);
+    return err;
+}
+
+
+int fm_io::inode_cache_find_or_add(ft_inode inode, ft_string & path)
+{
+	ft_size root_len = this_target_root.length();
+	ff_assert(path.length() >= root_len && path.compare(0, root_len, this_target_root) == 0);
+
+	ft_string short_path = path.substr(root_len);
+    int err = this_inode_cache->find_or_add(inode, short_path);
+    if (err == 1)
+    	path = this_target_root + short_path;
+    return err;
+}
+
+int fm_io::inode_cache_find_and_delete(ft_inode inode, ft_string & path)
+{
+	ft_size root_len = this_target_root.length();
+	ff_assert(path.length() >= root_len && path.compare(0, root_len, this_target_root) == 0);
+
+	ft_string short_path = path.substr(root_len);
+    int err = this_inode_cache->find_and_delete(inode, short_path);
+    if (err == 1)
+    	path = this_target_root + short_path;
     return err;
 }
 
@@ -131,7 +199,7 @@ int fm_io::is_almost_full(const fm_disk_stat & stat) const
  * set total number of bytes to move (may include estimated overhead for special files, inodes...),
  * reset total number of bytes moved,
  * initialize this_eta to 0% at current time
- * 
+ *
  * returns error if source or target file-system are almost full (typical threshold is 97%)
  */
 int fm_io::init_work()
@@ -147,13 +215,13 @@ int fm_io::init_work()
     ft_uoff work_total = source_used > target_used ? source_used - target_used : 0;
 
     this_work_total = work_total;
-    
+
     ft_uoff work_total_GB = work_total >> 30;
-    
+
     if (work_total_GB <= 4)
         /* up to 4GB, report approximately every 5% progress */
         this_work_report_threshold = work_total / 20;
-    
+
     else if (work_total_GB <= 100)
         /* up to 100GB, report approximately every 2% progress */
         this_work_report_threshold = work_total / 50;
@@ -161,7 +229,7 @@ int fm_io::init_work()
         /* above 100GB, report approximately every 2GB * sqrt(size/100GB) */
         this_work_report_threshold = (ft_uoff)
             (((ft_uoff)2 << 30) * sqrt(0.01 * work_total_GB));
-    
+
     this_work_done = this_work_last_reported = 0;
     ff_now(this_work_last_reported_time);
     this_eta.add(0.0);
@@ -207,7 +275,7 @@ void fm_io::show_progress(ft_log_level log_level)
     	time_left = -1.0;
     }
 
-    ff_show_progress(log_level, simul_msg, percentage, work_total - moved_len, " still to move", time_left);
+    ff_show_progress(log_level, simul_msg, percentage, work_total - moved_len, this_progress_msg, time_left);
 }
 
 /**
@@ -216,16 +284,18 @@ void fm_io::show_progress(ft_log_level log_level)
  */
 void fm_io::close()
 {
-    this_inode_cache.clear();
-    this_exclude_set.clear();
+	this_exclude_set.clear();
     this_source_stat.clear();
     this_target_stat.clear();
     this_source_root.clear();
     this_target_root.clear();
     this_eta.clear();
     this_work_done = this_work_last_reported = this_work_total = 0;
-    this_force_run = false;
-    this_simulate_run = false;
+    this_progress_msg = NULL;
+    this_force_run = this_simulate_run = false;
+
+	delete this_inode_cache;
+	this_inode_cache = NULL;
 }
 
 FT_IO_NAMESPACE_END

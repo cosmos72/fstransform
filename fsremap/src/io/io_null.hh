@@ -3,17 +3,17 @@
  *               preserving its contents and without the need for a backup
  *
  * Copyright (C) 2011-2012 Massimiliano Ghilardi
- * 
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
@@ -43,10 +43,11 @@ public:
         FC_DEVICE_LENGTH = 0,
         FC_LOOP_EXTENTS,
         FC_FREE_SPACE_EXTENTS,
-        FC_FILE_COUNT // must be equal to count of preceding enum constants
+        FC_TO_ZERO_EXTENTS,
+        FC_EXTENTS_FILE_COUNT // must be equal to count of preceding enum constants
     };
 
-    static char const * const extents_label[]; // DEVICE-LENGTH, LOOP-EXTENTS and FREE-SPACE-EXTENTS
+    static char const * const extents_label[]; // DEVICE-LENGTH, LOOP-EXTENTS, FREE-SPACE-EXTENTS and TO-ZERO-EXTENTS
     static char const * const sim_msg; // "(simulated) "
 
 private:
@@ -72,6 +73,7 @@ protected:
      */
     virtual int read_extents(fr_vector<ft_uoff> & loop_file_extents,
                              fr_vector<ft_uoff> & free_space_extents,
+                             fr_vector<ft_uoff> & to_zero_extents,
                              ft_uoff & ret_block_size_bitmask);
 
     /**

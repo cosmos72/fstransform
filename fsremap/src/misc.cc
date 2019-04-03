@@ -3,17 +3,17 @@
  *               preserving its contents and without the need for a backup
  *
  * Copyright (C) 2011-2012 Massimiliano Ghilardi
- * 
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
@@ -30,6 +30,7 @@
 #elif defined(FT_HAVE_CSTDLIB)
 # include <cstdlib>    // for srandom(), random(), rand(), srand()
 #endif
+
 #if defined(FT_HAVE_TIME_H)
 # include <time.h>     // for time()
 #elif defined(FT_HAVE_CTIME)
@@ -139,9 +140,11 @@ int ff_now(double & ret_time) {
 #if defined(FT_HAVE_SRANDOM) && defined(FT_HAVE_RANDOM)
 # define ff_misc_random_init(seed) srandom(seed)
 # define ff_misc_random()          random()
+# define FF_RAND_MAX               RAND_MAX
 #else
 # define ff_misc_random_init(seed) srand(seed)
 # define ff_misc_random()          rand()
+# define FF_RAND_MAX               RAND_MAX
 #endif
 
 /** return a random number in the range [0,n] */
@@ -156,17 +159,17 @@ ft_ull ff_random(ft_ull n)
     ft_ull r;
     if (n == 0)
         return 0;
-    if (n < RAND_MAX) {
-        ft_ull max = RAND_MAX - (RAND_MAX % (n + 1));
+    if (n < FF_RAND_MAX) {
+        ft_ull max = FF_RAND_MAX - (FF_RAND_MAX % (n + 1));
         do {
             r = ff_misc_random();
         } while (r > max);
         return r / (max / (n + 1));
     }
-    if (n == RAND_MAX)
+    if (n == FF_RAND_MAX)
         return ff_misc_random();
-    const ft_ull max_p_1 = (ft_ull)RAND_MAX + 1;
-    const ft_ull n_hi = (n + RAND_MAX) / max_p_1;
+    const ft_ull max_p_1 = (ft_ull)FF_RAND_MAX + 1;
+    const ft_ull n_hi = (n + FF_RAND_MAX) / max_p_1;
     do {
         r = ff_random(n_hi) * max_p_1 + ff_misc_random();
     } while (r > n);
@@ -299,7 +302,8 @@ ft_ull ff_pretty_number(double t) {
  *
  * if time_left < 0, omits the part "estimated {time_left} left"
  */
-void ff_show_progressl(const char * caller_file, const char * caller_func, int caller_line,
+void ff_show_progressl(const char * caller_file, int caller_file_len,
+		const char * caller_func, int caller_line,
         ft_log_level log_level, const char * prefix, double percentage,
         ft_uoff bytes_left, const char * suffix, double time_left)
 {
@@ -319,14 +323,14 @@ void ff_show_progressl(const char * caller_file, const char * caller_func, int c
 
     /* we write something like "1 hour and 20 minutes" instead of just "1 hour" or "1.3 hours" */
     if (time_left_label2 != NULL) {
-        ff_logl(caller_file, caller_func, caller_line,
-                log_level, 0, "%sprogress: %4.1f%% done, %5.1f %sbytes%s, estimated %2"FT_ULL" %s%s and %2"FT_ULL" %s%s left",
+        ff_logl(caller_file, caller_file_len, caller_func, caller_line,
+                log_level, 0, "%sprogress: %4.1f%% done, %5.1f %sbytes%s, estimated %2" FT_ULL " %s%s and %2" FT_ULL " %s%s left",
                 prefix, percentage, pretty_len, pretty_label, suffix,
                 time_left1, time_left_label1, (time_left1 != 1 ? "s": ""),
                 time_left2, time_left_label2, (time_left2 != 1 ? "s": ""));
     } else {
-        ff_logl(caller_file, caller_func, caller_line,
-                log_level, 0, "%sprogress: %4.1f%% done, %5.1f %sbytes%s, estimated %2"FT_ULL" %s%s left",
+        ff_logl(caller_file, caller_file_len, caller_func, caller_line,
+                log_level, 0, "%sprogress: %4.1f%% done, %5.1f %sbytes%s, estimated %2" FT_ULL " %s%s left",
                 prefix, percentage, pretty_len, pretty_label, suffix,
                 time_left1, time_left_label1, (time_left1 != 1 ? "s": ""));
     }

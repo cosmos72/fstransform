@@ -3,17 +3,17 @@
  *               preserving its contents and without the need for a backup
  *
  * Copyright (C) 2011-2012 Massimiliano Ghilardi
- * 
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
@@ -124,13 +124,13 @@ int ff_zero_loop_file_holes(int argc, char ** argv)
             offset = extent.first.physical << eff_block_size_log2;
             left = extent.second.length << eff_block_size_log2;
             if ((err = ff_posix_lseek(dev_fd, offset)) != 0) {
-                err = ff_log(FC_ERROR, err, "error in device lseek('%s', offset = %"FT_ULL")", args[0], (ft_ull) offset);
+                err = ff_log(FC_ERROR, err, "error in device lseek('%s', offset = %" FT_ULL ")", args[0], (ft_ull) offset);
                 break;
             }
             while (left != 0) {
                 chunk = ff_min2<ft_uoff>(left, ZERO_BUF_LEN);
                 if ((err = ff_posix_write(dev_fd, zero_buf, chunk)) != 0) {
-                    err = ff_log(FC_ERROR, err, "error in device write({'%s', offset = %"FT_ULL"}, zero_buffer, length = %"FT_ULL")",
+                    err = ff_log(FC_ERROR, err, "error in device write({'%s', offset = %" FT_ULL "}, zero_buffer, length = %" FT_ULL ")",
                                  args[0], (ft_ull) offset, (ft_ull) chunk);
                     break;
                 }

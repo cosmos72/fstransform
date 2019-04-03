@@ -3,17 +3,17 @@
  *               preserving its contents and without the need for a backup
  *
  * Copyright (C) 2011-2012 Massimiliano Ghilardi
- * 
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
@@ -28,10 +28,11 @@
 
 #include "check.hh"
 
-#include <vector>         // for std::vector<T> */
+#include <vector>      // for std::vector<T> */
 
-#include "fwd.hh"         // for fr_map<T>
-#include "extent.hh"      // for fr_extent<T>
+#include "fwd.hh"      // for fr_map<T>
+#include "log.hh"      // for ft_log_level, FC_SHOW_DEFAULT_LEVEL. also used by vector.t.hh for ff_log()
+#include "extent.hh"   // for fr_extent<T>
 
 
 FT_NAMESPACE_BEGIN
@@ -41,6 +42,9 @@ class fr_vector : public std::vector<fr_extent<T> >
 {
 private:
     typedef std::vector<fr_extent<T> > super_type;
+
+    /** actual implementation of compose() below */
+    int compose0(const fr_vector<T> & a2b, const fr_vector<T> & a2c, T & ret_block_size_bitmask, fr_vector<T> * unmapped = 0);
 
 public:
     typedef fr_extent_key<T>      key_type;
@@ -103,6 +107,46 @@ public:
      */
     void sort_by_reverse_length();
     void sort_by_reverse_length(iterator from, iterator to);
+
+    /**
+     * swap ->physical with ->logical in each extent of this vector.
+     * Note: does NOT sort after swapping!
+     */
+    void transpose();
+
+    /**
+     * used by ft_io_prealloc.
+     *
+     * truncate at specified logical value
+     */
+   void truncate_at_logical(T logical_end);
+
+    /**
+     * used by ft_io_prealloc.
+     *
+     * given a vector mapping a->b (v1) and a vector mapping a->c (v2),
+     * compute the vector mapping b->c (v2) and append it to this vector.
+     *
+     * user_data will be copied from v1.
+     * all extents in b not mapped to c will be added to 'unmapped' (if not NULL)
+     *
+     * a->b and a->c must be sorted by ->physical
+     * returns error if a->b domain (range in a) is smaller than a->c domain (range in a)
+     * and in particular if a->b has holes where a->c does not.
+     */
+    FT_INLINE int compose(const fr_vector<T> & a2b, const fr_vector<T> & a2c, T & ret_block_size_bitmask, fr_vector<T> & unmapped) {
+    	return compose0(a2b, a2c, ret_block_size_bitmask, & unmapped);
+    }
+
+
+    /** same as compose() above, but does not compute 'block_size_bitmask' and 'unmapped' */
+    FT_INLINE int compose(const fr_vector<T> & a2b, const fr_vector<T> & a2c) {
+    	T block_size_bitmask = 0;
+    	return compose0(a2b, a2c, block_size_bitmask);
+    }
+
+    /** print vector contents to log */
+    void show(const char * label1, const char * label2, ft_uoff effective_block_size, ft_log_level level = FC_SHOW_DEFAULT_LEVEL) const;
 };
 
 FT_NAMESPACE_END

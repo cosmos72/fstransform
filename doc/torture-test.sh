@@ -1,6 +1,6 @@
 #
 # This simple script is a helper to run torture tests on 'fstransform.sh'
-# 
+#
 # It is designed assuming the availability of certain files and commands
 # in certain hard-coded paths,
 # and it will NOT be useful for the general public until customized.
@@ -50,7 +50,7 @@ fi
 DEVICE_SIZE=`expr $FILE_SIZE \* 11 / 10 / 4096 \* 4096`
 
 mkdir "$TESTDIR" || true
-mount -t tmpfs tmpfs "$TESTDIR" 
+mount -t tmpfs tmpfs "$TESTDIR"
 mkdir "$TESTDIR"/device
 pushd "$TESTDIR"
 exec >& log.txt
@@ -76,7 +76,7 @@ truncate -s $DEVICE_SIZE $LOOP_FILE
 
 while true; do
   rm -f $DEVICE_FILE
-  
+
   truncate -s $DEVICE_SIZE $DEVICE_FILE
 
   losetup -d "$DEVICE" 2>/dev/null || true
@@ -87,14 +87,14 @@ while true; do
   dd bs=512 if=/dev/zero of=$DEVICE_MOUNT_POINT/$ZERO_FILE 2>/dev/null || true
   # show $ZERO_FILE length
   stat --format=%s $DEVICE_MOUNT_POINT/$ZERO_FILE
-  
+
   mount -o remount,ro "$DEVICE"
   sync
   cp -vf --sparse=always "$DEVICE" $DEVICE_FILE_SAVE
-  
+
   $FSREMAP -t . -q "$DEVICE" $DEVICE_MOUNT_POINT/$LOOP_FILE $DEVICE_MOUNT_POINT/$ZERO_FILE < /dev/null
   umount "$DEVICE" || true
-  
+
   if false; then
     if ! cmp "$DEVICE" $DEVICE_FILE; then
       echo "$DEVICE and $DEVICE_FILE differ!!! bug in Linux loop devices?"

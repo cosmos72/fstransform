@@ -3,17 +3,17 @@
  *               preserving its contents and without the need for a backup
  *
  * Copyright (C) 2011-2012 Massimiliano Ghilardi
- * 
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
@@ -50,6 +50,14 @@ fr_persist::fr_persist(fr_job & job)
       this_job(job), this_replaying(false)
 { }
 
+#define FC_PERSIST_FILE_VERSION     "version 0.9.4"
+
+#define FC_PERSIST_HEADER_SIMULATED "simulated job, " FC_PERSIST_FILE_VERSION
+#define FC_PERSIST_HEADER_REAL      "real job, " FC_PERSIST_FILE_VERSION
+
+#define FC_OLD_HEADER_SIMULATED     "simulated job"
+#define FC_OLD_HEADER_REAL          "real job"
+
 
 /** create and open persistence file job.job_dir() + "/fsremap.persist" */
 int fr_persist::open()
@@ -74,8 +82,12 @@ int fr_persist::open()
 
     this_replaying = this_job.resuming_job();
     const bool simulated = this_job.simulate_run();
-    const char * header = simulated ? "simulated job" : "real job";
-    const char * other_header = simulated ? "real job" : "simulated job";
+    const char * header = simulated ? FC_PERSIST_HEADER_SIMULATED : FC_PERSIST_HEADER_REAL;
+    const char * other_header = simulated ? FC_PERSIST_HEADER_REAL : FC_PERSIST_HEADER_SIMULATED;
+
+    const char * header_old = simulated ? FC_OLD_HEADER_SIMULATED : FC_OLD_HEADER_REAL;
+    const char * other_header_old = simulated ? FC_OLD_HEADER_REAL : FC_OLD_HEADER_SIMULATED;
+
     int err = 0;
     if (this_replaying) {
         enum { FT_LINE_LEN = 80 };
@@ -91,14 +103,15 @@ int fr_persist::open()
             if (line_len && line[line_len - 1] == '\n')
                 line[--line_len] = '\0';
 
-            if (!strcmp(header, line)) {
+            if (!strcmp(header, line) || !strcmp(header_old, line)) {
                 err = do_read(this_progress1, this_progress2);
-            } else if (!strcmp(other_header, line)) {
+
+            } else if (!strcmp(other_header, line) || !strcmp(other_header_old, line)) {
                 ff_log(FC_ERROR, 0, "tried to resume a %s: you MUST%s specify option '-n'%s",
                         other_header, simulated ? " NOT" : "", simulated ? "" : " to simulate again");
                 err = -EINVAL;
             } else {
-                ff_log(FC_ERROR, 0, "corrupted persistence file '%s': expected header '%s', found '%s'",
+                ff_log(FC_ERROR, 0, "unsupported or corrupted persistence file '%s': expected header '%s', found '%s'",
                         persist_path, header, line);
                 err = -EINVAL;
             }
@@ -135,24 +148,24 @@ int fr_persist::get_storage_sizes_exact(ft_size & size1, ft_size & size2)
     int err = read(persist_size1, persist_size2);
     if (err != 0)
         return err;
-   
+
     if (persist_size1 != 0 && job_size1 != 0
         && persist_size1 != (ft_ull) job_size1)
     {
-        ff_log(FC_ERROR, 0, "mismatched primary storage exact size: %"FT_ULL" bytes requested from command line, %"FT_ULL
+        ff_log(FC_ERROR, 0, "mismatched primary storage exact size: %" FT_ULL " bytes requested from command line, %" FT_ULL
                " bytes found in persistence file", (ft_ull) job_size1, persist_size1);
         err = -EINVAL;
     }
     if (persist_size2 != 0 && job_size2 != 0
         && persist_size2 != (ft_ull) job_size2)
     {
-        ff_log(FC_ERROR, 0, "mismatched secondary storage exact size: %"FT_ULL" bytes requested from command line, %"FT_ULL
+        ff_log(FC_ERROR, 0, "mismatched secondary storage exact size: %" FT_ULL " bytes requested from command line, %" FT_ULL
                " bytes found in persistence file", (ft_ull) job_size2, persist_size2);
         err = -EINVAL;
     }
     if (err != 0)
         return err;
-   
+
     // reuse persisted primary/secondary exact size.
     // ABSOLUTELY needed to reproduce the same operations while replaying
     size1 = (ft_size) persist_size1;
@@ -175,10 +188,10 @@ int fr_persist::read(ft_ull & progress1, ft_ull & progress2)
 {
     if (!this_replaying)
         ff_log(FC_ERROR, 0, "tried to read after end of persistence file '%s'", this_persist_path.c_str());
-    
+
     progress1 = this_progress1;
     progress2 = this_progress2;
-    
+
     return do_read(this_progress1, this_progress2);
 }
 
@@ -186,16 +199,16 @@ int fr_persist::read(ft_ull & progress1, ft_ull & progress2)
 /** read or write a step in persistence fle */
 int fr_persist::next(ft_ull progress1, ft_ull progress2)
 {
-    ff_log(FC_DEBUG, 0, "blocks left: device = %"FT_ULL", storage = %"FT_ULL", replaying = %s",
+    ff_log(FC_DEBUG, 0, "blocks left: device = %" FT_ULL ", storage = %" FT_ULL ", replaying = %s",
             progress1, progress2, this_replaying ? "true" : "false");
 
     if (!this_replaying)
         return do_write(progress1, progress2);
-    
+
     if (progress1 != this_progress1 || progress2 != this_progress2) {
         ff_log(FC_ERROR, 0, "unexpected values found while replaying persistence file '%s'",
                 this_persist_path.c_str());
-        ff_log(FC_ERROR, 0, "\texpected %"FT_ULL" %"FT_ULL", found %"FT_ULL" %"FT_ULL"\n",
+        ff_log(FC_ERROR, 0, "\texpected %" FT_ULL " %" FT_ULL ", found %" FT_ULL " %" FT_ULL "\n",
                 progress1, progress2, this_progress1, this_progress2);
         return -EINVAL;
     }
@@ -208,7 +221,7 @@ int fr_persist::do_read(ft_ull & progress1, ft_ull & progress2)
 {
     int err = 0;
     if (this_replaying) {
-        int items = fscanf(this_persist_file, "%"FT_ULL"\t%"FT_ULL"\n", & progress1, & progress2);
+        int items = fscanf(this_persist_file, "%" FT_ULL "\t%" FT_ULL "\n", & progress1, & progress2);
         if (items == 2) {
             /* ok */
         } else if (feof(this_persist_file)) {
@@ -225,7 +238,7 @@ int fr_persist::do_read(ft_ull & progress1, ft_ull & progress2)
 /** try to write data into persistence fle */
 int fr_persist::do_write(ft_ull progress1, ft_ull progress2)
 {
-    if (fprintf(this_persist_file, "%"FT_ULL"\t%"FT_ULL"\n", progress1, progress2) <= 0)
+    if (fprintf(this_persist_file, "%" FT_ULL "\t%" FT_ULL "\n", progress1, progress2) <= 0)
         return ff_log(FC_ERROR, errno, "I/O error writing to persistence file '%s'", this_persist_path.c_str());
     return do_flush();
 }

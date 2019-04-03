@@ -32,7 +32,7 @@
 #include "../eta.hh"         // for ft_eta
 #include "../log.hh"         // for ft_log_level, also for ff_log() used by io.cc
 #include "../fwd.hh"         // for fm_args
-#include "../inode_cache.hh" // for fm_inode_cache
+#include "../cache/cache.hh" // for ft_cache<K,V>
 
 #include "disk_stat.hh"      // for fm_disk_stat
 
@@ -48,7 +48,7 @@ FT_IO_NAMESPACE_BEGIN
 class fm_io {
 
 private:
-    fm_inode_cache this_inode_cache;
+    ft_cache<ft_inode, ft_string> * this_inode_cache;
     std::set<ft_string> this_exclude_set;
 
     fm_disk_stat this_source_stat, this_target_stat;
@@ -59,9 +59,9 @@ private:
     ft_uoff this_work_done,  this_work_last_reported;
     double this_work_last_reported_time;
 
-    bool this_force_run, this_simulate_run;
+    const char * this_progress_msg;
 
-    enum fm_source_or_target { FC_SOURCE, FC_TARGET };
+    bool this_force_run, this_simulate_run;
 
     /**
      * returns error if source or target file-system are almost full (typical threshold is 97%)
@@ -70,25 +70,21 @@ private:
 
 protected:
 
-    FT_INLINE const ft_string * inode_cache_find_or_add(ft_inode inode, const ft_string & path) {
-        return this_inode_cache.find_or_add(inode, path);
-    }
-    FT_INLINE const ft_string * inode_cache_find(ft_inode inode, const ft_string & path) const {
-        return this_inode_cache.find(inode, path);
-    }
-    FT_INLINE void inode_cache_erase(ft_inode inode) {
-        this_inode_cache.erase(inode);
-    }
+    int inode_cache_find_or_add(ft_inode inode, ft_string & path);
+
+    int inode_cache_find_and_delete(ft_inode inode, ft_string & path);
 
     FT_INLINE fm_disk_stat & source_stat() { return this_source_stat; }
     FT_INLINE fm_disk_stat & target_stat() { return this_target_stat; }
+
+    FT_INLINE void progress_msg(const char * msg) { this_progress_msg = msg; }
 
     /**
      * use source_stat and target_stat to compute total number of bytes to move
      * (may include estimated overhead for special files, inodes...),
      * reset total number of bytes moved,
      * initialize this_eta to 0% at current time
-     * 
+     *
      * returns error if source or target file-system are almost full (typical threshold is 97%)
      */
     int init_work();

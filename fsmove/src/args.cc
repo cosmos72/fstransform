@@ -1,7 +1,7 @@
 /*
  * fstransform - transform a file-system to another file-system type,
  *               preserving its contents and without the need for a backup
- * 
+ *
  * Copyright (C) 2011-2012 Massimiliano Ghilardi
  *
  *     This program is free software: you can redistribute it and/or modify
@@ -32,7 +32,9 @@ FT_NAMESPACE_BEGIN
 
 /** default constructor */
 fm_args::fm_args()
-    : io_args(), exclude_list(NULL), io_kind(FC_IO_AUTODETECT), ui_kind(FC_UI_NONE),
+	: program_name("fsmove"),
+      io_args(), exclude_list(NULL), inode_cache_path(NULL),
+      io_kind(FC_IO_AUTODETECT), ui_kind(FC_UI_NONE),
       force_run(false), simulate_run(false)
 { }
 

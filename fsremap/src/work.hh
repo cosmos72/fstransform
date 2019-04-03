@@ -3,17 +3,17 @@
  *               preserving its contents and without the need for a backup
  *
  * Copyright (C) 2011-2012 Massimiliano Ghilardi
- * 
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
@@ -72,23 +72,6 @@ private:
     /** cannot call assignment operator */
     const fr_work<T> & operator=(const fr_work<T> &);
 
-    enum { FC_SHOW_DEFAULT_LEVEL = FC_TRACE };
-
-    /** print extents header to log */
-    static void show(ft_log_level level = (ft_log_level)FC_SHOW_DEFAULT_LEVEL);
-
-    /** print extent contents to log */
-    static void show(ft_size i, T physical, T logical, T length, ft_size user_data, ft_log_level level = (ft_log_level)FC_SHOW_DEFAULT_LEVEL);
-
-    /** print extent contents to log */
-    static FT_INLINE void show(ft_size i, const map_value_type & extent, ft_log_level level = (ft_log_level)FC_SHOW_DEFAULT_LEVEL) {
-        show(i, extent.first.physical, extent.second.logical, extent.second.length, extent.second.user_data, level);
-    }
-public:
-    /** print map contents to log */
-    static void show(const char * label1, const char * label2, ft_uoff effective_block_size, const fr_map<T> & map, ft_log_level level = (ft_log_level)FC_SHOW_DEFAULT_LEVEL);
-
-private:
     /**
      * call check(io) to ensure that io.dev_length() can be represented by T,
      * then checks that I/O is open.
@@ -111,7 +94,8 @@ private:
      * loop_file_extents and free_space_extents, then sorts in-place and complements such union.
      */
     int analyze(fr_vector<ft_uoff> & loop_file_extents,
-                fr_vector<ft_uoff> & free_space_extents);
+                fr_vector<ft_uoff> & free_space_extents,
+                fr_vector<ft_uoff> & to_zero_extents);
 
     /**
      * fill io->primary_storage() with DEVICE extents to be actually used as PRIMARY-STORAGE
@@ -215,7 +199,9 @@ public:
      * return 0 if success, else error.
      */
     static int main(fr_vector<ft_uoff> & loop_file_extents,
-                    fr_vector<ft_uoff> & free_space_extents, FT_IO_NS fr_io & io);
+                    fr_vector<ft_uoff> & free_space_extents,
+                    fr_vector<ft_uoff> & to_zero_extents,
+                    FT_IO_NS fr_io & io);
 
 
     /**
@@ -233,7 +219,9 @@ public:
      * calls in sequence init(), analyze(), create_secondary_storage() and relocate()
      */
     int run(fr_vector<ft_uoff> & loop_file_extents,
-            fr_vector<ft_uoff> & free_space_extents, FT_IO_NS fr_io & io);
+            fr_vector<ft_uoff> & free_space_extents,
+            fr_vector<ft_uoff> & to_zero_extents,
+            FT_IO_NS fr_io & io);
 
     /** performs cleanup. called by destructor, you can also call it explicitly after (or instead of) run()  */
     void cleanup();

@@ -3,17 +3,17 @@
  *               preserving its contents and without the need for a backup
  *
  * Copyright (C) 2011-2012 Massimiliano Ghilardi
- * 
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
@@ -42,8 +42,11 @@
 #ifdef FT_HAVE_UNISTD_H
 # include <unistd.h>       // for fork(), execvp()
 #endif
-#ifdef FT_HAVE_SYS_STAT_H
+#ifdef FT_HAVE_SYS_IOCTL_H
 # include <sys/ioctl.h>    // for ioctl()
+#endif
+#ifdef FT_HAVE_SYS_STAT_H
+# include <sys/stat.h>     // for stat()
 #endif
 #ifdef FT_HAVE_SYS_TYPES_H
 # include <sys/types.h>    // for waitpid()
@@ -51,8 +54,11 @@
 #ifdef FT_HAVE_SYS_WAIT_H
 # include <sys/wait.h>     // for    "
 #endif
+#ifdef FT_HAVE_SYS_DISKLABEL_H
+# include <sys/disklabel.h> // for struct disklabel on *BSD
+#endif
 #ifdef FT_HAVE_LINUX_FS_H
-# include <linux/fs.h>     // for BLKGETSIZE64
+# include <linux/fs.h>     // for BLKGETSIZE64 on Linux
 #endif
 
 #include "../types.hh"    // for ft_u64, ft_stat
@@ -80,6 +86,14 @@ int ff_posix_stat(int fd, ft_stat * ret_stat)
     return err;
 }
 
+/** return file stats in (*ret_stat) */
+int ff_posix_stat(const char * path, ft_stat * ret_stat)
+{
+    int err = lstat(path, ret_stat);
+    if (err != 0)
+    	err = ff_log(FC_ERROR, errno, "error in lstat(%s)", path);
+    return err;
+}
 
 /** return block size of file-system containing file */
 int ff_posix_blocksize(int fd, ft_uoff * ret_block_size)
@@ -136,24 +150,56 @@ int ff_posix_blkdev_dev(int fd, ft_dev * ret_dev)
 /** if file is special block device, return its length in (*ret_size) */
 int ff_posix_blkdev_size(int fd, ft_uoff * ret_size)
 {
-    ft_u64 size_buf;
-    int err = ff_posix_ioctl(fd, BLKGETSIZE64, & size_buf);
+#if defined(DIOCGDINFO) && defined(FT_HAVE_STRUCT_DISKLABEL_D_SECSIZE) && defined(FT_HAVE_STRUCT_DISKLABEL_D_SECPERUNIT)
+    // *BSD
+    struct disklabel dl;
+    int err = ff_posix_ioctl(fd, DIOCGDINFO, & dl);
     if (err == 0) {
-        ft_uoff dev_size = (ft_uoff) size_buf;
-        if ((ft_u64) dev_size == size_buf)
-            * ret_size = dev_size;
-        else
-            err = EOVERFLOW; // device size cannot be represented by ft_uoff!
+        if (dl.d_secsize <= 0 || dl.d_secperunit <= 0)
+            err = EINVAL; // invalid size
+        else {
+            ft_uoff dev_sector_size = (ft_uoff) dl.d_secsize;
+            ft_uoff dev_sector_count = (ft_uoff) dl.d_secperunit;
+            if (dev_sector_size != dl.d_secsize || dev_sector_count != dl.d_secperunit)
+                err = EOVERFLOW; // sector size or sector count cannot be represented by ft_uoff!
+            else {
+                ft_uoff dev_size = dev_sector_size * dev_sector_count;
+                // check for multiplication overflow
+                if (dev_size / dev_sector_size != dev_sector_count)
+                     err = EOVERFLOW; // device size cannot be represented by ft_uoff!
+                else
+                    * ret_size = dev_size;
+            }
+        }
     }
+#elif defined(BLKGETSIZE64)
+    // Linux
+    ft_u64 size_u64 = 0;
+    int err = ff_posix_ioctl(fd, BLKGETSIZE64, & size_u64);
+    if (err == 0) {
+        if (size_u64 <= 0)
+            err = EINVAL; // invalid size
+        else if (size_u64 > (ft_uoff)-1)
+            err = EOVERFLOW; // device size cannot be represented by ft_uoff!
+        else
+            * ret_size = (ft_uoff) size_u64;
+    }
+#else
+    // Linux, obsolete: BLKGETSIZE returns device size DIVIDED 512
+    unsigned long size_div_512 = 0;
+    int err = ff_posix_ioctl(fd, BLKGETSIZE, & size_div_512);
+    if (err == 0) {
+        if (size_div_512 <= 0)
+            err = EINVAL; // invalid size
+        else if (size_div_512 > ((ft_uoff)-1 >> 9))
+            err = EOVERFLOW; // device size cannot be represented by ft_uoff!
+        else
+            * ret_size = (ft_uoff) size_div_512 << 9;
+    }
+#endif
     return err;
 }
 
-/** create a directory */
-int ff_posix_mkdir(const char * path, ft_mode mode)
-{
-    int err = mkdir(path, mode);
-    return err == 0 ? err : errno;
-}
 
 
 

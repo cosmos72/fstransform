@@ -3,17 +3,17 @@
  *               preserving its contents and without the need for a backup
  *
  * Copyright (C) 2011-2012 Massimiliano Ghilardi
- * 
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
@@ -52,7 +52,7 @@
 #endif
 
 #include "../log.hh"      // for ff_log()
-#include "util_posix.hh"  // for ff_posix_exec()
+#include "util_posix.hh"  // for ff_posix_exec_silent()
 
 
 FT_IO_NAMESPACE_BEGIN
@@ -69,6 +69,7 @@ int ff_posix_exec_silent(const char * path, const char * const argv[])
     int err;
     pid_t pid = ::fork();
     if (pid == 0) {
+        /* child */
         int dev_null = ::open("/dev/null", O_RDWR);
         if (dev_null >= 0) {
             (void) ::dup2(dev_null, 0);
@@ -79,7 +80,6 @@ int ff_posix_exec_silent(const char * path, const char * const argv[])
         } else
             ff_log(FC_DEBUG, errno, "open('/dev/null') failed");
 
-        /* child */
         ::execvp(path, (char * const *)argv);
 
         /* if we reach here, execvp() failed! */
@@ -94,7 +94,7 @@ int ff_posix_exec_silent(const char * path, const char * const argv[])
         }
         ::exit(err);
     } else if (pid == (pid_t)-1) {
-        ff_log(FC_WARN, errno, "fork() failed");
+        err = ff_log(FC_WARN, errno, "fork() failed");
     } else {
         /* parent */
         err = -ECHILD; // assume failure unless proved successful...

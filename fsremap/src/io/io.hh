@@ -3,17 +3,17 @@
  *               preserving its contents and without the need for a backup
  *
  * Copyright (C) 2011-2012 Massimiliano Ghilardi
- * 
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
@@ -57,9 +57,12 @@ public:
     static char const * const LABEL[]; // DEVICE, LOOP-FILE (and also others, but don't tell)
 
     enum {
-        FC_IO_EXTENTS_FILE_COUNT = 2,
+        FC_IO_EXTENTS_LOOP,
+        FC_IO_EXTENTS_FREE_SPACE,
+        FC_IO_EXTENTS_TO_ZERO,
+        FC_IO_EXTENTS_COUNT = 3,
     };
-    static char const* const extents_filename[]; // "/loop_extents.txt", "/free_space_extents.txt"
+    static char const* const extents_filename[FC_IO_EXTENTS_COUNT]; // "/loop_extents.txt", "/free_space_extents.txt", "/to_zero_extents.txt"
 
 
 private:
@@ -69,7 +72,7 @@ private:
 
     ft_uoff this_dev_length, this_loop_file_length, this_eff_block_size_log2;
     const char * this_dev_path;
-    const char * this_umount_cmd;
+    const char * this_cmd_umount;
     fr_job & this_job;
     fr_persist & this_persist;
     FT_UI_NS fr_ui * this_ui;
@@ -101,8 +104,8 @@ protected:
     /** remember device path */
     FT_INLINE void dev_path(const char * dev_path) { this_dev_path = dev_path; }
 
-    /** compute and return log2() of effective block size and remember it */
-    ft_uoff effective_block_size_log2(ft_uoff block_size_bitmask);
+    /** compute and return log2() of effective block size. */
+    static ft_uoff effective_block_size_log2(ft_uoff block_size_bitmask);
 
     /** return (-)EOVERFLOW if request from/to + length overflow specified maximum value */
     static int validate(const char * type_name, ft_uoff type_max, fr_dir dir, ft_uoff from, ft_uoff to, ft_uoff length);
@@ -117,9 +120,9 @@ protected:
     FT_INLINE void delegate_ui(bool flag_delegate_ui) { this_delegate_ui = flag_delegate_ui; }
 
     /**
-     * retrieve LOOP-FILE extents and FREE-SPACE extents and insert them into
-     * the vectors loop_file_extents and free_space_extents.
-     * the vectors will be ordered by extent ->logical.
+     * retrieve LOOP-FILE extents, FREE-SPACE extents and any additional extents to be ZEROED
+     * and insert them into the vectors loop_file_extents, free_space_extents and to_zero_extents
+     * the vectors will be ordered by extent ->logical (for to_zero_extents, ->physical and ->logical will be the same).
      *
      * return 0 for success, else error (and vectors contents will be UNDEFINED).
      *
@@ -138,6 +141,7 @@ protected:
      */
     virtual int read_extents(fr_vector<ft_uoff> & loop_file_extents,
                              fr_vector<ft_uoff> & free_space_extents,
+                             fr_vector<ft_uoff> & to_zero_extents,
                              ft_uoff & ret_effective_block_size_log2) = 0;
 
     /**
@@ -192,7 +196,7 @@ public:
     /**
      * open this fr_io.
      * sub-classes must override this method to perform appropriate initialization,
-     * and the first thing sub-classes open() must do is to call fr_io::open().
+     * and the first thing sub-classes open() must do is to call super_type::open().
      */
     virtual int open(const fr_args & args);
 
@@ -215,7 +219,7 @@ public:
      * return umount command, or NULL if not specified by command line.
      * umount command is set by open(const fr_args & args).
      */
-    FT_INLINE const char * umount_cmd() const { return this_umount_cmd; }
+    FT_INLINE const char * cmd_umount() const { return this_cmd_umount; }
 
     /** return log2 of effective block size, or 0 if not open */
     FT_INLINE ft_uoff effective_block_size_log2() const { return this_eff_block_size_log2; }
@@ -277,27 +281,32 @@ public:
     FT_INLINE bool ask_questions() const { return this_job.ask_questions(); }
 
     /**
-     * calls the 3-argument version of read_extents() and, if successful,
+     * if replaying an existing job, calls ff_load_extents_file() to load saved extents files.
+     * otherwise calls the 4-argument version of read_extents() and, if it succeeds,
      * calls effective_block_size_log2() to compute and remember effective block size
      */
     int read_extents(fr_vector<ft_uoff> & loop_file_extents,
-                     fr_vector<ft_uoff> & free_space_extents);
+                     fr_vector<ft_uoff> & free_space_extents,
+                     fr_vector<ft_uoff> & to_zero_extents);
 
 
     /**
-     * loads extents from file job.job_dir() + '/loop_extents.txt' and job.job_dir() + '/free_space_extents.txt'
-     * by calling the function ff_load_extents_file()
+     * loads extents from files 'loop_extents.txt', 'free_space_extents.txt' and 'to_zero_extents.txt'
+     * inside folder job.job_dir() by calling the function ff_load_extents_file()
      * if successful, calls effective_block_size_log2() to compute and remember effective block size
      */
     int load_extents(fr_vector<ft_uoff> & loop_file_extents,
-                     fr_vector<ft_uoff> & free_space_extents, ft_uoff & block_size_bitmask);
+                     fr_vector<ft_uoff> & free_space_extents,
+                     fr_vector<ft_uoff> & to_zero_extents,
+                     ft_uoff & block_size_bitmask);
 
     /**
-     * saves extents to files job.job_dir() + '/loop_extents.txt' and job.job_dir() + '/free_space_extents.txt'
-     * by calling the function ff_save_extents_file()
+     * saves extents to files 'loop_extents.txt', 'free_space_extents.txt' and 'to_zero_extents.txt'
+     * inside folder job.job_dir() by calling the function ff_save_extents_file()
      */
     int save_extents(const fr_vector<ft_uoff> & loop_file_extents,
-                     const fr_vector<ft_uoff> & free_space_extents) const;
+                     const fr_vector<ft_uoff> & free_space_extents,
+                     const fr_vector<ft_uoff> & to_zero_extents) const;
 
     /**
      * close the file descriptors for LOOP-FILE and ZERO-FILE
@@ -404,7 +413,7 @@ public:
 
     /** called after relocate() and clear_free_space(). closes storage */
     virtual int close_storage() = 0;
-    
+
     /** called to remove storage from file system if execution is completed successfully */
     virtual int remove_storage_after_success();
 };

@@ -3,17 +3,17 @@
  *               preserving its contents and without the need for a backup
  *
  * Copyright (C) 2011-2012 Massimiliano Ghilardi
- * 
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
@@ -36,9 +36,10 @@
 
 FT_NAMESPACE_BEGIN
 
-void ff_assert_fail0(const char * caller_file, const char * caller_func, int caller_line, const char * assertion)
+void ff_assert_fail0(const char * caller_file, int caller_file_len, const char * caller_func, int caller_line, const char * assertion)
 {
-    FT_NS ff_logl(caller_file, caller_func, caller_line, FC_FATAL, 0, "internal error! assertion failed: %s", assertion);
+    ff_logl(caller_file, caller_file_len, caller_func, caller_line, FC_FATAL, 0, "internal error! assertion failed: %s", assertion);
+    ft_log_appender::flush_all(FC_FATAL);
     exit(1);
 }
 

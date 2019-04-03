@@ -80,7 +80,7 @@
 
 #include "disk_stat.hh"    // for fm_disk_stat::THRESHOLD_MIN
 #include "io_posix.hh"     // for fm_io_posix
-#include "io_posix_dir.hh" // for fm_io_posix_dir
+#include "io_posix_dir.hh" // for ft_io_posix_dir
 #include "util_posix.hh"   // for ff_posix_exec_silent()
 
 #ifndef PATH_MAX
@@ -148,7 +148,7 @@ bool fm_io_posix::enough_free_space(ft_uoff bytes_to_write, bool first_time)
  * if bytes_copied_since_last_check >= PERIODIC_CHECK_FREE_SPACE or >= 50% of free space,
  * reset bytes_copied_since_last_check to zero and call check_free_space()
  */
-int fm_io_posix::periodic_check_free_space(ft_size bytes_just_written, ft_uoff bytes_to_write)
+int fm_io_posix::periodic_check_free_space(ft_uoff bytes_just_written, ft_uoff bytes_to_write)
 {
     add_work_done(bytes_just_written);
 
@@ -165,16 +165,22 @@ int fm_io_posix::periodic_check_free_space(ft_size bytes_just_written, ft_uoff b
 
 
 /**
- * call 'disk_stat' twice: one time on source_root() and another on target_root().
+ * sync(), then call disk_stat() twice: one time on source_root() and another on target_root().
  * return error if statvfs() fails or if free disk space becomes critically low
  */
 int fm_io_posix::check_free_space()
 {
-    ::sync(); // slow, but needed to get accurate disk stats when loop devices are involved
+    sync(); // slow, but needed to get accurate disk stats when loop devices are involved
     int err = disk_stat(source_root().c_str(), source_stat());
     if (err == 0)
         err = disk_stat(target_root().c_str(), target_stat());
     return err;
+}
+
+/** call ::sync(). slow, but needed to get accurate disk stats when loop devices are involved */
+void fm_io_posix::sync()
+{
+	::sync();
 }
 
 /**
@@ -189,7 +195,7 @@ int fm_io_posix::disk_stat(const char * path, fm_disk_stat & disk_stat)
     for (int i = 0; i < 2; i++) {
         if (::statvfs(path, & buf) != 0)
             return ff_log(FC_ERROR, errno, "failed to statvfs() `%s'", path);
-        
+
         ft_uoff disk_total = (ft_uoff) buf.f_bsize * (ft_uoff) buf.f_blocks;
         ft_uoff disk_free =  (ft_uoff) buf.f_bsize * (ft_uoff) buf.f_bfree;
         disk_stat.set_total(disk_total);
@@ -208,19 +214,19 @@ int fm_io_posix::disk_stat(const char * path, fm_disk_stat & disk_stat)
 /**
  * use some file-system specific trickery and try to free some space.
  */
-void fm_io_posix::try_to_make_free_space(const char * path)
+void fm_io_posix::try_to_make_free_space(const char * FT_ARG_UNUSED(path))
 {
 #if 0
-    /* 
+    /*
      * we COULD run 'xfs_fsr <path>' and try to free some space on 'xfs' file-systems,
      * but at least on linux with an almost-full source device
      * xfs_fsr can WORSEN the problem by triggering 'loop write error' kernel errors,
      * which mean the source device has not enough space to accommodate the loop file contents.
-     * typically this CORRUPTS the file system inside target (loop) device!
+     * this typically CORRUPTS the file system inside target (loop) device!
      */
     const char * cmd = "xfs_fsr";
     const char * const args[] = { cmd, path, NULL };
-    
+
     if (ff_posix_exec_silent(cmd, args) == 0)
         ff_log(FC_INFO, 0, "successfully executed '%s %s' to free some disk space", args[0], args[1]);
 #endif
@@ -279,11 +285,11 @@ int fm_io_posix::move(const ft_string & source_path, const ft_string & target_pa
     const std::set<ft_string> & exclude_set = this->exclude_set();
     int err = 0;
 
-    ff_log(FC_DEBUG, 0, "move()         `%s'\t-> `%s'", source_path.c_str(), target_path.c_str());
+    ff_log(FC_DEBUG, 0, "`%s'\t-> `%s'", source_path.c_str(), target_path.c_str());
 
     do {
         if (exclude_set.count(source_path) != 0) {
-            ff_log(FC_INFO, 0, "move() skipped `%s', matches exclude list", source_path.c_str());
+            ff_log(FC_INFO, 0, "skipped `%s', matches exclude list", source_path.c_str());
             break;
         }
 
@@ -297,7 +303,7 @@ int fm_io_posix::move(const ft_string & source_path, const ft_string & target_pa
             err = this->move_special(source_path, stat, target_path);
             break;
         }
-        fm_io_posix_dir source_dir;
+        ft_io_posix_dir source_dir;
         if ((err = source_dir.open(source_path)))
             break;
 
@@ -318,7 +324,7 @@ int fm_io_posix::move(const ft_string & source_path, const ft_string & target_pa
         child_source += '/';
         child_target += '/';
 
-        fm_io_posix_dirent * dirent;
+        ft_io_posix_dirent * dirent;
 
         /* recurse on directory contents */
         while ((err = source_dir.next(dirent)) == 0 && dirent != NULL) {
@@ -385,7 +391,7 @@ int fm_io_posix::move_special(const ft_string & source_path, const ft_stat & sta
             /* no luck with inode_cache, proceed as usual */
             err = 0;
         } else {
-            /** hard link failed */
+            /** hard link() failed */
             return err;
         }
 
@@ -417,7 +423,7 @@ int fm_io_posix::move_special(const ft_string & source_path, const ft_stat & sta
             }
 
         } else {
-            ff_log(FC_ERROR, 0, "special device %s has unknown type 0%"FT_OLL", cannot create it",
+            ff_log(FC_ERROR, 0, "special device %s has unknown type 0%" FT_OLL ", cannot create it",
                     source, (ft_ull)(stat.st_mode & ~07777));
             err = -EOPNOTSUPP;
             break;
@@ -431,9 +437,31 @@ int fm_io_posix::move_special(const ft_string & source_path, const ft_stat & sta
 
     } while (0);
 
-    if (err == 0 && remove(source) != 0)
-        err = ff_log(FC_ERROR, errno, "failed to remove source special device `%s'", source);
+    if (err == 0)
+        err = remove_special(source);
 
+    return err;
+}
+
+/**
+ * remove the special file 'source_path'
+ */
+int fm_io_posix::remove_special(const char * source_path)
+{
+    int err = 0;
+    if (::remove(source_path) != 0)
+        err = ff_log(FC_ERROR, errno, "failed to remove source special device `%s'", source_path);
+    return err;
+}
+
+/**
+ * remove the regular file 'source_path'
+ */
+int fm_io_posix::remove_file(const char * source_path)
+{
+    int err = 0;
+    if (::remove(source_path) != 0)
+        err = ff_log(FC_ERROR, errno, "failed to remove source file `%s'", source_path);
     return err;
 }
 
@@ -455,45 +483,53 @@ int fm_io_posix::move_file(const ft_string & source_path, const ft_stat & stat, 
         /** hard link succeeded, no need to copy the file contents */
         err = this->periodic_check_free_space();
         goto move_file_remove_source;
-    } else if (err == EAGAIN) {
-        /* no luck with inode_cache, proceed as usual */
-        err = 0;
-    } else {
+    } else if (err != EAGAIN) {
         /** hard link failed */
         return err;
     }
 
-    {
-        int in_fd = ::open(source, O_RDWR);
-        if (in_fd < 0)
-            err = ff_log(FC_ERROR, errno, "failed to open source file `%s'", source);
+    /* no luck with inode_cache, proceed as usual */
+    err = copy_file_contents(source_path, stat, target_path);
+
+move_file_remove_source:
+    if (err == 0)
+        err = remove_file(source);
+    return err;
+}
+
+
+/**
+ * copy the contents of regular file 'source_path' to 'target_path'.
+ */
+int fm_io_posix::copy_file_contents(const ft_string & source_path, const ft_stat & stat, const ft_string & target_path)
+{
+    const char * source = source_path.c_str(), * target = target_path.c_str();
+    int err = 0;
+
+    int in_fd = ::open(source, O_RDWR);
+    if (in_fd < 0)
+        err = ff_log(FC_ERROR, errno, "failed to open source file `%s'", source);
 
 #ifndef O_EXCL
 # define O_EXCL 0
 #endif
-        int out_fd = ::open(target, O_CREAT|O_WRONLY|O_TRUNC|O_EXCL, 0600);
-        if (out_fd < 0)
-            err = ff_log(FC_ERROR, errno, "failed to create target file `%s'", target);
+    int out_fd = ::open(target, O_CREAT|O_WRONLY|O_TRUNC|O_EXCL, 0600);
+    if (out_fd < 0)
+        err = ff_log(FC_ERROR, errno, "failed to create target file `%s'", target);
 
-        if (err == 0) {
-            err = this->periodic_check_free_space();
-            if (err == 0)
-                err = this->copy_stream(in_fd, out_fd, stat, source, target);
-        }
-        if (in_fd >= 0)
-            (void) ::close(in_fd);
-        if (out_fd >= 0)
-            (void) ::close(out_fd);
+    if (err == 0) {
+        err = this->periodic_check_free_space();
+        if (err == 0)
+            err = this->copy_stream(in_fd, out_fd, stat, source, target);
     }
+    if (in_fd >= 0)
+        (void) ::close(in_fd);
+    if (out_fd >= 0)
+        (void) ::close(out_fd);
 
     if (err == 0)
         err = this->copy_stat(target, stat);
 
-    move_file_remove_source:
-    if (err == 0) {
-        if (::remove(source) != 0)
-            err = ff_log(FC_ERROR, errno, "failed to remove source file `%s'", source);
-    }
     return err;
 }
 
@@ -522,49 +558,45 @@ int fm_io_posix::move_rename(const char * source, const char * target)
  * check inode_cache for hard links and recreate them.
  * must be called if and only if stat.st_nlink > 1
  *
- * returns EAGAIN if inode was not in inode_cache
+ * returns EAGAIN if inode *was* not in inode_cache
  */
 int fm_io_posix::hard_link(const ft_stat & stat, const ft_string & target_path)
 {
-    const ft_string * cached_link, * to_erase = NULL;
+    ft_string cached_link = target_path;
+    int err;
 
-    if (stat.st_nlink > 1)
+    if (stat.st_nlink > 1) {
         /*
          * source path has 2 or more links.
          * check if it is cached already, or add it to detect further links to the same file/device
          */
-        cached_link = inode_cache_find_or_add(stat.st_ino, target_path);
-    else
+        err = inode_cache_find_or_add(stat.st_ino, cached_link);
+    } else {
         /*
          * source path has only 1 link. it can be either:
-         * a) the last link of a file/device which previously had multiple links, but we removed them during fm_io_posix::move()
+         * a) the last link of a file/device which previously had multiple links,
+         *    but we all other links during fm_io_posix::move()
          * b) a file/device which always had one link
          *
          * so we check for its presence in inode_cache, but we do not add it to inode_cache
-         * in any case, if a cached inode is found, we will erase it below with inode_cache_erase()
+         * in any case, if a cached inode is found, we erase it
          * because it is guaranteed that no more links to this inode will ever be found.
          */
-        cached_link = to_erase = inode_cache_find(stat.st_ino, target_path);
+    	err = inode_cache_find_and_delete(stat.st_ino, cached_link);
+    }
 
-    int err = 0;
-    do {
-        if (cached_link == NULL) {
-            // fake error to tell caller that inode was not in inode_cache
-            err = EAGAIN;
-            break;
-        }
-
-        const char * link_to = cached_link->c_str(), * link_from = target_path.c_str();
-        if (::link(link_to, link_from) != 0) {
+    if (err == 0) {
+    	// fake error to tell caller that inode was not in cache
+    	err = EAGAIN;
+    }
+    else if (err == 1) {
+    	// inode found in cache
+        const char * link_to = cached_link.c_str(), * link_from = target_path.c_str();
+        if (::link(link_to, link_from) != 0)
             err = ff_log(FC_ERROR, errno, "failed to create target hard link `%s'\t-> `%s'", link_from, link_to);
-            break;
-        }
-
-    } while (0);
-
-    if (to_erase != NULL)
-        inode_cache_erase(stat.st_ino);
-
+        else
+        	err = 0;
+    }
     return err;
 }
 
@@ -613,7 +645,10 @@ int fm_io_posix::copy_stream(int in_fd, int out_fd, const ft_stat & stat, const 
     if ((err = fd_truncate(out_fd, offset_high, target)) != 0)
         return err;
 
-    ::sync();  // slow, but on Linux not doing it is worse
+    // slow, but on Linux not doing it is worse:
+    // you can get inaccurate disk usage statistics
+    // and (if loop device becomes full) silent I/O errors!
+    sync();
 
     char buf[FT_BUFSIZE];
 
@@ -633,7 +668,7 @@ int fm_io_posix::copy_stream(int in_fd, int out_fd, const ft_stat & stat, const 
 
         if ((err = this->full_read(in_fd, buf, got, source)) != 0 || got != expected) {
             if (err == 0) {
-                ff_log(FC_ERROR, 0, "error reading from `%s': expected %"FT_ULL" bytes, got %"FT_ULL" bytes",
+                ff_log(FC_ERROR, 0, "error reading from `%s': expected %" FT_ULL " bytes, got %" FT_ULL " bytes",
                         source, (ft_ull)expected, (ft_ull)got);
                 err = -EIO;
             }
@@ -646,7 +681,7 @@ int fm_io_posix::copy_stream(int in_fd, int out_fd, const ft_stat & stat, const 
             if ((hole_len = hole_length(buf + tosend_offset, tosend_left)) != 0) {
                 /* re-create hole in target file */
                 if (::lseek(out_fd, (ft_off)hole_len, SEEK_CUR) == (ft_off)-1) {
-                    err = ff_log(FC_ERROR, errno, "error seeking %"FT_ULL" bytes forward in file `%s'", (ft_ull)hole_len, target);
+                    err = ff_log(FC_ERROR, errno, "error seeking %" FT_ULL " bytes forward in file `%s'", (ft_ull)hole_len, target);
                     break;
                 }
                 tosend_offset += hole_len;
@@ -672,7 +707,7 @@ int fm_io_posix::copy_stream(int in_fd, int out_fd, const ft_stat & stat, const 
         ff_log(FC_ERROR, 0, "        AFTER freeing enough space in the source device:");
 
         offset_high >>= FT_LOG_BUFSIZE;
-        ff_log(FC_ERROR, 0, "          /bin/dd bs=%"FT_ULL" skip=%"FT_ULL" seek=%"FT_ULL" conv=notrunc if=\"%s\" of=\"%s\"",
+        ff_log(FC_ERROR, 0, "          /bin/dd bs=%" FT_ULL " skip=%" FT_ULL " seek=%" FT_ULL " conv=notrunc if=\"%s\" of=\"%s\"",
                 (ft_ull)FT_BUFSIZE, (ft_ull)offset_high, (ft_ull)offset_high, target, source);
     }
     return err;
@@ -755,7 +790,7 @@ int fm_io_posix::fd_truncate(int fd, ft_off length, const char * path)
 {
     int err = 0;
     if (::ftruncate(fd, length) == -1)
-        err = ff_log(FC_ERROR, errno, "error truncating file `%s' to %"FT_ULL" bytes", path, (ft_ull)length);
+        err = ff_log(FC_ERROR, errno, "error truncating file `%s' to %" FT_ULL " bytes", path, (ft_ull)length);
     return err;
 }
 
@@ -777,7 +812,7 @@ int fm_io_posix::fd_seek(int fd, ft_off offset, const char * path)
 {
     int err = 0;
     if (::lseek(fd, offset, SEEK_SET) != offset)
-        err = ff_log(FC_ERROR, errno, "error seeking to position %"FT_ULL" of file `%s'", (ft_ull)offset, path);
+        err = ff_log(FC_ERROR, errno, "error seeking to position %" FT_ULL " of file `%s'", (ft_ull)offset, path);
     return err;
 }
 
@@ -932,7 +967,7 @@ int fm_io_posix::copy_stat(const char * target, const ft_stat & stat)
 #endif
         {
             err = ff_log(is_error ? FC_ERROR : FC_WARN, errno,
-                    "%s set owner=%"FT_ULL" and group=%"FT_ULL" on %s `%s'",
+                    "%s set owner=%" FT_ULL " and group=%" FT_ULL " on %s `%s'",
                     fail_label, (ft_ull)stat.st_uid, (ft_ull)stat.st_gid, label, target);
             if (is_error)
                 break;
@@ -945,7 +980,7 @@ int fm_io_posix::copy_stat(const char * target, const ft_stat & stat)
          */
         if (!is_symlink && chmod(target, stat.st_mode) != 0) {
             err = ff_log(is_error ? FC_ERROR : FC_WARN, errno,
-                    "%s change mode to 0%"FT_OLL" on %s `%s'",
+                    "%s change mode to 0%" FT_OLL " on %s `%s'",
                     fail_label, (ft_ull)stat.st_mode, label, target);
             if (is_error)
                 break;
@@ -1017,7 +1052,7 @@ int fm_io_posix::remove_dir(const ft_string & path)
         if (simulate_run() || is_source_lost_found(path))
             break;
 
-        if (remove(dir) != 0) {
+        if (::remove(dir) != 0) {
             /* ignore error if we are removing source root: it is allowed to be in use */
             if (path != source_root()) {
                 /* if force_run(), failure to remove a source directory is just a warning */

@@ -3,17 +3,17 @@
  *               preserving its contents and without the need for a backup
  *
  * Copyright (C) 2011-2012 Massimiliano Ghilardi
- * 
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
@@ -27,6 +27,7 @@
 #define FSREMAP_EXTENT_HH
 
 #include "types.hh" // for ft_size
+#include "log.hh"   // for ff_log()
 
 #include <utility>  // for std_pair<T1,T2>
 
@@ -143,6 +144,54 @@ public:
         physical() = logical() = length() = 0;
         user_data() = 0;
     }
+
+
+    /** print extents header to log */
+    static void show(ft_log_level level = FC_SHOW_DEFAULT_LEVEL)
+    {
+        ff_log(level, 0, "#  extent           physical         logical      length  user_data");
+    }
+
+    /** print extent to log */
+    static void show(ft_size i, T physical, T logical, T length, ft_size user_data, ft_log_level level = FC_SHOW_DEFAULT_LEVEL)
+    {
+        ff_log(level, 0, "#%8" FT_ULL "\t%12" FT_ULL "\t%12" FT_ULL "\t%8" FT_ULL "\t(%" FT_ULL ")", (ft_ull)i,
+                (ft_ull) physical, (ft_ull) logical, (ft_ull) length, (ft_ull) user_data);
+    }
+
+    /** print extent to log */
+    static void show(ft_size i, const super_type & extent, ft_log_level level = FC_SHOW_DEFAULT_LEVEL)
+    {
+        show(i, extent.first.physical, extent.second.logical, extent.second.length, extent.second.user_data, level);
+    }
+
+    template<typename const_iter>
+    static void show(const_iter start, const_iter end, ft_size n,
+                     const char * label1, const char * label2,
+                     ft_uoff effective_block_size, ft_log_level level)
+    {
+        ft_log_level header_level = level >= FC_DEBUG ? level : (ft_log_level)(level + 1);
+
+        if (!ff_log_is_enabled(header_level) && !ff_log_is_enabled(level))
+            return;
+
+        if (start != end) {
+            ff_log(header_level, 0, "# %4" FT_ULL " extent%s in %s%s",
+                   (ft_ull) n, (n == 1 ? "" : "s"), label1, label2);
+
+            if (ff_log_is_enabled(level)) {
+                ff_log(level, 0, "# effective block size = %" FT_ULL, (ft_ull) effective_block_size);
+                show(level);
+
+                for (ft_size i = 0; start != end; ++start, ++i)
+                    show(i, *start, level);
+            }
+        } else {
+            ff_log(header_level, 0, "#   no extents in %s%s", label1, label2);
+        }
+        ff_log(level, 0, "");
+    }
+
 
     class comparator_physical
     {

@@ -3,17 +3,17 @@
  *               preserving its contents and without the need for a backup
  *
  * Copyright (C) 2011-2012 Massimiliano Ghilardi
- * 
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
@@ -68,21 +68,24 @@ int fr_io_self_test::open(const fr_args & args)
         return err;
 
     /*
-     * block_size_log_2 is a random number in the range [4,16]
-     * thus block_size is one of 2^4, 2^5 ... 2^15, 2^16
+     * block_size_log_2 is a random number in the range [8,16]
+     * thus block_size is one of 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536
      */
-    this_block_size_log2 = (ft_uoff) ff_random(12) + 4;
+    this_block_size_log2 = (ft_uoff) ff_random(8) + 8;
 
-    /* dev_len is a random number in the range [block_size, 8GB * block_size] */
-    ft_uoff dev_len = (1 + ff_random(1 + 2 * (ft_ull)0xfffffffful)) << this_block_size_log2;
+    /* dev_len is a random number in the range [block_size, 1TB * block_size] */
+    ft_uoff dev_len_shift = (ft_uoff) ff_random(20);
+
+    ft_uoff dev_len = (1 + ff_random((ft_ull)1047576)) << (this_block_size_log2 + dev_len_shift);
 
     dev_length(dev_len);
+    loop_file_length(dev_len);
     dev_path("<self-test-device>");
 
     double pretty_len;
     const char * pretty_label = ff_pretty_size(dev_len, & pretty_len);
     ff_log(FC_INFO, 0, "%s%s length is %.2f %sbytes", sim_msg, label[FC_DEVICE], pretty_len, pretty_label);
-    
+
     return err;
 }
 
@@ -110,8 +113,9 @@ void fr_io_self_test::close_extents()
  * (for example they could be the job persistence files)
  */
 int fr_io_self_test::read_extents(fr_vector<ft_uoff> & loop_file_extents,
-                                 fr_vector<ft_uoff> & free_space_extents,
-                                 ft_uoff & ret_block_size_bitmask)
+                                  fr_vector<ft_uoff> & free_space_extents,
+                                  fr_vector<ft_uoff> & FT_ARG_UNUSED(to_zero_extents),
+                                  ft_uoff & ret_block_size_bitmask)
 {
     if (!is_open())
         return ENOTCONN; // not open!

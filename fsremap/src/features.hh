@@ -1,12 +1,11 @@
 /*
- * fstransform - transform a file-system to another file-system type,
- *               preserving its contents and without the need for a backup
+ * common header for fsattr, fsmove, fsremap
  *
  * Copyright (C) 2011-2012 Massimiliano Ghilardi
  *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
+ *     the Free Software Foundation, either version 2 of the License, or
  *     (at your option) any later version.
  *
  *     This program is distributed in the hope that it will be useful,
@@ -34,6 +33,12 @@
 #  define FT_EXTERN_C_BEGIN
 #  define FT_EXTERN_C_END
 #endif /* FT_HAVE_EXTERN_C */
+
+
+/* suppress warning about unused function argument */
+#ifndef FT_ARG_UNUSED
+# define FT_ARG_UNUSED(arg)
+#endif
 
 
 #ifdef FT_HAVE_NAMESPACE
@@ -78,7 +83,6 @@
 #  define FT_UI_NS
 
 #endif /* FT_HAVE_NAMESPACE */
-
 
 // list of types we want to instantiate fr_work<T> with
 #define FT_TYPE_LIST(ft_prefix, ft_macro) \

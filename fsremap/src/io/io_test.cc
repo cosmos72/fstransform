@@ -3,17 +3,17 @@
  *               preserving its contents and without the need for a backup
  *
  * Copyright (C) 2011-2012 Massimiliano Ghilardi
- * 
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
@@ -44,8 +44,8 @@ FT_IO_NAMESPACE_BEGIN
 fr_io_test::fr_io_test(fr_persist & persist)
 : super_type(persist)
 {
-    /* mark fd[] as invalid: they are not open yet */
-    for (ft_size i = 0; i < FC_FILE_COUNT; i++)
+    /* mark this_f[] as invalid: they are not open yet */
+    for (ft_size i = 0; i < FC_EXTENTS_FILE_COUNT; i++)
         this_f[i] = NULL;
 }
 
@@ -82,7 +82,7 @@ int fr_io_test::open(const fr_args & args)
     }
 
     if (!is_replaying()) {
-		for (i = FC_DEVICE_LENGTH+1; i < FC_FILE_COUNT; i++) {
+		for (i = FC_DEVICE_LENGTH+1; i < FC_EXTENTS_FILE_COUNT; i++) {
 			if ((this_f[i] = fopen(io_args[i], "r")) == NULL) {
 				err = ff_log(FC_ERROR, errno, "error opening %s '%s'", extents_label[i], io_args[i]);
 				break;
@@ -124,7 +124,7 @@ void fr_io_test::close()
  */
 void fr_io_test::close_extents()
 {
-    for (ft_size i = 0; i < FC_FILE_COUNT; i++)
+    for (ft_size i = 0; i < FC_EXTENTS_FILE_COUNT; i++)
         close0(i);
 }
 
@@ -132,7 +132,7 @@ void fr_io_test::close_extents()
 /** return true if this I/O has open descriptors/streams to LOOP-FILE and FREE-SPACE */
 bool fr_io_test::is_open_extents() const
 {
-    ft_size i, n = FC_FILE_COUNT;
+    ft_size i, n = FC_EXTENTS_FILE_COUNT;
     for (i = FC_DEVICE_LENGTH+1; i < n; i++)
         if (this_f[i] == NULL)
             break;
@@ -143,18 +143,25 @@ bool fr_io_test::is_open_extents() const
 
 
 /**
- * retrieve LOOP-FILE extents and FREE-SPACE extents and append them into
- * the vectors loop_file_extents and free_space_extents.
- * the vectors will be ordered by extent ->logical.
+ * retrieve LOOP-FILE extents, FREE-SPACE extents and any additional extents to be ZEROED
+ * and insert them into the vectors loop_file_extents, free_space_extents and to_zero_extents
+ * the vectors will be ordered by extent ->logical (for to_zero_extents, ->physical and ->logical will be the same).
  *
  * return 0 for success, else error (and vectors contents will be UNDEFINED).
  *
- * implementation: load extents list from files
- * (for example they could be the job persistence files)
+ * if success, also returns in ret_effective_block_size_log2 the log2()
+ * of device effective block size.
+ * the device effective block size is defined as follows:
+ * it is the largest power of 2 that exactly divides all physical,
+ * logical and lengths in all returned extents (both for LOOP-FILE
+ * and for FREE-SPACE) and that also exactly exactly divides device length.
+ *
+ * this implementation simply reads extents from persistence files.
  */
 int fr_io_test::read_extents(fr_vector<ft_uoff> & loop_file_extents,
-                             fr_vector<ft_uoff> & free_space_extents,
-                             ft_uoff & ret_block_size_bitmask)
+                         fr_vector<ft_uoff> & free_space_extents,
+                         fr_vector<ft_uoff> & to_zero_extents,
+                         ft_uoff & ret_block_size_bitmask)
 {
     ft_uoff block_size_bitmask = ret_block_size_bitmask;
     int err = 0;
@@ -164,14 +171,15 @@ int fr_io_test::read_extents(fr_vector<ft_uoff> & loop_file_extents,
             err = -ENOTCONN; // not open!
             break;
         }
-        /* ff_load_extents_file() appends to fr_vector<ft_uoff>, does NOT overwrite it */
-        if ((err = ff_load_extents_file(this_f[FC_LOOP_EXTENTS], loop_file_extents, block_size_bitmask)) != 0) {
-            err = ff_log(FC_ERROR, err, "error reading %s extents from save-file", label[FC_LOOP_FILE]);
-            break;
-        }
-        if ((err = ff_load_extents_file(this_f[FC_FREE_SPACE_EXTENTS], free_space_extents, block_size_bitmask)) != 0) {
-            err = ff_log(FC_ERROR, err, "error reading %s extents from save-file", label[FC_FREE_SPACE]);
-            break;
+        fr_vector<ft_uoff> * ret_extents[FC_EXTENTS_FILE_COUNT] = {
+        	& loop_file_extents, & free_space_extents, & to_zero_extents,
+        };
+        for (ft_size i = FC_LOOP_EXTENTS; i < FC_EXTENTS_FILE_COUNT; i++) {
+			/* ff_load_extents_file() appends to fr_vector<ft_uoff>, does NOT overwrite it */
+			if ((err = ff_load_extents_file(this_f[i], * ret_extents[i], block_size_bitmask)) != 0) {
+				err = ff_log(FC_ERROR, err, "error reading %s extents from save-file", extents_label[i]);
+				break;
+			}
         }
     } while (0);
 
