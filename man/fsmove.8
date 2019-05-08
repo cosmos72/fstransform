@@ -1,0 +1,64 @@
+.TH FSMOVE "8" "" "fsmove" "System Administration Utilities"
+.SH NAME
+fsmove \- manual page for fsmove
+.SH SYNOPSIS
+.B fsmove
+[\fI\,OPTION\/\fR]... \fI\,SOURCE TARGET \/\fR[\fI\,--exclude FILE\/\fR...]
+.SH DESCRIPTION
+Recursively move files and folders from SOURCE to TARGET,
+even if SOURCE and TARGET are almost full or share their free space
+(for example if TARGET is a file system inside a loop\-file _inside_ SOURCE)
+.PP
+Mandatory arguments to long options are mandatory for short options too.
+.TP
+\fB\-\-\fR
+end of options. treat subsequent parameters as arguments
+even if they start with '\-'
+.TP
+\fB\-e\fR, \fB\-\-exclude\fR FILE... skip these files, i.e. do not move them.
+must be last argument
+.TP
+\fB\-f\fR, \fB\-\-force\-run\fR
+run even if some safety checks fail
+.TP
+\fB\-\-io\fR=\fI\,posix\/\fR
+use POSIX I/O and move files (default)
+.TP
+\fB\-\-io\fR=\fI\,prealloc\/\fR
+use POSIX I/O and preallocate files (do NOT move them)
+.HP
+\fB\-\-inode\-cache\-mem\fR use in\-memory inode cache (default)
+.HP
+\fB\-\-inode\-cache\fR=\fI\,DIR\/\fR create and use directory DIR for inode cache
+.TP
+\fB\-\-log\-color\fR=\fI\,MODE\/\fR
+set messages color. MODE is one of:                          auto (default), none, ansi
+.TP
+\fB\-\-log\-format\fR=\fI\,FMT\/\fR
+set messages format. FMT is one of:
+msg (default), level_msg, time_level_msg,
+time_level_function_msg
+.TP
+\fB\-n\fR, \fB\-\-no\-action\fR, \fB\-\-simulate\-run\fR
+do not actually move any file or directory
+.TP
+\fB\-q\fR, \fB\-\-quiet\fR
+be quiet
+.TP
+\fB\-qq\fR
+be very quiet, only print warnings or errors
+.TP
+\fB\-v\fR, \fB\-\-verbose\fR
+be verbose, print what is being done
+.TP
+\fB\-vv\fR
+be very verbose, print a lot of detailed output
+.TP
+\fB\-vvv\fR
+be incredibly verbose (warning: prints LOTS of output)
+.TP
+\fB\-\-help\fR
+display this help and exit
+.TP
+\fB\-\-version\fR
+output version information and exit

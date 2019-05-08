@@ -1,0 +1,27 @@
+.TH FSATTR "8" "" "fsattr" "System Administration Utilities"
+.SH NAME
+fsattr \- manual page for fsattr
+.SH SYNOPSIS
+.B fsattr
+\fI\,--files={normal|prealloc} DEVICE\/\fR
+.SH DESCRIPTION
+Modify file\-system internal data structures
+Options:
+.TP
+\fB\-\-\fR
+end of options. treat subsequent parameters as arguments
+even if they start with '\-'
+.TP
+\fB\-\-files\fR=\fI\,normal\/\fR
+set files to normal mode, i.e. show their contents.
+.HP
+\fB\-\-files\fR=\fI\,prealloc\/\fR set files to 'preallocated', i.e. clear their contents.
+.TP
+\fB\-\-fstype\fR=\fI\,FSTYPE\/\fR
+specify file system inside device.
+.TP
+\fB\-\-help\fR
+display this help and exit
+.TP
+\fB\-\-version\fR
+output version information and exit

@@ -1,0 +1,74 @@
+.TH FSTRANSFORM "8" "" "fstransform" "System Administration Utilities"
+.SH NAME
+fstransform \- manual page for fstransform
+.SH SYNOPSIS
+.B fstransform
+[\fI\,OPTION\/\fR]... \fI\,DEVICE NEW-FILE-SYSTEM-TYPE\/\fR
+.SH DESCRIPTION
+Transform file system inside DEVICE to NEW\-FILE\-SYSTEM\-TYPE,
+preserving its contents and without need for backup
+.SH OPTIONS
+.TP
+\fB\-\-cmd\-CMD\-NAME\fR=\fI\,CMD\-PATH\/\fR
+set external command CMD\-NAME to use.
+default: autodetect
+.HP
+\fB\-\-force\-untested\-file\-systems\fR also transform untested file systems (DANGEROUS)
+.TP
+\fB\-\-list\-source\-file\-systems\fR
+list file systems supported as source and exit
+.TP
+\fB\-\-list\-target\-file\-systems\fR
+list file systems supported as target and exit
+.TP
+\fB\-\-loop\-file\fR=\fI\,LOOP\-FILE\/\fR
+override loop\-file path
+.TP
+\fB\-\-loop\-mount\-point\fR=\fI\,PATH\/\fR
+override loop\-file mount point
+.TP
+\fB\-\-new\-size\fR=\fI\,SIZE\/\fR
+set new file system length. default: device length
+.TP
+\fB\-\-current\-fstype\fR=\fI\,OLD\-TYPE\/\fR
+override current (old) file system type autodetection
+required for 'ntfs' file system
+.TP
+\fB\-\-opts\-fsmove\fR=\fI\,OPTS\/\fR
+pass OPTS as additional options to 'fsmove'
+.TP
+\fB\-\-opts\-fsremap\fR=\fI\,OPTS\/\fR
+pass OPTS as additional options to 'fsremap'
+.TP
+\fB\-\-opts\-mkfs\fR=\fI\,OPTS\/\fR
+pass OPTS as options to 'mkfs'. default: '\-q'
+.TP
+\fB\-\-opts\-fsck\-source\fR=\fI\,OPTS\/\fR
+override 'fsck' options for old file system. default: '\-p \fB\-f\fR'
+.TP
+\fB\-\-opts\-fsck\-target\fR=\fI\,OPTS\/\fR
+override 'fsck' options for new file system. default: '\-p \fB\-f\fR'
+.TP
+\fB\-\-show\-time[\fR=\fI\,yes\/\fR|=no]
+show current time before each message. default: yes
+.TP
+\fB\-\-prealloc[\fR=\fI\,yes\/\fR|no]
+use EXPERIMENTAL files preallocation. default: no
+.HP
+\fB\-\-questions\fR=\fI\,[yes\/\fR|no|on\-error] whether to ask questions interactively. default: on\-error
+.TP
+\fB\-\-reversible[\fR=\fI\,yes\/\fR|no]
+create zero\-file, fsremap will do a reversible transformation
+default: no
+.TP
+\fB\-\-x\-OPTION\fR=\fI\,VALUE\/\fR
+set internal, undocumented option. For maintainers only.
+.TP
+\fB\-\-zero\-file\fR=\fI\,ZERO\-FILE\/\fR
+override zero\-file path
+.TP
+\fB\-\-help\fR
+display this help and exit
+.TP
+\fB\-\-version\fR
+output version information and exit

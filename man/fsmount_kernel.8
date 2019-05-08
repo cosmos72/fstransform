@@ -1,0 +1,26 @@
+.TH FSMOUNT_KERNEL "8" "" "fsmount_kernel" "System Administration Utilities"
+.SH NAME
+fsmount_kernel \- manual page for fsmount_kernel
+.SH SYNOPSIS
+.B fsmount_kernel
+[\fI\,-o OPTIONS\/\fR] \fI\,-t FILESYSTEM_TYPE SOURCE TARGET\/\fR
+.SH DESCRIPTION
+Call the kernel to mount a filesystem,
+ignoring any userspace helper or wrapper (fuse...)
+Options:
+.TP
+\fB\-\-\fR
+end of options. treat subsequent parameters as arguments
+even if they start with '\-'
+.TP
+\fB\-t\fR <type>
+set the filesystem type. MANDATORY.
+.TP
+\fB\-o\fR <list>
+comma\-separated list of mount options.
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+display this help and exit
+.TP
+\fB\-\-version\fR
+output version information and exit
