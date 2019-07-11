@@ -8,4 +8,5 @@ fsattr_SOURCES = \
   ../src/e4attr.cc \
   ../src/log.cc \
   ../src/main.cc \
+  ../src/misc.cc \
   ../src/mstring.cc

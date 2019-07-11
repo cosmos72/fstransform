@@ -35,7 +35,7 @@
 # include <unistd.h>
 #endif
 
-#include "log.hh"
+#include "../log.hh"
 #include "cache_symlink.hh"
 #include "../assert.hh"       // for ff_assert()
 #include "../copy.hh"         // for ff_cat()

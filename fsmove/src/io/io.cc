@@ -30,8 +30,8 @@
 #include "../misc.hh"      // for ff_show_progress(), ff_now()
 #include "io.hh"           // for fm_io
 
-#include "cache/cache_mem.hh"     // for ft_cache_mem
-#include "cache/cache_symlink.hh" // for ft_cache_symlink_kv
+#include "../cache/cache_mem.hh"     // for ft_cache_mem
+#include "../cache/cache_symlink.hh" // for ft_cache_symlink_kv
 
 #if defined(FT_HAVE_MATH_H)
 # include <math.h>         // for sqrt()

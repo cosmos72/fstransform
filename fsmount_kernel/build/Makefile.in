@@ -107,7 +107,7 @@ am__installdirs = "$(DESTDIR)$(sbindir)"
 PROGRAMS = $(sbin_PROGRAMS)
 am__dirstamp = $(am__leading_dot)dirstamp
 am_fsmount_kernel_OBJECTS = ../src/log.$(OBJEXT) ../src/main.$(OBJEXT) \
-	../src/mstring.$(OBJEXT)
+	../src/misc.$(OBJEXT) ../src/mstring.$(OBJEXT)
 fsmount_kernel_OBJECTS = $(am_fsmount_kernel_OBJECTS)
 fsmount_kernel_LDADD = $(LDADD)
 AM_V_P = $(am__v_P_@AM_V@)
@@ -126,7 +126,7 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/fsremap/src
 depcomp = $(SHELL) $(top_srcdir)/tools/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ../src/$(DEPDIR)/log.Po ../src/$(DEPDIR)/main.Po \
-	../src/$(DEPDIR)/mstring.Po
+	../src/$(DEPDIR)/misc.Po ../src/$(DEPDIR)/mstring.Po
 am__mv = mv -f
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
@@ -263,6 +263,7 @@ AUTOMAKE_OPTIONS = subdir-objects
 fsmount_kernel_SOURCES = \
   ../src/log.cc \
   ../src/main.cc \
+  ../src/misc.cc \
   ../src/mstring.cc
 
 all: all-am
@@ -350,6 +351,8 @@ clean-sbinPROGRAMS:
 	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/main.$(OBJEXT): ../src/$(am__dirstamp) \
 	../src/$(DEPDIR)/$(am__dirstamp)
+../src/misc.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/mstring.$(OBJEXT): ../src/$(am__dirstamp) \
 	../src/$(DEPDIR)/$(am__dirstamp)
 
@@ -366,6 +369,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/log.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/main.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/misc.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/mstring.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
@@ -521,6 +525,7 @@ clean-am: clean-generic clean-sbinPROGRAMS mostlyclean-am
 distclean: distclean-am
 		-rm -f ../src/$(DEPDIR)/log.Po
 	-rm -f ../src/$(DEPDIR)/main.Po
+	-rm -f ../src/$(DEPDIR)/misc.Po
 	-rm -f ../src/$(DEPDIR)/mstring.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
@@ -569,6 +574,7 @@ installcheck-am:
 maintainer-clean: maintainer-clean-am
 		-rm -f ../src/$(DEPDIR)/log.Po
 	-rm -f ../src/$(DEPDIR)/main.Po
+	-rm -f ../src/$(DEPDIR)/misc.Po
 	-rm -f ../src/$(DEPDIR)/mstring.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
