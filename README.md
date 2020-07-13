@@ -168,9 +168,9 @@ To pass the same option to 'fstransform', you must execute something like
 
 0. compile fsmove, fsmount_kernel and fsremap.
    Running "./configure" then "make" should suffice on any recent Linux machine,
-   as long as g++ is installed.
+   as long as g++ and automake are installed.
 
-   You will get three executables, fsmove and fsremap.
+   You will get three executables, fsmove, fsmount_kernel and fsremap.
    They will be located at
      ./fsmove/build/fsmove
      ./fsmount_kernel/build/fsmount_kernel
