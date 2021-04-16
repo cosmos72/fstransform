@@ -59,9 +59,12 @@ Enough legalese... now let's get to the interesting part.
 The program 'fstransform' does the following:
 
 it takes a device with a filesystem on it (even if almost full)
-and transforms the device to a different filesystem type,
+and transforms the device to a **different** filesystem type,
 in-place (i.e. without backup) and non-destructively
 (i.e. it preserves all your data).
+
+It can also change filesystem options such as blocksize - see
+https://github.com/cosmos72/fstransform/issues/36 for details.
 
 It works even if the filesystem is almost full
 - several empyrical tests have succeeded even with a 95% full filesystem -
