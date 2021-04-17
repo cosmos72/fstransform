@@ -52,6 +52,10 @@ AC_CHECK_MEMBERS([struct disklabel.d_secsize, struct disklabel.d_secperunit], []
 AC_CHECK_MEMBERS([struct stat.st_rdev, struct stat.st_atim.tv_nsec, struct stat.st_mtim.tv_nsec,
                   struct stat.st_atimensec, struct stat.st_mtimensec])
 
+AC_CHECK_MEMBERS([struct fsxattr.fsx_xflags, struct fsxattr.fsx_projid], [], [], [AC_INCLUDES_DEFAULT [
+#ifdef HAVE_LINUX_FS_H
+#include <linux/fs.h>
+#endif]])
 
 
 
@@ -63,7 +67,7 @@ AC_FUNC_LSTAT_FOLLOWS_SLASHED_SYMLINK
 AC_FUNC_MALLOC
 AC_FUNC_MMAP
 AC_CHECK_FUNCS([execvp fallocate posix_fallocate fdatasync fileno fsync ftruncate \
-               getpagesize gettimeofday getuid lchown chown isatty localtime_r localtime \
+               getpagesize gettimeofday getuid ioctl lchown chown isatty localtime_r localtime \
                memmove memset mkdir mkfifo mlock mount msync munmap random remove \
                srandom strerror strftime sync sysconf time tzset utimes utimensat \
                waitpid])
@@ -79,10 +83,10 @@ AC_CHECK_LIB(com_err, error_message,        [AC_DEFINE(HAVE_LIBCOM_ERR, 1, [Defi
                                              AC_SUBST(LD_LIBCOM_ERR, [-lcom_err])])
 AC_CHECK_LIB(ext2fs, ext2fs_extent_replace, [AC_DEFINE(HAVE_LIBEXT2FS, 1, [Define to 1 if you have the ext2fs library.])
                                              AC_SUBST(LD_LIBEXT2FS, [-lext2fs])])
-dnl AC_CHECK_LIB(z,      deflate,               [AC_DEFINE(HAVE_Z_DEFLATE, 1, [Define to 1 if you have the z library.])
-dnl                                              AC_SUBST(LD_LIBZ, [-lz])])
+dnl AC_CHECK_LIB(z,  deflate,               [AC_DEFINE(HAVE_Z_DEFLATE, 1, [Define to 1 if you have the z library.])
+dnl                                          AC_SUBST(LD_LIBZ, [-lz])])
 
-FT_NEED_ALL_FUNCS([execvp fileno ftruncate memmove memset mkdir mkfifo mount msync munmap \
+FT_NEED_ALL_FUNCS([execvp fileno ftruncate ioctl memmove memset mkdir mkfifo mount msync munmap \
                    remove strerror strftime sync time waitpid])
 FT_NEED_ANY_FUNC([localtime_r localtime])
 FT_NEED_ANY_FUNC([lchown chown])
@@ -113,4 +117,3 @@ AC_CONFIG_FILES([Makefile fsattr/build/Makefile fsremap/build/Makefile fsmove/bu
 AC_OUTPUT
 
 FT_OUTPUT
-

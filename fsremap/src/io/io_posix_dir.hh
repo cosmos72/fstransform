@@ -17,7 +17,7 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * io_posix_dir.hh
+ * io/io_posix_dir.hh
  *
  *  Created on: Sep 22, 2011
  *      Author: max
@@ -26,30 +26,28 @@
 #ifndef FSTRANSFORM_IO_IO_POSIX_DIR_HH
 #define FSTRANSFORM_IO_IO_POSIX_DIR_HH
 
-#include "../types.hh"    // for ft_string, ft_inode
+#include "../types.hh" // for ft_string, ft_inode
 
 #ifdef FT_HAVE_DIRENT_H
-# include <dirent.h>      // for DIR, DT_UNKNOWN
+#include <dirent.h> // for DIR, DT_UNKNOWN
 #endif
 
 FT_IO_NAMESPACE_BEGIN
 
-
 typedef struct dirent ft_io_posix_dirent;
 
-class ft_io_posix_dir
-{
-private:
+class ft_io_posix_dir {
+  private:
     ft_string this_path;
-    DIR * this_dir;
+    DIR *this_dir;
 
     /** cannot call copy constructor */
     ft_io_posix_dir(const ft_io_posix_dir &);
 
     /** cannot call assignment operator */
-    const ft_io_posix_dir & operator=(const ft_io_posix_dir &);
+    const ft_io_posix_dir &operator=(const ft_io_posix_dir &);
 
-public:
+  public:
     /** default constructor */
     ft_io_posix_dir();
 
@@ -57,19 +55,25 @@ public:
     ~ft_io_posix_dir();
 
     /** open a directory */
-    int open(const ft_string & path);
+    int open(const ft_string &path);
 
-    FT_INLINE bool is_open() const { return this_dir != NULL; };
+    FT_INLINE bool is_open() const {
+        return this_dir != NULL;
+    };
 
-    FT_INLINE DIR * dir() { return this_dir; }
-    FT_INLINE const ft_string & path() const { return this_path; }
+    FT_INLINE DIR *dir() {
+        return this_dir;
+    }
+    FT_INLINE const ft_string &path() const {
+        return this_path;
+    }
 
     /**
      *  get next directory entry.
      *  returns 0 if success (NULL result indicates EOF),
      *  else returns error code
      */
-    int next(ft_io_posix_dirent * & result);
+    int next(ft_io_posix_dirent *&result);
 
     /** close the currently open directory */
     int close();

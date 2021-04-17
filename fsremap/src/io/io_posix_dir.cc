@@ -26,42 +26,38 @@
 #include "../first.hh"
 
 #if defined(FT_HAVE_CERRNO)
-# include <cerrno>           // for errno and error codes
+#include <cerrno> // for errno and error codes
 #elif defined(FT_HAVE_ERRNO_H)
-# include <errno.h>
+#include <errno.h>
 #endif
 
 #ifdef FT_HAVE_SYS_TYPES_H
-# include <sys/types.h>      // for DIR, opendir()
+#include <sys/types.h> // for DIR, opendir()
 #endif
 #ifdef FT_HAVE_DIRENT_H
-# include <dirent.h>         //  "   "     "      , readdir(), closedir()
+#include <dirent.h> //  "   "     "      , readdir(), closedir()
 #endif
 
-#include "../log.hh"        // for ff_log()
-#include "io_posix_dir.hh"  // for ft_io_posix_dir
-
+#include "../log.hh"       // for ff_log()
+#include "io_posix_dir.hh" // for ft_io_posix_dir
 
 FT_IO_NAMESPACE_BEGIN
 
 /** default constructor */
-ft_io_posix_dir::ft_io_posix_dir()
-    : this_path(), this_dir(NULL)
-{ }
+ft_io_posix_dir::ft_io_posix_dir() : this_path(), this_dir(NULL) {
+}
 
 /** destructor. calls close() */
-ft_io_posix_dir::~ft_io_posix_dir()
-{
+ft_io_posix_dir::~ft_io_posix_dir() {
     close();
 }
 
 /** open a directory */
-int ft_io_posix_dir::open(const ft_string & path)
-{
+int ft_io_posix_dir::open(const ft_string &path) {
     int err = 0;
     if (this_dir != NULL)
         err = EISCONN;
-    else if ((this_dir = opendir(path.c_str())) == NULL)
+    else if ((this_dir = ::opendir(path.c_str())) == NULL)
         err = errno;
     else {
         this_path = path;
@@ -71,25 +67,22 @@ int ft_io_posix_dir::open(const ft_string & path)
 }
 
 /** close the currently open directory */
-int ft_io_posix_dir::close()
-{
+int ft_io_posix_dir::close() {
     if (this_dir != NULL) {
-    	if (closedir(this_dir) != 0)
-    		return ff_log(FC_ERROR, errno, "failed to close directory `%s'", this_path.c_str());
-    	this_dir = NULL;
+        if (closedir(this_dir) != 0)
+            return ff_log(FC_ERROR, errno, "failed to close directory `%s'", this_path.c_str());
+        this_dir = NULL;
     }
-	this_path.clear();
+    this_path.clear();
     return 0;
 }
-
 
 /**
  *  get next directory entry.
  *  returns 0 if success (NULL result indicates EOF),
  *  else returns error code
  */
-int ft_io_posix_dir::next(ft_io_posix_dirent * & result)
-{
+int ft_io_posix_dir::next(ft_io_posix_dirent *&result) {
     int err;
     if (this_dir == NULL)
         err = ENOTCONN;

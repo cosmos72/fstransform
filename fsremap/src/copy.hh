@@ -17,7 +17,7 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * inode_cache.hh
+ * copy.hh
  *
  *  Created on: Aug 18, 2011
  *      Author: max
@@ -26,17 +26,17 @@
 #ifndef FSTRANSFORM_COPY_HH
 #define FSTRANSFORM_COPY_HH
 
-#include "types.hh"    // for ft_string
+#include "types.hh" // for ft_string
 
 FT_NAMESPACE_BEGIN
 
-void ff_set(ft_string & dst, const ft_string & src);
-void ff_set(ft_string & dst, ft_ull src);
+void ff_set(ft_string &dst, const ft_string &src);
+void ff_set(ft_string &dst, ft_ull src);
 
-void ff_set(ft_ull & dst,    const ft_string & src);
+void ff_set(ft_ull &dst, const ft_string &src);
 
-void ff_cat(ft_string & dst, const ft_string & src);
-void ff_cat(ft_string & dst, ft_ull src);
+void ff_cat(ft_string &dst, const ft_string &src);
+void ff_cat(ft_string &dst, ft_ull src);
 
 FT_NAMESPACE_END
 

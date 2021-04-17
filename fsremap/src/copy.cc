@@ -17,7 +17,7 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * inode_cache.hh
+ * copy.cc
  *
  *  Created on: Aug 18, 2011
  *      Author: max
@@ -28,52 +28,43 @@
 #include "copy.hh"
 
 #if defined(FT_HAVE_STDIO_H)
-# include <stdio.h>      /* for snprintf() */
-#elif defined(FT_HAVE_CSTDIO) && defined(__cplusplus)
-# include <cstdio>       /* for snprintf() */
+#include <stdio.h> /* for snprintf() */
+#elif defined(FT_HAVE_CSTDIO)
+#include <cstdio> /* for snprintf() */
 #endif
-
 
 FT_NAMESPACE_BEGIN
 
-void ff_set(ft_string & dst, const ft_string & src)
-{
-	dst = src;
+void ff_set(ft_string &dst, const ft_string &src) {
+    dst = src;
 }
 
-void ff_set(ft_string & dst, ft_ull src)
-{
-	enum { maxlen = sizeof(ft_ull) * 3 + 1 };
-	dst.resize(maxlen);
-	char * buf = &dst[0];
+void ff_set(ft_string &dst, ft_ull src) {
+    enum { maxlen = sizeof(ft_ull) * 3 + 1 };
+    dst.resize(maxlen);
+    char *buf = &dst[0];
 
-	int delta = snprintf(buf, maxlen, "%" FT_XLL, src);
-	dst.resize(delta > 0 ? delta : 0);
+    int delta = snprintf(buf, maxlen, "%" FT_XLL, src);
+    dst.resize(delta > 0 ? delta : 0);
 }
 
-void ff_set(ft_ull & dst, const ft_string & src)
-{
-	dst = 0;
-	sscanf(src.c_str(), "%" FT_XLL, &dst);
+void ff_set(ft_ull &dst, const ft_string &src) {
+    dst = 0;
+    sscanf(src.c_str(), "%" FT_XLL, &dst);
 }
 
-
-void ff_cat(ft_string & dst, const ft_string & src)
-{
-	dst += src;
+void ff_cat(ft_string &dst, const ft_string &src) {
+    dst += src;
 }
 
-void ff_cat(ft_string & dst, ft_ull src)
-{
-	enum { maxlen = sizeof(ft_ull) * 3 + 1 };
-	size_t oldlen = dst.length();
-	dst.resize(oldlen + maxlen);
-	char * buf = &dst[oldlen];
+void ff_cat(ft_string &dst, ft_ull src) {
+    enum { maxlen = sizeof(ft_ull) * 3 + 1 };
+    size_t oldlen = dst.length();
+    dst.resize(oldlen + maxlen);
+    char *buf = &dst[oldlen];
 
-	int delta = snprintf(buf, maxlen, "%" FT_XLL, src);
-	dst.resize(oldlen + (delta > 0 ? delta : 0));
+    int delta = snprintf(buf, maxlen, "%" FT_XLL, src);
+    dst.resize(oldlen + (delta > 0 ? delta : 0));
 }
 
 FT_NAMESPACE_END
-
-

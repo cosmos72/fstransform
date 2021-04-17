@@ -2608,12 +2608,7 @@ program_transform_name=`$as_echo "$program_transform_name" | sed "$ac_script"`
 am_aux_dir=`cd "$ac_aux_dir" && pwd`
 
 if test x"${MISSING+set}" != xset; then
-  case $am_aux_dir in
-  *\ * | *\	*)
-    MISSING="\${SHELL} \"$am_aux_dir/missing\"" ;;
-  *)
-    MISSING="\${SHELL} $am_aux_dir/missing" ;;
-  esac
+  MISSING="\${SHELL} '$am_aux_dir/missing'"
 fi
 # Use eval to expand $SHELL
 if eval "$MISSING --is-lightweight"; then
@@ -4580,6 +4575,33 @@ _ACEOF
 fi
 
 
+ac_fn_cxx_check_member "$LINENO" "struct fsxattr" "fsx_xflags" "ac_cv_member_struct_fsxattr_fsx_xflags" "$ac_includes_default
+#ifdef HAVE_LINUX_FS_H
+#include <linux/fs.h>
+#endif
+"
+if test "x$ac_cv_member_struct_fsxattr_fsx_xflags" = xyes; then :
+
+cat >>confdefs.h <<_ACEOF
+#define HAVE_STRUCT_FSXATTR_FSX_XFLAGS 1
+_ACEOF
+
+
+fi
+ac_fn_cxx_check_member "$LINENO" "struct fsxattr" "fsx_projid" "ac_cv_member_struct_fsxattr_fsx_projid" "$ac_includes_default
+#ifdef HAVE_LINUX_FS_H
+#include <linux/fs.h>
+#endif
+"
+if test "x$ac_cv_member_struct_fsxattr_fsx_projid" = xyes; then :
+
+cat >>confdefs.h <<_ACEOF
+#define HAVE_STRUCT_FSXATTR_FSX_PROJID 1
+_ACEOF
+
+
+fi
+
 
 
 
@@ -5132,7 +5154,7 @@ fi
 rm -f conftest.mmap conftest.txt
 
 for ac_func in execvp fallocate posix_fallocate fdatasync fileno fsync ftruncate \
-               getpagesize gettimeofday getuid lchown chown isatty localtime_r localtime \
+               getpagesize gettimeofday getuid ioctl lchown chown isatty localtime_r localtime \
                memmove memset mkdir mkfifo mlock mount msync munmap random remove \
                srandom strerror strftime sync sysconf time tzset utimes utimensat \
                waitpid
@@ -5320,7 +5342,7 @@ fi
 
 
   ft_funcs_missing=
-  for ft_func in execvp fileno ftruncate memmove memset mkdir mkfifo mount msync munmap \
+  for ft_func in execvp fileno ftruncate ioctl memmove memset mkdir mkfifo mount msync munmap \
                    remove strerror strftime sync time waitpid
   do :
     if test "`eval echo '$ac_cv_func_'$ft_func`" != "yes"
@@ -6806,7 +6828,9 @@ $as_echo X/"$am_mf" |
     { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
 as_fn_error $? "Something went wrong bootstrapping makefile fragments
-    for automatic dependency tracking.  Try re-running configure with the
+    for automatic dependency tracking.  If GNU make was not used, consider
+    re-running the configure script with MAKE=\"gmake\" (or whatever is
+    necessary).  You can also try re-running configure with the
     '--disable-dependency-tracking' option to at least be able to build
     the package (albeit without support for automatic dependency tracking).
 See \`config.log' for more details" "$LINENO" 5; }
@@ -6859,5 +6883,4 @@ fi
 
 
   sed -e 's/define \([A-Z]\)/define FT_\1/g' -e 's/undef \([A-Z]\)/undef FT_\1/g' < fsremap/src/config.hh > fsremap/src/ft_config.hh
-
 
