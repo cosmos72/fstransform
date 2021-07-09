@@ -113,7 +113,7 @@ else
 fi
 
 
-AC_CONFIG_FILES([Makefile fsattr/build/Makefile fsremap/build/Makefile fsmove/build/Makefile fsmount_kernel/build/Makefile fstransform/build/Makefile])
+AC_CONFIG_FILES([Makefile fsattr/build/Makefile fsremap/build/Makefile fsmove/build/Makefile fsmount_kernel/build/Makefile fstransform/build/Makefile man/Makefile])
 AC_OUTPUT
 
 FT_OUTPUT
