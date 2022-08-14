@@ -6,7 +6,7 @@
  *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
+ *     the Free Software Foundation, either version 2 of the License, or
  *     (at your option) any later version.
  *
  *     This program is distributed in the hope that it will be useful,
@@ -73,7 +73,7 @@ static ft_uoff recursive_readdir(ft_unsorted_map<ft_inode, ft_string> & cache,
 	while (dir.next(dirent) == 0 && dirent != NULL) {
 		if (!strcmp(dirent->d_name, ".") || !strcmp(dirent->d_name, ".."))
 			continue;
-		
+
 		ft_string subpath = path;
 		if (subpath[subpath.size() - 1] != '/')
 			subpath += '/';
@@ -162,7 +162,7 @@ static ft_uoff recursive_readdir_cachemem(ft_cache_mem<ft_inode, ft_string> & ca
 	while (dir.next(dirent) == 0 && dirent != NULL) {
 		if (!strcmp(dirent->d_name, ".") || !strcmp(dirent->d_name, ".."))
 			continue;
-		
+
 		ft_string subpath = path, tmp;
 		if (subpath[subpath.size() - 1] != '/')
 			subpath += '/';
@@ -176,7 +176,7 @@ static ft_uoff recursive_readdir_cachemem(ft_cache_mem<ft_inode, ft_string> & ca
 	}
 	return count;
 }
-	
+
 static ft_uoff recursive_readdir_pool(ft_rope_pool & pool,
 				      ft_cache_mem<ft_inode, ft_rope> & cache,
 				      const ft_string & path)
@@ -190,14 +190,14 @@ static ft_uoff recursive_readdir_pool(ft_rope_pool & pool,
 	while (dir.next(dirent) == 0 && dirent != NULL) {
 		if (!strcmp(dirent->d_name, ".") || !strcmp(dirent->d_name, ".."))
 			continue;
-		
+
 		ft_string subpath = path;
 		if (subpath[subpath.size() - 1] != '/')
 			subpath += '/';
 		subpath += dirent->d_name;
 		ft_rope rope = pool.make(subpath);
 		cache.find_or_add(dirent->d_ino, rope);
-		
+
 		if (dirent->d_type == DT_DIR) {
 			count += recursive_readdir_pool(pool, cache, subpath);
 		}

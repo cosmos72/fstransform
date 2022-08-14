@@ -6,7 +6,7 @@
  *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
+ *     the Free Software Foundation, either version 2 of the License, or
  *     (at your option) any later version.
  *
  *     This program is distributed in the hope that it will be useful,
@@ -41,18 +41,18 @@ private:
 	public:
 		ft_rope e;
 		ft_rope_node * next;
-		
+
 		explicit FT_INLINE ft_rope_node(const ft_rope & el, ft_rope_node * tail = NULL) : e(el), next(tail)
 		{ }
-		
+
 		FT_INLINE ~ft_rope_node()
 		{ }
 	};
-        
+
 	ft_rope_node * head;
-	
+
 	void init(const ft_rope_node * list);
-	
+
 public:
 	/** default constructor. */
 	FT_INLINE ft_rope_list() : head(NULL)
@@ -63,7 +63,7 @@ public:
 
 	/** assignment operator */
 	const ft_rope_list & operator=(const ft_rope_list & other);
-        
+
 	/** destructor */
 	FT_INLINE ~ft_rope_list() {
 		clear();
@@ -72,13 +72,13 @@ public:
 	FT_INLINE bool empty() const {
 		return head == NULL;
 	}
-	
+
 	void clear();
 
 	ft_rope & front();
-	void pop_front();	
+	void pop_front();
 	void push_front(const ft_rope & e);
-	
+
 	FT_INLINE const ft_rope & front() const {
 		return const_cast<ft_rope_list *>(this)->front();
 	}
@@ -87,7 +87,7 @@ public:
 	private:
 		friend class ft_rope_list;
 		ft_rope_node * node;
-		
+
 		explicit FT_INLINE iterator(ft_rope_node * list) : node(list)
 		{ }
 	public:
@@ -99,7 +99,7 @@ public:
 		FT_INLINE ft_rope & operator*() {
 			return node->e;
 		}
-		
+
 		/** operator-> */
 		FT_INLINE ft_rope * operator->() {
 			return & node->e;
@@ -117,12 +117,12 @@ public:
 			return node != other.node;
 		}
 	};
-	
+
 	class const_iterator {
 	private:
 		friend class ft_rope_list;
 		const ft_rope_node * node;
-		
+
 		explicit FT_INLINE const_iterator(const ft_rope_node * list) : node(list)
 		{ }
 	public:
@@ -150,7 +150,7 @@ public:
 			return node != other.node;
 		}
 	};
-	
+
 	iterator begin() {
 		return iterator(head);
 	}

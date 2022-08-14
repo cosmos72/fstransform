@@ -6,7 +6,7 @@
  *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
+ *     the Free Software Foundation, either version 2 of the License, or
  *     (at your option) any later version.
  *
  *     This program is distributed in the hope that it will be useful,
@@ -42,7 +42,7 @@ static const ft_u8 huffman_lengths[256] = {
         14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
         14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
         14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
-        14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 
+        14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
 };
 
 struct zhuff {
@@ -102,7 +102,7 @@ void zinit()
         }
         if (len > (1U << UNZBITS))
                 throw std::invalid_argument("zstring: decompression table is too small! increase UNZBITS and recompile");
-                
+
         if (UNZBITS > 16)
                 throw std::invalid_argument("zstring: decompression table is too large! decrease UNZBITS and recompile");
         ft_u8 ilen, jlen, klen;
@@ -232,7 +232,7 @@ void unz(ft_string & dst, const ft_string & src)
                         ft_u8 nbits = entry.nbits[0];
                         if (nbits > len)
                                 break;
-                        
+
                         dst.push_back(entry.sym[0]);
                         len -= nbits;
                         if ((nbits = entry.nbits[1]) && nbits <= len) {

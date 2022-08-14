@@ -6,7 +6,7 @@
  *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
+ *     the Free Software Foundation, either version 2 of the License, or
  *     (at your option) any later version.
  *
  *     This program is distributed in the hope that it will be useful,
@@ -40,7 +40,7 @@ class ft_rope
 {
 private:
 	ft_rope_impl * p;
-        
+
 public:
 	/** default constructor. */
 	FT_INLINE ft_rope() : p(NULL)
@@ -54,10 +54,10 @@ public:
 
 	/** constructor with prefix and suffix. makes a private copy of 'suffix' */
 	ft_rope(const ft_rope * prefix, const char * suffix, ft_size suffix_length);
-        
+
 	/** assignment operator */
 	const ft_rope & operator=(const ft_rope & other);
-        
+
 	/** destructor */
 	~ft_rope();
 

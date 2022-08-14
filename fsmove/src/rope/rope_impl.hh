@@ -6,7 +6,7 @@
  *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
+ *     the Free Software Foundation, either version 2 of the License, or
  *     (at your option) any later version.
  *
  *     This program is distributed in the hope that it will be useful,
@@ -37,7 +37,7 @@ class ft_rope_impl
 {
 private:
 	enum { PREFIX_SCALE = sizeof(void *) };
-	 
+
 	ft_i32 prefix_delta;
 	ft_u32 refcount, suffix_len;
 
