@@ -1,0 +1,129 @@
+.TH FSREMAP "8" "" "fsremap" "System Administration Utilities"
+.SH NAME
+fsremap \- manual page for fsremap
+.SH SYNOPSIS
+.B fsremap
+[\fI\,OPTION\/\fR]... \fI\,DEVICE LOOP-FILE \/\fR[\fI\,ZERO-FILE\/\fR]
+.br
+.B fsremap
+[\fI\,OPTION\/\fR]... \fI\,--resume-job=JOB_ID DEVICE\/\fR
+.SH DESCRIPTION
+Replace the contents of DEVICE with the contents of LOOP\-FILE, i.e. write LOOP\-FILE onto DEVICE
+even if LOOP\-FILE is inside a file system _inside_ DEVICE
+.PP
+Mandatory arguments to long options are mandatory for short options too.
+.TP
+\fB\-\-\fR
+end of options. treat subsequent parameters as arguments
+even if they start with '\-'
+.TP
+\fB\-a\fR, \fB\-\-no\-questions\fR
+automatic run: do not ask any question
+.TP
+\fB\-\-clear\fR=\fI\,all\/\fR
+clear all free blocks after remapping (default)
+.TP
+\fB\-\-clear\fR=\fI\,minimal\/\fR
+(DANGEROUS) clear only overwritten free blocks
+after remapping
+.TP
+\fB\-\-clear\fR=\fI\,none\/\fR
+(DANGEROUS) do not clear any free blocks after remapping
+.TP
+\fB\-\-cmd\-umount\fR=\fI\,CMD\/\fR
+command to unmount DEVICE (default: \fI\,/bin/umount\/\fP)
+.HP
+\fB\-\-cmd\-losetup\fR=\fI\,CMD\/\fR 'losetup' command (default: \fI\,/sbin/losetup\/\fP)
+.TP
+\fB\-\-color\fR=\fI\,MODE\/\fR
+set messages color. MODE is one of:
+auto (default), none, ansi
+.TP
+\fB\-\-device\-mount\-point\fR=\fI\,DIR\/\fR
+set device mount point (needed by \fB\-\-io\fR=\fI\,prealloc\/\fR)
+.TP
+\fB\-f\fR, \fB\-\-force\-run\fR
+continue even if some sanity checks fail
+.TP
+\fB\-i\fR, \fB\-\-interactive\fR
+ask confirmation after analysis, before actual work
+.TP
+\fB\-\-io\fR=\fI\,posix\/\fR
+use posix I/O (default)
+.TP
+\fB\-\-io\fR=\fI\,prealloc\/\fR
+use posix I/O with EXPERIMENTAL preallocated files
+.TP
+\fB\-\-io\fR=\fI\,self\-test\/\fR
+perform in\-memory self\-test with random data
+.TP
+\fB\-\-io\fR=\fI\,test\/\fR
+use test I/O. Arguments are:
+DEVICE\-LENGTH LOOP\-FILE\-EXTENTS FREE\-SPACE\-EXTENTS
+.TP
+\fB\-\-loop\-device\fR=\fI\,LOOP\-DEVICE\/\fR
+loop device to disconnect (needed by \fB\-\-io\fR=\fI\,prealloc\/\fR)
+.TP
+\fB\-\-loop\-mount\-point\fR=\fI\,DIR\/\fR
+set loop file mount point (needed by \fB\-\-io\fR=\fI\,prealloc\/\fR)
+.TP
+\fB\-m\fR, \fB\-\-mem\-buffer\fR=\fI\,RAM_SIZE[k\/\fR|M|G|T|P|E|Z|Y]
+set RAM buffer size (default: autodetect)
+.TP
+\fB\-n\fR, \fB\-\-no\-action\fR, \fB\-\-simulate\-run\fR
+do not actually read or write any disk block
+.TP
+\fB\-\-questions\fR=\fI\,MODE\/\fR
+set interactive mode. MODE is one of:
+no: never ask questions, abort on errors (default)
+yes: ask questions in case of user\-fixable errors
+extra: also ask confirmation before dangerous steps
+.TP
+\fB\-q\fR, \fB\-\-quiet\fR
+be quiet, print less output
+.TP
+\fB\-qq\fR
+be very quiet, only print warnings or errors
+.TP
+\fB\-\-resume\-job\fR=\fI\,NUM\/\fR
+resume the interrupted job NUM. The only non\-option
+argument must be DEVICE. Do _not_ pass LOOP\-FILE
+as argument, or you will LOSE YOUR DATA!
+.TP
+\fB\-s\fR, \fB\-\-secondary\-storage\fR=\fI\,SECONDARY_SIZE[k\/\fR|M|G|T|P|E|Z|Y]
+set secondary storage file length (default: autodetect)
+.TP
+\fB\-t\fR, \fB\-\-temp\-dir\fR=\fI\,DIR\/\fR
+write storage and log files inside DIR
+(default: \fI\,/var/tmp/fstransform\/\fP)
+.TP
+\fB\-\-ui\-tty\fR=\fI\,TTY\/\fR
+show full\-text progress on tty device TTY
+.TP
+\fB\-v\fR, \fB\-\-verbose\fR
+be verbose
+.TP
+\fB\-vv\fR
+be very verbose
+.TP
+\fB\-vvv\fR
+be incredibly verbose (warning: prints lots of output)
+.TP
+\fB\-xp\fR, \fB\-\-exact\-primary\-storage\fR=\fI\,PRIMARY_SIZE[k\/\fR|M|G|T|P|E|Z|Y]
+set _exact_ primary storage length, or fail
+.IP
+(default: autodetect)
+.TP
+\fB\-xs\fR, \fB\-\-exact\-secondary\-storage\fR=\fI\,SECONDARY_SIZE[k\/\fR|M|G|T|P|E|Z|Y]
+set _exact_ secondary storage length, or fail
+.IP
+(default: autodetect)
+.TP
+\fB\-\-x\-OPTION\fR=\fI\,VALUE\/\fR
+set internal, undocumented option. for maintainers only
+.TP
+\fB\-\-help\fR
+display this help and exit
+.TP
+\fB\-\-version\fR
+output version information and exit
